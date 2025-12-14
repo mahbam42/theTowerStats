@@ -3,9 +3,9 @@
 ## **Purpose**
 
 This document defines how agents (contributors, assistants, and automated helpers)
-should work on {Project}.
+should work on **theTowerStats**.
 
-{Project} is a stats-tracking and analysis application for **The Tower** mobile game.
+**theTowerStats** is a stats-tracking and analysis application for **The Tower** mobile game.
 Its purpose is to:
 
 - ingest player battle history as raw text,
@@ -152,7 +152,7 @@ Before opening a PR:
 * [ ] Docs updated
 * [ ] PR description is complete
 
-## **Project-Specific Rules {Project}**
+## **Project-Specific Rules **theTowerStats****
 
 ## **Agent Test Suite**
 
@@ -160,7 +160,7 @@ This suite ensures agents follow the rules.
 It can be run manually, or embedded into future automation.
 
 ## **Pre-Work Tests**
-Before starting work on {Project}, agents must confirm:
+Before starting work on **theTowerStats**, agents must confirm:
 
 - Analysis code in `analysis/`:
   - does not import Django models,
