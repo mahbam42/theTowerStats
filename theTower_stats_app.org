@@ -636,7 +636,14 @@ Testing
 At least:
 - [ ] 1 delta golden test
 - [ ] 1 aggregation test using presets
-*** Phase 3 Effects
+*** Phase 3 — App Structure & UX
+
+**** Milestones [0%]
+- [ ] Navigation
+- [ ] Page separation
+- [ ] Dashboards
+- [ ] Model completeness (structure, not logic)
+*** Phase 4 Effects
 
 **** Milestones
 - [ ] CardParameters → effective values
