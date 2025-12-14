@@ -39,10 +39,11 @@ class ParsedBattleReport:
     real_time_seconds: int | None
 
 
-_BATTLE_DATE_RE = re.compile(r"(?im)^[ \t]*Battle Date[ \t]*:[ \t]*(.+?)[ \t]*$")
-_TIER_RE = re.compile(r"(?im)^[ \t]*Tier[ \t]*:[ \t]*(\d+)[ \t]*$")
-_WAVE_RE = re.compile(r"(?im)^[ \t]*Wave[ \t]*:[ \t]*(\d+)[ \t]*$")
-_REAL_TIME_RE = re.compile(r"(?im)^[ \t]*Real Time[ \t]*:[ \t]*(.+?)[ \t]*$")
+_LABEL_SEPARATOR = r"(?:[ \t]*:[ \t]*|\t+[ \t]*|[ \t]{2,})"
+_BATTLE_DATE_RE = re.compile(rf"(?im)^[ \t]*Battle Date{_LABEL_SEPARATOR}(.+?)[ \t]*$")
+_TIER_RE = re.compile(rf"(?im)^[ \t]*Tier{_LABEL_SEPARATOR}(\d+)[ \t]*$")
+_WAVE_RE = re.compile(rf"(?im)^[ \t]*Wave{_LABEL_SEPARATOR}(\d+)[ \t]*$")
+_REAL_TIME_RE = re.compile(rf"(?im)^[ \t]*Real Time{_LABEL_SEPARATOR}(.+?)[ \t]*$")
 
 
 def compute_battle_report_checksum(raw_text: str) -> str:
@@ -124,6 +125,8 @@ def _parse_battle_date(value: str | None) -> datetime | None:
         "%m/%d/%Y %H:%M",
         "%m/%d/%Y",
         "%m/%d/%y",
+        "%b %d, %Y %H:%M",
+        "%B %d, %Y %H:%M",
     ]
     for fmt in formats:
         try:
