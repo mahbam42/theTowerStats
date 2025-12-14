@@ -5,14 +5,14 @@
 This document defines how agents (contributors, assistants, and automated helpers)
 should work on {Project}.
 
-{Project} is a stats-tracking and analysis application for *The Tower* mobile game.
-Its primary goals are:
+{Project} is a stats-tracking and analysis application for **The Tower** mobile game.
+Its purpose is to:
 
-- reliably ingesting player battle history as raw text,
-- normalizing and preserving game data without destruction,
-- computing deterministic, testable derived metrics via an Analysis Engine,
-- presenting those metrics through charts and dashboards,
-- avoiding prescriptive gameplay advice unless explicitly scoped.
+- ingest player battle history as raw text,
+- preserve and normalize game data without destructive transforms,
+- compute deterministic, testable metrics via a dedicated Analysis Engine,
+- present results through charts and dashboards,
+- support player interpretation without offering prescriptive strategy.
 
 Agents must prioritize correctness, traceability, and testability over speed or
 feature breadth.
@@ -34,6 +34,8 @@ feature breadth.
   : All new Django management commands must include appropriate permission checks and should integrate cleanly with the existing access-control patterns.
 - Docstrings Required on New Code
   : All new functions, classes, methods, utilities, and management commands must include concise, descriptive docstrings using standard Django/Python conventions.
+- Analysis Must Feed Visual Output
+  : New analysis logic should be demonstrable via a chart or view unless explicitly scoped as backend-only.
 
     ### Docstrings should describe:
 	- Purpose
@@ -56,7 +58,7 @@ Agents must assume a local development environment using:
 1. Create a fresh feature branch:
 
    ```zsh
-   git checkout -b feature/
+   git checkout -b feature/<short-description>
    ```
 2. Implement the feature in small, reviewable increments.
 3. Add Google-style docstrings to all new public modules, classes, and functions.
@@ -65,9 +67,9 @@ Agents must assume a local development environment using:
 
 Every PR must include:
 
-* tests for every new feature or behavior,
-* updated tests when modifying existing logic,
-* coverage for markdown parsing, directory operations, and mkdocs.yml parsing.
+- tests for every new feature or behavior,
+- updated tests when modifying existing logic,
+- golden tests for parsers, analysis calculations, or wiki-derived effects when applicable.
 
 ### **Linting, Type Checking and Testing**
 
