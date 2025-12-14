@@ -19,11 +19,10 @@ feature breadth.
 
 ## **Guiding Principles**
 
-1. Always work inside a fresh **feature branch**, never on `main`.
-2. Keep every change **small, tested, and documented**.
-3. Do not skip linting, testing, or pre-commit validation.
-4. Write clear commit messages and add/update tests with every feature.
-5. Structure work as explicit steps with a status (`pending`, `in_progress`, `complete`).
+1. Keep every change **small, tested, and documented**.
+2. Do not skip linting, testing, or pre-commit validation.
+3. Write clear commit messages and add/update tests with every feature.
+4. Structure work as explicit steps with a status (`pending`, `in_progress`, `complete`).
    There should always be **exactly one** `in_progress` step.
 
 ## **Mandatory Standards**
@@ -55,15 +54,10 @@ Agents must assume a local development environment using:
 - ruff and mypy
 ### **Branch Workflow**
 
-1. Create a fresh feature branch:
-
-   ```zsh
-   git checkout -b feature-<short-description>
-   ```
-2. Branch names must NOT contain `/`.
-  Use hyphens instead (e.g. `feature-phase1-battle-report-ingest`).
-3. Implement the feature in small, reviewable increments.
-4. Add Google-style docstrings to all new public modules, classes, and functions.
+- Add Google-style docstrings to all new public modules, classes, and functions.
+- Agents must NOT create, delete, or switch git branches.
+- Agents must work on the currently checked-out branch only.
+- Branch creation is handled manually by the human operator.
 
 ### **Testing Requirements**
 
@@ -96,15 +90,15 @@ Each commit must:
 
 Every task must be divided into sequential steps with statuses:
 
-| Step | Description               | Status  |
-| ---- | ------------------------- | ------- |
-| 1    | Identify module to modify | pending |
-| 2    | Implement logic           | pending |
-| 3    | Write tests               | pending |
-| 4    | Add docs                  | pending |
-| 5    | Run lint & type checks    | pending |
-| 6    | Run offline + full tests  | pending |
-| 7    | Commit changes            | pending |
+| Step | Description                | Status  |
+| ---- | -------------------------  | ------- |
+| 1    | Identify module to modify  | pending |
+| 2    | Implement logic            | pending |
+| 3    | Write tests                | pending |
+| 4    | Add docs                   | pending |
+| 5    | Run lint & type checks     | pending |
+| 6    | Run offline + full tests   | pending |
+| 7    | Offer short Commit Message | pending |
 
 Rules:
 
@@ -144,7 +138,6 @@ A valid pull request must include:
 
 Before opening a PR:
 
-* [ ] Branch is not `main`
 * [ ] All public code has Google-style docstrings
 * [ ] New features have tests
 * [ ] Updated behavior has updated tests
@@ -176,11 +169,6 @@ Before starting work on **theTowerStats**, agents must confirm:
   - is never overwritten in place,
   - includes source and parse metadata.
 * **Environment Ready**
-
-* **Repository State**
-
-  * [ ] Current branch is *not* `main`
-  * [ ] Feature branch name follows pattern `feature-<short-description>`
 
 ## **Code Quality Tests**
 
