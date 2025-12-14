@@ -88,9 +88,6 @@ def test_analyze_runs_handles_tabbed_battle_report_raw_text() -> None:
     )
 
     parsed_report = parse_battle_report(raw_text)
-    battle_date = cast(datetime, parsed_report.battle_date)
-    wave = cast(int, parsed_report.wave)
-    real_time_seconds = cast(int, parsed_report.real_time_seconds)
 
     @dataclass(frozen=True)
     class Record:
@@ -102,14 +99,18 @@ def test_analyze_runs_handles_tabbed_battle_report_raw_text() -> None:
     assert parsed_report.wave is not None
     assert parsed_report.real_time_seconds is not None
 
+    battle_date = cast(datetime, parsed_report.battle_date)
+    wave = cast(int, parsed_report.wave)
+    real_time_seconds = cast(int, parsed_report.real_time_seconds)
+
     record = Record(
         raw_text=raw_text,
         parsed_at=datetime(2025, 12, 7, 22, 0, tzinfo=timezone.utc),
         run_progress=RunProgressInput(
-            battle_date=parsed_report.battle_date,
+            battle_date=battle_date,
             coins=None,
-            wave=parsed_report.wave,
-            real_time_seconds=parsed_report.real_time_seconds,
+            wave=wave,
+            real_time_seconds=real_time_seconds,
         ),
     )
 
