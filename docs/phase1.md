@@ -27,6 +27,7 @@ Phase 1 proves the end-to-end pipeline works:
 - Entry point: `analysis.engine.analyze_runs`
 - Input: iterable of `RunProgress`-like objects (duck-typed)
 - Output: DTOs in `analysis.dto` (no database writes)
+  - Coins are parsed best-effort from raw text (e.g. `Coins: 4.24M`).
 
 ## Limitations (By Design)
 

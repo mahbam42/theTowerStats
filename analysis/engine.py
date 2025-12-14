@@ -9,6 +9,7 @@ from __future__ import annotations
 import re
 from collections.abc import Iterable
 from datetime import datetime
+from decimal import Decimal, InvalidOperation
 from typing import Protocol, TypeGuard
 
 from .dto import AnalysisResult, RunAnalysis
@@ -46,7 +47,9 @@ def analyze_runs(records: Iterable[object]) -> AnalysisResult:
         if not _looks_like_run_progress(progress):
             continue
 
-        battle_date = getattr(progress, "battle_date", None)
+        battle_date = getattr(progress, "battle_date", None) or getattr(
+            record, "parsed_at", None
+        )
         coins = _coerce_int(getattr(progress, "coins", None))
         if coins is None:
             coins = _coins_from_raw_text(getattr(record, "raw_text", None))
@@ -80,7 +83,10 @@ def _coerce_int(value: object) -> int | None:
     return None
 
 
-_COINS_RE = re.compile(r"(?im)^[ \t]*Coins[ \t]*:[ \t]*([0-9][0-9,]*)[ \t]*$")
+_COINS_LINE_RE = re.compile(
+    r"(?im)^[ \t]*(?:Coins|Coins Earned)[ \t]*:[ \t]*"
+    r"([0-9][0-9,]*(?:\.[0-9]+)?)[ \t]*([kmbt])?[ \t]*.*$"
+)
 
 
 def _coins_from_raw_text(raw_text: object) -> int | None:
@@ -88,11 +94,38 @@ def _coins_from_raw_text(raw_text: object) -> int | None:
 
     if not isinstance(raw_text, str):
         return None
-    match = _COINS_RE.search(raw_text)
+    match = _COINS_LINE_RE.search(raw_text)
     if not match:
         return None
-    digits = match.group(1).replace(",", "")
+
+    number_text = match.group(1)
+    suffix = (match.group(2) or "").lower()
+    return _parse_compact_int(number_text, suffix)
+
+
+def _parse_compact_int(number_text: str, suffix: str) -> int | None:
+    """Parse compact numeric strings like `4.24M` or `1,234,567` into an int."""
+
+    multiplier = {
+        "": 1,
+        "k": 1_000,
+        "m": 1_000_000,
+        "b": 1_000_000_000,
+        "t": 1_000_000_000_000,
+    }.get(suffix)
+    if multiplier is None:
+        return None
+
     try:
-        return int(digits)
-    except ValueError:
+        value = Decimal(number_text.replace(",", ""))
+    except InvalidOperation:
+        return None
+
+    if value <= 0:
+        return None
+
+    scaled = value * Decimal(multiplier)
+    try:
+        return int(scaled.to_integral_value())
+    except (ValueError, OverflowError):
         return None

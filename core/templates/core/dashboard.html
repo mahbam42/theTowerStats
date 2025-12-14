@@ -36,6 +36,15 @@
       const labels = {{ chart_labels_json|safe }};
       const values = {{ chart_values_json|safe }};
 
+      function formatCompactNumber(value) {
+        const absValue = Math.abs(Number(value));
+        if (!Number.isFinite(absValue)) return String(value);
+        if (absValue >= 1_000_000_000) return (value / 1_000_000_000).toFixed(2) + "B";
+        if (absValue >= 1_000_000) return (value / 1_000_000).toFixed(2) + "M";
+        if (absValue >= 1_000) return (value / 1_000).toFixed(2) + "K";
+        return String(value);
+      }
+
       const ctx = document.getElementById("chart").getContext("2d");
       new Chart(ctx, {
         type: "line",
@@ -52,6 +61,18 @@
           responsive: true,
           plugins: {
             legend: { display: true },
+            tooltip: {
+              callbacks: {
+                label: (context) => "Coins per hour: " + formatCompactNumber(context.parsed.y),
+              },
+            },
+          },
+          scales: {
+            y: {
+              ticks: {
+                callback: (value) => formatCompactNumber(value),
+              },
+            },
           },
         },
       });
