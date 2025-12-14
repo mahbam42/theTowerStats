@@ -10,5 +10,6 @@ nav:
   - Home: index.md
   - Phase 1: phase1.md
   - Phase 2: phase2.md
+  - Phase 2.75: phase275.md
   - Project Structure: project_structure.md
   - Development: development.md

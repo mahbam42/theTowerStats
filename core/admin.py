@@ -4,7 +4,7 @@ from __future__ import annotations
 
 from django.contrib import admin
 
-from core.models import GameData, PresetTag, RunProgress
+from core.models import GameData, PresetTag, RunProgress, WikiData
 
 
 @admin.register(GameData)
@@ -29,3 +29,12 @@ class PresetTagAdmin(admin.ModelAdmin):
 
     list_display = ("name",)
     search_fields = ("name",)
+
+
+@admin.register(WikiData)
+class WikiDataAdmin(admin.ModelAdmin):
+    """Admin configuration for WikiData."""
+
+    list_display = ("canonical_name", "entity_id", "source_section", "parse_version", "last_seen", "deprecated")
+    list_filter = ("source_section", "parse_version", "deprecated")
+    search_fields = ("canonical_name", "entity_id", "page_url")
