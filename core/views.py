@@ -12,7 +12,7 @@ from django.shortcuts import redirect, render
 from analysis.engine import analyze_runs
 from analysis.dto import RunAnalysis
 from core.forms import BattleReportImportForm, DateRangeFilterForm
-from core.models import RunProgress
+from core.models import GameData
 from core.services import ingest_battle_report
 
 
@@ -48,19 +48,21 @@ def dashboard(request: HttpRequest) -> HttpResponse:
     return render(request, "core/dashboard.html", context)
 
 
-def _filtered_runs(filter_form: DateRangeFilterForm) -> QuerySet[RunProgress]:
-    """Return a filtered RunProgress queryset based on validated form data."""
+def _filtered_runs(filter_form: DateRangeFilterForm) -> QuerySet[GameData]:
+    """Return a filtered GameData queryset based on validated form data."""
 
-    runs = RunProgress.objects.select_related("game_data").order_by("battle_date")
+    runs = GameData.objects.select_related("run_progress").order_by(
+        "run_progress__battle_date"
+    )
     if not filter_form.is_valid():
         return runs
 
     start_date = filter_form.cleaned_data.get("start_date")
     end_date = filter_form.cleaned_data.get("end_date")
     if start_date:
-        runs = runs.filter(battle_date__date__gte=start_date)
+        runs = runs.filter(run_progress__battle_date__date__gte=start_date)
     if end_date:
-        runs = runs.filter(battle_date__date__lte=end_date)
+        runs = runs.filter(run_progress__battle_date__date__lte=end_date)
     return runs
 
 
@@ -72,7 +74,7 @@ def _chart_points(runs: tuple[RunAnalysis, ...]) -> list[dict[str, object]]:
         points.append(
             {
                 "x": run.battle_date.date().isoformat(),
-                "y": round(run.waves_per_hour, 2),
+                "y": round(run.coins_per_hour, 2),
             }
         )
     return points

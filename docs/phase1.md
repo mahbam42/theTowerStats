@@ -12,7 +12,7 @@ Phase 1 proves the end-to-end pipeline works:
 - Dashboard: `/`
   - Paste/import form (POST)
   - Date range filter (GET `start_date`, `end_date`)
-  - Chart: **waves per hour** over time
+  - Chart: **coins per hour** over time
 
 ## Data Stored
 
@@ -32,5 +32,4 @@ Phase 1 proves the end-to-end pipeline works:
 
 - Only extracts **Battle Date**, **Tier**, **Wave**, **Real Time**
 - Ignores all other labels (unknown labels are non-fatal)
-- Computes only one metric: **waves per hour**
-
+- Computes only one metric: **coins per hour**

@@ -13,7 +13,9 @@ from core.models import GameData, RunProgress
 def test_dashboard_view_renders(client) -> None:
     """Create minimal records and verify the dashboard view returns HTTP 200."""
 
-    game_data = GameData.objects.create(raw_text="Battle Report", checksum="x" * 64)
+    game_data = GameData.objects.create(
+        raw_text="Battle Report\nCoins: 12345\n", checksum="x" * 64
+    )
     RunProgress.objects.create(
         game_data=game_data,
         battle_date=datetime(2025, 12, 1, tzinfo=timezone.utc),
@@ -24,4 +26,3 @@ def test_dashboard_view_renders(client) -> None:
 
     response = client.get("/")
     assert response.status_code == 200
-

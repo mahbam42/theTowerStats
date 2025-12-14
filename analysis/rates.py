@@ -1,24 +1,24 @@
 """Rate calculations for the Analysis Engine.
 
-Phase 1 intentionally ships a single derived rate metric: waves per hour.
+Phase 1 intentionally ships a single derived rate metric: coins per hour.
 """
 
 from __future__ import annotations
 
 
-def waves_per_hour(wave: int, real_time_seconds: int) -> float | None:
-    """Compute waves per hour for a single run.
+def coins_per_hour(coins: int, real_time_seconds: int) -> float | None:
+    """Compute coins per hour for a single run.
 
     Args:
-        wave: Final wave reached.
+        coins: Total coins earned.
         real_time_seconds: Run duration in seconds.
 
     Returns:
-        Waves per hour, or None when inputs are invalid.
+        Coins per hour, or None when inputs are invalid.
     """
 
-    if wave <= 0:
+    if coins <= 0:
         return None
     if real_time_seconds <= 0:
         return None
-    return (wave * 3600.0) / float(real_time_seconds)
+    return (coins * 3600.0) / float(real_time_seconds)

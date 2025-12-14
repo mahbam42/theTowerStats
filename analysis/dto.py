@@ -27,6 +27,7 @@ class RunProgressInput:
 
     Attributes:
         battle_date: The battle date to use as a time-series x-axis.
+        coins: Total coins earned for the run.
         wave: Final wave reached.
         real_time_seconds: Run duration (seconds).
     """
@@ -34,6 +35,7 @@ class RunProgressInput:
     battle_date: datetime
     wave: int
     real_time_seconds: int
+    coins: int | None = None
 
 
 @dataclass(frozen=True)
@@ -42,8 +44,8 @@ class RunAnalysis:
 
     Attributes:
         battle_date: The battle date used as a time-series x-axis.
-        waves_per_hour: Derived rate metric for Phase 1 charts.
+        coins_per_hour: Derived rate metric for Phase 1 charts.
     """
 
     battle_date: datetime
-    waves_per_hour: float
+    coins_per_hour: float
