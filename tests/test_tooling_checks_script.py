@@ -19,7 +19,7 @@ def test_checks_script_runs_expected_commands() -> None:
         'pytest_cmd="pytest"',
         '"$ruff_cmd" check',
         '"$mypy_cmd" .',
-        '"$pytest_cmd" -v',
+        '"$pytest_cmd" -q',
     ]
     for snippet in expected_snippets:
         assert snippet in content

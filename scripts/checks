@@ -22,4 +22,4 @@ fi
 
 "$ruff_cmd" check
 "$mypy_cmd" .
-"$pytest_cmd" -v
+"$pytest_cmd" -q
