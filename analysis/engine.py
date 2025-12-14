@@ -83,8 +83,9 @@ def _coerce_int(value: object) -> int | None:
     return None
 
 
+_LABEL_SEPARATOR = r"(?:[ \t]*:[ \t]*|\t+[ \t]*|[ \t]{2,})"
 _COINS_LINE_RE = re.compile(
-    r"(?im)^[ \t]*(?:Coins|Coins Earned)[ \t]*:[ \t]*"
+    rf"(?im)^[ \t]*(?:Coins|Coins Earned){_LABEL_SEPARATOR}"
     r"([0-9][0-9,]*(?:\.[0-9]+)?)[ \t]*([kmbt])?[ \t]*.*$"
 )
 
