@@ -1,0 +1,6 @@
+Django>=5.0,<6
+pytest>=8,<9
+pytest-django>=4.8,<5
+ruff>=0.6,<1
+mypy>=1.10,<2
+

@@ -1,11 +1,8 @@
-# Ignore Itself
-.gitignore*
-
 # emacs nonsense
 *~
 
 # Directories
-
+archive/
 # Temp Files
 
 # Byte-compiled / optimized / DLL files
