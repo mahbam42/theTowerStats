@@ -1,0 +1,61 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>theTowerStats</title>
+  </head>
+  <body>
+    <h1>theTowerStats</h1>
+
+    {% if messages %}
+      <ul>
+        {% for message in messages %}
+          <li>{{ message }}</li>
+        {% endfor %}
+      </ul>
+    {% endif %}
+
+    <h2>Import Battle Report</h2>
+    <form method="post">
+      {% csrf_token %}
+      {{ import_form.as_p }}
+      <button type="submit">Import</button>
+    </form>
+
+    <h2>Waves per hour</h2>
+    <form method="get">
+      {{ filter_form.as_p }}
+      <button type="submit">Apply</button>
+    </form>
+
+    <canvas id="chart" width="900" height="350"></canvas>
+
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <script>
+      const labels = {{ chart_labels_json|safe }};
+      const values = {{ chart_values_json|safe }};
+
+      const ctx = document.getElementById("chart").getContext("2d");
+      new Chart(ctx, {
+        type: "line",
+        data: {
+          labels,
+          datasets: [
+            {
+              label: "Waves per hour",
+              data: values,
+            },
+          ],
+        },
+        options: {
+          responsive: true,
+          plugins: {
+            legend: { display: true },
+          },
+        },
+      });
+    </script>
+  </body>
+</html>
+
