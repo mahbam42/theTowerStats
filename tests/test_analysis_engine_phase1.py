@@ -295,3 +295,37 @@ def test_analyze_runs_handles_bad_types_without_crashing() -> None:
     result = analyze_runs([progress])
     assert isinstance(result.runs, tuple)
     assert len(result.runs) == 0
+
+
+def test_analyze_runs_preserves_tier_and_preset_name_when_present() -> None:
+    """Propagate tier/preset metadata into per-run DTOs when available."""
+
+    @dataclass(frozen=True)
+    class Preset:
+        name: str
+
+    @dataclass(frozen=True)
+    class Progress:
+        id: int
+        battle_date: datetime
+        tier: int
+        wave: int
+        real_time_seconds: int
+        preset_tag: Preset
+        coins: int
+
+    progress = Progress(
+        id=123,
+        battle_date=datetime(2025, 12, 1, 0, 0, tzinfo=timezone.utc),
+        tier=7,
+        wave=100,
+        real_time_seconds=3600,
+        preset_tag=Preset(name="Farming"),
+        coins=3_600_000,
+    )
+
+    result = analyze_runs([progress])
+    assert len(result.runs) == 1
+    assert result.runs[0].run_id == 123
+    assert result.runs[0].tier == 7
+    assert result.runs[0].preset_name == "Farming"

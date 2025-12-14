@@ -8,7 +8,7 @@ from datetime import date, datetime, timezone
 import pytest
 
 from analysis.engine import analyze_runs
-from core.models import GameData, RunProgress
+from core.models import GameData, PresetTag, RunProgress
 
 
 @pytest.mark.django_db
@@ -75,3 +75,197 @@ def test_dashboard_view_filters_and_plots_from_analysis_engine(client) -> None:
     expected_values = [round(run.coins_per_hour, 2) for run in expected.runs]
 
     assert values == expected_values
+
+
+@pytest.mark.django_db
+def test_dashboard_view_filters_by_tier(client) -> None:
+    """Filter runs by tier and ensure chart data reflects the filtered inputs."""
+
+    tier_one = GameData.objects.create(
+        raw_text="Battle Report\nCoins earned    1,200\n",
+        checksum="c" * 64,
+    )
+    RunProgress.objects.create(
+        game_data=tier_one,
+        battle_date=datetime(2025, 12, 1, tzinfo=timezone.utc),
+        tier=1,
+        wave=100,
+        real_time_seconds=600,
+    )
+
+    tier_two = GameData.objects.create(
+        raw_text="Battle Report\nCoins earned    2,400\n",
+        checksum="d" * 64,
+    )
+    RunProgress.objects.create(
+        game_data=tier_two,
+        battle_date=datetime(2025, 12, 2, tzinfo=timezone.utc),
+        tier=2,
+        wave=100,
+        real_time_seconds=600,
+    )
+
+    response = client.get("/", {"tier": 2})
+    assert response.status_code == 200
+
+    labels = json.loads(response.context["chart_labels_json"])
+    values = json.loads(response.context["chart_values_json"])
+    assert labels == ["2025-12-02"]
+    assert values == [14400.0]
+
+
+@pytest.mark.django_db
+def test_dashboard_view_filters_by_preset(client) -> None:
+    """Filter runs by preset label and ensure chart data reflects the filtered inputs."""
+
+    preset = PresetTag.objects.create(name="Farming")
+
+    tagged = GameData.objects.create(
+        raw_text="Battle Report\nCoins earned    1,200\n",
+        checksum="e" * 64,
+    )
+    RunProgress.objects.create(
+        game_data=tagged,
+        battle_date=datetime(2025, 12, 1, tzinfo=timezone.utc),
+        tier=1,
+        wave=100,
+        real_time_seconds=600,
+        preset_tag=preset,
+    )
+
+    untagged = GameData.objects.create(
+        raw_text="Battle Report\nCoins earned    2,400\n",
+        checksum="f" * 64,
+    )
+    RunProgress.objects.create(
+        game_data=untagged,
+        battle_date=datetime(2025, 12, 2, tzinfo=timezone.utc),
+        tier=1,
+        wave=100,
+        real_time_seconds=600,
+    )
+
+    response = client.get("/", {"preset": preset.pk})
+    assert response.status_code == 200
+
+    labels = json.loads(response.context["chart_labels_json"])
+    values = json.loads(response.context["chart_values_json"])
+    assert labels == ["2025-12-01"]
+    assert values == [7200.0]
+
+
+@pytest.mark.django_db
+def test_dashboard_view_overlays_by_tier(client) -> None:
+    """Overlay tier datasets when requested."""
+
+    first = GameData.objects.create(
+        raw_text="Battle Report\nCoins earned    1,200\n",
+        checksum="g" * 64,
+    )
+    RunProgress.objects.create(
+        game_data=first,
+        battle_date=datetime(2025, 12, 1, tzinfo=timezone.utc),
+        tier=1,
+        wave=100,
+        real_time_seconds=600,
+    )
+
+    second = GameData.objects.create(
+        raw_text="Battle Report\nCoins earned    2,400\n",
+        checksum="h" * 64,
+    )
+    RunProgress.objects.create(
+        game_data=second,
+        battle_date=datetime(2025, 12, 2, tzinfo=timezone.utc),
+        tier=2,
+        wave=100,
+        real_time_seconds=600,
+    )
+
+    response = client.get("/", {"overlay_group": "tier"})
+    assert response.status_code == 200
+
+    datasets = json.loads(response.context["chart_datasets_json"])
+    dataset_labels = [d["label"] for d in datasets]
+    assert dataset_labels == ["Tier 1", "Tier 2"]
+
+
+@pytest.mark.django_db
+def test_dashboard_view_run_delta_comparison(client) -> None:
+    """Compute a run-vs-run delta for coins/hour."""
+
+    first = GameData.objects.create(
+        raw_text="Battle Report\nCoins earned    1,200\n",
+        checksum="i" * 64,
+    )
+    RunProgress.objects.create(
+        game_data=first,
+        battle_date=datetime(2025, 12, 1, tzinfo=timezone.utc),
+        tier=1,
+        wave=100,
+        real_time_seconds=600,
+    )
+
+    second = GameData.objects.create(
+        raw_text="Battle Report\nCoins earned    2,400\n",
+        checksum="j" * 64,
+    )
+    RunProgress.objects.create(
+        game_data=second,
+        battle_date=datetime(2025, 12, 2, tzinfo=timezone.utc),
+        tier=1,
+        wave=100,
+        real_time_seconds=600,
+    )
+
+    response = client.get("/", {"run_a": first.pk, "run_b": second.pk})
+    assert response.status_code == 200
+
+    result = response.context["comparison_result"]
+    assert result["kind"] == "runs"
+    assert result["delta"].absolute == 7200.0
+    assert result["percent_display"] == 100.0
+
+
+@pytest.mark.django_db
+def test_dashboard_view_window_delta_comparison(client) -> None:
+    """Compute a window-vs-window delta for coins/hour."""
+
+    first = GameData.objects.create(
+        raw_text="Battle Report\nCoins earned    1,200\n",
+        checksum="k" * 64,
+    )
+    RunProgress.objects.create(
+        game_data=first,
+        battle_date=datetime(2025, 12, 1, tzinfo=timezone.utc),
+        tier=1,
+        wave=100,
+        real_time_seconds=600,
+    )
+
+    second = GameData.objects.create(
+        raw_text="Battle Report\nCoins earned    2,400\n",
+        checksum="l" * 64,
+    )
+    RunProgress.objects.create(
+        game_data=second,
+        battle_date=datetime(2025, 12, 10, tzinfo=timezone.utc),
+        tier=1,
+        wave=100,
+        real_time_seconds=600,
+    )
+
+    response = client.get(
+        "/",
+        {
+            "window_a_start": date(2025, 12, 1),
+            "window_a_end": date(2025, 12, 2),
+            "window_b_start": date(2025, 12, 9),
+            "window_b_end": date(2025, 12, 10),
+        },
+    )
+    assert response.status_code == 200
+
+    result = response.context["comparison_result"]
+    assert result["kind"] == "windows"
+    assert result["delta"].absolute == 7200.0

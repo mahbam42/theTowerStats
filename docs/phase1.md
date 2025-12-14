@@ -14,6 +14,8 @@ Phase 1 proves the end-to-end pipeline works:
   - Date range filter (GET `start_date`, `end_date`)
   - Chart: **coins per hour** over time
 
+See `docs/phase2.md` for contextual filters, preset labels, overlays, and delta comparisons.
+
 ## Data Stored
 
 - `core.models.GameData`

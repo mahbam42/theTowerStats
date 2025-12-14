@@ -571,44 +571,46 @@ theTower_stats_app
 - When completing code, start building/executing tests as specific as possible to the code you changed so that you can catch issues efficiently, then make your way to broader tests as you build confidence.
 ** Sprint Roadmap
 Each phase must be demoable without admin intervention.
-*** Phase 1 Foundations
+*** DONE Phase 1 Foundations
+CLOSED: [2025-12-14 Sun 16:44]
+- State "DONE"       from              [2025-12-14 Sun 16:44]
 **** Milestones
-- [ ] AnalysisEngine scaffold
-- [ ] Rate calculations (coins/hour, waves/hour)
-- [ ] One time-series chart wired end-to-end
-**** Exit Criteria
+- [X] AnalysisEngine scaffold
+- [X] Rate calculations (coins/hour, waves/hour)
+- [X] One time-series chart wired end-to-end
+**** Exit Criteria [100%]
 Goal: Prove the end-to-end pipeline works.
 
-- [ ] A pasted Battle Report:
+- [X] A pasted Battle Report:
   - Is parsed without crashing
   - Creates a GameData record and all subordinate Run* records
-- [ ] Duplicate imports are rejected via checksum
-- [ ] Unknown labels are surfaced to the user (non-fatal)
+- [X] Duplicate imports are rejected via checksum
+- [X] Unknown labels are surfaced to the user (non-fatal)
 
 Analysis Engine
-- [ ] AnalysisEngine can be invoked with:
-  - [ ] a date range
-  - [ ] no player context
-- [ ] At least one rate calculation is implemented and tested:
+- [X] AnalysisEngine can be invoked with:
+  - [X] a date range
+  - [X] no player context
+- [X] At least one rate calculation is implemented and tested:
   e.g. coins_per_hour
 
 Charting
 One Chart.js line chart:
-- [ ] Uses data only from MetricSeries
-- [ ] Updates when date range changes
+- [X] Uses data only from MetricSeries
+- [X] Updates when date range changes
 
 Testing:
 - At least:
-  - [ ] 1 parser golden test
-  - [ ] 1 rate calculation golden test
-- [ ] Test suite passes with no skipped tests
+  - [X] 1 parser golden test
+  - [X] 1 rate calculation golden test
+- [X] Test suite passes with no skipped tests
 *** Phase 2 Context
 
 **** Milestones
 - [ ] Tier filtering
 - [ ] Preset filtering
 - [ ] Delta calculations
-**** Exit Criteria
+**** Exit Criteria [0%]
 Context Filters
 - [ ] Tier filter affects:
   - analysis output
@@ -640,7 +642,7 @@ At least:
 - [ ] CardParameters → effective values
 - [ ] UW / Guardian parameterized metrics
 - [ ] Derived metrics charts
-**** Exit Criteria
+**** Exit Criteria [0%]
 Parameterized Effects
 - [ ]  At least one wiki-derived parameter table is:
   - scraped

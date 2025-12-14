@@ -25,16 +25,47 @@
 
     <h2>Coins per hour</h2>
     <form method="get">
-      {{ filter_form.as_p }}
+      {{ chart_form.as_p }}
       <button type="submit">Apply</button>
+      <a href="{% url 'core:dashboard' %}">Clear</a>
     </form>
+
+    <h3>Compare</h3>
+    <form method="get">
+      {{ comparison_form.as_p }}
+      <button type="submit">Compare</button>
+    </form>
+
+    {% if comparison_result %}
+      <div>
+        <h4>Deltas (coins/hour)</h4>
+        {% if comparison_result.kind == "runs" %}
+          <p>
+            Run A ({{ comparison_result.label_a }}) vs Run B ({{ comparison_result.label_b }})
+          </p>
+        {% else %}
+          <p>
+            Window A ({{ comparison_result.window_a.start_date }} to {{ comparison_result.window_a.end_date }})
+            vs Window B ({{ comparison_result.window_b.start_date }} to {{ comparison_result.window_b.end_date }})
+          </p>
+        {% endif %}
+        <ul>
+          <li>Absolute: {{ comparison_result.delta.absolute|floatformat:2 }}</li>
+          {% if comparison_result.percent_display is not None %}
+            <li>Percent: {{ comparison_result.percent_display|floatformat:2 }}%</li>
+          {% else %}
+            <li>Percent: n/a (baseline is 0)</li>
+          {% endif %}
+        </ul>
+      </div>
+    {% endif %}
 
     <canvas id="chart" width="900" height="350"></canvas>
 
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
     <script>
       const labels = {{ chart_labels_json|safe }};
-      const values = {{ chart_values_json|safe }};
+      const datasets = {{ chart_datasets_json|safe }};
 
       function formatCompactNumber(value) {
         const absValue = Math.abs(Number(value));
@@ -50,12 +81,7 @@
         type: "line",
         data: {
           labels,
-          datasets: [
-            {
-              label: "Coins per hour",
-              data: values,
-            },
-          ],
+          datasets,
         },
         options: {
           responsive: true,

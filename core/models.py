@@ -13,6 +13,24 @@ from __future__ import annotations
 from django.db import models
 
 
+class PresetTag(models.Model):
+    """Player-defined preset label for contextual grouping.
+
+    Presets are intentionally limited to a name-only tag in Phase 2. They
+    represent user-provided context without implying strategy or recommendations.
+
+    Attributes:
+        name: Human-readable label.
+    """
+
+    name = models.CharField(max_length=80, unique=True)
+
+    def __str__(self) -> str:
+        """Return the preset tag name for display contexts."""
+
+        return self.name
+
+
 class GameData(models.Model):
     """Raw, preserved game data payload imported from the player.
 
@@ -42,6 +60,7 @@ class RunProgress(models.Model):
         game_data: The raw payload this metadata was extracted from.
         battle_date: Battle timestamp from the report, if present.
         tier: Tier value from the report, if present.
+        preset_tag: Optional player-defined preset label.
         wave: Final wave reached, if present.
         real_time_seconds: Real time duration in seconds, if present.
     """
@@ -51,6 +70,13 @@ class RunProgress(models.Model):
     )
     battle_date = models.DateTimeField(null=True, blank=True)
     tier = models.PositiveSmallIntegerField(null=True, blank=True)
+    preset_tag = models.ForeignKey(
+        PresetTag,
+        on_delete=models.SET_NULL,
+        null=True,
+        blank=True,
+        related_name="runs",
+    )
     wave = models.PositiveIntegerField(null=True, blank=True)
     real_time_seconds = models.PositiveIntegerField(null=True, blank=True)
 

@@ -47,9 +47,15 @@ def analyze_runs(records: Iterable[object]) -> AnalysisResult:
         if not _looks_like_run_progress(progress):
             continue
 
+        run_id = _coerce_int(getattr(progress, "id", None))
+        if run_id is None:
+            run_id = _coerce_int(getattr(record, "id", None))
+
         battle_date = _coerce_datetime(
             getattr(progress, "battle_date", None) or getattr(record, "parsed_at", None)
         )
+        tier = _coerce_int(getattr(progress, "tier", None))
+        preset_name = _preset_name_from_progress(progress)
         coins = _coerce_int(getattr(progress, "coins", None))
         if coins is None:
             coins = _coins_from_raw_text(getattr(record, "raw_text", None))
@@ -61,7 +67,15 @@ def analyze_runs(records: Iterable[object]) -> AnalysisResult:
         if metric is None:
             continue
 
-        runs.append(RunAnalysis(battle_date=battle_date, coins_per_hour=metric))
+        runs.append(
+            RunAnalysis(
+                run_id=run_id,
+                battle_date=battle_date,
+                tier=tier,
+                preset_name=preset_name,
+                coins_per_hour=metric,
+            )
+        )
 
     runs.sort(key=lambda r: r.battle_date)
     return AnalysisResult(runs=tuple(runs))
@@ -88,6 +102,16 @@ def _coerce_datetime(value: object) -> datetime | None:
 
     if isinstance(value, datetime):
         return value
+    return None
+
+
+def _preset_name_from_progress(progress: object) -> str | None:
+    """Extract an optional preset name from a run-progress-like object."""
+
+    preset_obj = getattr(progress, "preset_tag", None)
+    preset_name = getattr(preset_obj, "name", None)
+    if isinstance(preset_name, str) and preset_name.strip():
+        return preset_name.strip()
     return None
 
 
