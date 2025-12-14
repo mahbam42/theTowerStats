@@ -58,10 +58,12 @@ Agents must assume a local development environment using:
 1. Create a fresh feature branch:
 
    ```zsh
-   git checkout -b feature/<short-description>
+   git checkout -b feature-<short-description>
    ```
-2. Implement the feature in small, reviewable increments.
-3. Add Google-style docstrings to all new public modules, classes, and functions.
+2. Branch names must NOT contain `/`.
+  Use hyphens instead (e.g. `feature-phase1-battle-report-ingest`).
+3. Implement the feature in small, reviewable increments.
+4. Add Google-style docstrings to all new public modules, classes, and functions.
 
 ### **Testing Requirements**
 
@@ -146,9 +148,6 @@ Before opening a PR:
 * [ ] All public code has Google-style docstrings
 * [ ] New features have tests
 * [ ] Updated behavior has updated tests
-* [ ] `hatch run test` passes
-* [ ] `hatch run lint` passes
-* [ ] All pre-commit hooks pass
 * [ ] Docs updated
 * [ ] PR description is complete
 
@@ -181,7 +180,7 @@ Before starting work on **theTowerStats**, agents must confirm:
 * **Repository State**
 
   * [ ] Current branch is *not* `main`
-  * [ ] Feature branch name follows pattern `feature/...`
+  * [ ] Feature branch name follows pattern `feature-<short-description>`
 
 ## **Code Quality Tests**
 
