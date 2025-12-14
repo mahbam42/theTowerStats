@@ -1,0 +1,25 @@
+#!/usr/bin/env bash
+set -euo pipefail
+
+repo_root="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
+cd "$repo_root"
+
+venv_bin="$repo_root/.venv/bin"
+
+ruff_cmd="ruff"
+mypy_cmd="mypy"
+pytest_cmd="pytest"
+
+if [[ -x "$venv_bin/ruff" ]]; then
+  ruff_cmd="$venv_bin/ruff"
+fi
+if [[ -x "$venv_bin/mypy" ]]; then
+  mypy_cmd="$venv_bin/mypy"
+fi
+if [[ -x "$venv_bin/pytest" ]]; then
+  pytest_cmd="$venv_bin/pytest"
+fi
+
+"$ruff_cmd" check
+"$mypy_cmd" .
+"$pytest_cmd" -v
