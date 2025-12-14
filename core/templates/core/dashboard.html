@@ -4,6 +4,33 @@
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1" />
     <title>theTowerStats</title>
+    <style>
+      body {
+        font-family: system-ui, -apple-system, Segoe UI, Roboto, sans-serif;
+        margin: 16px;
+      }
+      .context-bar {
+        position: sticky;
+        top: 0;
+        z-index: 10;
+        background: #fff;
+        border: 1px solid #ddd;
+        padding: 10px 12px;
+        margin-bottom: 12px;
+      }
+      .context-bar__title {
+        font-weight: 600;
+        margin-bottom: 6px;
+      }
+      .muted {
+        color: #666;
+      }
+      .empty-state {
+        border: 1px dashed #bbb;
+        padding: 12px;
+        margin: 12px 0;
+      }
+    </style>
   </head>
   <body>
     <h1>theTowerStats</h1>
@@ -24,7 +51,11 @@
     </form>
 
     <h2>Coins per hour</h2>
-    <form method="get">
+    <div class="context-bar" aria-live="polite">
+      <div class="context-bar__title">Active context</div>
+      <div id="active-context" class="muted"></div>
+    </div>
+    <form method="get" id="chart-context-form">
       {{ chart_form.as_p }}
       <button type="submit">Apply</button>
       <a href="{% url 'core:dashboard' %}">Clear</a>
@@ -38,18 +69,24 @@
 
     {% if comparison_result %}
       <div>
-        <h4>Deltas (coins/hour)</h4>
+        <h4>Deltas ({{ comparison_result.metric }})</h4>
         {% if comparison_result.kind == "runs" %}
           <p>
-            Run A ({{ comparison_result.label_a }}) vs Run B ({{ comparison_result.label_b }})
+            Baseline: Run A ({{ comparison_result.label_a }}) • Comparison: Run B ({{ comparison_result.label_b }})
           </p>
         {% else %}
           <p>
-            Window A ({{ comparison_result.window_a.start_date }} to {{ comparison_result.window_a.end_date }})
-            vs Window B ({{ comparison_result.window_b.start_date }} to {{ comparison_result.window_b.end_date }})
+            Baseline: Window A ({{ comparison_result.window_a.start_date }} to {{ comparison_result.window_a.end_date }})
+            • Comparison: Window B ({{ comparison_result.window_b.start_date }} to {{ comparison_result.window_b.end_date }})
           </p>
         {% endif %}
         <ul>
+          <li>
+            Baseline: {{ comparison_result.baseline_value|floatformat:2 }} {{ comparison_result.metric }}
+          </li>
+          <li>
+            Comparison: {{ comparison_result.comparison_value|floatformat:2 }} {{ comparison_result.metric }}
+          </li>
           <li>Absolute: {{ comparison_result.delta.absolute|floatformat:2 }}</li>
           {% if comparison_result.percent_display is not None %}
             <li>Percent: {{ comparison_result.percent_display|floatformat:2 }}%</li>
@@ -60,12 +97,17 @@
       </div>
     {% endif %}
 
-    <canvas id="chart" width="900" height="350"></canvas>
+    {% if chart_empty_state %}
+      <div class="empty-state" role="status">{{ chart_empty_state }}</div>
+    {% endif %}
+
+    <canvas id="chart" width="900" height="350" {% if chart_empty_state %}hidden{% endif %}></canvas>
 
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
     <script>
       const labels = {{ chart_labels_json|safe }};
       const datasets = {{ chart_datasets_json|safe }};
+      const initialContext = {{ chart_context_json|safe }};
 
       function formatCompactNumber(value) {
         const absValue = Math.abs(Number(value));
@@ -76,32 +118,132 @@
         return String(value);
       }
 
-      const ctx = document.getElementById("chart").getContext("2d");
-      new Chart(ctx, {
-        type: "line",
-        data: {
-          labels,
-          datasets,
-        },
-        options: {
-          responsive: true,
-          plugins: {
-            legend: { display: true },
-            tooltip: {
-              callbacks: {
-                label: (context) => "Coins per hour: " + formatCompactNumber(context.parsed.y),
+      function formatExactNumber(value) {
+        const num = Number(value);
+        if (!Number.isFinite(num)) return String(value);
+        return new Intl.NumberFormat(undefined, { maximumFractionDigits: 2 }).format(num);
+      }
+
+      function readChartContextFromDOM() {
+        const form = document.getElementById("chart-context-form");
+        if (!form) return initialContext;
+
+        const getValue = (name) => {
+          const el = form.elements[name];
+          if (!el) return null;
+          if (el.value === "") return null;
+          return el.value;
+        };
+
+        const presetEl = form.elements["preset"];
+        const presetLabel =
+          presetEl && presetEl.selectedIndex >= 0 ? presetEl.options[presetEl.selectedIndex].text : null;
+
+        return {
+          start_date: getValue("start_date"),
+          end_date: getValue("end_date"),
+          tier: getValue("tier"),
+          preset: presetLabel && presetLabel !== "All presets" ? presetLabel : null,
+          overlay_group: getValue("overlay_group") || "none",
+          moving_average_window: getValue("moving_average_window"),
+        };
+      }
+
+      function contextLabel(context) {
+        const start = context.start_date || "Any start";
+        const end = context.end_date || "Any end";
+        const tier = context.tier ? `Tier ${context.tier}` : "All tiers";
+        const preset = context.preset ? `Preset: ${context.preset}` : "All presets";
+        const overlay =
+          context.overlay_group && context.overlay_group !== "none"
+            ? `Overlay: ${context.overlay_group}`
+            : "Overlay: none";
+        const ma = context.moving_average_window ? `Moving average: ${context.moving_average_window}` : "Moving average: off";
+        return `${tier} • ${preset} • ${start} → ${end} • ${overlay} • ${ma}`;
+      }
+
+      function updateContextSummary() {
+        const el = document.getElementById("active-context");
+        if (!el) return;
+        el.textContent = contextLabel(readChartContextFromDOM());
+      }
+
+      updateContextSummary();
+      const chartContextForm = document.getElementById("chart-context-form");
+      if (chartContextForm) {
+        chartContextForm.addEventListener("input", updateContextSummary);
+        chartContextForm.addEventListener("change", updateContextSummary);
+      }
+
+      const canvas = document.getElementById("chart");
+      const ctx = canvas ? canvas.getContext("2d") : null;
+      if (!ctx || labels.length === 0 || datasets.length === 0) {
+        // Empty state is rendered server-side.
+      } else {
+        new Chart(ctx, {
+          type: "line",
+          data: {
+            labels,
+            datasets,
+          },
+          options: {
+            responsive: true,
+            interaction: { mode: "nearest", intersect: false },
+            plugins: {
+              legend: {
+                display: true,
+                labels: { usePointStyle: true },
+                onClick: (_event, legendItem, legend) => {
+                  const datasetIndex = legendItem?.datasetIndex;
+                  if (typeof datasetIndex !== "number") return;
+                  const chart = legend?.chart;
+                  if (!chart) return;
+                  chart.setDatasetVisibility(datasetIndex, !chart.isDatasetVisible(datasetIndex));
+                  chart.update();
+                },
+              },
+              tooltip: {
+                callbacks: {
+                  title: (items) => (items && items[0] ? `Date: ${items[0].label}` : ""),
+                  label: (context) => {
+                    const datasetLabel = context.dataset?.label || "Series";
+                    return `${datasetLabel}: ${formatExactNumber(context.parsed.y)} coins/hour`;
+                  },
+                  afterBody: () => {
+                    const context = readChartContextFromDOM();
+                    const lines = [];
+                    if (context.tier) lines.push(`Filter tier: ${context.tier}`);
+                    if (context.preset) lines.push(`Filter preset: ${context.preset}`);
+                    if (context.start_date || context.end_date) {
+                      lines.push(`Date range: ${context.start_date || "…"} → ${context.end_date || "…"}`);
+                    }
+                    if (context.overlay_group && context.overlay_group !== "none") {
+                      lines.push(`Overlay: ${context.overlay_group}`);
+                    }
+                    if (context.moving_average_window) {
+                      lines.push(`Moving average window: ${context.moving_average_window}`);
+                    }
+                    return lines;
+                  },
+                },
+              },
+            },
+            scales: {
+              x: {
+                title: { display: true, text: "Date" },
+                ticks: { maxRotation: 0, autoSkip: true },
+              },
+              y: {
+                beginAtZero: true,
+                title: { display: true, text: "Coins/hour" },
+                ticks: {
+                  callback: (value) => formatCompactNumber(value),
+                },
               },
             },
           },
-          scales: {
-            y: {
-              ticks: {
-                callback: (value) => formatCompactNumber(value),
-              },
-            },
-          },
-        },
-      });
+        });
+      }
     </script>
   </body>
 </html>

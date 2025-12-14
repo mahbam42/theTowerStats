@@ -31,6 +31,15 @@ def test_dashboard_view_renders(client) -> None:
 
 
 @pytest.mark.django_db
+def test_dashboard_view_renders_with_no_data(client) -> None:
+    """Render the dashboard with no imported runs and show a neutral empty state."""
+
+    response = client.get("/")
+    assert response.status_code == 200
+    assert response.context["chart_empty_state"] == "No battle reports yet. Import one to see charts."
+
+
+@pytest.mark.django_db
 def test_dashboard_view_filters_and_plots_from_analysis_engine(client) -> None:
     """Filter runs by date and ensure the chart derives from Analysis Engine output."""
 
@@ -191,6 +200,69 @@ def test_dashboard_view_overlays_by_tier(client) -> None:
 
 
 @pytest.mark.django_db
+def test_dashboard_view_overlays_include_moving_average(client) -> None:
+    """Include moving-average datasets when requested."""
+
+    first = GameData.objects.create(
+        raw_text="Battle Report\nCoins earned    1,200\n",
+        checksum="ma" * 32,
+    )
+    RunProgress.objects.create(
+        game_data=first,
+        battle_date=datetime(2025, 12, 1, tzinfo=timezone.utc),
+        tier=1,
+        wave=100,
+        real_time_seconds=600,
+    )
+
+    second = GameData.objects.create(
+        raw_text="Battle Report\nCoins earned    2,400\n",
+        checksum="mb" * 32,
+    )
+    RunProgress.objects.create(
+        game_data=second,
+        battle_date=datetime(2025, 12, 2, tzinfo=timezone.utc),
+        tier=1,
+        wave=100,
+        real_time_seconds=600,
+    )
+
+    response = client.get(
+        "/",
+        {
+            "overlay_group": "tier",
+            "moving_average_window": 2,
+        },
+    )
+    assert response.status_code == 200
+
+    datasets = json.loads(response.context["chart_datasets_json"])
+    dataset_labels = [d["label"] for d in datasets]
+    assert dataset_labels == ["Tier 1", "Tier 1 (MA2)"]
+
+
+@pytest.mark.django_db
+def test_dashboard_view_includes_legend_toggle_handler(client) -> None:
+    """Ensure the dashboard template includes a safe legend toggle handler."""
+
+    game_data = GameData.objects.create(
+        raw_text="Battle Report\nCoins: 12345\n",
+        checksum="toggle" * 10 + "x" * 4,
+    )
+    RunProgress.objects.create(
+        game_data=game_data,
+        battle_date=datetime(2025, 12, 1, tzinfo=timezone.utc),
+        tier=1,
+        wave=100,
+        real_time_seconds=600,
+    )
+
+    response = client.get("/")
+    assert response.status_code == 200
+    assert b"setDatasetVisibility" in response.content
+
+
+@pytest.mark.django_db
 def test_dashboard_view_run_delta_comparison(client) -> None:
     """Compute a run-vs-run delta for coins/hour."""
 
@@ -223,6 +295,9 @@ def test_dashboard_view_run_delta_comparison(client) -> None:
 
     result = response.context["comparison_result"]
     assert result["kind"] == "runs"
+    assert result["metric"] == "coins/hour"
+    assert result["baseline_value"] == 7200.0
+    assert result["comparison_value"] == 14400.0
     assert result["delta"].absolute == 7200.0
     assert result["percent_display"] == 100.0
 
@@ -268,4 +343,7 @@ def test_dashboard_view_window_delta_comparison(client) -> None:
 
     result = response.context["comparison_result"]
     assert result["kind"] == "windows"
+    assert result["metric"] == "coins/hour"
+    assert result["baseline_value"] == 7200.0
+    assert result["comparison_value"] == 14400.0
     assert result["delta"].absolute == 7200.0
