@@ -4,7 +4,7 @@ Phase 2.75 introduces a reliable ingestion pipeline for wiki-derived data.
 
 Scope is intentionally limited to data capture and change detection:
 
-- fetch a single wiki table (one entity type),
+- fetch one entity type from one page (Cards),
 - store raw values as strings (whitespace-normalized only),
 - detect changes via deterministic hashing,
 - version changes without overwriting prior records.
@@ -23,10 +23,16 @@ Wiki-derived rows are stored in `core.models.WikiData` as versioned records:
 
 ## Management command
 
-Fetch and diff the configured wiki table:
+Fetch and diff the configured wiki table(s):
 
 ```bash
 python manage.py fetch_wiki_data --check
+```
+
+Fetch the three card-list tables under `#List_of_Cards`:
+
+```bash
+python manage.py fetch_wiki_data --target cards_list --check
 ```
 
 Persist changes to the database:
@@ -38,7 +44,11 @@ python manage.py fetch_wiki_data --write
 Useful options:
 
 - `--url`: override the page URL (defaults to the Cards page)
-- `--table-index`: choose which HTML table to scrape
+- `--target`: `slots` (top table) or `cards_list` (tables under `#List_of_Cards`)
+- `--table-index`: choose table indexes explicitly (repeatable)
 - `--check`: dry-run (no DB writes)
 - `--write`: apply changes (required to persist)
 
+Notes:
+
+- For `--target cards_list`, each ingested row includes `_wiki_table_label` in `raw_row` to preserve which table it came from (e.g., rarity headings).

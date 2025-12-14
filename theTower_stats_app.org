@@ -696,3 +696,168 @@ For Example:
 *** Linking Presets/UW/Guardian Chips/Bots to battle history
 Mostly a visual tweak, but adds context and history for the player to interpert their performance history. 
 *** Allow Multiple Players to Store
+**** Core Principle: Everything Belongs to a Player
+
+Yes: every player-specific model must be bound to a Player.
+
+Recommended structure:
+
+#+BEGIN_SRC python
+from django.contrib.auth.models import User
+
+class Player(models.Model):
+    user = models.OneToOneField(User, on_delete=models.CASCADE)
+    display_name = models.CharField(max_length=64)
+    created_at = models.DateTimeField(auto_now_add=True)
+#+END_SRC
+
+Then every mutable/progress model gets:
+#+BEGIN_SRC python
+player = models.ForeignKey(Player, on_delete=models.CASCADE)
+#+END_SRC
+
+This includes:
+- player_cards
+- player_relics
+- player_labs
+- battle_report
+- run_history
+- sim_results
+- etc.
+
+**** Authorization
+
+Use groups + permissions, not custom flags.
+
+Suggested groups
+|Group |Purpose |
+|---+---|
+|admin | me |
+|player| Default |
+
+You can enforce almost everything via queryset filtering, not permissions alone.
+
+**** Queryset Filtering Is the Real Security Layer
+
+Permissions stop access.
+Querysets prevent data leaks.
+
+Pattern you’ll use everywhere
+
+#+BEGIN_SRC python
+def get_queryset(self):
+    user = self.request.user
+    if user.is_superuser:
+        return Model.objects.all()
+    return Model.objects.filter(player__user=user)
+#+END_SRC
+
+This applies to:
+- Admin
+- API views
+- List views
+- Export endpoints
+- Sim endpoints
+
+If you forget this once, players see each other’s data.
+
+**** Django Admin: Lock It Down Properly
+ModelAdmin example
+#+BEGIN_SRC python
+class PlayerCardAdmin(admin.ModelAdmin):
+    def get_queryset(self, request):
+        qs = super().get_queryset(request)
+        if request.user.is_superuser:
+            return qs
+        return qs.filter(player__user=request.user)
+
+    def save_model(self, request, obj, form, change):
+        if not change:
+            obj.player = request.user.player
+        super().save_model(request, obj, form, change)
+#+END_SRC
+
+Also:
+
+Remove player from editable fields for non-admins
+
+Use readonly_fields where possible
+
+**** API Layer (Even If You Don’t Build One Yet)
+
+Design as if you will.
+
+Never accept player_id from the client
+
+Always derive it from request.user.
+
+❌ Bad
+
+{ "player_id": 12, "wave": 4500 }
+
+
+✅ Good
+
+player = request.user.player
+
+
+This avoids spoofing and simplifies logic everywhere.
+
+**** Shared vs Player-Scoped Models (Important Distinction)
+
+You’ll have three categories of models:
+
+A. Global Reference Data (NO player FK)
+
+Cards
+
+Relics
+
+Labs
+
+Enemies
+
+Waves
+
+Balance constants
+
+These are read-only.
+
+B. Player State (HAS player FK)
+
+PlayerCard
+
+PlayerRelic
+
+PlayerLabProgress
+
+Unlocks
+
+Inventory
+
+C. Derived / Cached Results (HAS player FK)
+
+BattleReport
+
+SimulationRun
+
+AggregatedStats
+
+You can safely delete category C anytime.
+
+**** Data Migration & Onboarding Flow
+
+You’ll need a clean onboarding path:
+
+User creates account
+
+Auto-create Player via signal
+
+Assign default group player
+
+Initialize baseline progress rows
+
+@receiver(post_save, sender=User)
+def create_player(sender, instance, created, **kwargs):
+    if created:
+        Player.objects.create(user=instance)

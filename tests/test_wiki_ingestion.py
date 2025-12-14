@@ -8,7 +8,14 @@ from pathlib import Path
 import pytest
 
 from core.models import WikiData
-from core.wiki_ingestion import compute_content_hash, ingest_wiki_rows, make_entity_id, scrape_entity_rows
+from core.wiki_ingestion import (
+    compute_content_hash,
+    find_table_indexes_by_anchor,
+    ingest_wiki_rows,
+    list_tables,
+    make_entity_id,
+    scrape_entity_rows,
+)
 
 
 def _fixture_html(name: str) -> str:
@@ -24,6 +31,17 @@ def test_compute_content_hash_is_stable_for_equivalent_input() -> None:
     payload_a = {"Name": "Coin Bonus", "Effect": "+5%"}
     payload_b = {"Effect": "+5%", "Name": "Coin Bonus"}
     assert compute_content_hash(payload_a) == compute_content_hash(payload_b)
+
+
+def test_find_table_indexes_by_anchor_selects_list_of_cards_tables() -> None:
+    """Select the tables under the List_of_Cards section anchor."""
+
+    html = _fixture_html("wiki_cards_page_list_of_cards_v1.html")
+    tables = list_tables(html)
+    assert len(tables) == 4
+
+    indexes = find_table_indexes_by_anchor(html, anchor_id="List_of_Cards")
+    assert indexes == [1, 2, 3]
 
 
 @pytest.mark.django_db
@@ -195,3 +213,17 @@ def test_ingest_wiki_rows_marks_missing_entities_deprecated(monkeypatch) -> None
     missing = WikiData.objects.get(entity_id=make_entity_id("Wave Skip"))
     assert missing.deprecated is True
 
+
+@pytest.mark.django_db
+def test_scrape_entity_rows_can_add_table_label_extra_fields() -> None:
+    """Merge extra fields into raw_row so multiple tables can be distinguished."""
+
+    html = _fixture_html("wiki_cards_page_list_of_cards_v1.html")
+    rows = scrape_entity_rows(
+        html,
+        table_index=1,
+        name_column=None,
+        extra_fields={"_wiki_table_label": "Common"},
+    )
+    assert rows[0].canonical_name == "Coin Bonus"
+    assert rows[0].raw_row["_wiki_table_label"] == "Common"

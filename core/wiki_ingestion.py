@@ -85,6 +85,25 @@ class ScrapedWikiRow:
     content_hash: str
 
 
+@dataclass(frozen=True, slots=True)
+class TableMetadata:
+    """Metadata for an extracted HTML table.
+
+    Attributes:
+        index: Zero-based index of the table in document order.
+        anchor_id: Closest mw-headline anchor id preceding the table, if any.
+        section_anchor_id: Closest section (h2) anchor id preceding the table, if any.
+        heading: Closest heading text (h2/h3/h4) preceding the table, if any.
+        caption: Table caption text, if any.
+    """
+
+    index: int
+    anchor_id: str | None
+    section_anchor_id: str | None
+    heading: str
+    caption: str
+
+
 class _TableExtractor(HTMLParser):
     """Minimal HTML table extractor for wiki pages.
 
@@ -95,18 +114,46 @@ class _TableExtractor(HTMLParser):
     def __init__(self) -> None:
         super().__init__(convert_charrefs=True)
         self.tables: list[dict[str, Any]] = []
+        self._current_anchor_id: str | None = None
+        self._current_heading_text = ""
+        self._current_section_anchor_id: str | None = None
+        self._current_section_heading_text = ""
         self._in_table = False
         self._in_caption = False
         self._in_row = False
         self._in_cell = False
+        self._in_heading = False
+        self._heading_level: int | None = None
         self._cell_text: list[str] = []
         self._current_table: dict[str, Any] | None = None
         self._current_row: list[str] | None = None
+        self._heading_text: list[str] = []
 
     def handle_starttag(self, tag: str, attrs: list[tuple[str, str | None]]) -> None:
+        attrs_dict = {key: value for key, value in attrs}
+        if tag == "span":
+            span_id = attrs_dict.get("id")
+            span_class = attrs_dict.get("class") or ""
+            if span_id and "mw-headline" in span_class.split():
+                self._current_anchor_id = span_id
+                if self._in_heading and self._heading_level == 2:
+                    self._current_section_anchor_id = span_id
+
+        if tag in {"h2", "h3", "h4"}:
+            self._in_heading = True
+            self._heading_level = int(tag[1])
+            self._heading_text = []
+
         if tag == "table":
             self._in_table = True
-            self._current_table = {"caption": "", "rows": []}
+            self._current_table = {
+                "caption": "",
+                "rows": [],
+                "anchor_id": self._current_anchor_id,
+                "section_anchor_id": self._current_section_anchor_id,
+                "heading": self._current_heading_text,
+                "section_heading": self._current_section_heading_text,
+            }
             return
         if not self._in_table:
             return
@@ -123,6 +170,15 @@ class _TableExtractor(HTMLParser):
             return
 
     def handle_endtag(self, tag: str) -> None:
+        if tag in {"h2", "h3", "h4"} and self._in_heading:
+            self._in_heading = False
+            self._current_heading_text = normalize_whitespace("".join(self._heading_text))
+            if self._heading_level == 2:
+                self._current_section_heading_text = self._current_heading_text
+            self._heading_text = []
+            self._heading_level = None
+            return
+
         if tag == "table" and self._in_table:
             if self._current_table is not None:
                 self.tables.append(self._current_table)
@@ -155,6 +211,10 @@ class _TableExtractor(HTMLParser):
             return
 
     def handle_data(self, data: str) -> None:
+        if self._in_heading:
+            self._heading_text.append(data)
+            return
+
         if not self._in_table or self._current_table is None:
             return
         if self._in_caption:
@@ -162,6 +222,32 @@ class _TableExtractor(HTMLParser):
             return
         if self._in_cell:
             self._cell_text.append(data)
+
+
+def list_tables(html: str) -> list[TableMetadata]:
+    """List tables available in an HTML page with simple section metadata.
+
+    Args:
+        html: Full HTML content for a wiki page.
+
+    Returns:
+        A list of TableMetadata entries in document order.
+    """
+
+    parser = _TableExtractor()
+    parser.feed(html)
+    tables: list[TableMetadata] = []
+    for idx, table in enumerate(parser.tables):
+        tables.append(
+            TableMetadata(
+                index=idx,
+                anchor_id=table.get("anchor_id"),
+                section_anchor_id=table.get("section_anchor_id"),
+                heading=normalize_whitespace(table.get("heading", "")),
+                caption=normalize_whitespace(table.get("caption", "")),
+            )
+        )
+    return tables
 
 
 def extract_table(html: str, *, table_index: int = 0) -> tuple[list[str], list[dict[str, str]]]:
@@ -205,6 +291,7 @@ def scrape_entity_rows(
     *,
     table_index: int = 0,
     name_column: str | None = None,
+    extra_fields: Mapping[str, str] | None = None,
 ) -> list[ScrapedWikiRow]:
     """Scrape entity rows from a wiki HTML table.
 
@@ -213,18 +300,29 @@ def scrape_entity_rows(
         table_index: Table index to extract.
         name_column: Optional column header to use for `canonical_name`. When
             omitted, the first header is used.
+        extra_fields: Optional extra key/value pairs to merge into each row
+            before hashing and ingestion.
 
     Returns:
         A list of ScrapedWikiRow entries suitable for ingestion.
     """
 
     headers, rows = extract_table(html, table_index=table_index)
-    chosen_column = name_column or headers[0]
+    if name_column is not None:
+        chosen_column = name_column
+    elif "Name" in headers:
+        chosen_column = "Name"
+    elif "Card" in headers:
+        chosen_column = "Card"
+    else:
+        chosen_column = headers[0]
+    normalized_extras = {k: normalize_whitespace(v) for k, v in (extra_fields or {}).items()}
     scraped: list[ScrapedWikiRow] = []
     for row in rows:
         canonical_name = normalize_whitespace(row.get(chosen_column, "")) or "Unknown"
         entity_id = make_entity_id(canonical_name)
         normalized_row = {k: normalize_whitespace(v) for k, v in row.items()}
+        normalized_row.update(normalized_extras)
         content_hash = compute_content_hash(normalized_row)
         scraped.append(
             ScrapedWikiRow(
@@ -235,6 +333,24 @@ def scrape_entity_rows(
             )
         )
     return scraped
+
+
+def find_table_indexes_by_anchor(html: str, *, anchor_id: str) -> list[int]:
+    """Find table indexes that belong to a section anchor.
+
+    Args:
+        html: Full HTML content for a wiki page.
+        anchor_id: The mw-headline id to match (e.g., "List_of_Cards").
+
+    Returns:
+        A list of matching table indexes (may be empty).
+    """
+
+    tables = list_tables(html)
+    by_section = [table.index for table in tables if table.section_anchor_id == anchor_id]
+    if by_section:
+        return by_section
+    return [table.index for table in tables if table.anchor_id == anchor_id]
 
 
 @dataclass(frozen=True, slots=True)
@@ -360,4 +476,3 @@ def ingest_wiki_rows(
         deprecated = len([entity_id for entity_id in missing_entity_ids if not latest_by_entity[entity_id].deprecated])
 
     return WikiIngestionSummary(added=added, changed=changed, unchanged=unchanged, deprecated=deprecated)
-
