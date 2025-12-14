@@ -1,3 +1,13 @@
+# Ignore Itself
+.gitignore*
+
+# emacs nonsense
+*~
+
+# Directories
+
+# Temp Files
+
 # Byte-compiled / optimized / DLL files
 __pycache__/
 *.py[codz]
