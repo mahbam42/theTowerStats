@@ -22,6 +22,7 @@ Phase 1 proves the end-to-end pipeline works:
 - `core.models.RunProgress`
   - stores only Phase 1 metadata: battle date, tier, wave, real time
   - accepts labels separated by colons, tabs, or multi-space alignment
+  - tolerates missing/reordered sections and unknown labels (non-fatal)
   - Battle Dates may use ISO, numeric, or month-name formats (e.g. `Dec 07, 2025 21:59`)
   - parses real-game tab-delimited reports (e.g. `Battle Date\tDec 14, 2025 01:39`)
 
@@ -30,7 +31,7 @@ Phase 1 proves the end-to-end pipeline works:
 - Entry point: `analysis.engine.analyze_runs`
 - Input: iterable of `RunProgress`-like objects (duck-typed)
 - Output: DTOs in `analysis.dto` (no database writes)
-  - Coins are parsed best-effort from raw text (e.g. `Coins: 4.24M`).
+  - Coins are parsed best-effort from raw text via `analysis.quantity` (e.g. `Coins: 4.24M`).
   - Missing required fields are skipped so empty inputs return an empty result instead of errors.
 
 ## Limitations (By Design)

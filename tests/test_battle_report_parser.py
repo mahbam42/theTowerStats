@@ -173,3 +173,46 @@ def test_parse_battle_report_handles_real_game_sample() -> None:
     assert parsed.tier == 11
     assert parsed.wave == 121
     assert parsed.real_time_seconds == 1055
+
+
+def test_parse_battle_report_tolerates_missing_sections() -> None:
+    """Return partial results when known fields are missing."""
+
+    raw_text = "\n".join(
+        [
+            "Battle Report",
+            "Wave\t250",
+            "",
+        ]
+    )
+
+    parsed = parse_battle_report(raw_text)
+
+    assert parsed.wave == 250
+    assert parsed.battle_date is None
+    assert parsed.tier is None
+    assert parsed.real_time_seconds is None
+
+
+def test_parse_battle_report_tolerates_reordered_and_messy_input() -> None:
+    """Handle reordered labels, extra whitespace, and malformed known fields."""
+
+    raw_text = "\n".join(
+        [
+            "Battle Report",
+            "  Wave      3210  ",
+            "Tier:\t  not-a-number",
+            "Real Time  \t  00:12:34",
+            "Battle Date    2025-12-08 01:02",
+            "Some New Label Without Value",
+            "Another New Label:    ",
+            "",
+        ]
+    )
+
+    parsed = parse_battle_report(raw_text)
+
+    assert parsed.wave == 3210
+    assert parsed.tier is None
+    assert parsed.real_time_seconds == 754
+    assert parsed.battle_date == datetime(2025, 12, 8, 1, 2, tzinfo=timezone.utc)

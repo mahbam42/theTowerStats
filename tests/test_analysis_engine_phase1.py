@@ -273,3 +273,25 @@ def test_analyze_runs_ignores_incomplete_records() -> None:
 
     assert isinstance(result.runs, tuple)
     assert len(result.runs) == 0
+
+
+def test_analyze_runs_handles_bad_types_without_crashing() -> None:
+    """Return an empty result when inputs expose unexpected types."""
+
+    @dataclass(frozen=True)
+    class Progress:
+        battle_date: object
+        wave: object
+        real_time_seconds: object
+        coins: object = None
+
+    progress = Progress(
+        battle_date="2025-12-01",
+        wave="100",
+        real_time_seconds="3600",
+        coins="4.24M",
+    )
+
+    result = analyze_runs([progress])
+    assert isinstance(result.runs, tuple)
+    assert len(result.runs) == 0

@@ -21,6 +21,26 @@ from datetime import datetime, timezone
 
 
 @dataclass(frozen=True)
+class RawBattleReportFields:
+    """Raw Phase 1 field values extracted from a Battle Report.
+
+    This dataclass stores the untrusted, raw string values extracted from the
+    report. Normalization/parsing into typed values happens separately.
+
+    Attributes:
+        battle_date: Raw battle date string if present.
+        tier: Raw tier string if present.
+        wave: Raw wave string if present.
+        real_time: Raw real time string if present.
+    """
+
+    battle_date: str | None
+    tier: str | None
+    wave: str | None
+    real_time: str | None
+
+
+@dataclass(frozen=True)
 class ParsedBattleReport:
     """Parsed output for Phase 1 Battle Report ingestion.
 
@@ -40,10 +60,16 @@ class ParsedBattleReport:
 
 
 _LABEL_SEPARATOR = r"(?:[ \t]*:[ \t]*|\t+[ \t]*|[ \t]{2,})"
-_BATTLE_DATE_RE = re.compile(rf"(?im)^[ \t]*Battle Date{_LABEL_SEPARATOR}(.+?)[ \t]*$")
-_TIER_RE = re.compile(rf"(?im)^[ \t]*Tier{_LABEL_SEPARATOR}(\d+)[ \t]*$")
-_WAVE_RE = re.compile(rf"(?im)^[ \t]*Wave{_LABEL_SEPARATOR}(\d+)[ \t]*$")
-_REAL_TIME_RE = re.compile(rf"(?im)^[ \t]*Real Time{_LABEL_SEPARATOR}(.+?)[ \t]*$")
+_LABEL_VALUE_RE = re.compile(
+    rf"(?im)^[ \t]*(?P<label>.+?){_LABEL_SEPARATOR}(?P<value>.*?)[ \t]*$"
+)
+
+_PHASE1_LABELS = {
+    "battle date": "battle_date",
+    "tier": "tier",
+    "wave": "wave",
+    "real time": "real_time",
+}
 
 
 def compute_battle_report_checksum(raw_text: str) -> str:
@@ -76,12 +102,11 @@ def parse_battle_report(raw_text: str) -> ParsedBattleReport:
     """
 
     checksum = compute_battle_report_checksum(raw_text)
-    battle_date = _parse_battle_date(_first_match_group(_BATTLE_DATE_RE, raw_text))
-    tier = _parse_int(_first_match_group(_TIER_RE, raw_text))
-    wave = _parse_int(_first_match_group(_WAVE_RE, raw_text))
-    real_time_seconds = _parse_real_time_seconds(
-        _first_match_group(_REAL_TIME_RE, raw_text)
-    )
+    raw_fields = _extract_phase1_raw_fields(raw_text)
+    battle_date = _parse_battle_date(raw_fields.battle_date)
+    tier = _parse_int(raw_fields.tier)
+    wave = _parse_int(raw_fields.wave)
+    real_time_seconds = _parse_real_time_seconds(raw_fields.real_time)
 
     return ParsedBattleReport(
         checksum=checksum,
@@ -92,11 +117,60 @@ def parse_battle_report(raw_text: str) -> ParsedBattleReport:
     )
 
 
-def _first_match_group(pattern: re.Pattern[str], text: str) -> str | None:
-    """Return the first capture group for a pattern, if present."""
+def _extract_phase1_raw_fields(raw_text: str) -> RawBattleReportFields:
+    """Extract raw Phase 1 values from Battle Report text.
 
-    match = pattern.search(text)
-    return match.group(1) if match else None
+    Args:
+        raw_text: Raw Battle Report text as pasted by the user.
+
+    Returns:
+        RawBattleReportFields with best-effort extracted strings. Unknown labels,
+        missing sections, and malformed lines are treated as non-fatal.
+    """
+
+    extracted: dict[str, str] = {}
+    for label, value in _iter_label_value_lines(raw_text):
+        normalized_label = _normalize_label(label)
+        phase1_name = _PHASE1_LABELS.get(normalized_label)
+        if phase1_name is None:
+            continue
+        if phase1_name not in extracted:
+            extracted[phase1_name] = value
+
+    return RawBattleReportFields(
+        battle_date=extracted.get("battle_date"),
+        tier=extracted.get("tier"),
+        wave=extracted.get("wave"),
+        real_time=extracted.get("real_time"),
+    )
+
+
+def _iter_label_value_lines(raw_text: str) -> list[tuple[str, str]]:
+    """Return a best-effort list of (label, value) pairs from report text.
+
+    Notes:
+        Battle Reports contain a mix of sections and labels. This function
+        tolerates extra whitespace, reordered sections, and previously unseen
+        labels by extracting only lines that look like `Label: Value` or
+        `Label<TAB>Value`.
+    """
+
+    matches = _LABEL_VALUE_RE.finditer(raw_text)
+    extracted: list[tuple[str, str]] = []
+    for match in matches:
+        label = (match.group("label") or "").strip()
+        if not label:
+            continue
+        value = (match.group("value") or "").strip()
+        extracted.append((label, value))
+    return extracted
+
+
+def _normalize_label(label: str) -> str:
+    """Normalize a Battle Report label for dictionary lookup."""
+
+    collapsed = re.sub(r"\s+", " ", label.strip())
+    return collapsed.casefold()
 
 
 def _parse_int(value: str | None) -> int | None:

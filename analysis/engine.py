@@ -9,10 +9,10 @@ from __future__ import annotations
 import re
 from collections.abc import Iterable
 from datetime import datetime
-from decimal import Decimal, InvalidOperation
 from typing import Protocol, TypeGuard
 
 from .dto import AnalysisResult, RunAnalysis
+from .quantity import UnitType, parse_quantity
 from .rates import coins_per_hour
 
 
@@ -47,13 +47,13 @@ def analyze_runs(records: Iterable[object]) -> AnalysisResult:
         if not _looks_like_run_progress(progress):
             continue
 
-        battle_date = getattr(progress, "battle_date", None) or getattr(
-            record, "parsed_at", None
+        battle_date = _coerce_datetime(
+            getattr(progress, "battle_date", None) or getattr(record, "parsed_at", None)
         )
         coins = _coerce_int(getattr(progress, "coins", None))
         if coins is None:
             coins = _coins_from_raw_text(getattr(record, "raw_text", None))
-        real_time_seconds = getattr(progress, "real_time_seconds", None)
+        real_time_seconds = _coerce_int(getattr(progress, "real_time_seconds", None))
         if battle_date is None or coins is None or real_time_seconds is None:
             continue
 
@@ -83,10 +83,18 @@ def _coerce_int(value: object) -> int | None:
     return None
 
 
+def _coerce_datetime(value: object) -> datetime | None:
+    """Coerce an object into a datetime when safe."""
+
+    if isinstance(value, datetime):
+        return value
+    return None
+
+
 _LABEL_SEPARATOR = r"(?:[ \t]*:[ \t]*|\t+[ \t]*|[ \t]{2,})"
 _COINS_LINE_RE = re.compile(
     rf"(?im)^[ \t]*(?:Coins|Coins Earned){_LABEL_SEPARATOR}"
-    r"([0-9][0-9,]*(?:\.[0-9]+)?)[ \t]*([kmbt])?[ \t]*.*$"
+    r"([0-9][0-9,]*(?:\.[0-9]+)?[kmbtq]?)\b[ \t]*.*$"
 )
 
 
@@ -99,34 +107,12 @@ def _coins_from_raw_text(raw_text: object) -> int | None:
     if not match:
         return None
 
-    number_text = match.group(1)
-    suffix = (match.group(2) or "").lower()
-    return _parse_compact_int(number_text, suffix)
-
-
-def _parse_compact_int(number_text: str, suffix: str) -> int | None:
-    """Parse compact numeric strings like `4.24M` or `1,234,567` into an int."""
-
-    multiplier = {
-        "": 1,
-        "k": 1_000,
-        "m": 1_000_000,
-        "b": 1_000_000_000,
-        "t": 1_000_000_000_000,
-    }.get(suffix)
-    if multiplier is None:
+    token = match.group(1)
+    parsed = parse_quantity(token, unit_type=UnitType.coins)
+    if parsed.normalized_value is None or parsed.normalized_value <= 0:
         return None
 
     try:
-        value = Decimal(number_text.replace(",", ""))
-    except InvalidOperation:
-        return None
-
-    if value <= 0:
-        return None
-
-    scaled = value * Decimal(multiplier)
-    try:
-        return int(scaled.to_integral_value())
+        return int(parsed.normalized_value.to_integral_value())
     except (ValueError, OverflowError):
         return None
