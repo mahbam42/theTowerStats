@@ -5,12 +5,16 @@ from __future__ import annotations
 from django.contrib import admin
 
 from core.models import (
+    BotDefinition,
+    BotLevel,
     BotParameter,
     CardDefinition,
     CardLevel,
     CardParameter,
     CardSlot,
     GameData,
+    GuardianChipDefinition,
+    GuardianChipLevel,
     GuardianChipParameter,
     PlayerBot,
     PlayerCard,
@@ -18,6 +22,8 @@ from core.models import (
     PlayerUltimateWeapon,
     PresetTag,
     RunProgress,
+    UltimateWeaponDefinition,
+    UltimateWeaponLevel,
     UltimateWeaponParameter,
     Unit,
     WikiData,
@@ -79,9 +85,16 @@ class CardDefinitionAdmin(admin.ModelAdmin):
 class CardParameterAdmin(admin.ModelAdmin):
     """Admin configuration for CardParameter."""
 
-    list_display = ("card_definition", "key", "raw_value", "unit", "source_wikidata")
+    list_display = (
+        "card_definition",
+        "card_level",
+        "key",
+        "raw_value",
+        "unit",
+        "source_wikidata",
+    )
     list_filter = ("unit",)
-    search_fields = ("card_definition__name", "key", "raw_value")
+    search_fields = ("card_definition__name", "card_level__level", "key", "raw_value")
 
 
 @admin.register(CardLevel)
@@ -101,31 +114,113 @@ class CardSlotAdmin(admin.ModelAdmin):
     search_fields = ("unlock_cost_raw",)
 
 
+@admin.register(BotDefinition)
+class BotDefinitionAdmin(admin.ModelAdmin):
+    """Admin configuration for BotDefinition."""
+
+    list_display = ("name", "wiki_entity_id")
+    search_fields = ("name", "wiki_entity_id")
+
+
+@admin.register(BotLevel)
+class BotLevelAdmin(admin.ModelAdmin):
+    """Admin configuration for BotLevel."""
+
+    list_display = ("bot_definition", "level", "star", "source_wikidata")
+    list_filter = ("star",)
+    search_fields = ("bot_definition__name",)
+
+
 @admin.register(BotParameter)
 class BotParameterAdmin(admin.ModelAdmin):
     """Admin configuration for BotParameter."""
 
-    list_display = ("bot_name", "key", "raw_value", "unit", "source_wikidata")
+    list_display = (
+        "bot_definition",
+        "bot_level",
+        "key",
+        "raw_value",
+        "unit",
+        "source_wikidata",
+    )
     list_filter = ("unit",)
-    search_fields = ("bot_name", "key", "raw_value")
+    search_fields = ("bot_definition__name", "bot_level__level", "key", "raw_value")
+
+
+@admin.register(GuardianChipDefinition)
+class GuardianChipDefinitionAdmin(admin.ModelAdmin):
+    """Admin configuration for GuardianChipDefinition."""
+
+    list_display = ("name", "wiki_entity_id")
+    search_fields = ("name", "wiki_entity_id")
+
+
+@admin.register(GuardianChipLevel)
+class GuardianChipLevelAdmin(admin.ModelAdmin):
+    """Admin configuration for GuardianChipLevel."""
+
+    list_display = ("guardian_chip_definition", "level", "star", "source_wikidata")
+    list_filter = ("star",)
+    search_fields = ("guardian_chip_definition__name",)
 
 
 @admin.register(GuardianChipParameter)
 class GuardianChipParameterAdmin(admin.ModelAdmin):
     """Admin configuration for GuardianChipParameter."""
 
-    list_display = ("chip_name", "key", "raw_value", "unit", "source_wikidata")
+    list_display = (
+        "guardian_chip_definition",
+        "guardian_chip_level",
+        "key",
+        "raw_value",
+        "unit",
+        "source_wikidata",
+    )
     list_filter = ("unit",)
-    search_fields = ("chip_name", "key", "raw_value")
+    search_fields = (
+        "guardian_chip_definition__name",
+        "guardian_chip_level__level",
+        "key",
+        "raw_value",
+    )
+
+
+@admin.register(UltimateWeaponDefinition)
+class UltimateWeaponDefinitionAdmin(admin.ModelAdmin):
+    """Admin configuration for UltimateWeaponDefinition."""
+
+    list_display = ("name", "wiki_entity_id")
+    search_fields = ("name", "wiki_entity_id")
+
+
+@admin.register(UltimateWeaponLevel)
+class UltimateWeaponLevelAdmin(admin.ModelAdmin):
+    """Admin configuration for UltimateWeaponLevel."""
+
+    list_display = ("ultimate_weapon_definition", "level", "star", "source_wikidata")
+    list_filter = ("star",)
+    search_fields = ("ultimate_weapon_definition__name",)
 
 
 @admin.register(UltimateWeaponParameter)
 class UltimateWeaponParameterAdmin(admin.ModelAdmin):
     """Admin configuration for UltimateWeaponParameter."""
 
-    list_display = ("weapon_name", "key", "raw_value", "unit", "source_wikidata")
+    list_display = (
+        "ultimate_weapon_definition",
+        "ultimate_weapon_level",
+        "key",
+        "raw_value",
+        "unit",
+        "source_wikidata",
+    )
     list_filter = ("unit",)
-    search_fields = ("weapon_name", "key", "raw_value")
+    search_fields = (
+        "ultimate_weapon_definition__name",
+        "ultimate_weapon_level__level",
+        "key",
+        "raw_value",
+    )
 
 
 @admin.register(PlayerCard)

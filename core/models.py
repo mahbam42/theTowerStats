@@ -209,6 +209,9 @@ class CardDefinition(models.Model):
         wiki_page_url: Optional URL to the wiki source page.
         wiki_entity_id: Optional stable identifier used for wiki ingestion.
         preset_tags: Optional many-to-many labels for grouping cards.
+        description: Optional wiki-provided summary text.
+        rarity: Optional rarity label.
+        unlock_text: Optional unlock-condition text.
     """
 
     name = models.CharField(max_length=120, unique=True)
@@ -219,6 +222,9 @@ class CardDefinition(models.Model):
         blank=True,
         related_name="card_definitions",
     )
+    description = models.TextField(blank=True)
+    rarity = models.CharField(max_length=80, blank=True)
+    unlock_text = models.TextField(blank=True)
 
     def __str__(self) -> str:
         """Return the card name for display contexts."""
@@ -241,7 +247,10 @@ class CardParameter(models.Model):
     """
 
     card_definition = models.ForeignKey(
-        CardDefinition, on_delete=models.CASCADE, related_name="parameters"
+        CardDefinition, on_delete=models.CASCADE, related_name="parameters", editable=False
+    )
+    card_level = models.ForeignKey(
+        "CardLevel", on_delete=models.CASCADE, related_name="parameters", null=True, blank=True
     )
     key = models.CharField(max_length=120)
     raw_value = models.CharField(max_length=200)
@@ -257,12 +266,21 @@ class CardParameter(models.Model):
     class Meta:
         indexes = [
             models.Index(fields=["card_definition", "key"]),
+            models.Index(fields=["card_level", "key"]),
         ]
+
+    def save(self, *args, **kwargs):
+        """Ensure parameters are scoped to a card level and definition."""
+
+        if self.card_level_id is None:
+            raise ValueError("CardParameter requires a card_level reference")
+        self.card_definition = self.card_level.card_definition
+        super().save(*args, **kwargs)
 
     def __str__(self) -> str:
         """Return a concise display string for admin/debug usage."""
 
-        return f"{self.card_definition.name}: {self.key}={self.raw_value}"
+        return f"{self.card_definition.name} L{self.card_level.level}: {self.key}={self.raw_value}"
 
 
 class CardLevel(models.Model):
@@ -335,18 +353,66 @@ class CardSlot(models.Model):
         return f"CardSlot({self.slot_number})"
 
 
+class BotDefinition(models.Model):
+    """Definition record for a bot as shown in the in-app library."""
+
+    name = models.CharField(max_length=120, unique=True)
+    wiki_page_url = models.URLField(blank=True)
+    wiki_entity_id = models.CharField(max_length=200, blank=True, db_index=True)
+    description = models.TextField(blank=True)
+    rarity = models.CharField(max_length=80, blank=True)
+    unlock_text = models.TextField(blank=True)
+
+    def __str__(self) -> str:
+        """Return the bot name for display contexts."""
+
+        return self.name
+
+
+class BotLevel(models.Model):
+    """Structural bot level record linking parameters to revisions."""
+
+    bot_definition = models.ForeignKey(
+        BotDefinition, on_delete=models.CASCADE, related_name="levels"
+    )
+    level = models.PositiveSmallIntegerField()
+    star = models.PositiveSmallIntegerField(null=True, blank=True)
+    raw_row = models.JSONField(default=dict, blank=True)
+    source_wikidata = models.ForeignKey(
+        WikiData,
+        null=True,
+        blank=True,
+        on_delete=models.SET_NULL,
+        related_name="bot_levels",
+    )
+
+    class Meta:
+        constraints = [
+            models.UniqueConstraint(
+                fields=["bot_definition", "level", "star"],
+                name="uniq_bot_level_star",
+            )
+        ]
+        indexes = [
+            models.Index(fields=["bot_definition", "level"]),
+        ]
+
+    def __str__(self) -> str:
+        """Return a concise display string for admin/debug usage."""
+
+        star = f"★{self.star}" if self.star is not None else "★?"
+        return f"{self.bot_definition.name} L{self.level} {star}"
+
+
 class BotParameter(models.Model):
-    """Raw parameter/value row for bot upgrades.
+    """Raw parameter/value row for bot upgrades."""
 
-    Attributes:
-        bot_name: Bot identifier/name.
-        key: Parameter name.
-        raw_value: Raw cell text or user-entered value.
-        unit: Optional unit label.
-        source_wikidata: Optional pointer to the exact wiki revision used.
-    """
-
-    bot_name = models.CharField(max_length=120, db_index=True)
+    bot_definition = models.ForeignKey(
+        BotDefinition, on_delete=models.CASCADE, related_name="parameters", editable=False
+    )
+    bot_level = models.ForeignKey(
+        BotLevel, on_delete=models.CASCADE, related_name="parameters"
+    )
     key = models.CharField(max_length=120)
     raw_value = models.CharField(max_length=200)
     unit = models.ForeignKey(Unit, null=True, blank=True, on_delete=models.SET_NULL)
@@ -359,20 +425,93 @@ class BotParameter(models.Model):
     )
 
     class Meta:
+        constraints = [
+            models.UniqueConstraint(
+                fields=["bot_level", "key"], name="uniq_bot_level_parameter_key"
+            )
+        ]
         indexes = [
-            models.Index(fields=["bot_name", "key"]),
+            models.Index(fields=["bot_definition", "key"]),
+            models.Index(fields=["bot_level", "key"]),
+        ]
+
+    def save(self, *args, **kwargs):
+        """Ensure parameters are scoped to a bot level and definition."""
+
+        if self.bot_level_id is None:
+            raise ValueError("BotParameter requires a bot_level reference")
+        self.bot_definition = self.bot_level.bot_definition
+        super().save(*args, **kwargs)
+
+    def __str__(self) -> str:
+        """Return a concise display string for admin/debug usage."""
+
+        return f"{self.bot_definition.name} L{self.bot_level.level}: {self.key}={self.raw_value}"
+
+
+class GuardianChipDefinition(models.Model):
+    """Definition record for guardian chips."""
+
+    name = models.CharField(max_length=120, unique=True)
+    wiki_page_url = models.URLField(blank=True)
+    wiki_entity_id = models.CharField(max_length=200, blank=True, db_index=True)
+    description = models.TextField(blank=True)
+    rarity = models.CharField(max_length=80, blank=True)
+    unlock_text = models.TextField(blank=True)
+
+    def __str__(self) -> str:
+        """Return the chip name for display contexts."""
+
+        return self.name
+
+
+class GuardianChipLevel(models.Model):
+    """Structural guardian chip level record for parameter scoping."""
+
+    guardian_chip_definition = models.ForeignKey(
+        GuardianChipDefinition, on_delete=models.CASCADE, related_name="levels"
+    )
+    level = models.PositiveSmallIntegerField()
+    star = models.PositiveSmallIntegerField(null=True, blank=True)
+    raw_row = models.JSONField(default=dict, blank=True)
+    source_wikidata = models.ForeignKey(
+        WikiData,
+        null=True,
+        blank=True,
+        on_delete=models.SET_NULL,
+        related_name="guardian_chip_levels",
+    )
+
+    class Meta:
+        constraints = [
+            models.UniqueConstraint(
+                fields=["guardian_chip_definition", "level", "star"],
+                name="uniq_guardian_chip_level_star",
+            )
+        ]
+        indexes = [
+            models.Index(fields=["guardian_chip_definition", "level"]),
         ]
 
     def __str__(self) -> str:
         """Return a concise display string for admin/debug usage."""
 
-        return f"{self.bot_name}: {self.key}={self.raw_value}"
+        star = f"★{self.star}" if self.star is not None else "★?"
+        return f"{self.guardian_chip_definition.name} L{self.level} {star}"
 
 
 class GuardianChipParameter(models.Model):
     """Raw parameter/value row for guardian chip upgrade tables."""
 
-    chip_name = models.CharField(max_length=120, db_index=True)
+    guardian_chip_definition = models.ForeignKey(
+        GuardianChipDefinition,
+        on_delete=models.CASCADE,
+        related_name="parameters",
+        editable=False,
+    )
+    guardian_chip_level = models.ForeignKey(
+        GuardianChipLevel, on_delete=models.CASCADE, related_name="parameters"
+    )
     key = models.CharField(max_length=120)
     raw_value = models.CharField(max_length=200)
     unit = models.ForeignKey(Unit, null=True, blank=True, on_delete=models.SET_NULL)
@@ -385,20 +524,97 @@ class GuardianChipParameter(models.Model):
     )
 
     class Meta:
+        constraints = [
+            models.UniqueConstraint(
+                fields=["guardian_chip_level", "key"],
+                name="uniq_guardian_chip_level_parameter_key",
+            )
+        ]
         indexes = [
-            models.Index(fields=["chip_name", "key"]),
+            models.Index(fields=["guardian_chip_definition", "key"]),
+            models.Index(fields=["guardian_chip_level", "key"]),
+        ]
+
+    def save(self, *args, **kwargs):
+        """Ensure parameters are scoped to a guardian chip level and definition."""
+
+        if self.guardian_chip_level_id is None:
+            raise ValueError("GuardianChipParameter requires a guardian_chip_level reference")
+        self.guardian_chip_definition = self.guardian_chip_level.guardian_chip_definition
+        super().save(*args, **kwargs)
+
+    def __str__(self) -> str:
+        """Return a concise display string for admin/debug usage."""
+
+        return (
+            f"{self.guardian_chip_definition.name} L{self.guardian_chip_level.level}: "
+            f"{self.key}={self.raw_value}"
+        )
+
+
+class UltimateWeaponDefinition(models.Model):
+    """Definition record for ultimate weapons."""
+
+    name = models.CharField(max_length=120, unique=True)
+    wiki_page_url = models.URLField(blank=True)
+    wiki_entity_id = models.CharField(max_length=200, blank=True, db_index=True)
+    description = models.TextField(blank=True)
+    rarity = models.CharField(max_length=80, blank=True)
+    unlock_text = models.TextField(blank=True)
+
+    def __str__(self) -> str:
+        """Return the weapon name for display contexts."""
+
+        return self.name
+
+
+class UltimateWeaponLevel(models.Model):
+    """Structural ultimate weapon level record."""
+
+    ultimate_weapon_definition = models.ForeignKey(
+        UltimateWeaponDefinition, on_delete=models.CASCADE, related_name="levels"
+    )
+    level = models.PositiveSmallIntegerField()
+    star = models.PositiveSmallIntegerField(null=True, blank=True)
+    raw_row = models.JSONField(default=dict, blank=True)
+    source_wikidata = models.ForeignKey(
+        WikiData,
+        null=True,
+        blank=True,
+        on_delete=models.SET_NULL,
+        related_name="ultimate_weapon_levels",
+    )
+
+    class Meta:
+        constraints = [
+            models.UniqueConstraint(
+                fields=["ultimate_weapon_definition", "level", "star"],
+                name="uniq_ultimate_weapon_level_star",
+            )
+        ]
+        indexes = [
+            models.Index(fields=["ultimate_weapon_definition", "level"]),
         ]
 
     def __str__(self) -> str:
         """Return a concise display string for admin/debug usage."""
 
-        return f"{self.chip_name}: {self.key}={self.raw_value}"
+        star = f"★{self.star}" if self.star is not None else "★?"
+        return f"{self.ultimate_weapon_definition.name} L{self.level} {star}"
 
 
 class UltimateWeaponParameter(models.Model):
     """Raw parameter/value row for ultimate weapon upgrade tables."""
 
-    weapon_name = models.CharField(max_length=120, db_index=True)
+    ultimate_weapon_definition = models.ForeignKey(
+        UltimateWeaponDefinition,
+        on_delete=models.CASCADE,
+        related_name="parameters",
+        editable=False,
+    )
+    ultimate_weapon_level = models.ForeignKey(
+        UltimateWeaponLevel, on_delete=models.CASCADE, related_name="parameters"
+    )
     key = models.CharField(max_length=120)
     raw_value = models.CharField(max_length=200)
     unit = models.ForeignKey(Unit, null=True, blank=True, on_delete=models.SET_NULL)
@@ -411,14 +627,32 @@ class UltimateWeaponParameter(models.Model):
     )
 
     class Meta:
-        indexes = [
-            models.Index(fields=["weapon_name", "key"]),
+        constraints = [
+            models.UniqueConstraint(
+                fields=["ultimate_weapon_level", "key"],
+                name="uniq_uw_level_parameter_key",
+            )
         ]
+        indexes = [
+            models.Index(fields=["ultimate_weapon_definition", "key"]),
+            models.Index(fields=["ultimate_weapon_level", "key"]),
+        ]
+
+    def save(self, *args, **kwargs):
+        """Ensure parameters are scoped to an ultimate weapon level and definition."""
+
+        if self.ultimate_weapon_level_id is None:
+            raise ValueError("UltimateWeaponParameter requires an ultimate_weapon_level reference")
+        self.ultimate_weapon_definition = self.ultimate_weapon_level.ultimate_weapon_definition
+        super().save(*args, **kwargs)
 
     def __str__(self) -> str:
         """Return a concise display string for admin/debug usage."""
 
-        return f"{self.weapon_name}: {self.key}={self.raw_value}"
+        return (
+            f"{self.ultimate_weapon_definition.name} L{self.ultimate_weapon_level.level}: "
+            f"{self.key}={self.raw_value}"
+        )
 
 
 class PlayerCard(models.Model):

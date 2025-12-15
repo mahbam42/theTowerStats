@@ -23,14 +23,20 @@ from analysis.context import (
 from analysis.quantity import UnitType, parse_quantity
 
 from core.models import (
+    BotDefinition,
+    BotLevel,
     BotParameter,
     CardLevel,
     CardParameter,
+    GuardianChipDefinition,
+    GuardianChipLevel,
     GuardianChipParameter,
     PlayerBot,
     PlayerCard,
     PlayerGuardianChip,
     PlayerUltimateWeapon,
+    UltimateWeaponDefinition,
+    UltimateWeaponLevel,
     UltimateWeaponParameter,
 )
 
@@ -115,11 +121,11 @@ def _latest_wiki_revision_id_for_queryset(qs) -> int | None:
     )
 
 
-def _select_parameters_for_card(card: PlayerCard, policy: RevisionPolicy) -> tuple[ParameterInput, ...]:
-    """Select CardParameter rows for a player card using an explicit revision policy."""
+def _select_parameters_from_queryset(
+    qs, *, override_key: tuple[str, str], policy: RevisionPolicy
+) -> tuple[ParameterInput, ...]:
+    """Select parameters honoring revision policy overrides."""
 
-    qs = CardParameter.objects.filter(card_definition=card.card_definition)
-    override_key = ("card", card.card_definition.name)
     override = (policy.overrides or {}).get(override_key)
     revision_id: int | None
     if override is not None:
@@ -138,6 +144,21 @@ def _select_parameters_for_card(card: PlayerCard, policy: RevisionPolicy) -> tup
         _as_parameter_input(row.key, row.raw_value, wiki_revision_id=row.source_wikidata_id)
         for row in selected
     )
+
+
+def _select_parameters_for_card(card: PlayerCard, policy: RevisionPolicy) -> tuple[ParameterInput, ...]:
+    """Select CardParameter rows for a player card using an explicit revision policy."""
+
+    qs = CardParameter.objects.filter(card_definition=card.card_definition)
+    if card.level is not None:
+        qs = qs.filter(card_level__level=card.level)
+    if card.star is not None:
+        qs = qs.filter(card_level__star=card.star)
+
+    if not card.level:
+        qs = qs.order_by("-card_level__level")
+
+    return _select_parameters_from_queryset(qs, override_key=("card", card.card_definition.name), policy=policy)
 
 
 def _select_level_parameters_for_card(card: PlayerCard, policy: RevisionPolicy) -> tuple[ParameterInput, ...]:
@@ -186,25 +207,23 @@ def _build_cards(policy: RevisionPolicy):
 def _select_parameters_for_uw(uw: PlayerUltimateWeapon, policy: RevisionPolicy) -> tuple[ParameterInput, ...]:
     """Select UltimateWeaponParameter rows using an explicit revision policy."""
 
-    qs = UltimateWeaponParameter.objects.filter(weapon_name=uw.weapon_name)
-    override_key = ("ultimate_weapon", uw.weapon_name)
-    override = (policy.overrides or {}).get(override_key)
-    revision_id: int | None
-    if override is not None:
-        revision_id = override
-    elif policy.mode == "manual":
-        revision_id = None
-    else:
-        revision_id = _latest_wiki_revision_id_for_queryset(qs)
+    definition = UltimateWeaponDefinition.objects.filter(name=uw.weapon_name).first()
+    if definition is None:
+        return ()
 
-    if revision_id is None:
-        selected = qs.filter(source_wikidata__isnull=True).order_by("key", "id")
-    else:
-        selected = qs.filter(source_wikidata_id=revision_id).order_by("key", "id")
+    levels = definition.levels.all()
+    if uw.level is not None:
+        levels = levels.filter(level=uw.level)
+    if uw.star is not None:
+        levels = levels.filter(star=uw.star)
 
-    return tuple(
-        _as_parameter_input(row.key, row.raw_value, wiki_revision_id=row.source_wikidata_id)
-        for row in selected
+    level = levels.order_by("-level").first()
+    if level is None:
+        return ()
+
+    qs = UltimateWeaponParameter.objects.filter(ultimate_weapon_level=level)
+    return _select_parameters_from_queryset(
+        qs, override_key=("ultimate_weapon", definition.name), policy=policy
     )
 
 
@@ -226,25 +245,23 @@ def _select_parameters_for_guardian(
 ) -> tuple[ParameterInput, ...]:
     """Select GuardianChipParameter rows using an explicit revision policy."""
 
-    qs = GuardianChipParameter.objects.filter(chip_name=chip.chip_name)
-    override_key = ("guardian_chip", chip.chip_name)
-    override = (policy.overrides or {}).get(override_key)
-    revision_id: int | None
-    if override is not None:
-        revision_id = override
-    elif policy.mode == "manual":
-        revision_id = None
-    else:
-        revision_id = _latest_wiki_revision_id_for_queryset(qs)
+    definition = GuardianChipDefinition.objects.filter(name=chip.chip_name).first()
+    if definition is None:
+        return ()
 
-    if revision_id is None:
-        selected = qs.filter(source_wikidata__isnull=True).order_by("key", "id")
-    else:
-        selected = qs.filter(source_wikidata_id=revision_id).order_by("key", "id")
+    levels = definition.levels.all()
+    if chip.level is not None:
+        levels = levels.filter(level=chip.level)
+    if chip.star is not None:
+        levels = levels.filter(star=chip.star)
 
-    return tuple(
-        _as_parameter_input(row.key, row.raw_value, wiki_revision_id=row.source_wikidata_id)
-        for row in selected
+    level = levels.order_by("-level").first()
+    if level is None:
+        return ()
+
+    qs = GuardianChipParameter.objects.filter(guardian_chip_level=level)
+    return _select_parameters_from_queryset(
+        qs, override_key=("guardian_chip", definition.name), policy=policy
     )
 
 
@@ -264,25 +281,21 @@ def _build_guardian_chips(policy: RevisionPolicy):
 def _select_parameters_for_bot(bot: PlayerBot, policy: RevisionPolicy) -> tuple[ParameterInput, ...]:
     """Select BotParameter rows using an explicit revision policy."""
 
-    qs = BotParameter.objects.filter(bot_name=bot.bot_name)
-    override_key = ("bot", bot.bot_name)
-    override = (policy.overrides or {}).get(override_key)
-    revision_id: int | None
-    if override is not None:
-        revision_id = override
-    elif policy.mode == "manual":
-        revision_id = None
-    else:
-        revision_id = _latest_wiki_revision_id_for_queryset(qs)
+    definition = BotDefinition.objects.filter(name=bot.bot_name).first()
+    if definition is None:
+        return ()
 
-    if revision_id is None:
-        selected = qs.filter(source_wikidata__isnull=True).order_by("key", "id")
-    else:
-        selected = qs.filter(source_wikidata_id=revision_id).order_by("key", "id")
+    levels = definition.levels.all()
+    if bot.level is not None:
+        levels = levels.filter(level=bot.level)
 
-    return tuple(
-        _as_parameter_input(row.key, row.raw_value, wiki_revision_id=row.source_wikidata_id)
-        for row in selected
+    level = levels.order_by("-level").first()
+    if level is None:
+        return ()
+
+    qs = BotParameter.objects.filter(bot_level=level)
+    return _select_parameters_from_queryset(
+        qs, override_key=("bot", definition.name), policy=policy
     )
 
 

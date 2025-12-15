@@ -9,16 +9,23 @@ import pytest
 from analysis.engine import analyze_metric_series
 from core.analysis_context import RevisionPolicy, build_player_context
 from core.models import (
+    BotDefinition,
+    BotLevel,
     BotParameter,
     CardDefinition,
+    CardLevel,
     CardParameter,
     GameData,
+    GuardianChipDefinition,
+    GuardianChipLevel,
     GuardianChipParameter,
     PlayerBot,
     PlayerCard,
     PlayerGuardianChip,
     PlayerUltimateWeapon,
     RunProgress,
+    UltimateWeaponDefinition,
+    UltimateWeaponLevel,
     UltimateWeaponParameter,
     WikiData,
 )
@@ -58,23 +65,31 @@ def test_effective_cooldown_golden() -> None:
         content_hash="uw1",
         last_seen=datetime(2025, 12, 1, tzinfo=timezone.utc),
     )
+    uw_def = UltimateWeaponDefinition.objects.create(name="Golden Tower")
+    uw_level = UltimateWeaponLevel.objects.create(
+        ultimate_weapon_definition=uw_def, level=1, raw_row={}, source_wikidata=rev
+    )
     UltimateWeaponParameter.objects.create(
-        weapon_name=uw.weapon_name,
+        ultimate_weapon_definition=uw_def,
+        ultimate_weapon_level=uw_level,
         key="base_cooldown_seconds",
         raw_value="100",
         source_wikidata=rev,
     )
 
     card_def = CardDefinition.objects.create(name="Cooldown Card")
-    PlayerCard.objects.create(card_definition=card_def, owned=True)
+    card_level = CardLevel.objects.create(card_definition=card_def, level=1, raw_row={}, source_wikidata=rev)
+    PlayerCard.objects.create(card_definition=card_def, owned=True, level=1)
     CardParameter.objects.create(
         card_definition=card_def,
+        card_level=card_level,
         key="cooldown_reduction_percent",
         raw_value="10%",
         source_wikidata=rev,
     )
     CardParameter.objects.create(
         card_definition=card_def,
+        card_level=card_level,
         key="cooldown_reduction_percent",
         raw_value="5%",
         source_wikidata=rev,
@@ -100,7 +115,8 @@ def test_ev_simulated_golden_seeded() -> None:
     )
 
     card_def = CardDefinition.objects.create(name="Proc Card")
-    PlayerCard.objects.create(card_definition=card_def, owned=True)
+    card_level = CardLevel.objects.create(card_definition=card_def, level=1, raw_row={})
+    PlayerCard.objects.create(card_definition=card_def, owned=True, level=1)
     rev = _wikidata_revision(
         entity_name="Proc Card",
         content_hash="card1",
@@ -108,12 +124,14 @@ def test_ev_simulated_golden_seeded() -> None:
     )
     CardParameter.objects.create(
         card_definition=card_def,
+        card_level=card_level,
         key="proc_chance",
         raw_value="25%",
         source_wikidata=rev,
     )
     CardParameter.objects.create(
         card_definition=card_def,
+        card_level=card_level,
         key="proc_multiplier",
         raw_value="x2",
         source_wikidata=rev,
@@ -147,7 +165,8 @@ def test_parameter_revision_override_is_respected_for_cards() -> None:
     )
 
     card_def = CardDefinition.objects.create(name="Coin Bonus")
-    PlayerCard.objects.create(card_definition=card_def, owned=True)
+    card_level = CardLevel.objects.create(card_definition=card_def, level=1, raw_row={})
+    PlayerCard.objects.create(card_definition=card_def, owned=True, level=1)
 
     rev_old = _wikidata_revision(
         entity_name="Coin Bonus",
@@ -156,6 +175,7 @@ def test_parameter_revision_override_is_respected_for_cards() -> None:
     )
     CardParameter.objects.create(
         card_definition=card_def,
+        card_level=card_level,
         key="coins_multiplier",
         raw_value="x1.10",
         source_wikidata=rev_old,
@@ -168,6 +188,7 @@ def test_parameter_revision_override_is_respected_for_cards() -> None:
     )
     CardParameter.objects.create(
         card_definition=card_def,
+        card_level=card_level,
         key="coins_multiplier",
         raw_value="x1.20",
         source_wikidata=rev_new,
@@ -214,9 +235,16 @@ def test_missing_context_returns_partial_results_without_raising() -> None:
 def test_revision_policy_latest_and_overrides_select_parameter_rows_across_entities() -> None:
     """Select revisions explicitly for each parameter table type."""
 
-    bot = PlayerBot.objects.create(bot_name="Coin Bot", unlocked=True)
-    chip = PlayerGuardianChip.objects.create(chip_name="Lucky Chip", owned=True)
-    uw = PlayerUltimateWeapon.objects.create(weapon_name="Golden Tower", unlocked=True)
+    bot = PlayerBot.objects.create(bot_name="Coin Bot", unlocked=True, level=1)
+    chip = PlayerGuardianChip.objects.create(chip_name="Lucky Chip", owned=True, level=1)
+    uw = PlayerUltimateWeapon.objects.create(weapon_name="Golden Tower", unlocked=True, level=1)
+
+    bot_def = BotDefinition.objects.create(name=bot.bot_name)
+    bot_level = BotLevel.objects.create(bot_definition=bot_def, level=1, raw_row={})
+    chip_def = GuardianChipDefinition.objects.create(name=chip.chip_name)
+    chip_level = GuardianChipLevel.objects.create(guardian_chip_definition=chip_def, level=1, raw_row={})
+    uw_def = UltimateWeaponDefinition.objects.create(name=uw.weapon_name)
+    uw_level = UltimateWeaponLevel.objects.create(ultimate_weapon_definition=uw_def, level=1, raw_row={})
 
     old = _wikidata_revision(
         entity_name="old",
@@ -230,38 +258,44 @@ def test_revision_policy_latest_and_overrides_select_parameter_rows_across_entit
     )
 
     BotParameter.objects.create(
-        bot_name=bot.bot_name,
-        key="coins_multiplier",
+        bot_definition=bot_def,
+        bot_level=bot_level,
+        key="coins_multiplier_old",
         raw_value="x1.05",
         source_wikidata=old,
     )
     BotParameter.objects.create(
-        bot_name=bot.bot_name,
-        key="coins_multiplier",
+        bot_definition=bot_def,
+        bot_level=bot_level,
+        key="coins_multiplier_new",
         raw_value="x1.10",
         source_wikidata=new,
     )
     GuardianChipParameter.objects.create(
-        chip_name=chip.chip_name,
-        key="coins_multiplier",
+        guardian_chip_definition=chip_def,
+        guardian_chip_level=chip_level,
+        key="coins_multiplier_old",
         raw_value="x1.02",
         source_wikidata=old,
     )
     GuardianChipParameter.objects.create(
-        chip_name=chip.chip_name,
-        key="coins_multiplier",
+        guardian_chip_definition=chip_def,
+        guardian_chip_level=chip_level,
+        key="coins_multiplier_new",
         raw_value="x1.03",
         source_wikidata=new,
     )
     UltimateWeaponParameter.objects.create(
-        weapon_name=uw.weapon_name,
-        key="base_cooldown_seconds",
+        ultimate_weapon_definition=uw_def,
+        ultimate_weapon_level=uw_level,
+        key="base_cooldown_seconds_old",
         raw_value="100",
         source_wikidata=old,
     )
     UltimateWeaponParameter.objects.create(
-        weapon_name=uw.weapon_name,
-        key="base_cooldown_seconds",
+        ultimate_weapon_definition=uw_def,
+        ultimate_weapon_level=uw_level,
+        key="base_cooldown_seconds_new",
         raw_value="90",
         source_wikidata=new,
     )
