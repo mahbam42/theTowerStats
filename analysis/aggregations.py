@@ -9,6 +9,7 @@ from __future__ import annotations
 from collections import defaultdict
 from collections.abc import Iterable, Sequence
 from datetime import date
+from typing import Callable
 
 from .dto import RunAnalysis, WindowSummary
 
@@ -51,10 +52,31 @@ def average_coins_per_hour(runs: Iterable[RunAnalysis]) -> float | None:
         The arithmetic mean of `coins_per_hour`, or None when no runs exist.
     """
 
+    return average_metric(runs, value_getter=lambda run: run.coins_per_hour)
+
+
+def average_metric(
+    runs: Iterable[RunAnalysis],
+    *,
+    value_getter: Callable[[RunAnalysis], float | None],
+) -> float | None:
+    """Compute an average across runs for a selected metric.
+
+    Args:
+        runs: Per-run analysis results.
+        value_getter: Callable that extracts a float value from a run.
+
+    Returns:
+        Arithmetic mean across extracted values, or None when no values exist.
+    """
+
     total = 0.0
     count = 0
     for run in runs:
-        total += run.coins_per_hour
+        value = value_getter(run)
+        if value is None:
+            continue
+        total += value
         count += 1
     if count == 0:
         return None
@@ -87,20 +109,32 @@ def summarize_window(
     )
 
 
-def daily_average_series(runs: Iterable[RunAnalysis]) -> dict[str, float]:
+def daily_average_series(
+    runs: Iterable[RunAnalysis],
+    *,
+    value_getter: Callable[[RunAnalysis], float | None] | None = None,
+) -> dict[str, float]:
     """Aggregate runs into a daily average series keyed by ISO date.
 
     Args:
         runs: Per-run analysis results.
+        value_getter: Optional callable extracting the metric value from a run.
+            Defaults to `run.coins_per_hour`.
 
     Returns:
-        Mapping of `YYYY-MM-DD` -> average coins/hour for that day.
+        Mapping of `YYYY-MM-DD` -> average metric value for that day.
     """
+
+    if value_getter is None:
+        value_getter = lambda run: run.coins_per_hour
 
     buckets: dict[str, list[float]] = defaultdict(list)
     for run in runs:
+        value = value_getter(run)
+        if value is None:
+            continue
         key = run.battle_date.date().isoformat()
-        buckets[key].append(run.coins_per_hour)
+        buckets[key].append(value)
 
     averaged: dict[str, float] = {}
     for key, values in buckets.items():
@@ -134,4 +168,3 @@ def simple_moving_average(
             continue
         averaged[idx] = sum(v for v in window_values if v is not None) / window
     return averaged
-

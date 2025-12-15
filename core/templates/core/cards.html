@@ -1,0 +1,69 @@
+{% extends "core/base.html" %}
+
+{% block title %}Cards • theTowerStats{% endblock %}
+
+{% block content %}
+  <h2>Cards</h2>
+
+  <h3>Preset labels</h3>
+  {% if presets %}
+    <ul>
+      {% for preset in presets %}
+        <li>{{ preset.name }}</li>
+      {% endfor %}
+    </ul>
+  {% else %}
+    <p class="muted">No presets yet.</p>
+  {% endif %}
+
+  <h3>Card definitions</h3>
+  {% if definitions %}
+    <ul>
+      {% for card in definitions %}
+        <li>
+          {{ card.name }}
+          {% if card.preset_tags.all %}
+            <span class="muted">
+              (tags:
+              {% for tag in card.preset_tags.all %}
+                {{ tag.name }}{% if not forloop.last %}, {% endif %}
+              {% endfor %}
+              )
+            </span>
+          {% endif %}
+        </li>
+      {% endfor %}
+    </ul>
+  {% else %}
+    <p class="muted">No card definitions yet.</p>
+  {% endif %}
+
+  <h3>Player progress</h3>
+  {% if player_cards %}
+    <table>
+      <thead>
+        <tr>
+          <th>Card</th>
+          <th>Owned</th>
+          <th>Level</th>
+          <th>Star</th>
+          <th>Updated</th>
+        </tr>
+      </thead>
+      <tbody>
+        {% for entry in player_cards %}
+          <tr>
+            <td>{{ entry.card_definition.name }}</td>
+            <td>{{ entry.owned }}</td>
+            <td>{{ entry.level|default:"—" }}</td>
+            <td>{{ entry.star|default:"—" }}</td>
+            <td>{{ entry.updated_at }}</td>
+          </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  {% else %}
+    <p class="muted">No player card progress yet.</p>
+  {% endif %}
+{% endblock %}
+

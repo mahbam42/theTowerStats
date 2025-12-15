@@ -1,0 +1,70 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>{% block title %}theTowerStats{% endblock %}</title>
+    <style>
+      body {
+        font-family: system-ui, -apple-system, Segoe UI, Roboto, sans-serif;
+        margin: 16px;
+      }
+      nav {
+        border: 1px solid #ddd;
+        padding: 10px 12px;
+        margin-bottom: 12px;
+        background: #fff;
+      }
+      nav a {
+        margin-right: 10px;
+        white-space: nowrap;
+      }
+      .context-bar {
+        position: sticky;
+        top: 0;
+        z-index: 10;
+        background: #fff;
+        border: 1px solid #ddd;
+        padding: 10px 12px;
+        margin-bottom: 12px;
+      }
+      .context-bar__title {
+        font-weight: 600;
+        margin-bottom: 6px;
+      }
+      .muted {
+        color: #666;
+      }
+      .empty-state {
+        border: 1px dashed #bbb;
+        padding: 12px;
+        margin: 12px 0;
+      }
+    </style>
+    {% block head %}{% endblock %}
+  </head>
+  <body>
+    <h1>theTowerStats</h1>
+
+    <nav aria-label="Primary">
+      <a href="{% url 'core:battle_history' %}">Battle History</a>
+      <a href="{% url 'core:dashboard' %}">Charts</a>
+      <a href="{% url 'core:cards' %}">Cards</a>
+      <a href="{% url 'core:ultimate_weapon_progress' %}">Ultimate Weapon Progress</a>
+      <a href="{% url 'core:guardian_progress' %}">Guardian Progress</a>
+      <a href="{% url 'core:bots_progress' %}">Bots Progress</a>
+    </nav>
+
+    {% if messages %}
+      <ul>
+        {% for message in messages %}
+          <li>{{ message }}</li>
+        {% endfor %}
+      </ul>
+    {% endif %}
+
+    {% block content %}{% endblock %}
+    {% block extra_scripts %}{% endblock %}
+  </body>
+</html>
+

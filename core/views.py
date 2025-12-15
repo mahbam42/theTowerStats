@@ -1,4 +1,4 @@
-"""Views for Phase 1 ingestion and charting."""
+"""Views for Phase 1 ingestion and Phase 3 navigation structure."""
 
 from __future__ import annotations
 
@@ -21,7 +21,7 @@ from analysis.deltas import delta
 from analysis.engine import analyze_runs
 from analysis.dto import RunAnalysis
 from core.forms import BattleReportImportForm, ChartContextForm, ComparisonForm
-from core.models import GameData
+from core.models import CardDefinition, GameData, PlayerCard, PresetTag
 from core.services import ingest_battle_report
 
 
@@ -106,6 +106,57 @@ def dashboard(request: HttpRequest) -> HttpResponse:
         else "[]",
     }
     return render(request, "core/dashboard.html", context)
+
+
+def battle_history(request: HttpRequest) -> HttpResponse:
+    """Render a simple list of imported runs with minimal metadata."""
+
+    runs = (
+        GameData.objects.select_related("run_progress", "run_progress__preset_tag")
+        .order_by("-run_progress__battle_date", "-parsed_at")
+    )
+    return render(
+        request,
+        "core/battle_history.html",
+        {"runs": runs},
+    )
+
+
+def cards(request: HttpRequest) -> HttpResponse:
+    """Render the cards page (definitions + player progress + preset labels)."""
+
+    definitions = CardDefinition.objects.prefetch_related("preset_tags").order_by("name")
+    player_cards = PlayerCard.objects.select_related("card_definition").order_by(
+        "card_definition__name"
+    )
+    presets = PresetTag.objects.order_by("name")
+    return render(
+        request,
+        "core/cards.html",
+        {
+            "definitions": definitions,
+            "player_cards": player_cards,
+            "presets": presets,
+        },
+    )
+
+
+def ultimate_weapon_progress(request: HttpRequest) -> HttpResponse:
+    """Render the Ultimate Weapon progress page."""
+
+    return render(request, "core/ultimate_weapon_progress.html", {})
+
+
+def guardian_progress(request: HttpRequest) -> HttpResponse:
+    """Render the Guardian progress page."""
+
+    return render(request, "core/guardian_progress.html", {})
+
+
+def bots_progress(request: HttpRequest) -> HttpResponse:
+    """Render the Bots progress page."""
+
+    return render(request, "core/bots_progress.html", {})
 
 
 def _filtered_runs(filter_form: ChartContextForm) -> QuerySet[GameData]:

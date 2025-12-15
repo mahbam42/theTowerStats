@@ -1,48 +1,8 @@
-<!doctype html>
-<html lang="en">
-  <head>
-    <meta charset="utf-8" />
-    <meta name="viewport" content="width=device-width, initial-scale=1" />
-    <title>theTowerStats</title>
-    <style>
-      body {
-        font-family: system-ui, -apple-system, Segoe UI, Roboto, sans-serif;
-        margin: 16px;
-      }
-      .context-bar {
-        position: sticky;
-        top: 0;
-        z-index: 10;
-        background: #fff;
-        border: 1px solid #ddd;
-        padding: 10px 12px;
-        margin-bottom: 12px;
-      }
-      .context-bar__title {
-        font-weight: 600;
-        margin-bottom: 6px;
-      }
-      .muted {
-        color: #666;
-      }
-      .empty-state {
-        border: 1px dashed #bbb;
-        padding: 12px;
-        margin: 12px 0;
-      }
-    </style>
-  </head>
-  <body>
-    <h1>theTowerStats</h1>
+{% extends "core/base.html" %}
 
-    {% if messages %}
-      <ul>
-        {% for message in messages %}
-          <li>{{ message }}</li>
-        {% endfor %}
-      </ul>
-    {% endif %}
+{% block title %}Charts • theTowerStats{% endblock %}
 
+{% block content %}
     <h2>Import Battle Report</h2>
     <form method="post">
       {% csrf_token %}
@@ -102,7 +62,9 @@
     {% endif %}
 
     <canvas id="chart" width="900" height="350" {% if chart_empty_state %}hidden{% endif %}></canvas>
+{% endblock %}
 
+{% block extra_scripts %}
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
     <script>
       const labels = {{ chart_labels_json|safe }};
@@ -245,5 +207,4 @@
         });
       }
     </script>
-  </body>
-</html>
+{% endblock %}

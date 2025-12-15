@@ -11,7 +11,10 @@ from collections.abc import Iterable
 from datetime import datetime
 from typing import Protocol, TypeGuard
 
-from .dto import AnalysisResult, RunAnalysis
+from .context import PlayerContextInput
+from .derived import MonteCarloConfig
+from .dto import AnalysisResult, MetricPoint, MetricSeriesResult, RunAnalysis
+from .metrics import MetricComputeConfig, compute_metric_value, get_metric_definition
 from .quantity import UnitType, parse_quantity
 from .rates import coins_per_hour
 
@@ -79,6 +82,94 @@ def analyze_runs(records: Iterable[object]) -> AnalysisResult:
 
     runs.sort(key=lambda r: r.battle_date)
     return AnalysisResult(runs=tuple(runs))
+
+
+def analyze_metric_series(
+    records: Iterable[object],
+    *,
+    metric_key: str,
+    context: PlayerContextInput | None = None,
+    monte_carlo_trials: int | None = None,
+    monte_carlo_seed: int | None = None,
+) -> MetricSeriesResult:
+    """Analyze runs for a specific metric, returning a chart-friendly series.
+
+    Args:
+        records: An iterable of `RunProgress`-like objects, or `GameData` objects
+            with a `run_progress` attribute.
+        metric_key: Metric key to compute (observed or derived).
+        context: Optional player context + selected parameter tables.
+        monte_carlo_trials: Optional override for Monte Carlo trial count used by
+            simulated EV metrics.
+        monte_carlo_seed: Optional override for the Monte Carlo RNG seed.
+
+    Returns:
+        MetricSeriesResult with per-run points and transparent metadata about
+        used parameters/assumptions.
+
+    Notes:
+        Records missing required run fields (battle_date, real_time_seconds) are
+        skipped. Missing context never raises; values become None instead.
+    """
+
+    metric = get_metric_definition(metric_key)
+    config = MetricComputeConfig(
+        monte_carlo=None
+        if monte_carlo_trials is None or monte_carlo_seed is None
+        else MonteCarloConfig(trials=monte_carlo_trials, seed=monte_carlo_seed)
+    )
+
+    points: list[MetricPoint] = []
+    used_parameters = []
+    assumptions = set()
+
+    for record in records:
+        progress = getattr(record, "run_progress", record)
+        if not _looks_like_run_progress(progress):
+            continue
+
+        run_id = _coerce_int(getattr(progress, "id", None))
+        if run_id is None:
+            run_id = _coerce_int(getattr(record, "id", None))
+
+        battle_date = _coerce_datetime(
+            getattr(progress, "battle_date", None) or getattr(record, "parsed_at", None)
+        )
+        tier = _coerce_int(getattr(progress, "tier", None))
+        preset_name = _preset_name_from_progress(progress)
+        coins = _coerce_int(getattr(progress, "coins", None))
+        if coins is None:
+            coins = _coins_from_raw_text(getattr(record, "raw_text", None))
+        real_time_seconds = _coerce_int(getattr(progress, "real_time_seconds", None))
+        if battle_date is None or real_time_seconds is None:
+            continue
+
+        value, used, assumed = compute_metric_value(
+            metric.key,
+            coins=coins,
+            real_time_seconds=real_time_seconds,
+            context=context,
+            config=config,
+        )
+        used_parameters.extend(used)
+        assumptions.update(assumed)
+        points.append(
+            MetricPoint(
+                run_id=run_id,
+                battle_date=battle_date,
+                tier=tier,
+                preset_name=preset_name,
+                value=value,
+            )
+        )
+
+    points.sort(key=lambda p: p.battle_date)
+    return MetricSeriesResult(
+        metric=metric,
+        points=tuple(points),
+        used_parameters=tuple(used_parameters),
+        assumptions=tuple(sorted(assumptions)),
+    )
 
 
 def _looks_like_run_progress(obj: object) -> TypeGuard[_RunProgressLike]:

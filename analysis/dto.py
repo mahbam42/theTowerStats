@@ -7,6 +7,7 @@ They intentionally avoid any Django/ORM dependencies.
 from __future__ import annotations
 
 from dataclasses import dataclass
+from dataclasses import field
 from datetime import date
 from datetime import datetime
 
@@ -56,6 +57,80 @@ class RunAnalysis:
     tier: int | None
     preset_name: str | None
     coins_per_hour: float
+
+
+@dataclass(frozen=True, slots=True)
+class MetricDefinition:
+    """Definition for an observed or derived metric.
+
+    Attributes:
+        key: Stable metric key used by UI selection and charting.
+        label: Human-friendly label.
+        unit: Display unit string (e.g. "coins/hour", "seconds").
+        kind: Either "observed" or "derived".
+    """
+
+    key: str
+    label: str
+    unit: str
+    kind: str
+
+
+@dataclass(frozen=True, slots=True)
+class UsedParameter:
+    """A parameter value referenced during derived metric computation.
+
+    Attributes:
+        entity_type: High-level entity type (card, ultimate_weapon, guardian_chip, bot).
+        entity_name: Human-friendly entity name.
+        key: Parameter key used by the computation.
+        raw_value: Raw string as stored.
+        normalized_value: Best-effort normalized float value, if parseable.
+        wiki_revision_id: Optional wiki revision id (core.WikiData pk) used.
+    """
+
+    entity_type: str
+    entity_name: str
+    key: str
+    raw_value: str
+    normalized_value: float | None
+    wiki_revision_id: int | None
+
+
+@dataclass(frozen=True)
+class MetricPoint:
+    """A per-run metric point for charting.
+
+    Attributes:
+        run_id: Optional identifier for the underlying persisted record.
+        battle_date: Timestamp used as the x-axis.
+        tier: Optional tier value when available.
+        preset_name: Optional preset label when available.
+        value: Metric value, or None when inputs are missing.
+    """
+
+    run_id: int | None
+    battle_date: datetime
+    tier: int | None
+    preset_name: str | None
+    value: float | None
+
+
+@dataclass(frozen=True)
+class MetricSeriesResult:
+    """A computed time series for a selected metric.
+
+    Attributes:
+        metric: MetricDefinition describing the series.
+        points: Per-run metric points.
+        used_parameters: Parameters referenced (for derived metrics and UI transparency).
+        assumptions: Human-readable, non-prescriptive notes about formulas/policies.
+    """
+
+    metric: MetricDefinition
+    points: tuple[MetricPoint, ...] = ()
+    used_parameters: tuple[UsedParameter, ...] = ()
+    assumptions: tuple[str, ...] = field(default_factory=tuple)
 
 
 @dataclass(frozen=True)

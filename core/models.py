@@ -156,3 +156,323 @@ class WikiData(models.Model):
         """Return a concise display string for admin/debug usage."""
 
         return f"WikiData(entity_id={self.entity_id}, hash={self.content_hash[:10]}…, deprecated={self.deprecated})"
+
+
+class Unit(models.Model):
+    """A lightweight unit/metadata model for labeling raw parameter values.
+
+    This model is intentionally small and permissive. It exists to support
+    traceable, non-destructive storage of wiki-derived or user-entered values
+    without committing to any specific gameplay math in Phase 3.
+
+    Attributes:
+        name: Human-friendly unit name (e.g. "seconds", "percent").
+        symbol: Optional display symbol (e.g. "s", "%").
+        kind: Broad category for display/grouping purposes.
+    """
+
+    class Kind(models.TextChoices):
+        """Broad unit categories for UI display."""
+
+        UNKNOWN = "unknown", "Unknown"
+        COUNT = "count", "Count"
+        PERCENT = "percent", "Percent"
+        SECONDS = "seconds", "Seconds"
+        MULTIPLIER = "multiplier", "Multiplier"
+        CURRENCY = "currency", "Currency"
+
+    name = models.CharField(max_length=80, unique=True)
+    symbol = models.CharField(max_length=12, blank=True)
+    kind = models.CharField(max_length=20, choices=Kind.choices, default=Kind.UNKNOWN)
+
+    def __str__(self) -> str:
+        """Return the unit name for display contexts."""
+
+        return self.name
+
+
+class CardDefinition(models.Model):
+    """Definition record for a card as shown in the in-app library.
+
+    Attributes:
+        name: Card name as presented in the UI.
+        wiki_page_url: Optional URL to the wiki source page.
+        wiki_entity_id: Optional stable identifier used for wiki ingestion.
+        preset_tags: Optional many-to-many labels for grouping cards.
+    """
+
+    name = models.CharField(max_length=120, unique=True)
+    wiki_page_url = models.URLField(blank=True)
+    wiki_entity_id = models.CharField(max_length=200, blank=True, db_index=True)
+    preset_tags = models.ManyToManyField(
+        PresetTag,
+        blank=True,
+        related_name="card_definitions",
+    )
+
+    def __str__(self) -> str:
+        """Return the card name for display contexts."""
+
+        return self.name
+
+
+class CardParameter(models.Model):
+    """Raw parameter/value row for a card definition.
+
+    This model is intentionally schema-light in Phase 3. Raw values are stored
+    as strings to preserve their original representation.
+
+    Attributes:
+        card_definition: Parent card definition.
+        key: Parameter name (e.g. "Cooldown reduction").
+        raw_value: Raw cell text or user-entered value.
+        unit: Optional unit label.
+        source_wikidata: Optional pointer to the exact wiki revision used.
+    """
+
+    card_definition = models.ForeignKey(
+        CardDefinition, on_delete=models.CASCADE, related_name="parameters"
+    )
+    key = models.CharField(max_length=120)
+    raw_value = models.CharField(max_length=200)
+    unit = models.ForeignKey(Unit, null=True, blank=True, on_delete=models.SET_NULL)
+    source_wikidata = models.ForeignKey(
+        WikiData,
+        null=True,
+        blank=True,
+        on_delete=models.SET_NULL,
+        related_name="card_parameters",
+    )
+
+    class Meta:
+        indexes = [
+            models.Index(fields=["card_definition", "key"]),
+        ]
+
+    def __str__(self) -> str:
+        """Return a concise display string for admin/debug usage."""
+
+        return f"{self.card_definition.name}: {self.key}={self.raw_value}"
+
+
+class CardLevel(models.Model):
+    """Structural card level/star record for later upgrade tables.
+
+    Attributes:
+        card_definition: Parent card definition.
+        level: Card level (best-effort integer).
+        star: Optional star/tier indicator (best-effort integer).
+        raw_row: Optional raw mapping for traceability.
+        source_wikidata: Optional pointer to the exact wiki revision used.
+    """
+
+    card_definition = models.ForeignKey(
+        CardDefinition, on_delete=models.CASCADE, related_name="levels"
+    )
+    level = models.PositiveSmallIntegerField()
+    star = models.PositiveSmallIntegerField(null=True, blank=True)
+    raw_row = models.JSONField(default=dict, blank=True)
+    source_wikidata = models.ForeignKey(
+        WikiData,
+        null=True,
+        blank=True,
+        on_delete=models.SET_NULL,
+        related_name="card_levels",
+    )
+
+    class Meta:
+        constraints = [
+            models.UniqueConstraint(
+                fields=["card_definition", "level", "star"],
+                name="uniq_card_level_star",
+            )
+        ]
+        indexes = [
+            models.Index(fields=["card_definition", "level"]),
+        ]
+
+    def __str__(self) -> str:
+        """Return a concise display string for admin/debug usage."""
+
+        star = f"★{self.star}" if self.star is not None else "★?"
+        return f"{self.card_definition.name} L{self.level} {star}"
+
+
+class CardSlot(models.Model):
+    """Structural definition of a card slot unlock milestone.
+
+    Attributes:
+        slot_number: Slot index (1-based).
+        unlock_cost_raw: Raw unlock cost representation (e.g. "50M coins").
+        notes: Optional freeform notes for later UX.
+    """
+
+    slot_number = models.PositiveSmallIntegerField(unique=True)
+    unlock_cost_raw = models.CharField(max_length=80, blank=True)
+    notes = models.TextField(blank=True)
+
+    def __str__(self) -> str:
+        """Return a concise display string for admin/debug usage."""
+
+        return f"CardSlot({self.slot_number})"
+
+
+class BotParameter(models.Model):
+    """Raw parameter/value row for bot upgrades.
+
+    Attributes:
+        bot_name: Bot identifier/name.
+        key: Parameter name.
+        raw_value: Raw cell text or user-entered value.
+        unit: Optional unit label.
+        source_wikidata: Optional pointer to the exact wiki revision used.
+    """
+
+    bot_name = models.CharField(max_length=120, db_index=True)
+    key = models.CharField(max_length=120)
+    raw_value = models.CharField(max_length=200)
+    unit = models.ForeignKey(Unit, null=True, blank=True, on_delete=models.SET_NULL)
+    source_wikidata = models.ForeignKey(
+        WikiData,
+        null=True,
+        blank=True,
+        on_delete=models.SET_NULL,
+        related_name="bot_parameters",
+    )
+
+    class Meta:
+        indexes = [
+            models.Index(fields=["bot_name", "key"]),
+        ]
+
+    def __str__(self) -> str:
+        """Return a concise display string for admin/debug usage."""
+
+        return f"{self.bot_name}: {self.key}={self.raw_value}"
+
+
+class GuardianChipParameter(models.Model):
+    """Raw parameter/value row for guardian chip upgrade tables."""
+
+    chip_name = models.CharField(max_length=120, db_index=True)
+    key = models.CharField(max_length=120)
+    raw_value = models.CharField(max_length=200)
+    unit = models.ForeignKey(Unit, null=True, blank=True, on_delete=models.SET_NULL)
+    source_wikidata = models.ForeignKey(
+        WikiData,
+        null=True,
+        blank=True,
+        on_delete=models.SET_NULL,
+        related_name="guardian_chip_parameters",
+    )
+
+    class Meta:
+        indexes = [
+            models.Index(fields=["chip_name", "key"]),
+        ]
+
+    def __str__(self) -> str:
+        """Return a concise display string for admin/debug usage."""
+
+        return f"{self.chip_name}: {self.key}={self.raw_value}"
+
+
+class UltimateWeaponParameter(models.Model):
+    """Raw parameter/value row for ultimate weapon upgrade tables."""
+
+    weapon_name = models.CharField(max_length=120, db_index=True)
+    key = models.CharField(max_length=120)
+    raw_value = models.CharField(max_length=200)
+    unit = models.ForeignKey(Unit, null=True, blank=True, on_delete=models.SET_NULL)
+    source_wikidata = models.ForeignKey(
+        WikiData,
+        null=True,
+        blank=True,
+        on_delete=models.SET_NULL,
+        related_name="ultimate_weapon_parameters",
+    )
+
+    class Meta:
+        indexes = [
+            models.Index(fields=["weapon_name", "key"]),
+        ]
+
+    def __str__(self) -> str:
+        """Return a concise display string for admin/debug usage."""
+
+        return f"{self.weapon_name}: {self.key}={self.raw_value}"
+
+
+class PlayerCard(models.Model):
+    """Player-owned card progress record (single-player by default).
+
+    Attributes:
+        card_definition: The card being tracked.
+        owned: Whether the player owns the card.
+        level: Player's current card level (best-effort).
+        star: Player's current star level (best-effort).
+        updated_at: Timestamp when this record was last updated.
+        notes: Optional freeform notes.
+    """
+
+    card_definition = models.OneToOneField(
+        CardDefinition, on_delete=models.CASCADE, related_name="player_state"
+    )
+    owned = models.BooleanField(default=False)
+    level = models.PositiveSmallIntegerField(null=True, blank=True)
+    star = models.PositiveSmallIntegerField(null=True, blank=True)
+    updated_at = models.DateTimeField(auto_now=True)
+    notes = models.TextField(blank=True)
+
+    def __str__(self) -> str:
+        """Return a concise display string for admin/debug usage."""
+
+        owned = "owned" if self.owned else "unowned"
+        return f"PlayerCard({self.card_definition.name}, {owned})"
+
+
+class PlayerGuardianChip(models.Model):
+    """Player-owned guardian chip progress record (structural stub)."""
+
+    chip_name = models.CharField(max_length=120, unique=True)
+    owned = models.BooleanField(default=False)
+    level = models.PositiveSmallIntegerField(null=True, blank=True)
+    star = models.PositiveSmallIntegerField(null=True, blank=True)
+    updated_at = models.DateTimeField(auto_now=True)
+    notes = models.TextField(blank=True)
+
+    def __str__(self) -> str:
+        """Return the chip name for display contexts."""
+
+        return self.chip_name
+
+
+class PlayerUltimateWeapon(models.Model):
+    """Player-owned ultimate weapon progress record (structural stub)."""
+
+    weapon_name = models.CharField(max_length=120, unique=True)
+    unlocked = models.BooleanField(default=False)
+    level = models.PositiveSmallIntegerField(null=True, blank=True)
+    star = models.PositiveSmallIntegerField(null=True, blank=True)
+    updated_at = models.DateTimeField(auto_now=True)
+    notes = models.TextField(blank=True)
+
+    def __str__(self) -> str:
+        """Return the weapon name for display contexts."""
+
+        return self.weapon_name
+
+
+class PlayerBot(models.Model):
+    """Player-owned bot progress record (structural stub)."""
+
+    bot_name = models.CharField(max_length=120, unique=True)
+    unlocked = models.BooleanField(default=False)
+    level = models.PositiveSmallIntegerField(null=True, blank=True)
+    updated_at = models.DateTimeField(auto_now=True)
+    notes = models.TextField(blank=True)
+
+    def __str__(self) -> str:
+        """Return the bot name for display contexts."""
+
+        return self.bot_name
