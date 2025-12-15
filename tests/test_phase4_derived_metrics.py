@@ -59,7 +59,7 @@ def test_effective_cooldown_golden() -> None:
         real_time_seconds=600,
     )
 
-    uw = PlayerUltimateWeapon.objects.create(weapon_name="Golden Tower", unlocked=True)
+    PlayerUltimateWeapon.objects.create(weapon_name="Golden Tower", unlocked=True)
     rev = _wikidata_revision(
         entity_name="Golden Tower",
         content_hash="uw1",

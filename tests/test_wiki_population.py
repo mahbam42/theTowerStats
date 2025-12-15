@@ -9,12 +9,9 @@ from core.models import (
     CardDefinition,
     CardParameter,
     CardSlot,
-    GuardianChipDefinition,
     GuardianChipLevel,
     GuardianChipParameter,
-    UltimateWeaponDefinition,
     UltimateWeaponLevel,
-    UltimateWeaponParameter,
 )
 from core.parameter_registry import PARAMETER_KEY_REGISTRY
 from core.wiki_ingestion import (
@@ -212,4 +209,3 @@ def test_bot_population_skips_unknown_headers() -> None:
     assert level.parameters.count() == 1
     param = level.parameters.get()
     assert param.key == "Damage"
-

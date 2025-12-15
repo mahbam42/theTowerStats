@@ -7,6 +7,21 @@ traceability to the exact wiki revision used.
 This step is intentionally **offline** (no network access): it reads only from
 the local `core.WikiData` table.
 
+## Prerequisite: Ingest WikiData
+
+Populate is a translation step only. If `core.WikiData` is empty (or missing a
+target’s `parse_version`), population will report no changes.
+
+Ingest the relevant wiki tables first:
+
+```bash
+python manage.py fetch_wiki_data --target slots --write
+python manage.py fetch_wiki_data --target cards_list --write
+python manage.py fetch_wiki_data --target bots --write
+python manage.py fetch_wiki_data --target guardian_chips --write
+python manage.py fetch_wiki_data --target ultimate_weapons --write
+```
+
 ## Command
 
 Dry-run (no database writes):

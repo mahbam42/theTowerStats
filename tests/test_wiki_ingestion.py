@@ -15,6 +15,7 @@ from core.wiki_ingestion import (
     list_tables,
     make_entity_id,
     scrape_entity_rows,
+    scrape_leveled_entity_rows,
 )
 
 
@@ -227,3 +228,54 @@ def test_scrape_entity_rows_can_add_table_label_extra_fields() -> None:
     )
     assert rows[0].canonical_name == "Coin Bonus"
     assert rows[0].raw_row["_wiki_table_label"] == "Common"
+
+
+def test_extract_table_dedupes_duplicate_headers_without_loss() -> None:
+    """Duplicate headers are made unique so no values are overwritten."""
+
+    from core.wiki_ingestion import extract_table
+
+    html = _fixture_html("wiki_guardian_ally_chip_table_v1.html")
+    headers, rows = extract_table(html, table_index=0)
+    assert headers == [
+        "Recovery Amount",
+        "Bits",
+        "Cooldown(s)",
+        "Bits__2",
+        "Max Recovey",
+        "Bits__3",
+    ]
+    assert rows[0]["Bits"] == "0"
+    assert rows[0]["Bits__2"] == "0"
+    assert rows[0]["Bits__3"] == "0"
+
+
+def test_find_table_indexes_by_anchor_selects_guardian_chip_section_tables() -> None:
+    """Select tables under a chip-specific h2 anchor (section-based matching)."""
+
+    html = _fixture_html("wiki_guardian_ally_chip_table_v1.html")
+    indexes = find_table_indexes_by_anchor(html, anchor_id="Ally_Chip")
+    assert indexes == [0]
+
+
+def test_scrape_leveled_entity_rows_injects_level_and_alias_keys() -> None:
+    """Leveled scraping can add a Level field and header aliases."""
+
+    html = _fixture_html("wiki_guardian_ally_chip_table_v1.html")
+    rows = scrape_leveled_entity_rows(
+        html,
+        table_index=0,
+        entity_name="Ally",
+        entity_id=make_entity_id("Ally"),
+        entity_field="Guardian",
+        add_level_if_missing=True,
+        header_aliases={"Cooldown(s)": "Cooldown", "Max Recovey": "Max Recovery"},
+    )
+    assert len(rows) == 2
+    assert rows[0].canonical_name == "Ally"
+    assert rows[0].raw_row["_wiki_entity_id"] == "ally"
+    assert rows[0].raw_row["Guardian"] == "Ally"
+    assert rows[0].raw_row["Level"] == "1"
+    assert rows[0].raw_row["Cooldown(s)"] == "120"
+    assert rows[0].raw_row["Cooldown"] == "120"
+    assert rows[0].raw_row["Max Recovery"] == "1.1x"

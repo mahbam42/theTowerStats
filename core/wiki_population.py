@@ -133,7 +133,8 @@ def _latest_per_entity_level(qs) -> dict[tuple[str, int | None, int | None], Wik
     latest: dict[tuple[str, int | None, int | None], WikiData] = {}
     for row in qs.order_by("entity_id", "-last_seen", "-id").iterator():
         level, star = _parse_level_fields(row.raw_row)
-        key = (row.entity_id, level, star)
+        base_entity_id = (row.raw_row.get("_wiki_entity_id") or row.entity_id or "").strip()
+        key = (base_entity_id, level, star)
         if key not in latest:
             latest[key] = row
     return latest

@@ -24,19 +24,16 @@ from analysis.quantity import UnitType, parse_quantity
 
 from core.models import (
     BotDefinition,
-    BotLevel,
     BotParameter,
     CardLevel,
     CardParameter,
     GuardianChipDefinition,
-    GuardianChipLevel,
     GuardianChipParameter,
     PlayerBot,
     PlayerCard,
     PlayerGuardianChip,
     PlayerUltimateWeapon,
     UltimateWeaponDefinition,
-    UltimateWeaponLevel,
     UltimateWeaponParameter,
 )
 
