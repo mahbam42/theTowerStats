@@ -39,12 +39,40 @@ def test_populate_card_slots_from_wiki_creates_slots_with_source_revision() -> N
     slot = CardSlot.objects.get(slot_number=1)
     assert slot.unlock_cost_raw == "10"
     assert slot.source_wikidata is not None
-    assert slot.source_wikidata.raw_row["Slots"] == "1"
+    slot_raw = slot.source_wikidata.raw_row.get("Slot") or slot.source_wikidata.raw_row.get("Slots")
+    assert slot_raw == "1"
 
     # Idempotent for the same revision.
     summary_again = populate_card_slots_from_wiki(write=True)
     assert summary_again.created_card_slots == 0
     assert summary_again.updated_card_slots == 0
+
+
+@pytest.mark.django_db
+def test_populate_card_slots_from_wiki_supports_legacy_slot_headers() -> None:
+    """Populate CardSlot rows when the wiki uses legacy Slots/Cost headers."""
+
+    from core.wiki_ingestion import ScrapedWikiRow, compute_content_hash, make_entity_id
+
+    raw_row = {"Slots": "1", "Cost": "10"}
+    ingest_wiki_rows(
+        [
+            ScrapedWikiRow(
+                canonical_name="Unknown",
+                entity_id=make_entity_id("Unknown"),
+                raw_row=raw_row,
+                content_hash=compute_content_hash(raw_row),
+            )
+        ],
+        page_url="https://example.test/wiki/Cards",
+        source_section="legacy_slots_table",
+        parse_version="cards_v1",
+        write=True,
+    )
+
+    summary = populate_card_slots_from_wiki(write=True)
+    assert summary.created_card_slots == 1
+    assert CardSlot.objects.get(slot_number=1).unlock_cost_raw == "10"
 
 
 @pytest.mark.django_db

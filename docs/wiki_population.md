@@ -28,9 +28,12 @@ Targets:
 - `--target levels`: populate `CardLevel` (currently a no-op until level tables are ingested)
 - `--target all`: run all of the above (default)
 
+Slot-table detection:
+
+- The populator recognizes common header variants, including `Slot`/`Slots` and `Gem Cost`/`Cost`.
+
 ## Traceability rules
 
 - `CardSlot.source_wikidata` and `CardParameter.source_wikidata` always point to
   the exact `WikiData` revision used to create the row.
 - Raw values are copied as strings (no interpretation or destructive transforms).
-

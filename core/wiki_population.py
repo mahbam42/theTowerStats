@@ -60,11 +60,46 @@ def _select_latest_per_entity(qs) -> dict[str, WikiData]:
     return latest
 
 
+def _first_key(raw_row: dict, keys: tuple[str, ...]) -> str | None:
+    """Return the first matching key present in a WikiData raw_row.
+
+    Args:
+        raw_row: The WikiData row mapping (raw column names -> values).
+        keys: Candidate keys to check, in priority order.
+
+    Returns:
+        The matching key if present, otherwise None.
+    """
+
+    for key in keys:
+        if key in raw_row:
+            return key
+    return None
+
+
+def _is_card_slot_row(raw_row: dict) -> bool:
+    """Return True when a raw_row looks like the Card Slots table.
+
+    The wiki has used multiple header variants over time. This helper accepts
+    known pairs while staying strict to avoid misclassifying other rows.
+
+    Args:
+        raw_row: The WikiData row mapping (raw column names -> values).
+
+    Returns:
+        True if the row looks like a card-slot row, otherwise False.
+    """
+
+    slot_key = _first_key(raw_row, ("Slots", "Slot"))
+    cost_key = _first_key(raw_row, ("Cost", "Gem Cost", "Unlock Cost"))
+    return slot_key is not None and cost_key is not None
+
+
 def populate_card_slots_from_wiki(*, write: bool) -> WikiPopulationSummary:
     """Create/update CardSlot rows from wiki-derived slot tables.
 
-    The slot table is identified heuristically by the presence of `Slots` and
-    `Cost` columns in `WikiData.raw_row`.
+    The slot table is identified heuristically by the presence of a `Slot`/`Slots`
+    column and a cost column (ex: `Gem Cost`).
 
     Args:
         write: When True, persist changes to the database. When False, compute
@@ -80,15 +115,20 @@ def populate_card_slots_from_wiki(*, write: bool) -> WikiPopulationSummary:
     )
     slot_ids: list[int] = []
     for row in candidates.order_by("-last_seen", "-id").iterator():
-        if {"Slots", "Cost"}.issubset(row.raw_row.keys()):
+        if _is_card_slot_row(row.raw_row):
             slot_ids.append(row.id)
     latest_by_entity = _select_latest_per_entity(WikiData.objects.filter(id__in=slot_ids))
 
     created = 0
     updated = 0
     for row in latest_by_entity.values():
-        slot_raw = (row.raw_row.get("Slots") or "").strip()
-        cost_raw = (row.raw_row.get("Cost") or "").strip()
+        slot_key = _first_key(row.raw_row, ("Slots", "Slot"))
+        cost_key = _first_key(row.raw_row, ("Cost", "Gem Cost", "Unlock Cost"))
+        if slot_key is None or cost_key is None:
+            continue
+
+        slot_raw = (row.raw_row.get(slot_key) or "").strip()
+        cost_raw = (row.raw_row.get(cost_key) or "").strip()
         try:
             slot_number = int(slot_raw)
         except ValueError:
@@ -141,7 +181,7 @@ def populate_cards_from_wiki(*, write: bool) -> WikiPopulationSummary:
     latest_v1 = {
         entity_id: row
         for entity_id, row in _select_latest_per_entity(cards_v1).items()
-        if {"Slots", "Cost"}.isdisjoint(row.raw_row.keys())
+        if not _is_card_slot_row(row.raw_row)
     }
 
     selected_by_entity: dict[str, WikiData] = {}
