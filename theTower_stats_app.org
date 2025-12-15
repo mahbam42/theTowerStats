@@ -610,7 +610,7 @@ Testing:
 - [ ] Tier filtering
 - [ ] Preset filtering
 - [ ] Delta calculations
-**** Exit Criteria [0%]
+**** Exit Criteria [25%]
 Context Filters
 - [ ] Tier filter affects:
   - analysis output
@@ -629,8 +629,8 @@ Delta Calculations
   - are covered by golden tests
 
 UX
-- [ ]  UI clearly shows when filters are active
-- [ ]  Clearing filters returns to baseline view
+- [X]  UI clearly shows when filters are active
+- [X]  Clearing filters returns to baseline view
 
 Testing
 At least:
@@ -638,9 +638,9 @@ At least:
 - [ ] 1 aggregation test using presets
 *** Phase 3 — App Structure & UX
 
-**** Milestones [0%]
-- [ ] Navigation
-- [ ] Page separation
+**** Milestones [50%]
+- [X] Navigation
+- [X] Page separation
 - [ ] Dashboards
 - [ ] Model completeness (structure, not logic)
 *** Phase 4 Effects
@@ -679,6 +679,38 @@ Testing
 - [ ] 1 golden test for a parameterized effect
 
 - [ ] 1 test validating revision behavior
+*** Phase 5 Dashboard UX [0%]
+General conventions across all Dashboards
+- Nav Header
+- Global Search Box
+- Links to Docs and Admin
+- 
+**** TODO Battle History
+- Display Results in a Styled Table with Sortable Columns
+- Include:
+  - Killed By	Boss
+  - Coins earned	1.24M
+  - Coins per hour	4.24M
+  - Cash earned	$1.00M
+  - Interest earned	$220.24K
+  - Gem Blocks Tapped	1
+  - Cells Earned	0
+  - Reroll Shards Earned	94
+- Filter by Tier, Killed By
+- Can be paginated 
+**** TODO Charts
+Needs a lot of work 
+**** TODO Cards
+- Show a utility widget with 'CardSlots' Unlocked and a button to 'Unlock Next Slot'
+- List all Cards in a Collapsible Table
+  - Multiselect to add/create preset
+  - textbox to enter current inventory
+  - Display 'CardLevel' and 'CardParameters'
+  - Filter by Preset
+**** TODO UW Progress
+**** TODO Guardian Chip Progress
+The naming is important 
+**** TODO Bots Progress
 ** Backlog
 “Out of Scope”:
 - Multiplayer
