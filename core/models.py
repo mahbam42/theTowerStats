@@ -52,7 +52,7 @@ class GameData(models.Model):
     
     class Meta:
         verbose_name = "Game Data"
-        verbose_name_plural = "Wiki Datum"
+        verbose_name_plural = "Game Datum"
 
 
 class RunProgress(models.Model):
