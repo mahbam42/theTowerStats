@@ -610,7 +610,7 @@ Testing:
 - [ ] Tier filtering
 - [ ] Preset filtering
 - [ ] Delta calculations
-**** Exit Criteria [25%]
+**** Exit Criteria [50%]
 Context Filters
 - [ ] Tier filter affects:
   - analysis output
@@ -634,8 +634,8 @@ UX
 
 Testing
 At least:
-- [ ] 1 delta golden test
-- [ ] 1 aggregation test using presets
+- [X] 1 delta golden test
+- [X] 1 aggregation test using presets
 *** Phase 3 — App Structure & UX
 
 **** Milestones [50%]
@@ -645,6 +645,74 @@ At least:
 - [ ] Model completeness (structure, not logic)
 *** Phase 4 Effects
 
+**** Scraping Sources and Corrective Behavior
+- [ ] Need a Management Command to Purge WikiData, Bot Definitions, Bot Levels, Bot Parameters, Guardian Chip Definitions, Guardian Chip levels, Guardian Chip Parameters, UW Definitions, UW Levels, UW Parameters.
+
+  
+- Each parameter can be upgraded individually, so they aren't in sync by level. Current level/level unlocked can be tracked within Parameters.
+- Note parameters like Range, Duration and Cooldown are unique to each UW, Bot, or Chip
+
+***** Bots
+The scraper fetchs the wrong data/table. The 4 parameters for each bot share a cost value for the upgrades. Upgrades are purchased individually, so level isn't shared across them.
+
+The cost is in Medals.
+
+The labs tables are outside of the current scope.
+
+- Thunder Bot :: Duration, Cooldown, Linger, Range. All that data is in the first table on https://the-tower-idle-tower-defense.fandom.com/wiki/Thunder_Bot
+- Flame Bot :: Damage Reduction, Cooldown, Damage, Range. https://the-tower-idle-tower-defense.fandom.com/wiki/Flame_Bot
+- Golden Bot :: Duration, Cooldown, Bonus, Range. https://the-tower-idle-tower-defense.fandom.com/wiki/Golden_Bot
+- Amplify Bot :: Duration, Cooldown, Bonus, Range. https://the-tower-idle-tower-defense.fandom.com/wiki/Amplify_Bot
+
+***** Ultimate Weapons
+
+- 3 Parameters each, can be upgraded individually by level.
+- Cost is in Stones
+- Labs and Ultimate Weapon Plus are out outside of the current scope for tracking
+- Similar to Bots, all levels are in the first table for each UW page, with an anchor for #Basic_Upgrades
+
+- Chain Lightning :: Damage, Quantity, Chance https://the-tower-idle-tower-defense.fandom.com/wiki/Chain_Lightning
+
+- Death Wave :: Damage Multiplier, Effect Wave, Cooldown https://the-tower-idle-tower-defense.fandom.com/wiki/Death_Wave#Basic_Upgrades
+
+- Golden Tower :: Coins Multiplier, Duration, Cooldown https://the-tower-idle-tower-defense.fandom.com/wiki/Golden_Tower#Basic_Upgrades
+
+- Spotlight :: Coins Bonus, Angle, Quantity (number of active spotlights) https://the-tower-idle-tower-defense.fandom.com/wiki/Spotlight#Basic_Upgrades
+
+- Smart Missles :: Damage Multiplier, Quantity, Cooldown https://the-tower-idle-tower-defense.fandom.com/wiki/Smart_Missiles#Basic_Upgrades
+
+- Chrono Field :: Duration, Slow, Cooldown https://the-tower-idle-tower-defense.fandom.com/wiki/Chrono_Field#Basic_Upgrades
+
+- Inner Land Mines :: Damage %, Quantity, Cooldown https://the-tower-idle-tower-defense.fandom.com/wiki/Inner_Land_Mines#Basic_Upgrades
+
+- Poison Swamp :: Damage Multiplier, Duration, Cooldown https://the-tower-idle-tower-defense.fandom.com/wiki/Poison_Swamp#Basic_Upgrades
+
+- Black Hole :: Size, Duration Cooldown https://the-tower-idle-tower-defense.fandom.com/wiki/Black_Hole#Basic_Upgrades
+
+***** Guardian Chips
+- There are currently 5 chips available
+- Costs are in Bits
+- 3 Parameters Each
+- All information is located on https://the-tower-idle-tower-defense.fandom.com/wiki/Guardian with a unique anchor for each chip
+
+  
+- Ally :: Recovery Amount, Cooldown, Max Recovery https://the-tower-idle-tower-defense.fandom.com/wiki/Guardian#Ally
+- Attack :: Percentage, Cooldown, Targets
+  These are tracked in Battle Reports https://the-tower-idle-tower-defense.fandom.com/wiki/Guardian#Attack
+- Fetch :: Cooldown, Find Chance %, Double Find Chance
+  These are tracked in Battle Reports. Note there is an irrelevant table above Upgrades for this chip  https://the-tower-idle-tower-defense.fandom.com/wiki/Guardian#Fetch
+- Bounty :: Multiplier, Cooldown, Targets
+  https://the-tower-idle-tower-defense.fandom.com/wiki/Guardian#Bounty
+- Summon :: Cooldown, Duration, Cash Bonus
+  https://the-tower-idle-tower-defense.fandom.com/wiki/Guardian#Summon
+
+***** Cards
+- All listed on https://the-tower-idle-tower-defense.fandom.com/wiki/Cards#List_of_Cards
+- 'Description' Column explains target and how it's modified
+- Card Slots are unlocked with Gems.
+
+**** Need method for handling Player Bots/Cards/UW/Gaurdian Chips
+Hasn't been built out or thought out yet.
 **** Milestones
 - [ ] CardParameters → effective values
 - [ ] UW / Guardian parameterized metrics
