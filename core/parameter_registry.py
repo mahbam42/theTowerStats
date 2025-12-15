@@ -9,9 +9,13 @@ appears in wiki tables, and the expected :class:`core.models.Unit.Kind`.
 from __future__ import annotations
 
 from dataclasses import dataclass
-from typing import Dict, Iterable, Mapping, Tuple
+from typing import Dict, Iterable, Mapping, Tuple, cast
 
 from core.models import Unit
+
+_COUNT = cast(Unit.Kind, Unit.Kind.COUNT)
+_PERCENT = cast(Unit.Kind, Unit.Kind.PERCENT)
+_SECONDS = cast(Unit.Kind, Unit.Kind.SECONDS)
 
 
 @dataclass(frozen=True, slots=True)
@@ -45,47 +49,47 @@ def _index_registry(entries: Iterable[ParameterKey]) -> Dict[Tuple[str, str, str
 
 PARAMETER_KEY_REGISTRY: tuple[ParameterKey, ...] = (
     # Bots
-    ParameterKey("bot", "amplify", "Damage", Unit.Kind.COUNT),
-    ParameterKey("bot", "amplify", "Duration", Unit.Kind.SECONDS),
-    ParameterKey("bot", "amplify", "Cooldown", Unit.Kind.SECONDS),
-    ParameterKey("bot", "flame", "Damage", Unit.Kind.COUNT),
-    ParameterKey("bot", "flame", "Duration", Unit.Kind.SECONDS),
-    ParameterKey("bot", "flame", "Cooldown", Unit.Kind.SECONDS),
-    ParameterKey("bot", "thunder", "Damage", Unit.Kind.COUNT),
-    ParameterKey("bot", "thunder", "Duration", Unit.Kind.SECONDS),
-    ParameterKey("bot", "thunder", "Cooldown", Unit.Kind.SECONDS),
-    ParameterKey("bot", "golden", "Damage", Unit.Kind.COUNT),
-    ParameterKey("bot", "golden", "Duration", Unit.Kind.SECONDS),
-    ParameterKey("bot", "golden", "Cooldown", Unit.Kind.SECONDS),
+    ParameterKey("bot", "amplify", "Damage", _COUNT),
+    ParameterKey("bot", "amplify", "Duration", _SECONDS),
+    ParameterKey("bot", "amplify", "Cooldown", _SECONDS),
+    ParameterKey("bot", "flame", "Damage", _COUNT),
+    ParameterKey("bot", "flame", "Duration", _SECONDS),
+    ParameterKey("bot", "flame", "Cooldown", _SECONDS),
+    ParameterKey("bot", "thunder", "Damage", _COUNT),
+    ParameterKey("bot", "thunder", "Duration", _SECONDS),
+    ParameterKey("bot", "thunder", "Cooldown", _SECONDS),
+    ParameterKey("bot", "golden", "Damage", _COUNT),
+    ParameterKey("bot", "golden", "Duration", _SECONDS),
+    ParameterKey("bot", "golden", "Cooldown", _SECONDS),
     # Guardian Chips
-    ParameterKey("guardian", "ally", "Damage", Unit.Kind.COUNT),
-    ParameterKey("guardian", "ally", "Duration", Unit.Kind.SECONDS),
-    ParameterKey("guardian", "ally", "Cooldown", Unit.Kind.SECONDS),
-    ParameterKey("guardian", "core", "Damage", Unit.Kind.COUNT),
-    ParameterKey("guardian", "core", "Duration", Unit.Kind.SECONDS),
-    ParameterKey("guardian", "core", "Cooldown", Unit.Kind.SECONDS),
-    ParameterKey("guardian", "fortress", "Damage", Unit.Kind.COUNT),
-    ParameterKey("guardian", "fortress", "Duration", Unit.Kind.SECONDS),
-    ParameterKey("guardian", "fortress", "Cooldown", Unit.Kind.SECONDS),
-    ParameterKey("guardian", "recovery", "Damage", Unit.Kind.COUNT),
-    ParameterKey("guardian", "recovery", "Duration", Unit.Kind.SECONDS),
-    ParameterKey("guardian", "recovery", "Cooldown", Unit.Kind.SECONDS),
-    ParameterKey("guardian", "overclock", "Damage", Unit.Kind.COUNT),
-    ParameterKey("guardian", "overclock", "Duration", Unit.Kind.SECONDS),
-    ParameterKey("guardian", "overclock", "Cooldown", Unit.Kind.SECONDS),
+    ParameterKey("guardian", "ally", "Damage", _COUNT),
+    ParameterKey("guardian", "ally", "Duration", _SECONDS),
+    ParameterKey("guardian", "ally", "Cooldown", _SECONDS),
+    ParameterKey("guardian", "core", "Damage", _COUNT),
+    ParameterKey("guardian", "core", "Duration", _SECONDS),
+    ParameterKey("guardian", "core", "Cooldown", _SECONDS),
+    ParameterKey("guardian", "fortress", "Damage", _COUNT),
+    ParameterKey("guardian", "fortress", "Duration", _SECONDS),
+    ParameterKey("guardian", "fortress", "Cooldown", _SECONDS),
+    ParameterKey("guardian", "recovery", "Damage", _COUNT),
+    ParameterKey("guardian", "recovery", "Duration", _SECONDS),
+    ParameterKey("guardian", "recovery", "Cooldown", _SECONDS),
+    ParameterKey("guardian", "overclock", "Damage", _COUNT),
+    ParameterKey("guardian", "overclock", "Duration", _SECONDS),
+    ParameterKey("guardian", "overclock", "Cooldown", _SECONDS),
     # Ultimate Weapons
-    ParameterKey("uw", "black_hole", "Damage", Unit.Kind.COUNT),
-    ParameterKey("uw", "black_hole", "Proc Chance", Unit.Kind.PERCENT),
-    ParameterKey("uw", "black_hole", "Cooldown", Unit.Kind.SECONDS),
-    ParameterKey("uw", "golden_tower", "Damage", Unit.Kind.COUNT),
-    ParameterKey("uw", "golden_tower", "Proc Chance", Unit.Kind.PERCENT),
-    ParameterKey("uw", "golden_tower", "Cooldown", Unit.Kind.SECONDS),
-    ParameterKey("uw", "laser_beam", "Damage", Unit.Kind.COUNT),
-    ParameterKey("uw", "laser_beam", "Proc Chance", Unit.Kind.PERCENT),
-    ParameterKey("uw", "laser_beam", "Cooldown", Unit.Kind.SECONDS),
-    ParameterKey("uw", "orbital_strike", "Damage", Unit.Kind.COUNT),
-    ParameterKey("uw", "orbital_strike", "Proc Chance", Unit.Kind.PERCENT),
-    ParameterKey("uw", "orbital_strike", "Cooldown", Unit.Kind.SECONDS),
+    ParameterKey("uw", "black_hole", "Damage", _COUNT),
+    ParameterKey("uw", "black_hole", "Proc Chance", _PERCENT),
+    ParameterKey("uw", "black_hole", "Cooldown", _SECONDS),
+    ParameterKey("uw", "golden_tower", "Damage", _COUNT),
+    ParameterKey("uw", "golden_tower", "Proc Chance", _PERCENT),
+    ParameterKey("uw", "golden_tower", "Cooldown", _SECONDS),
+    ParameterKey("uw", "laser_beam", "Damage", _COUNT),
+    ParameterKey("uw", "laser_beam", "Proc Chance", _PERCENT),
+    ParameterKey("uw", "laser_beam", "Cooldown", _SECONDS),
+    ParameterKey("uw", "orbital_strike", "Damage", _COUNT),
+    ParameterKey("uw", "orbital_strike", "Proc Chance", _PERCENT),
+    ParameterKey("uw", "orbital_strike", "Cooldown", _SECONDS),
 )
 
 _INDEX: Mapping[tuple[str, str, str], ParameterKey] = _index_registry(PARAMETER_KEY_REGISTRY)
@@ -105,4 +109,3 @@ def allowed_parameters_for(system: str, entity_slug: str) -> dict[str, Parameter
         for entry in PARAMETER_KEY_REGISTRY
         if entry.system == system and entry.entity_slug == entity_slug
     }
-

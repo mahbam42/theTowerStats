@@ -4,7 +4,7 @@ Phase 2.75 introduces a reliable ingestion pipeline for wiki-derived data.
 
 Scope is intentionally limited to data capture and change detection:
 
-- fetch one entity type from one page (Cards),
+- fetch selected entity tables from wiki pages (cards, bots, guardian chips, ultimate weapons),
 - store raw values as strings (whitespace-normalized only),
 - detect changes via deterministic hashing,
 - version changes without overwriting prior records.
@@ -35,6 +35,14 @@ Fetch the three card-list tables under `#List_of_Cards`:
 python manage.py fetch_wiki_data --target cards_list --check
 ```
 
+Fetch bots, guardian chips, and ultimate weapons:
+
+```bash
+python manage.py fetch_wiki_data --target bots --check
+python manage.py fetch_wiki_data --target guardian_chips --check
+python manage.py fetch_wiki_data --target ultimate_weapons --check
+```
+
 Persist changes to the database:
 
 ```bash
@@ -43,8 +51,8 @@ python manage.py fetch_wiki_data --write
 
 Useful options:
 
-- `--url`: override the page URL (defaults to the Cards page)
-- `--target`: `slots` (top table) or `cards_list` (tables under `#List_of_Cards`)
+- `--url`: override the page URL (defaults depend on `--target`)
+- `--target`: `slots`, `cards_list`, `bots`, `guardian_chips`, or `ultimate_weapons`
 - `--table-index`: choose table indexes explicitly (repeatable)
 - `--check`: dry-run (no DB writes)
 - `--write`: apply changes (required to persist)
@@ -52,6 +60,7 @@ Useful options:
 Notes:
 
 - For `--target cards_list`, each ingested row includes `_wiki_table_label` in `raw_row` to preserve which table it came from (e.g., rarity headings).
+- Some wiki tables repeat column names (ex: multiple “Bits” or “Stones” columns); ingestion suffixes duplicates with `__2`, `__3`, ... to avoid data loss.
 
 ## Next step (optional): Populate Phase 3 models
 

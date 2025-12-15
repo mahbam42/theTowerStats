@@ -23,6 +23,7 @@ from core.models import WikiData
 
 _WHITESPACE_RE = re.compile(r"\s+")
 _ENTITY_ID_RE = re.compile(r"[^a-z0-9]+")
+_DEDUP_HEADER_RE = re.compile(r"__\d+$")
 
 
 def normalize_whitespace(value: str) -> str:
@@ -278,12 +279,134 @@ def extract_table(html: str, *, table_index: int = 0) -> tuple[list[str], list[d
     headers = rows[0]
     data_rows = rows[1:]
 
-    normalized_headers = [normalize_whitespace(h) or f"col_{idx}" for idx, h in enumerate(headers)]
+    normalized_headers = _dedupe_headers([normalize_whitespace(h) or f"col_{idx}" for idx, h in enumerate(headers)])
     mapped: list[dict[str, str]] = []
     for row in data_rows:
         values = row + [""] * max(0, len(normalized_headers) - len(row))
         mapped.append(dict(zip(normalized_headers, values[: len(normalized_headers)], strict=False)))
     return normalized_headers, mapped
+
+
+def _dedupe_headers(headers: Sequence[str]) -> list[str]:
+    """Make table headers unique while preserving order.
+
+    Wiki tables sometimes include repeated column labels (ex: multiple "Cost" or
+    "Bits" columns). A naive mapping would overwrite earlier values.
+
+    Args:
+        headers: Header labels in document order.
+
+    Returns:
+        A list of unique header labels where repeated labels are suffixed with
+        `__2`, `__3`, ... deterministically.
+    """
+
+    seen: dict[str, int] = {}
+    unique: list[str] = []
+    for header in headers:
+        base = _DEDUP_HEADER_RE.sub("", header)
+        count = seen.get(base, 0) + 1
+        seen[base] = count
+        unique.append(base if count == 1 else f"{base}__{count}")
+    return unique
+
+
+def scrape_leveled_entity_rows(
+    html: str,
+    *,
+    table_index: int,
+    entity_name: str,
+    entity_id: str,
+    entity_field: str,
+    level_field: str = "Level",
+    star_field: str = "Star",
+    add_level_if_missing: bool = False,
+    header_aliases: Mapping[str, str] | None = None,
+    extra_fields: Mapping[str, str] | None = None,
+) -> list[ScrapedWikiRow]:
+    """Scrape a table containing many levels for a single entity.
+
+    Many wiki pages store per-level values in a table where each row represents
+    a level (or star tier) for a single entity (bot, guardian chip, ultimate
+    weapon). These tables often do not include an entity name column, and some
+    omit a `Level` column entirely (implicit level-by-row).
+
+    This helper:
+    - injects a stable entity identifier via `_wiki_entity_id`,
+    - injects `entity_field` (ex: "Bot") so downstream population can resolve
+      names consistently,
+    - optionally adds an implicit `level_field` when missing,
+    - optionally adds alias keys for headers (without removing raw headers),
+    - assigns a composite `ScrapedWikiRow.entity_id` per (entity, level, star)
+      so ingestion versions each row independently.
+
+    Args:
+        html: Wiki page HTML.
+        table_index: Table index to extract.
+        entity_name: Human-readable entity name (ex: "Amplify Bot").
+        entity_id: Stable base identifier for the entity (ex: "amplify_bot").
+        entity_field: Key injected into each raw_row (ex: "Bot").
+        level_field: Column name used to represent level.
+        star_field: Column name used to represent star/tier.
+        add_level_if_missing: When True, add `level_field` as a 1-based row
+            index if missing from the extracted table.
+        header_aliases: Optional mapping of `{raw_header: alias_header}` to add
+            alias keys while preserving the original header.
+        extra_fields: Optional additional key/value pairs to merge into each
+            row before hashing.
+
+    Returns:
+        A list of ScrapedWikiRow entries suitable for ingestion.
+    """
+
+    _, rows = extract_table(html, table_index=table_index)
+    normalized_extras = {k: normalize_whitespace(v) for k, v in (extra_fields or {}).items()}
+    aliases = header_aliases or {}
+
+    scraped: list[ScrapedWikiRow] = []
+    for idx, row in enumerate(rows, start=1):
+        normalized_row = {k: normalize_whitespace(v) for k, v in row.items()}
+        normalized_row.update(normalized_extras)
+        normalized_row.setdefault("_wiki_entity_id", entity_id)
+        normalized_row.setdefault(entity_field, entity_name)
+
+        if add_level_if_missing and level_field not in normalized_row:
+            normalized_row[level_field] = str(idx)
+
+        for raw_header, alias_header in aliases.items():
+            if raw_header in normalized_row and alias_header not in normalized_row:
+                normalized_row[alias_header] = normalized_row[raw_header]
+
+        level_value = normalize_whitespace(normalized_row.get(level_field, ""))
+        star_value = normalize_whitespace(normalized_row.get(star_field, ""))
+        composite_id = _composite_level_entity_id(entity_id, level_value, star_value)
+        content_hash = compute_content_hash(normalized_row)
+        scraped.append(
+            ScrapedWikiRow(
+                canonical_name=normalize_whitespace(entity_name) or "Unknown",
+                entity_id=composite_id,
+                raw_row=normalized_row,
+                content_hash=content_hash,
+            )
+        )
+    return scraped
+
+
+def _composite_level_entity_id(entity_id: str, level_raw: str, star_raw: str) -> str:
+    """Build a stable row-level identity for (entity, level, star).
+
+    Args:
+        entity_id: Base entity identifier.
+        level_raw: Raw level string (already whitespace-normalized).
+        star_raw: Raw star string (already whitespace-normalized).
+
+    Returns:
+        A composite identifier suitable for per-row ingestion versioning.
+    """
+
+    level_key = level_raw or "unknown"
+    star_key = star_raw or "none"
+    return f"{entity_id}__level_{level_key}__star_{star_key}"
 
 
 def scrape_entity_rows(
