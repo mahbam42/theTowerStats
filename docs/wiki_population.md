@@ -1,15 +1,15 @@
-# Wiki Population (WikiData → Structured Models)
+# Wiki Rebuild (WikiData → Definitions → Player State)
 
-After running wiki ingestion (`core.WikiData`), you can populate Phase 3
-structural models for browsing/admin/debug visibility while preserving full
-traceability to the exact wiki revision used.
+After running wiki ingestion (`definitions.WikiData`), you can rebuild the
+structured Definitions layer and then synchronize Player State rows, while
+preserving traceability to the exact wiki revision used.
 
 This step is intentionally **offline** (no network access): it reads only from
-the local `core.WikiData` table.
+the local `definitions.WikiData` table.
 
 ## Prerequisite: Ingest WikiData
 
-Populate is a translation step only. If `core.WikiData` is empty (or missing a
+Populate is a translation step only. If `definitions.WikiData` is empty (or missing a
 target’s `parse_version`), population will report no changes.
 
 Ingest the relevant wiki tables first:
@@ -22,38 +22,50 @@ python manage.py fetch_wiki_data --target guardian_chips --write
 python manage.py fetch_wiki_data --target ultimate_weapons --write
 ```
 
-## Command
+## Commands
 
-Dry-run (no database writes):
+### Rebuild Definitions
 
 ```bash
-python3 manage.py populate_cards_from_wiki --check
+python manage.py rebuild_wiki_definitions --skip-fetch --check
 ```
 
 Apply changes:
 
 ```bash
-python3 manage.py populate_cards_from_wiki --write
+python manage.py rebuild_wiki_definitions --skip-fetch --write
 ```
 
-Targets:
+Targets (`--target`):
 
-- `--target slots`: populate `CardSlot` from the wiki “Card Slots” table
-- `--target cards`: populate `CardDefinition` metadata from card list tables
-- `--target levels`: populate `CardLevel` (currently a no-op until level tables are ingested)
-- `--target bots`: populate bot definitions, levels, and parameters using the registry
-- `--target guardian_chips`: populate guardian chip definitions, levels, and parameters using the registry
-- `--target ultimate_weapons`: populate ultimate weapon definitions, levels, and parameters using the registry
-- `--target cards_all`: run all card-related populators
-- `--target all`: run every populator (default)
+- `cards`
+- `bots`
+- `guardians`
+- `ultimate_weapons`
+- `all` (default)
 
-Slot-table detection:
+By default, `rebuild_wiki_definitions` also performs ingestion (network) by
+invoking `fetch_wiki_data`. Use `--skip-fetch` to run fully offline.
 
-- The populator recognizes common header variants, including `Slot`/`Slots` and `Gem Cost`/`Cost`.
+### Sync Player State
+
+After rebuilding definitions, ensure Player State rows exist for every known
+definition and are linked by slug:
+
+```bash
+python manage.py sync_player_state --write
+```
+
+### Purge (Development Refactors)
+
+To delete only structured definition + parameter tables (WikiData is retained):
+
+```bash
+python manage.py purge_wiki_definitions --check
+python manage.py purge_wiki_definitions --force
+```
 
 ## Traceability rules
 
-- `source_wikidata` always points to the exact `WikiData` revision used to create the row.
+- `source_wikidata` points to the exact `WikiData` revision used to build the row.
 - Raw values are copied as strings (no interpretation or destructive transforms).
-- Parameter creation is gated by the entity-scoped registry (`core.parameter_registry`). Unknown headers are preserved only in
-  `WikiData.raw_row`.

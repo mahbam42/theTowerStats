@@ -24,7 +24,7 @@
             <td>{{ run.run_progress.tier|default:"—" }}</td>
             <td>{{ run.run_progress.wave|default:"—" }}</td>
             <td>{{ run.run_progress.real_time_seconds|default:"—" }}</td>
-            <td>{{ run.run_progress.preset_tag.name|default:"—" }}</td>
+            <td>{{ run.run_progress.preset.name|default:"—" }}</td>
             <td>{{ run.parsed_at }}</td>
           </tr>
         {% endfor %}
@@ -34,4 +34,3 @@
     <p class="muted">No battle reports yet.</p>
   {% endif %}
 {% endblock %}
-

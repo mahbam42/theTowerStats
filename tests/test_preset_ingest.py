@@ -4,7 +4,8 @@ from __future__ import annotations
 
 import pytest
 
-from core.models import PresetTag, RunProgress
+from gamedata.models import BattleReportProgress
+from player_state.models import Preset
 from core.services import ingest_battle_report
 
 
@@ -18,7 +19,6 @@ def test_ingest_battle_report_associates_preset_tag() -> None:
     )
     assert created is True
 
-    preset = PresetTag.objects.get(name="Farming")
-    progress = RunProgress.objects.select_related("preset_tag").get()
-    assert progress.preset_tag == preset
-
+    preset = Preset.objects.get(name="Farming")
+    progress = BattleReportProgress.objects.select_related("preset").get()
+    assert progress.preset == preset

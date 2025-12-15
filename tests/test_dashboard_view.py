@@ -8,18 +8,19 @@ from datetime import date, datetime, timezone
 import pytest
 
 from analysis.engine import analyze_runs
-from core.models import GameData, PresetTag, RunProgress
+from gamedata.models import BattleReport, BattleReportProgress
+from player_state.models import Player, Preset
 
 
 @pytest.mark.django_db
 def test_dashboard_view_renders(client) -> None:
     """Create minimal records and verify the dashboard view returns HTTP 200."""
 
-    game_data = GameData.objects.create(
+    report = BattleReport.objects.create(
         raw_text="Battle Report\nCoins: 12345\n", checksum="x" * 64
     )
-    RunProgress.objects.create(
-        game_data=game_data,
+    BattleReportProgress.objects.create(
+        battle_report=report,
         battle_date=datetime(2025, 12, 1, tzinfo=timezone.utc),
         tier=1,
         wave=100,
@@ -43,24 +44,24 @@ def test_dashboard_view_renders_with_no_data(client) -> None:
 def test_dashboard_view_filters_and_plots_from_analysis_engine(client) -> None:
     """Filter runs by date and ensure the chart derives from Analysis Engine output."""
 
-    first = GameData.objects.create(
+    first = BattleReport.objects.create(
         raw_text="Battle Report\nCoins earned    1,200\n",
         checksum="a" * 64,
     )
-    RunProgress.objects.create(
-        game_data=first,
+    BattleReportProgress.objects.create(
+        battle_report=first,
         battle_date=datetime(2025, 12, 1, tzinfo=timezone.utc),
         tier=1,
         wave=100,
         real_time_seconds=600,
     )
 
-    second = GameData.objects.create(
+    second = BattleReport.objects.create(
         raw_text="Battle Report\nCoins earned    2,400\n",
         checksum="b" * 64,
     )
-    RunProgress.objects.create(
-        game_data=second,
+    BattleReportProgress.objects.create(
+        battle_report=second,
         battle_date=datetime(2025, 12, 2, tzinfo=timezone.utc),
         tier=1,
         wave=100,
@@ -77,7 +78,7 @@ def test_dashboard_view_filters_and_plots_from_analysis_engine(client) -> None:
     assert values == [7200.0]
 
     expected = analyze_runs(
-        GameData.objects.select_related("run_progress").filter(
+        BattleReport.objects.select_related("run_progress").filter(
             run_progress__battle_date__date__gte=date(2025, 12, 2)
         )
     )
@@ -90,24 +91,24 @@ def test_dashboard_view_filters_and_plots_from_analysis_engine(client) -> None:
 def test_dashboard_view_filters_by_tier(client) -> None:
     """Filter runs by tier and ensure chart data reflects the filtered inputs."""
 
-    tier_one = GameData.objects.create(
+    tier_one = BattleReport.objects.create(
         raw_text="Battle Report\nCoins earned    1,200\n",
         checksum="c" * 64,
     )
-    RunProgress.objects.create(
-        game_data=tier_one,
+    BattleReportProgress.objects.create(
+        battle_report=tier_one,
         battle_date=datetime(2025, 12, 1, tzinfo=timezone.utc),
         tier=1,
         wave=100,
         real_time_seconds=600,
     )
 
-    tier_two = GameData.objects.create(
+    tier_two = BattleReport.objects.create(
         raw_text="Battle Report\nCoins earned    2,400\n",
         checksum="d" * 64,
     )
-    RunProgress.objects.create(
-        game_data=tier_two,
+    BattleReportProgress.objects.create(
+        battle_report=tier_two,
         battle_date=datetime(2025, 12, 2, tzinfo=timezone.utc),
         tier=2,
         wave=100,
@@ -127,27 +128,28 @@ def test_dashboard_view_filters_by_tier(client) -> None:
 def test_dashboard_view_filters_by_preset(client) -> None:
     """Filter runs by preset label and ensure chart data reflects the filtered inputs."""
 
-    preset = PresetTag.objects.create(name="Farming")
+    player = Player.objects.create(name="default")
+    preset = Preset.objects.create(player=player, name="Farming")
 
-    tagged = GameData.objects.create(
+    tagged = BattleReport.objects.create(
         raw_text="Battle Report\nCoins earned    1,200\n",
         checksum="e" * 64,
     )
-    RunProgress.objects.create(
-        game_data=tagged,
+    BattleReportProgress.objects.create(
+        battle_report=tagged,
         battle_date=datetime(2025, 12, 1, tzinfo=timezone.utc),
         tier=1,
         wave=100,
         real_time_seconds=600,
-        preset_tag=preset,
+        preset=preset,
     )
 
-    untagged = GameData.objects.create(
+    untagged = BattleReport.objects.create(
         raw_text="Battle Report\nCoins earned    2,400\n",
         checksum="f" * 64,
     )
-    RunProgress.objects.create(
-        game_data=untagged,
+    BattleReportProgress.objects.create(
+        battle_report=untagged,
         battle_date=datetime(2025, 12, 2, tzinfo=timezone.utc),
         tier=1,
         wave=100,
@@ -167,24 +169,24 @@ def test_dashboard_view_filters_by_preset(client) -> None:
 def test_dashboard_view_overlays_by_tier(client) -> None:
     """Overlay tier datasets when requested."""
 
-    first = GameData.objects.create(
+    first = BattleReport.objects.create(
         raw_text="Battle Report\nCoins earned    1,200\n",
         checksum="g" * 64,
     )
-    RunProgress.objects.create(
-        game_data=first,
+    BattleReportProgress.objects.create(
+        battle_report=first,
         battle_date=datetime(2025, 12, 1, tzinfo=timezone.utc),
         tier=1,
         wave=100,
         real_time_seconds=600,
     )
 
-    second = GameData.objects.create(
+    second = BattleReport.objects.create(
         raw_text="Battle Report\nCoins earned    2,400\n",
         checksum="h" * 64,
     )
-    RunProgress.objects.create(
-        game_data=second,
+    BattleReportProgress.objects.create(
+        battle_report=second,
         battle_date=datetime(2025, 12, 2, tzinfo=timezone.utc),
         tier=2,
         wave=100,
@@ -203,24 +205,24 @@ def test_dashboard_view_overlays_by_tier(client) -> None:
 def test_dashboard_view_overlays_include_moving_average(client) -> None:
     """Include moving-average datasets when requested."""
 
-    first = GameData.objects.create(
+    first = BattleReport.objects.create(
         raw_text="Battle Report\nCoins earned    1,200\n",
         checksum="ma" * 32,
     )
-    RunProgress.objects.create(
-        game_data=first,
+    BattleReportProgress.objects.create(
+        battle_report=first,
         battle_date=datetime(2025, 12, 1, tzinfo=timezone.utc),
         tier=1,
         wave=100,
         real_time_seconds=600,
     )
 
-    second = GameData.objects.create(
+    second = BattleReport.objects.create(
         raw_text="Battle Report\nCoins earned    2,400\n",
         checksum="mb" * 32,
     )
-    RunProgress.objects.create(
-        game_data=second,
+    BattleReportProgress.objects.create(
+        battle_report=second,
         battle_date=datetime(2025, 12, 2, tzinfo=timezone.utc),
         tier=1,
         wave=100,
@@ -245,12 +247,12 @@ def test_dashboard_view_overlays_include_moving_average(client) -> None:
 def test_dashboard_view_includes_legend_toggle_handler(client) -> None:
     """Ensure the dashboard template includes a safe legend toggle handler."""
 
-    game_data = GameData.objects.create(
+    report = BattleReport.objects.create(
         raw_text="Battle Report\nCoins: 12345\n",
         checksum="toggle" * 10 + "x" * 4,
     )
-    RunProgress.objects.create(
-        game_data=game_data,
+    BattleReportProgress.objects.create(
+        battle_report=report,
         battle_date=datetime(2025, 12, 1, tzinfo=timezone.utc),
         tier=1,
         wave=100,
@@ -266,24 +268,24 @@ def test_dashboard_view_includes_legend_toggle_handler(client) -> None:
 def test_dashboard_view_run_delta_comparison(client) -> None:
     """Compute a run-vs-run delta for coins/hour."""
 
-    first = GameData.objects.create(
+    first = BattleReport.objects.create(
         raw_text="Battle Report\nCoins earned    1,200\n",
         checksum="i" * 64,
     )
-    RunProgress.objects.create(
-        game_data=first,
+    BattleReportProgress.objects.create(
+        battle_report=first,
         battle_date=datetime(2025, 12, 1, tzinfo=timezone.utc),
         tier=1,
         wave=100,
         real_time_seconds=600,
     )
 
-    second = GameData.objects.create(
+    second = BattleReport.objects.create(
         raw_text="Battle Report\nCoins earned    2,400\n",
         checksum="j" * 64,
     )
-    RunProgress.objects.create(
-        game_data=second,
+    BattleReportProgress.objects.create(
+        battle_report=second,
         battle_date=datetime(2025, 12, 2, tzinfo=timezone.utc),
         tier=1,
         wave=100,
@@ -306,24 +308,24 @@ def test_dashboard_view_run_delta_comparison(client) -> None:
 def test_dashboard_view_window_delta_comparison(client) -> None:
     """Compute a window-vs-window delta for coins/hour."""
 
-    first = GameData.objects.create(
+    first = BattleReport.objects.create(
         raw_text="Battle Report\nCoins earned    1,200\n",
         checksum="k" * 64,
     )
-    RunProgress.objects.create(
-        game_data=first,
+    BattleReportProgress.objects.create(
+        battle_report=first,
         battle_date=datetime(2025, 12, 1, tzinfo=timezone.utc),
         tier=1,
         wave=100,
         real_time_seconds=600,
     )
 
-    second = GameData.objects.create(
+    second = BattleReport.objects.create(
         raw_text="Battle Report\nCoins earned    2,400\n",
         checksum="l" * 64,
     )
-    RunProgress.objects.create(
-        game_data=second,
+    BattleReportProgress.objects.create(
+        battle_report=second,
         battle_date=datetime(2025, 12, 10, tzinfo=timezone.utc),
         tier=1,
         wave=100,

@@ -199,7 +199,7 @@ def _coerce_datetime(value: object) -> datetime | None:
 def _preset_name_from_progress(progress: object) -> str | None:
     """Extract an optional preset name from a run-progress-like object."""
 
-    preset_obj = getattr(progress, "preset_tag", None)
+    preset_obj = getattr(progress, "preset_tag", None) or getattr(progress, "preset", None)
     preset_name = getattr(preset_obj, "name", None)
     if isinstance(preset_name, str) and preset_name.strip():
         return preset_name.strip()

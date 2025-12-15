@@ -197,7 +197,11 @@ def _resolve_table_indexes(
             required_substrings={"Stones"},
             require_min_non_matching_headers=2,
         )
-        return indexes
+        if indexes:
+            return indexes
+        # Some UW pages use plain "Cost" columns instead of "Stones (...)" headers.
+        fallback = _find_table_indexes_with_headers(html, required={"Cost", "Cooldown"})
+        return fallback
     if target == "guardian_chips":
         if spec.section_anchor_id is None:
             raise CommandError("Internal error: guardian_chips spec missing section_anchor_id.")

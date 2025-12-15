@@ -1,0 +1,355 @@
+"""Database models for player progress and configuration."""
+
+from __future__ import annotations
+
+from django.core.exceptions import ValidationError
+from django.db import models
+
+from definitions.models import (
+    BotDefinition,
+    BotParameterDefinition,
+    CardDefinition,
+    GuardianChipDefinition,
+    GuardianChipParameterDefinition,
+    UltimateWeaponDefinition,
+    UltimateWeaponParameterDefinition,
+)
+
+
+class Player(models.Model):
+    """A single-player (by default) root entity for progress ownership."""
+
+    name = models.CharField(max_length=80, unique=True, default="default")
+    created_at = models.DateTimeField(auto_now_add=True)
+
+    def __str__(self) -> str:
+        """Return the player name for display contexts."""
+
+        return self.name
+
+
+class Preset(models.Model):
+    """A configuration snapshot label (no metrics)."""
+
+    player = models.ForeignKey(Player, on_delete=models.CASCADE, related_name="presets")
+    name = models.CharField(max_length=80)
+    notes = models.TextField(blank=True)
+    created_at = models.DateTimeField(auto_now_add=True)
+
+    class Meta:
+        constraints = [
+            models.UniqueConstraint(fields=["player", "name"], name="uniq_player_preset_name")
+        ]
+
+    def __str__(self) -> str:
+        """Return preset display name."""
+
+        return self.name
+
+
+class PlayerCard(models.Model):
+    """Player card unlock state.
+
+    Cards are descriptive modifiers and do not use ParameterKey or upgrade tables.
+    """
+
+    player = models.ForeignKey(Player, on_delete=models.CASCADE, related_name="cards")
+    card_definition = models.ForeignKey(
+        CardDefinition,
+        null=True,
+        blank=True,
+        on_delete=models.SET_NULL,
+        related_name="player_cards",
+    )
+    card_slug = models.CharField(max_length=200, db_index=True)
+    stars_unlocked = models.PositiveSmallIntegerField(default=0)
+    updated_at = models.DateTimeField(auto_now=True)
+
+    class Meta:
+        constraints = [
+            models.UniqueConstraint(fields=["player", "card_slug"], name="uniq_player_card_slug")
+        ]
+
+    def clean(self) -> None:
+        """Validate invariants for card state."""
+
+        if self.card_definition is not None and self.card_definition.slug != self.card_slug:
+            raise ValidationError("card_slug must match card_definition.slug when definition is set.")
+
+    def save(self, *args, **kwargs) -> None:
+        """Save while enforcing invariants."""
+
+        self.full_clean()
+        super().save(*args, **kwargs)
+
+    def __str__(self) -> str:
+        """Return a concise display string."""
+
+        return f"PlayerCard({self.card_slug}, stars={self.stars_unlocked})"
+
+
+class PlayerBot(models.Model):
+    """Player bot unlock state (per-parameter progression lives separately)."""
+
+    player = models.ForeignKey(Player, on_delete=models.CASCADE, related_name="bots")
+    bot_definition = models.ForeignKey(
+        BotDefinition,
+        null=True,
+        blank=True,
+        on_delete=models.SET_NULL,
+        related_name="player_bots",
+    )
+    bot_slug = models.CharField(max_length=200, db_index=True)
+    unlocked = models.BooleanField(default=False)
+    updated_at = models.DateTimeField(auto_now=True)
+    notes = models.TextField(blank=True)
+
+    class Meta:
+        constraints = [
+            models.UniqueConstraint(fields=["player", "bot_slug"], name="uniq_player_bot_slug")
+        ]
+
+    def clean(self) -> None:
+        """Validate invariants for bot state."""
+
+        if self.bot_definition is not None and self.bot_definition.slug != self.bot_slug:
+            raise ValidationError("bot_slug must match bot_definition.slug when definition is set.")
+
+    def save(self, *args, **kwargs) -> None:
+        """Save while enforcing invariants."""
+
+        self.full_clean()
+        super().save(*args, **kwargs)
+
+    def __str__(self) -> str:
+        """Return a concise display string."""
+
+        return f"PlayerBot({self.bot_slug}, unlocked={self.unlocked})"
+
+
+class PlayerUltimateWeapon(models.Model):
+    """Player ultimate weapon unlock state (per-parameter progression lives separately)."""
+
+    player = models.ForeignKey(Player, on_delete=models.CASCADE, related_name="ultimate_weapons")
+    ultimate_weapon_definition = models.ForeignKey(
+        UltimateWeaponDefinition,
+        null=True,
+        blank=True,
+        on_delete=models.SET_NULL,
+        related_name="player_ultimate_weapons",
+    )
+    ultimate_weapon_slug = models.CharField(max_length=200, db_index=True)
+    unlocked = models.BooleanField(default=False)
+    updated_at = models.DateTimeField(auto_now=True)
+    notes = models.TextField(blank=True)
+
+    class Meta:
+        constraints = [
+            models.UniqueConstraint(
+                fields=["player", "ultimate_weapon_slug"],
+                name="uniq_player_uw_slug",
+            )
+        ]
+
+    def clean(self) -> None:
+        """Validate invariants for ultimate weapon state."""
+
+        if (
+            self.ultimate_weapon_definition is not None
+            and self.ultimate_weapon_definition.slug != self.ultimate_weapon_slug
+        ):
+            raise ValidationError(
+                "ultimate_weapon_slug must match ultimate_weapon_definition.slug when definition is set."
+            )
+
+    def save(self, *args, **kwargs) -> None:
+        """Save while enforcing invariants."""
+
+        self.full_clean()
+        super().save(*args, **kwargs)
+
+    def __str__(self) -> str:
+        """Return a concise display string."""
+
+        return f"PlayerUltimateWeapon({self.ultimate_weapon_slug}, unlocked={self.unlocked})"
+
+
+class PlayerGuardianChip(models.Model):
+    """Player guardian chip unlock state (per-parameter progression lives separately)."""
+
+    player = models.ForeignKey(Player, on_delete=models.CASCADE, related_name="guardian_chips")
+    guardian_chip_definition = models.ForeignKey(
+        GuardianChipDefinition,
+        null=True,
+        blank=True,
+        on_delete=models.SET_NULL,
+        related_name="player_guardian_chips",
+    )
+    guardian_chip_slug = models.CharField(max_length=200, db_index=True)
+    unlocked = models.BooleanField(default=False)
+    updated_at = models.DateTimeField(auto_now=True)
+    notes = models.TextField(blank=True)
+
+    class Meta:
+        constraints = [
+            models.UniqueConstraint(
+                fields=["player", "guardian_chip_slug"],
+                name="uniq_player_guardian_slug",
+            )
+        ]
+
+    def clean(self) -> None:
+        """Validate invariants for guardian chip state."""
+
+        if (
+            self.guardian_chip_definition is not None
+            and self.guardian_chip_definition.slug != self.guardian_chip_slug
+        ):
+            raise ValidationError(
+                "guardian_chip_slug must match guardian_chip_definition.slug when definition is set."
+            )
+
+    def save(self, *args, **kwargs) -> None:
+        """Save while enforcing invariants."""
+
+        self.full_clean()
+        super().save(*args, **kwargs)
+
+    def __str__(self) -> str:
+        """Return a concise display string."""
+
+        return f"PlayerGuardianChip({self.guardian_chip_slug}, unlocked={self.unlocked})"
+
+
+class PlayerBotParameter(models.Model):
+    """Player-selected level for a bot parameter definition."""
+
+    player_bot = models.ForeignKey(PlayerBot, on_delete=models.CASCADE, related_name="parameters")
+    parameter_definition = models.ForeignKey(
+        BotParameterDefinition,
+        null=True,
+        blank=True,
+        on_delete=models.SET_NULL,
+        related_name="player_levels",
+    )
+    level = models.PositiveSmallIntegerField(default=0)
+    updated_at = models.DateTimeField(auto_now=True)
+
+    class Meta:
+        constraints = [
+            models.UniqueConstraint(
+                fields=["player_bot", "parameter_definition"],
+                name="uniq_player_bot_param",
+            )
+        ]
+
+    def clean(self) -> None:
+        """Validate locked-state and definition alignment."""
+
+        if self.level and not self.player_bot.unlocked:
+            raise ValidationError("Cannot set bot parameter level when the bot is locked.")
+        if (
+            self.parameter_definition is not None
+            and self.player_bot.bot_definition is not None
+            and self.parameter_definition.bot_definition_id != self.player_bot.bot_definition_id
+        ):
+            raise ValidationError("Bot parameter definition must belong to the same bot definition.")
+
+    def save(self, *args, **kwargs) -> None:
+        """Save while enforcing invariants."""
+
+        self.full_clean()
+        super().save(*args, **kwargs)
+
+
+class PlayerUltimateWeaponParameter(models.Model):
+    """Player-selected level for an ultimate weapon parameter definition."""
+
+    player_ultimate_weapon = models.ForeignKey(
+        PlayerUltimateWeapon, on_delete=models.CASCADE, related_name="parameters"
+    )
+    parameter_definition = models.ForeignKey(
+        UltimateWeaponParameterDefinition,
+        null=True,
+        blank=True,
+        on_delete=models.SET_NULL,
+        related_name="player_levels",
+    )
+    level = models.PositiveSmallIntegerField(default=0)
+    updated_at = models.DateTimeField(auto_now=True)
+
+    class Meta:
+        constraints = [
+            models.UniqueConstraint(
+                fields=["player_ultimate_weapon", "parameter_definition"],
+                name="uniq_player_uw_param",
+            )
+        ]
+
+    def clean(self) -> None:
+        """Validate locked-state and definition alignment."""
+
+        if self.level and not self.player_ultimate_weapon.unlocked:
+            raise ValidationError("Cannot set ultimate weapon parameter level when the weapon is locked.")
+        if (
+            self.parameter_definition is not None
+            and self.player_ultimate_weapon.ultimate_weapon_definition is not None
+            and self.parameter_definition.ultimate_weapon_definition_id
+            != self.player_ultimate_weapon.ultimate_weapon_definition_id
+        ):
+            raise ValidationError(
+                "Ultimate weapon parameter definition must belong to the same ultimate weapon definition."
+            )
+
+    def save(self, *args, **kwargs) -> None:
+        """Save while enforcing invariants."""
+
+        self.full_clean()
+        super().save(*args, **kwargs)
+
+
+class PlayerGuardianChipParameter(models.Model):
+    """Player-selected level for a guardian chip parameter definition."""
+
+    player_guardian_chip = models.ForeignKey(
+        PlayerGuardianChip, on_delete=models.CASCADE, related_name="parameters"
+    )
+    parameter_definition = models.ForeignKey(
+        GuardianChipParameterDefinition,
+        null=True,
+        blank=True,
+        on_delete=models.SET_NULL,
+        related_name="player_levels",
+    )
+    level = models.PositiveSmallIntegerField(default=0)
+    updated_at = models.DateTimeField(auto_now=True)
+
+    class Meta:
+        constraints = [
+            models.UniqueConstraint(
+                fields=["player_guardian_chip", "parameter_definition"],
+                name="uniq_player_guardian_param",
+            )
+        ]
+
+    def clean(self) -> None:
+        """Validate locked-state and definition alignment."""
+
+        if self.level and not self.player_guardian_chip.unlocked:
+            raise ValidationError("Cannot set guardian chip parameter level when the chip is locked.")
+        if (
+            self.parameter_definition is not None
+            and self.player_guardian_chip.guardian_chip_definition is not None
+            and self.parameter_definition.guardian_chip_definition_id
+            != self.player_guardian_chip.guardian_chip_definition_id
+        ):
+            raise ValidationError(
+                "Guardian chip parameter definition must belong to the same guardian chip definition."
+            )
+
+    def save(self, *args, **kwargs) -> None:
+        """Save while enforcing invariants."""
+
+        self.full_clean()
+        super().save(*args, **kwargs)
+
