@@ -13,7 +13,7 @@ from typing import Protocol, TypeGuard
 
 from .context import PlayerContextInput
 from .derived import MonteCarloConfig
-from .dto import AnalysisResult, MetricPoint, MetricSeriesResult, RunAnalysis
+from .dto import AnalysisResult, MetricPoint, MetricSeriesResult, RunAnalysis, UsedParameter
 from .metrics import MetricComputeConfig, compute_metric_value, get_metric_definition
 from .quantity import UnitType, parse_quantity
 from .rates import coins_per_hour
@@ -120,8 +120,8 @@ def analyze_metric_series(
     )
 
     points: list[MetricPoint] = []
-    used_parameters = []
-    assumptions = set()
+    used_parameters: list[UsedParameter] = []
+    assumptions: set[str] = set()
 
     for record in records:
         progress = getattr(record, "run_progress", record)

@@ -10,7 +10,10 @@
       <button type="submit">Import</button>
     </form>
 
-    <h2>Coins per hour</h2>
+    <h2>
+      {{ metric_definition.label }}
+      <span class="muted">({{ metric_definition.kind }})</span>
+    </h2>
     <div class="context-bar" aria-live="polite">
       <div class="context-bar__title">Active context</div>
       <div id="active-context" class="muted"></div>
@@ -20,6 +23,32 @@
       <button type="submit">Apply</button>
       <a href="{% url 'core:dashboard' %}">Clear</a>
     </form>
+
+    {% if metric_definition.kind == "derived" %}
+      <div class="empty-state" role="note">
+        <strong>Derived metric transparency</strong>
+        {% if metric_assumptions %}
+          <ul>
+            {% for assumption in metric_assumptions %}
+              <li>{{ assumption }}</li>
+            {% endfor %}
+          </ul>
+        {% endif %}
+        {% if used_parameters %}
+          <details>
+            <summary>Parameters referenced</summary>
+            <ul>
+              {% for param in used_parameters %}
+                <li>
+                  {{ param.entity_type }} • {{ param.entity_name }} • {{ param.key }} = {{ param.raw_value }}
+                  {% if param.wiki_revision_id %}(wiki rev {{ param.wiki_revision_id }}){% endif %}
+                </li>
+              {% endfor %}
+            </ul>
+          </details>
+        {% endif %}
+      </div>
+    {% endif %}
 
     <h3>Compare</h3>
     <form method="get">
@@ -101,7 +130,12 @@
         const presetLabel =
           presetEl && presetEl.selectedIndex >= 0 ? presetEl.options[presetEl.selectedIndex].text : null;
 
+        const metricEl = form.elements["metric"];
+        const metricLabel =
+          metricEl && metricEl.selectedIndex >= 0 ? metricEl.options[metricEl.selectedIndex].text : null;
+
         return {
+          metric: metricLabel || getValue("metric"),
           start_date: getValue("start_date"),
           end_date: getValue("end_date"),
           tier: getValue("tier"),
@@ -114,6 +148,7 @@
       function contextLabel(context) {
         const start = context.start_date || "Any start";
         const end = context.end_date || "Any end";
+        const metric = context.metric ? `Metric: ${context.metric}` : "Metric: (default)";
         const tier = context.tier ? `Tier ${context.tier}` : "All tiers";
         const preset = context.preset ? `Preset: ${context.preset}` : "All presets";
         const overlay =
@@ -121,7 +156,7 @@
             ? `Overlay: ${context.overlay_group}`
             : "Overlay: none";
         const ma = context.moving_average_window ? `Moving average: ${context.moving_average_window}` : "Moving average: off";
-        return `${tier} • ${preset} • ${start} → ${end} • ${overlay} • ${ma}`;
+        return `${metric} • ${tier} • ${preset} • ${start} → ${end} • ${overlay} • ${ma}`;
       }
 
       function updateContextSummary() {
@@ -169,7 +204,9 @@
                   title: (items) => (items && items[0] ? `Date: ${items[0].label}` : ""),
                   label: (context) => {
                     const datasetLabel = context.dataset?.label || "Series";
-                    return `${datasetLabel}: ${formatExactNumber(context.parsed.y)} coins/hour`;
+                    const unit = context.dataset?.unit || "";
+                    const unitLabel = unit ? ` ${unit}` : "";
+                    return `${datasetLabel}: ${formatExactNumber(context.parsed.y)}${unitLabel}`;
                   },
                   afterBody: () => {
                     const context = readChartContextFromDOM();
@@ -197,7 +234,7 @@
               },
               y: {
                 beginAtZero: true,
-                title: { display: true, text: "Coins/hour" },
+                title: { display: true, text: datasets[0]?.unit || "Value" },
                 ticks: {
                   callback: (value) => formatCompactNumber(value),
                 },

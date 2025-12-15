@@ -9,6 +9,7 @@ from __future__ import annotations
 
 from django import forms
 
+from analysis.metrics import list_metric_definitions
 from core.models import GameData, PresetTag
 
 
@@ -30,6 +31,12 @@ class BattleReportImportForm(forms.Form):
 class ChartContextForm(forms.Form):
     """Validate contextual filters and chart overlay options."""
 
+    metric = forms.ChoiceField(
+        required=False,
+        choices=(),
+        label="Metric",
+        help_text="Choose an observed or derived metric to chart.",
+    )
     start_date = forms.DateField(
         required=False,
         widget=forms.DateInput(attrs={"type": "date"}),
@@ -69,12 +76,30 @@ class ChartContextForm(forms.Form):
         label="Moving average window",
         help_text="Optional simple moving average window size.",
     )
+    ev_trials = forms.IntegerField(
+        required=False,
+        min_value=10,
+        max_value=200_000,
+        label="EV trials (simulated)",
+        help_text="Optional Monte Carlo trials for simulated EV metrics.",
+    )
+    ev_seed = forms.IntegerField(
+        required=False,
+        min_value=0,
+        max_value=2**31 - 1,
+        label="EV seed (simulated)",
+        help_text="Optional RNG seed for simulated EV metrics.",
+    )
 
     def __init__(self, *args, **kwargs) -> None:
         """Initialize the form with dynamic preset choices."""
 
         super().__init__(*args, **kwargs)
         self.fields["preset"].queryset = PresetTag.objects.order_by("name")
+        metrics = list_metric_definitions()
+        self.fields["metric"].choices = [
+            (m.key, f"{m.label} ({m.kind})") for m in metrics
+        ]
 
 
 class GameDataChoiceField(forms.ModelChoiceField):

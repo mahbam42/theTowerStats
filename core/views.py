@@ -13,13 +13,14 @@ from django.shortcuts import redirect, render
 from typing import Callable, TypedDict
 
 from analysis.aggregations import (
-    daily_average_series,
     summarize_window,
     simple_moving_average,
 )
 from analysis.deltas import delta
-from analysis.engine import analyze_runs
-from analysis.dto import RunAnalysis
+from analysis.engine import analyze_metric_series, analyze_runs
+from analysis.dto import MetricPoint, RunAnalysis
+from analysis.metrics import get_metric_definition
+from core.analysis_context import RevisionPolicy, build_player_context
 from core.forms import BattleReportImportForm, ChartContextForm, ComparisonForm
 from core.models import CardDefinition, GameData, PlayerCard, PresetTag
 from core.services import ingest_battle_report
@@ -30,6 +31,8 @@ class ChartDataset(TypedDict, total=False):
 
     label: str
     metricKey: str
+    metricKind: str
+    unit: str
     seriesKind: str
     data: list[float | None]
     borderColor: str
@@ -71,9 +74,32 @@ def dashboard(request: HttpRequest) -> HttpResponse:
 
     runs = _filtered_runs(chart_form)
     total_filtered_runs = runs.count()
-    analysis_result = analyze_runs(runs)
+    base_analysis = analyze_runs(runs)
+
+    metric_key = chart_form.cleaned_data.get("metric") or "coins_per_hour"
+    metric_def = get_metric_definition(metric_key)
+    player_context = None
+    revision_assumption: str | None = None
+    if metric_def.kind == "derived":
+        player_context = build_player_context(revision_policy=RevisionPolicy(mode="latest"))
+        revision_assumption = (
+            "Parameter revision policy: latest by WikiData.last_seen (tie-breaker: id)."
+        )
+
+    series_result = analyze_metric_series(
+        runs,
+        metric_key=metric_key,
+        context=player_context,
+        monte_carlo_trials=chart_form.cleaned_data.get("ev_trials"),
+        monte_carlo_seed=chart_form.cleaned_data.get("ev_seed"),
+    )
+    metric_assumptions = list(series_result.assumptions)
+    if revision_assumption:
+        metric_assumptions.append(revision_assumption)
+
     chart_data = _build_chart_data(
-        analysis_result.runs,
+        series_result.points,
+        metric_def=series_result.metric,
         overlay_group=chart_form.cleaned_data.get("overlay_group") or "none",
         moving_average_window=chart_form.cleaned_data.get("moving_average_window"),
     )
@@ -82,13 +108,13 @@ def dashboard(request: HttpRequest) -> HttpResponse:
     comparison_form.is_valid()
     comparison_result = _build_comparison_result(
         comparison_form,
-        base_analysis=analysis_result.runs,
+        base_analysis=base_analysis.runs,
     )
 
     chart_context = _chart_context_summary(chart_form)
     chart_empty_state = _chart_empty_state_message(
         total_filtered_runs=total_filtered_runs,
-        chartable_runs=len(analysis_result.runs),
+        chartable_runs=sum(1 for point in series_result.points if point.value is not None),
         has_filters=_form_has_filters(chart_form),
     )
 
@@ -97,6 +123,9 @@ def dashboard(request: HttpRequest) -> HttpResponse:
         "chart_form": chart_form,
         "comparison_form": comparison_form,
         "comparison_result": comparison_result,
+        "metric_definition": series_result.metric,
+        "metric_assumptions": tuple(metric_assumptions),
+        "used_parameters": series_result.used_parameters,
         "chart_context_json": json.dumps(chart_context),
         "chart_empty_state": chart_empty_state,
         "chart_labels_json": json.dumps(chart_data["labels"]),
@@ -185,21 +214,24 @@ def _filtered_runs(filter_form: ChartContextForm) -> QuerySet[GameData]:
 
 
 def _build_chart_data(
-    runs: tuple[RunAnalysis, ...],
+    runs: tuple[MetricPoint, ...],
     *,
+    metric_def: object,
     overlay_group: str,
     moving_average_window: int | None,
 ) -> ChartData:
     """Build Chart.js-friendly labels and datasets from analysis output."""
 
-    metric_key = "coins_per_hour"
+    metric_key = getattr(metric_def, "key", "coins_per_hour")
+    metric_kind = getattr(metric_def, "kind", "observed")
+    unit = getattr(metric_def, "unit", "coins/hour")
 
-    group_key: Callable[[RunAnalysis], object]
+    group_key: Callable[[MetricPoint], object]
     label_for_key: Callable[[object], str]
     color_for_key: Callable[[object], str]
 
     if overlay_group == "tier":
-        def group_key(run: RunAnalysis) -> object:
+        def group_key(run: MetricPoint) -> object:
             """Group key function for tier overlays."""
 
             return run.tier
@@ -214,7 +246,7 @@ def _build_chart_data(
 
             return _color_for_tier(key)
     elif overlay_group == "preset":
-        def group_key(run: RunAnalysis) -> object:
+        def group_key(run: MetricPoint) -> object:
             """Group key function for preset overlays."""
 
             return run.preset_name
@@ -229,7 +261,7 @@ def _build_chart_data(
 
             return _color_for_preset(key)
     else:
-        def group_key(_run: RunAnalysis) -> object:
+        def group_key(_run: MetricPoint) -> object:
             """Group key function for the single-dataset baseline chart."""
 
             return "all"
@@ -237,14 +269,17 @@ def _build_chart_data(
         def label_for_key(_key: object) -> str:
             """Render dataset labels for the single-dataset baseline chart."""
 
-            return "Coins/hour"
+            label = getattr(metric_def, "label", None)
+            if isinstance(label, str) and label.strip():
+                return label
+            return unit
 
         def color_for_key(_key: object) -> str:
             """Return the standard color for the baseline metric dataset."""
 
             return "#3366CC"
 
-    groups: dict[object, list[RunAnalysis]] = {}
+    groups: dict[object, list[MetricPoint]] = {}
     for run in runs:
         key = group_key(run)
         groups.setdefault(key, []).append(run)
@@ -254,7 +289,7 @@ def _build_chart_data(
 
     sorted_groups = sorted(groups.items(), key=lambda kv: str(kv[0]))
     for key, group_runs in sorted_groups:
-        series = daily_average_series(group_runs)
+        series = _daily_average_series_points(group_runs)
         data = [round(series[label], 2) if label in series else None for label in labels]
         color = color_for_key(key)
         dataset_label = label_for_key(key)
@@ -262,6 +297,8 @@ def _build_chart_data(
             {
                 "label": dataset_label,
                 "metricKey": metric_key,
+                "metricKind": metric_kind,
+                "unit": unit,
                 "seriesKind": "raw",
                 "data": data,
                 "borderColor": color,
@@ -280,6 +317,8 @@ def _build_chart_data(
                 {
                     "label": f"{dataset_label} (MA{moving_average_window})",
                     "metricKey": metric_key,
+                    "metricKind": metric_kind,
+                    "unit": unit,
                     "seriesKind": "moving_average",
                     "data": [round(v, 2) if v is not None else None for v in ma],
                     "borderColor": _hex_to_rgba(color, alpha=0.85),
@@ -294,6 +333,22 @@ def _build_chart_data(
             )
 
     return {"labels": labels, "datasets": datasets}
+
+
+def _daily_average_series_points(runs: list[MetricPoint]) -> dict[str, float]:
+    """Aggregate metric points into a daily average series keyed by ISO date."""
+
+    buckets: dict[str, list[float]] = {}
+    for run in runs:
+        if run.value is None:
+            continue
+        key = run.battle_date.date().isoformat()
+        buckets.setdefault(key, []).append(run.value)
+
+    averaged: dict[str, float] = {}
+    for key, values in buckets.items():
+        averaged[key] = sum(values) / len(values)
+    return dict(sorted(averaged.items(), key=lambda kv: kv[0]))
 
 
 def _build_comparison_result(
@@ -364,10 +419,15 @@ def _form_has_filters(form: ChartContextForm) -> bool:
         return True
     if form.cleaned_data.get("tier") or form.cleaned_data.get("preset"):
         return True
+    metric = form.cleaned_data.get("metric") or "coins_per_hour"
+    if metric != "coins_per_hour":
+        return True
     overlay_group = form.cleaned_data.get("overlay_group") or "none"
     if overlay_group != "none":
         return True
     if form.cleaned_data.get("moving_average_window") is not None:
+        return True
+    if form.cleaned_data.get("ev_trials") is not None or form.cleaned_data.get("ev_seed") is not None:
         return True
     return False
 
@@ -377,28 +437,37 @@ def _chart_context_summary(form: ChartContextForm) -> dict[str, str | None]:
 
     if not form.is_valid():
         return {
+            "metric": "coins_per_hour",
             "start_date": None,
             "end_date": None,
             "tier": None,
             "preset": None,
             "overlay_group": "none",
             "moving_average_window": None,
+            "ev_trials": None,
+            "ev_seed": None,
         }
 
+    metric = form.cleaned_data.get("metric") or "coins_per_hour"
     start_date = form.cleaned_data.get("start_date")
     end_date = form.cleaned_data.get("end_date")
     tier = form.cleaned_data.get("tier")
     preset = form.cleaned_data.get("preset")
     overlay_group = form.cleaned_data.get("overlay_group") or "none"
     moving_average_window = form.cleaned_data.get("moving_average_window")
+    ev_trials = form.cleaned_data.get("ev_trials")
+    ev_seed = form.cleaned_data.get("ev_seed")
 
     return {
+        "metric": metric,
         "start_date": start_date.isoformat() if start_date else None,
         "end_date": end_date.isoformat() if end_date else None,
         "tier": str(tier) if tier else None,
         "preset": preset.name if preset else None,
         "overlay_group": overlay_group,
         "moving_average_window": str(moving_average_window) if moving_average_window else None,
+        "ev_trials": str(ev_trials) if ev_trials else None,
+        "ev_seed": str(ev_seed) if ev_seed else None,
     }
 
 

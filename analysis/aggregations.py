@@ -126,7 +126,10 @@ def daily_average_series(
     """
 
     if value_getter is None:
-        value_getter = lambda run: run.coins_per_hour
+        def value_getter(run: RunAnalysis) -> float | None:
+            """Default metric accessor returning coins/hour."""
+
+            return run.coins_per_hour
 
     buckets: dict[str, list[float]] = defaultdict(list)
     for run in runs:
