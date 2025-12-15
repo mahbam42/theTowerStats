@@ -22,7 +22,9 @@ from analysis.dto import MetricPoint, RunAnalysis
 from analysis.metrics import get_metric_definition
 from core.analysis_context import RevisionPolicy, build_player_context
 from core.forms import BattleReportImportForm, ChartContextForm, ComparisonForm
-from core.models import CardDefinition, GameData, PlayerCard, PresetTag
+from definitions.models import CardDefinition
+from gamedata.models import BattleReport
+from player_state.models import Player, PlayerCard, Preset
 from core.services import ingest_battle_report
 
 
@@ -141,7 +143,7 @@ def battle_history(request: HttpRequest) -> HttpResponse:
     """Render a simple list of imported runs with minimal metadata."""
 
     runs = (
-        GameData.objects.select_related("run_progress", "run_progress__preset_tag")
+        BattleReport.objects.select_related("run_progress", "run_progress__preset")
         .order_by("-run_progress__battle_date", "-parsed_at")
     )
     return render(
@@ -154,11 +156,12 @@ def battle_history(request: HttpRequest) -> HttpResponse:
 def cards(request: HttpRequest) -> HttpResponse:
     """Render the cards page (definitions + player progress + preset labels)."""
 
-    definitions = CardDefinition.objects.prefetch_related("preset_tags").order_by("name")
-    player_cards = PlayerCard.objects.select_related("card_definition").order_by(
-        "card_definition__name"
+    definitions = CardDefinition.objects.order_by("name")
+    player, _ = Player.objects.get_or_create(name="default")
+    player_cards = PlayerCard.objects.filter(player=player).select_related("card_definition").order_by(
+        "card_slug"
     )
-    presets = PresetTag.objects.order_by("name")
+    presets = Preset.objects.filter(player=player).order_by("name")
     return render(
         request,
         "core/cards.html",
@@ -188,12 +191,12 @@ def bots_progress(request: HttpRequest) -> HttpResponse:
     return render(request, "core/bots_progress.html", {})
 
 
-def _filtered_runs(filter_form: ChartContextForm) -> QuerySet[GameData]:
-    """Return a filtered GameData queryset based on validated form data."""
+def _filtered_runs(filter_form: ChartContextForm) -> QuerySet[BattleReport]:
+    """Return a filtered BattleReport queryset based on validated form data."""
 
-    runs = GameData.objects.select_related(
+    runs = BattleReport.objects.select_related(
         "run_progress",
-        "run_progress__preset_tag",
+        "run_progress__preset",
     ).order_by("run_progress__battle_date")
     if not filter_form.is_valid():
         return runs
@@ -209,7 +212,7 @@ def _filtered_runs(filter_form: ChartContextForm) -> QuerySet[GameData]:
     if tier:
         runs = runs.filter(run_progress__tier=tier)
     if preset:
-        runs = runs.filter(run_progress__preset_tag=preset)
+        runs = runs.filter(run_progress__preset=preset)
     return runs
 
 

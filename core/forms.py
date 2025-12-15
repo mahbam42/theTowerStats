@@ -10,7 +10,8 @@ from __future__ import annotations
 from django import forms
 
 from analysis.metrics import list_metric_definitions
-from core.models import GameData, PresetTag
+from gamedata.models import BattleReport
+from player_state.models import Preset
 
 
 class BattleReportImportForm(forms.Form):
@@ -55,7 +56,7 @@ class ChartContextForm(forms.Form):
     )
     preset = forms.ModelChoiceField(
         required=False,
-        queryset=PresetTag.objects.none(),
+        queryset=Preset.objects.none(),
         label="Preset",
         empty_label="All presets",
     )
@@ -95,7 +96,7 @@ class ChartContextForm(forms.Form):
         """Initialize the form with dynamic preset choices."""
 
         super().__init__(*args, **kwargs)
-        self.fields["preset"].queryset = PresetTag.objects.order_by("name")
+        self.fields["preset"].queryset = Preset.objects.order_by("name")
         metrics = list_metric_definitions()
         self.fields["metric"].choices = [
             (m.key, f"{m.label} ({m.kind})") for m in metrics
@@ -121,8 +122,8 @@ class GameDataChoiceField(forms.ModelChoiceField):
 class ComparisonForm(forms.Form):
     """Validate run vs run and window vs window comparisons."""
 
-    run_a = GameDataChoiceField(required=False, queryset=GameData.objects.none(), label="Run A")
-    run_b = GameDataChoiceField(required=False, queryset=GameData.objects.none(), label="Run B")
+    run_a = GameDataChoiceField(required=False, queryset=BattleReport.objects.none(), label="Run A")
+    run_b = GameDataChoiceField(required=False, queryset=BattleReport.objects.none(), label="Run B")
 
     window_a_start = forms.DateField(
         required=False,
@@ -155,7 +156,7 @@ class ComparisonForm(forms.Form):
         runs_queryset = kwargs.pop("runs_queryset", None)
         super().__init__(*args, **kwargs)
         if runs_queryset is None:
-            runs_queryset = GameData.objects.select_related("run_progress").order_by(
+            runs_queryset = BattleReport.objects.select_related("run_progress").order_by(
                 "-run_progress__battle_date", "-parsed_at"
             )
 

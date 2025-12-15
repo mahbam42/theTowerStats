@@ -13,7 +13,7 @@ This phase **does not** feed wiki data into the Analysis Engine or charts.
 
 ## Data model
 
-Wiki-derived rows are stored in `core.models.WikiData` as versioned records:
+Wiki-derived rows are stored in `definitions.models.WikiData` as versioned records:
 
 - `entity_id` is a stable internal key (derived from the canonical name).
 - `content_hash` identifies the exact row payload (`raw_row`).
@@ -64,12 +64,12 @@ Notes:
 
 ## Next step (optional): Populate Phase 3 models
 
-Once `core.WikiData` has been populated, you can translate those revisions into
-Phase 3 structural models for browsing in admin/debug pages:
+Once `definitions.WikiData` has been populated, you can rebuild the structured
+Definitions layer for browsing/admin/debug visibility:
 
 ```bash
-python3 manage.py populate_cards_from_wiki --check
-python3 manage.py populate_cards_from_wiki --write
+python manage.py rebuild_wiki_definitions --check
+python manage.py rebuild_wiki_definitions --write
 ```
 
 This step still does **not** add gameplay math or derived analysis; it simply

@@ -1,74 +1,101 @@
-"""Model smoke tests for Phase 3 structural completeness."""
+"""Model smoke tests for structural completeness after Prompt12 refactor."""
 
 from __future__ import annotations
 
 import pytest
 
-from core.models import (
+from definitions.models import (
     BotDefinition,
-    BotLevel,
-    BotParameter,
+    BotParameterDefinition,
+    BotParameterLevel,
     CardDefinition,
-    CardLevel,
-    CardParameter,
-    CardSlot,
+    Currency,
     GuardianChipDefinition,
-    GuardianChipLevel,
-    GuardianChipParameter,
-    PlayerBot,
-    PlayerCard,
-    PlayerGuardianChip,
-    PlayerUltimateWeapon,
-    PresetTag,
+    GuardianChipParameterDefinition,
+    GuardianChipParameterLevel,
+    ParameterKey,
     UltimateWeaponDefinition,
-    UltimateWeaponLevel,
-    UltimateWeaponParameter,
+    UltimateWeaponParameterDefinition,
+    UltimateWeaponParameterLevel,
     Unit,
+    WikiData,
 )
+from gamedata.models import BattleReport, BattleReportProgress, RunBot
+from player_state.models import Player, PlayerBot, PlayerBotParameter, PlayerCard, Preset
 
 
 @pytest.mark.django_db
-def test_phase3_models_create_minimal_rows() -> None:
-    """Create minimal rows for Phase 3 models to ensure migrations apply cleanly."""
+def test_models_create_minimal_rows() -> None:
+    """Create minimal rows to ensure migrations apply cleanly."""
 
-    percent = Unit.objects.create(name="percent", symbol="%", kind=Unit.Kind.PERCENT)
-    farming = PresetTag.objects.create(name="Farming")
-
-    card = CardDefinition.objects.create(name="Damage")
-    card.preset_tags.add(farming)
-
-    level = CardLevel.objects.create(card_definition=card, level=1, star=1, raw_row={"Bonus": "10%"})
-    CardParameter.objects.create(
-        card_definition=card,
-        card_level=level,
-        key="Bonus",
-        raw_value="10",
-        unit=percent,
+    wiki = WikiData.objects.create(
+        page_url="https://example.test/wiki",
+        canonical_name="Example",
+        entity_id="example",
+        content_hash="x" * 64,
+        raw_row={"Name": "Example"},
+        source_section="test",
+        parse_version="test_v1",
     )
-    CardSlot.objects.create(slot_number=1, unlock_cost_raw="Free")
+    Unit.objects.create(name="seconds", symbol="s", kind=Unit.Kind.SECONDS)
 
-    bot_def = BotDefinition.objects.create(name="Amplify Bot")
-    bot_level = BotLevel.objects.create(bot_definition=bot_def, level=1, raw_row={})
-    BotParameter.objects.create(bot_definition=bot_def, bot_level=bot_level, key="Bonus", raw_value="?", unit=None)
+    card = CardDefinition.objects.create(name="Coin Bonus", slug="coin_bonus", source_wikidata=wiki)
 
-    chip_def = GuardianChipDefinition.objects.create(name="Core")
-    chip_level = GuardianChipLevel.objects.create(guardian_chip_definition=chip_def, level=1, raw_row={})
-    GuardianChipParameter.objects.create(
-        guardian_chip_definition=chip_def, guardian_chip_level=chip_level, key="Effect", raw_value="?", unit=None
+    bot = BotDefinition.objects.create(name="Amplify Bot", slug="amplify_bot", source_wikidata=wiki)
+    bot_param = BotParameterDefinition.objects.create(
+        bot_definition=bot, key=ParameterKey.COOLDOWN, display_name="Cooldown", unit_kind=Unit.Kind.SECONDS
     )
-
-    uw_def = UltimateWeaponDefinition.objects.create(name="Golden Tower")
-    uw_level = UltimateWeaponLevel.objects.create(ultimate_weapon_definition=uw_def, level=1, raw_row={})
-    UltimateWeaponParameter.objects.create(
-        ultimate_weapon_definition=uw_def,
-        ultimate_weapon_level=uw_level,
-        key="Cooldown",
-        raw_value="120",
-        unit=None,
+    BotParameterLevel.objects.create(
+        parameter_definition=bot_param,
+        level=1,
+        value_raw="100",
+        cost_raw="10",
+        currency=Currency.MEDALS,
+        source_wikidata=wiki,
     )
 
-    PlayerCard.objects.create(card_definition=card, owned=True, level=1, star=1)
-    PlayerGuardianChip.objects.create(chip_name="Core", owned=False)
-    PlayerUltimateWeapon.objects.create(weapon_name="Golden Tower", unlocked=False)
-    PlayerBot.objects.create(bot_name="Amplify Bot", unlocked=False)
+    uw = UltimateWeaponDefinition.objects.create(name="Golden Tower", slug="golden_tower", source_wikidata=wiki)
+    uw_param = UltimateWeaponParameterDefinition.objects.create(
+        ultimate_weapon_definition=uw,
+        key=ParameterKey.COOLDOWN,
+        display_name="Cooldown",
+        unit_kind=Unit.Kind.SECONDS,
+    )
+    UltimateWeaponParameterLevel.objects.create(
+        parameter_definition=uw_param,
+        level=1,
+        value_raw="100",
+        cost_raw="5",
+        currency=Currency.STONES,
+        source_wikidata=wiki,
+    )
+
+    guardian = GuardianChipDefinition.objects.create(name="Ally", slug="ally", source_wikidata=wiki)
+    guardian_param = GuardianChipParameterDefinition.objects.create(
+        guardian_chip_definition=guardian,
+        key=ParameterKey.COOLDOWN,
+        display_name="Cooldown",
+        unit_kind=Unit.Kind.SECONDS,
+    )
+    GuardianChipParameterLevel.objects.create(
+        parameter_definition=guardian_param,
+        level=1,
+        value_raw="100",
+        cost_raw="1",
+        currency=Currency.BITS,
+        source_wikidata=wiki,
+    )
+
+    player = Player.objects.create(name="default")
+    preset = Preset.objects.create(player=player, name="Farming")
+    PlayerCard.objects.create(player=player, card_definition=card, card_slug=card.slug, stars_unlocked=1)
+
+    player_bot = PlayerBot.objects.create(
+        player=player, bot_definition=bot, bot_slug=bot.slug, unlocked=True
+    )
+    PlayerBotParameter.objects.create(player_bot=player_bot, parameter_definition=bot_param, level=1)
+
+    report = BattleReport.objects.create(raw_text="Battle Report\n", checksum="c" * 64)
+    BattleReportProgress.objects.create(battle_report=report, tier=1, wave=10, real_time_seconds=60, preset=preset)
+    RunBot.objects.create(battle_report=report, bot_definition=bot, notes="")
 

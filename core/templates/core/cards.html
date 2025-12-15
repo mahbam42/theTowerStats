@@ -22,15 +22,6 @@
       {% for card in definitions %}
         <li>
           {{ card.name }}
-          {% if card.preset_tags.all %}
-            <span class="muted">
-              (tags:
-              {% for tag in card.preset_tags.all %}
-                {{ tag.name }}{% if not forloop.last %}, {% endif %}
-              {% endfor %}
-              )
-            </span>
-          {% endif %}
         </li>
       {% endfor %}
     </ul>
@@ -44,19 +35,15 @@
       <thead>
         <tr>
           <th>Card</th>
-          <th>Owned</th>
-          <th>Level</th>
-          <th>Star</th>
+          <th>Stars unlocked</th>
           <th>Updated</th>
         </tr>
       </thead>
       <tbody>
         {% for entry in player_cards %}
           <tr>
-            <td>{{ entry.card_definition.name }}</td>
-            <td>{{ entry.owned }}</td>
-            <td>{{ entry.level|default:"—" }}</td>
-            <td>{{ entry.star|default:"—" }}</td>
+            <td>{{ entry.card_definition.name|default:entry.card_slug }}</td>
+            <td>{{ entry.stars_unlocked }}</td>
             <td>{{ entry.updated_at }}</td>
           </tr>
         {% endfor %}
@@ -66,4 +53,3 @@
     <p class="muted">No player card progress yet.</p>
   {% endif %}
 {% endblock %}
-

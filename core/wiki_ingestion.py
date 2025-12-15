@@ -19,7 +19,7 @@ from typing import Any, Mapping, Sequence
 from django.db import transaction
 from django.utils import timezone
 
-from core.models import WikiData
+from definitions.models import WikiData
 
 _WHITESPACE_RE = re.compile(r"\s+")
 _ENTITY_ID_RE = re.compile(r"[^a-z0-9]+")

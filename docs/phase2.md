@@ -20,10 +20,10 @@ Filters affect:
 
 ### Preset labels (minimal)
 
-Runs can be labeled with an optional preset tag:
+Runs can be labeled with an optional preset:
 
-- Import form (POST): `preset_name` (creates/uses `core.models.PresetTag`)
-- Stored on `core.models.RunProgress.preset_tag`
+- Import form (POST): `preset_name` (creates/uses `player_state.models.Preset`)
+- Stored on `gamedata.models.BattleReportProgress.preset`
 
 Presets are labels only (no enforced limits, no ranking, no recommendations).
 
@@ -50,7 +50,7 @@ Optional moving average overlay:
 
 Deltas are computed on demand and are never persisted:
 
-- Run vs run: `run_a`, `run_b` (GameData primary keys)
+- Run vs run: `run_a`, `run_b` (BattleReport primary keys)
 - Window vs window:
   - `window_a_start`, `window_a_end`
   - `window_b_start`, `window_b_end`

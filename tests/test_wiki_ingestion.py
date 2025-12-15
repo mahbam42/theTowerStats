@@ -7,7 +7,7 @@ from pathlib import Path
 
 import pytest
 
-from core.models import WikiData
+from definitions.models import WikiData
 from core.wiki_ingestion import (
     compute_content_hash,
     find_table_indexes_by_anchor,

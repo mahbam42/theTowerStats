@@ -18,10 +18,10 @@ See `docs/phase2.md` for contextual filters, preset labels, overlays, and delta 
 
 ## Data Stored
 
-- `core.models.GameData`
+- `gamedata.models.BattleReport`
   - raw Battle Report text is preserved unchanged
   - deduplicated via a SHA-256 checksum
-- `core.models.RunProgress`
+- `gamedata.models.BattleReportProgress`
   - stores only Phase 1 metadata: battle date, tier, wave, real time
   - accepts labels separated by colons, tabs, or multi-space alignment
   - tolerates missing/reordered sections and unknown labels (non-fatal)

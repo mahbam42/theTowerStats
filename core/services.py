@@ -8,13 +8,14 @@ from __future__ import annotations
 
 from django.db import IntegrityError, transaction
 
-from core.models import GameData, PresetTag, RunProgress
+from gamedata.models import BattleReport, BattleReportProgress
+from player_state.models import Player, Preset
 from core.parsers.battle_report import parse_battle_report
 
 
 def ingest_battle_report(
     raw_text: str, *, preset_name: str | None = None
-) -> tuple[GameData, bool]:
+) -> tuple[BattleReport, bool]:
     """Ingest a Battle Report, rejecting duplicates by checksum.
 
     Args:
@@ -22,42 +23,42 @@ def ingest_battle_report(
         preset_name: Optional preset label to associate with the run.
 
     Returns:
-        A tuple of (game_data, created) where `created` is False when the report
+        A tuple of (battle_report, created) where `created` is False when the report
         is a duplicate.
     """
 
     parsed = parse_battle_report(raw_text)
-    preset_tag = _resolve_preset_tag(preset_name)
+    preset = _resolve_preset(preset_name)
     try:
         with transaction.atomic():
-            game_data = GameData.objects.create(
+            battle_report = BattleReport.objects.create(
                 raw_text=raw_text,
                 checksum=parsed.checksum,
             )
-            RunProgress.objects.create(
-                game_data=game_data,
+            BattleReportProgress.objects.create(
+                battle_report=battle_report,
                 battle_date=parsed.battle_date,
                 tier=parsed.tier,
                 wave=parsed.wave,
                 real_time_seconds=parsed.real_time_seconds,
-                preset_tag=preset_tag,
+                preset=preset,
             )
-            return game_data, True
+            return battle_report, True
     except IntegrityError:
-        game_data = GameData.objects.get(checksum=parsed.checksum)
-        if preset_tag is not None:
-            RunProgress.objects.filter(game_data=game_data).update(preset_tag=preset_tag)
-        return game_data, False
+        battle_report = BattleReport.objects.get(checksum=parsed.checksum)
+        if preset is not None:
+            BattleReportProgress.objects.filter(battle_report=battle_report).update(preset=preset)
+        return battle_report, False
 
 
-def _resolve_preset_tag(preset_name: str | None) -> PresetTag | None:
-    """Resolve an optional preset name into a PresetTag.
+def _resolve_preset(preset_name: str | None) -> Preset | None:
+    """Resolve an optional preset name into a Preset.
 
     Args:
         preset_name: Raw user input.
 
     Returns:
-        A PresetTag instance when `preset_name` is non-empty; otherwise None.
+        A Preset instance when `preset_name` is non-empty; otherwise None.
     """
 
     if preset_name is None:
@@ -65,5 +66,6 @@ def _resolve_preset_tag(preset_name: str | None) -> PresetTag | None:
     cleaned = preset_name.strip()
     if not cleaned:
         return None
-    preset_tag, _ = PresetTag.objects.get_or_create(name=cleaned)
-    return preset_tag
+    player, _ = Player.objects.get_or_create(name="default")
+    preset, _ = Preset.objects.get_or_create(player=player, name=cleaned)
+    return preset
