@@ -49,6 +49,10 @@ class GameData(models.Model):
         """Return a concise display string for admin/debug usage."""
 
         return f"GameData({self.checksum[:10]}…, parsed_at={self.parsed_at.isoformat()})"
+    
+    class Meta:
+        verbose_name = "Game Data"
+        verbose_name_plural = "Wiki Datum"
 
 
 class RunProgress(models.Model):
@@ -80,6 +84,10 @@ class RunProgress(models.Model):
     )
     wave = models.PositiveIntegerField(null=True, blank=True)
     real_time_seconds = models.PositiveIntegerField(null=True, blank=True)
+
+    class Meta: 
+        verbose_name = "Game Progress"
+        verbose_name_plural = "Game Progress"
 
     def __str__(self) -> str:
         """Return a concise display string for admin/debug usage."""
@@ -129,6 +137,8 @@ class WikiData(models.Model):
         indexes = [
             models.Index(fields=["page_url", "source_section", "parse_version", "entity_id"]),
         ]
+        verbose_name = "Wiki Data"
+        verbose_name_plural = "Wiki Datum"
 
     def save(self, *args, **kwargs) -> None:
         """Save the record, enforcing immutability for content fields."""
@@ -304,11 +314,19 @@ class CardSlot(models.Model):
     Attributes:
         slot_number: Slot index (1-based).
         unlock_cost_raw: Raw unlock cost representation (e.g. "50M coins").
+        source_wikidata: Optional pointer to the exact wiki revision used.
         notes: Optional freeform notes for later UX.
     """
 
     slot_number = models.PositiveSmallIntegerField(unique=True)
     unlock_cost_raw = models.CharField(max_length=80, blank=True)
+    source_wikidata = models.ForeignKey(
+        WikiData,
+        null=True,
+        blank=True,
+        on_delete=models.SET_NULL,
+        related_name="card_slots",
+    )
     notes = models.TextField(blank=True)
 
     def __str__(self) -> str:

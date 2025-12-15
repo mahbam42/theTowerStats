@@ -97,7 +97,7 @@ class CardLevelAdmin(admin.ModelAdmin):
 class CardSlotAdmin(admin.ModelAdmin):
     """Admin configuration for CardSlot."""
 
-    list_display = ("slot_number", "unlock_cost_raw")
+    list_display = ("slot_number", "unlock_cost_raw", "source_wikidata")
     search_fields = ("unlock_cost_raw",)
 
 

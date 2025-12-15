@@ -52,3 +52,16 @@ Useful options:
 Notes:
 
 - For `--target cards_list`, each ingested row includes `_wiki_table_label` in `raw_row` to preserve which table it came from (e.g., rarity headings).
+
+## Next step (optional): Populate Phase 3 models
+
+Once `core.WikiData` has been populated, you can translate those revisions into
+Phase 3 structural models for browsing in admin/debug pages:
+
+```bash
+python3 manage.py populate_cards_from_wiki --check
+python3 manage.py populate_cards_from_wiki --write
+```
+
+This step still does **not** add gameplay math or derived analysis; it simply
+materializes structured rows with `source_wikidata` pointers for traceability.
