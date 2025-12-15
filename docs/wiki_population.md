@@ -24,9 +24,13 @@ python3 manage.py populate_cards_from_wiki --write
 Targets:
 
 - `--target slots`: populate `CardSlot` from the wiki “Card Slots” table
-- `--target cards`: populate `CardDefinition` and `CardParameter` from card list tables
+- `--target cards`: populate `CardDefinition` metadata from card list tables
 - `--target levels`: populate `CardLevel` (currently a no-op until level tables are ingested)
-- `--target all`: run all of the above (default)
+- `--target bots`: populate bot definitions, levels, and parameters using the registry
+- `--target guardian_chips`: populate guardian chip definitions, levels, and parameters using the registry
+- `--target ultimate_weapons`: populate ultimate weapon definitions, levels, and parameters using the registry
+- `--target cards_all`: run all card-related populators
+- `--target all`: run every populator (default)
 
 Slot-table detection:
 
@@ -34,6 +38,7 @@ Slot-table detection:
 
 ## Traceability rules
 
-- `CardSlot.source_wikidata` and `CardParameter.source_wikidata` always point to
-  the exact `WikiData` revision used to create the row.
+- `source_wikidata` always points to the exact `WikiData` revision used to create the row.
 - Raw values are copied as strings (no interpretation or destructive transforms).
+- Parameter creation is gated by the entity-scoped registry (`core.parameter_registry`). Unknown headers are preserved only in
+  `WikiData.raw_row`.
