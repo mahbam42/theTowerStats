@@ -834,8 +834,18 @@ Sub Charts:
 The naming is important 
 **** TODO Bots Progress
 **** TODO Add Github Action to publish Docs to Github Pages
-**** TODO [#C] Documentation and Polish 
-- Add Material Theme, mkdocstrings-python support
+**** TODO Documentation and Polish
+the tone and structure I'm  aiming for: professional, concise, technically accurate but still readable for non-technical users. 
+
+- Consistent, hierarchical headings → perfect for generating a table of contents automatically in Google Docs.
+- Clear sectioning by task flow (Overview → Setup → Operation → Advanced → Appendix).
+- Step-by-step procedures with short bullet or numbered lists.
+- Cautions and notes highlighted distinctly (we can use blockquotes and icons)
+- Simple, non-code formatting — short, direct action verbs instead of command line snippets.
+
+  
+
+- [ ] Add Material Theme, mkdocstrings-python support
   Similar to mscrInventory's mkdocs.yml
 
   #+BEGIN_SRC yml
@@ -901,10 +911,12 @@ markdown_extensions:
             merge_init_into_class: true
   - autorefs
   #+END_SRC
-- Move Phase 1, Phase 2, Phase 2.75, Phase 3, and Phase 4 under 'Development'
-- Merge 'Management Command' section for 'fetch_wiki_data' with 'Wiki Population' page
-- Add Docs for Each Dashboard
+- [ ] Move Phase 1, Phase 2, Phase 2.75, Phase 3, and Phase 4 under 'Development'
+- [ ] Merge 'Management Command' section for 'fetch_wiki_data' with 'Wiki Population' page
+- [ ] Add Docs for Each Dashboard
   - Callout Charts and Cards in index.md
+
+- [ ] Add mkdocstrings pages for commands/API/etc.
 **** TODO Need method for handling Player Bots/Cards/UW/Gaurdian Chips
 Hasn't been built out or thought out yet.
 **** TODO Update readme.md
