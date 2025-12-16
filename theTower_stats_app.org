@@ -775,7 +775,8 @@ General conventions across all Dashboards:
   - Filters (Tier, Date Range, Preset)
   - Empty states
   - Loading states
-**** TODO Battle History
+**** IN PROGRESS Battle History
+- State "IN PROGRESS" from "TODO"       [2025-12-16 Tue 14:13]
 - Display Results in a Styled Table with Sortable Columns
 - Include:
   - Killed By	Boss
@@ -788,6 +789,12 @@ General conventions across all Dashboards:
   - Reroll Shards Earned	94
 - Filter by Tier, Killed By
 - Can be paginated 
+***** [#A] Need Widget to add new Battle History
+It got moved to Charts/. It should also be at the top of Battle History.
+***** [#A] Need to Populate New Columns
+Killed By, Coins Earned, Interest, Gem Blocks, Cells Earned, Reroll all empty. Need to reparse previous Battle Reports
+***** [#C] Table Columns should be sortable
+Click on header to sort table
 **** TODO Charts
 Pretty dashboard of metrics over time (filterable by date range and tier)
 
@@ -825,7 +832,7 @@ Sub Charts:
 **** TODO Cards
 - Show a utility widget with 'CardSlots' Unlocked and a button to 'Unlock Next Slot'
 - List all Cards in a Collapsible Table
-  - Multiselect to add/create preset
+  - Multiselect to add/create preset relationship to a card.
   - textbox to enter current inventory
   - Display 'CardLevel' and 'CardParameters'
   - Filter by Preset
@@ -1317,3 +1324,6 @@ definitions/models.py:407
     models.CheckConstraint(
 
 -- Docs: https://docs.pytest.org/en/stable/how-to/capture-warnings.html
+** Codex Tasks
+- [ ] prompt 16
+- [ ] prompt 17 

@@ -20,3 +20,9 @@
 ### `sync_player_state`
 
 ::: core.management.commands.sync_player_state
+
+## Battle report maintenance
+
+### `reparse_battle_reports`
+
+::: core.management.commands.reparse_battle_reports

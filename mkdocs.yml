@@ -36,7 +36,9 @@ markdown_extensions:
 
 nav:
   - Home: index.md
-  - User Guide: user_guide.md
+  - User Guide:
+      - Overview: user_guide.md
+      - Battle History: battle_history.md
   - Wiki Population: wiki_population.md
   - Development:
       - Phase 1: phase1.md

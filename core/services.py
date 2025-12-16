@@ -42,6 +42,16 @@ def ingest_battle_report(
                 wave=parsed.wave,
                 real_time_seconds=parsed.real_time_seconds,
                 preset=preset,
+                killed_by=parsed.killed_by,
+                coins_earned=parsed.coins_earned,
+                coins_earned_raw=parsed.coins_earned_raw,
+                cash_earned=parsed.cash_earned,
+                cash_earned_raw=parsed.cash_earned_raw,
+                interest_earned=parsed.interest_earned,
+                interest_earned_raw=parsed.interest_earned_raw,
+                gem_blocks_tapped=parsed.gem_blocks_tapped,
+                cells_earned=parsed.cells_earned,
+                reroll_shards_earned=parsed.reroll_shards_earned,
             )
             return battle_report, True
     except IntegrityError:
