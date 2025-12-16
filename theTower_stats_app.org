@@ -649,8 +649,10 @@ CLOSED: [2025-12-16 Tue 09:22]
 - [X] Page separation
 - [X] Dashboards
 - [X] Model completeness (structure, not logic)
-*** Phase 4 Effects
+*** DONE Phase 4 Effects
+CLOSED: [2025-12-16 Tue 11:35]
 
+- State "DONE"       from              [2025-12-16 Tue 11:35]
 **** Scraping Sources and Corrective Behavior
 - [X] Need a Management Command to Purge WikiData, Bot Definitions, Bot Levels, Bot Parameters, Guardian Chip Definitions, Guardian Chip levels, Guardian Chip Parameters, UW Definitions, UW Levels, UW Parameters.
 
@@ -720,8 +722,8 @@ The labs tables are outside of the current scope.
 **** Milestones
 - [X] CardParameters → effective values
 - [X] UW / Guardian parameterized metrics
-- [ ] Derived metrics charts
-**** Exit Criteria [50%]
+- [X] Derived metrics charts
+**** Exit Criteria [100%]
 Wiki Effects Infrastructure
 - [X] At least one complete pipeline:
   - scrape → version → reference → compute
@@ -729,22 +731,22 @@ Wiki Effects Infrastructure
   - UW or Bot or Guardian
 - [X] Wiki revision change produces different derived output
 - [X] Golden test proving revision safety
-- [ ] One derived effect chart rendered dynamically
+- [X] One derived effect chart rendered dynamically
 
 Parameterized Effects
-- [ ]  At least one wiki-derived parameter table is:
+- [X]  At least one wiki-derived parameter table is:
   - scraped
   - versioned
   - referenced by the Analysis Engine
 
-- [ ] At least one effect calculation exists:
+- [X] At least one effect calculation exists:
   - e.g. effective cooldown or EV of wave skip
 
 Derived Metrics
-- [ ] Derived metrics:
+- [X] Derived metrics:
   - are computed dynamically
   - are not persisted
-- [ ] Derived metrics appear as charts:
+- [X] Derived metrics appear as charts:
   - alongside raw metrics
   - with correct units
 
