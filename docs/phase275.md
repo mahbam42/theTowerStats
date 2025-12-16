@@ -63,6 +63,7 @@ Notes:
 - Some wiki tables repeat column names (ex: multiple “Bits” or “Stones” columns); ingestion suffixes duplicates with `__2`, `__3`, ... to avoid data loss.
 - Ingestion skips non-entity rows such as table "Total" summary rows and rows that are effectively empty placeholders (empty/`-`/`null`).
 - For leveled upgrade tables, ingestion also skips rows where all *parameter value* cells are placeholders (even if Level/cost columns are present).
+- During `rebuild_wiki_definitions`, placeholder/total leveled rows are also ignored when creating parameter level tables (UWs/Guardians/Bots).
 
 ## Next step (optional): Populate Phase 3 models
 

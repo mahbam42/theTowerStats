@@ -715,13 +715,20 @@ The labs tables are outside of the current scope.
 - 'Description' Column explains target and how it's modified
 - Card Slots are unlocked with Gems.
 
-**** Need method for handling Player Bots/Cards/UW/Gaurdian Chips
-Hasn't been built out or thought out yet.
 **** Milestones
 - [X] CardParameters → effective values
 - [X] UW / Guardian parameterized metrics
 - [ ] Derived metrics charts
 **** Exit Criteria [0%]
+Wiki Effects Infrastructure
+- [ ] At least one complete pipeline:
+  - scrape → version → reference → compute
+- [ ] Demonstrated on one entity type (pick one):
+  - UW or Bot or Guardian
+- [ ] One derived effect chart rendered dynamically
+- [ ] Wiki revision change produces different derived output
+- [ ] Golden test proving revision safety
+
 Parameterized Effects
 - [ ]  At least one wiki-derived parameter table is:
   - scraped
@@ -785,6 +792,7 @@ Needs a lot of work
 **** TODO Guardian Chip Progress
 The naming is important 
 **** TODO Bots Progress
+**** TODO Add Github Action to publish Docs to Github Pages
 **** TODO [#C] Docs Cleanup
 - Add Material Theme, mkdocstrings-python support
   Similar to mscrInventory's mkdocs.yml
@@ -856,7 +864,8 @@ markdown_extensions:
 - Merge 'Management Command' section for 'fetch_wiki_data' with 'Wiki Population' page
 - Add Docs for Each Dashboard
   - Callout Charts and Cards in index.md
-**** TODO Add Github Action to publish Docs to Github Pages
+**** TODO Need method for handling Player Bots/Cards/UW/Gaurdian Chips
+Hasn't been built out or thought out yet.
 ** Backlog [0/5]
 “Out of Scope”:
 - Cloud sync

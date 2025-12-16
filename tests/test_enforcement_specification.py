@@ -322,3 +322,82 @@ def test_spotlight_placeholder_levels_are_omitted_and_max_levels_hold() -> None:
     coins_bonus = defs["coins_bonus"]
     assert coins_bonus.levels.order_by("-level").first().level == 26
     assert coins_bonus.levels.filter(level__gt=26).count() == 0
+
+
+@pytest.mark.django_db
+def test_guardian_placeholder_levels_are_omitted_on_rebuild() -> None:
+    """Guardian chip rebuild omits placeholder/total parameter rows."""
+
+    from core.wiki_ingestion import ScrapedWikiRow, compute_content_hash
+
+    ingest_wiki_rows(
+        [
+            ScrapedWikiRow(
+                canonical_name="Ally",
+                entity_id="ally__level_1__star_none",
+                raw_row={
+                    "_wiki_entity_id": "ally",
+                    "Guardian": "Ally",
+                    "Level": "1",
+                    "Recovery Amount": "10",
+                    "Bits": "0",
+                    "Cooldown": "5",
+                    "Bits__2": "0",
+                    "Max Recovery": "20",
+                    "Bits__3": "0",
+                },
+                content_hash=compute_content_hash(
+                    {
+                        "_wiki_entity_id": "ally",
+                        "Guardian": "Ally",
+                        "Level": "1",
+                        "Recovery Amount": "10",
+                        "Bits": "0",
+                        "Cooldown": "5",
+                        "Bits__2": "0",
+                        "Max Recovery": "20",
+                        "Bits__3": "0",
+                    }
+                ),
+            ),
+            ScrapedWikiRow(
+                canonical_name="Ally",
+                entity_id="ally__level_62__star_none",
+                raw_row={
+                    "_wiki_entity_id": "ally",
+                    "Guardian": "Ally",
+                    "Level": "62",
+                    "Recovery Amount": "-",
+                    "Bits": "1000",
+                    "Cooldown": "—",
+                    "Bits__2": "1000",
+                    "Max Recovery": "null",
+                    "Bits__3": "1000",
+                },
+                content_hash=compute_content_hash(
+                    {
+                        "_wiki_entity_id": "ally",
+                        "Guardian": "Ally",
+                        "Level": "62",
+                        "Recovery Amount": "-",
+                        "Bits": "1000",
+                        "Cooldown": "—",
+                        "Bits__2": "1000",
+                        "Max Recovery": "null",
+                        "Bits__3": "1000",
+                    }
+                ),
+            ),
+        ],
+        page_url="https://example.test/wiki/Guardian",
+        source_section="guardian_chips_ally_table_2",
+        parse_version="guardian_chips_v1",
+        write=True,
+    )
+
+    rebuild_guardian_chips_from_wikidata(write=True)
+    chip = GuardianChipDefinition.objects.get(slug="ally")
+    assert chip.parameter_definitions.count() == 3
+    for param_def in chip.parameter_definitions.all():
+        assert param_def.levels.count() == 1
+        assert param_def.levels.get().level == 1

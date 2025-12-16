@@ -335,11 +335,15 @@ def rebuild_guardian_chips_from_wikidata(
                     level = _safe_int(row.raw_row.get("Level"))
                     if level <= 0:
                         continue
+                    value_raw = str(row.raw_row.get(value_header, "")).strip()
+                    cost_raw = str(row.raw_row.get(cost_header, "")).strip()
+                    if _is_placeholder_or_total(value_raw) or _is_placeholder_or_total(cost_raw):
+                        continue
                     GuardianChipParameterLevel.objects.create(
                         parameter_definition=param_def,
                         level=level,
-                        value_raw=str(row.raw_row.get(value_header, "")).strip(),
-                        cost_raw=str(row.raw_row.get(cost_header, "")).strip(),
+                        value_raw=value_raw,
+                        cost_raw=cost_raw,
                         currency=Currency.BITS,
                         source_wikidata=row,
                     )
