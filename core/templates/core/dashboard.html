@@ -25,7 +25,7 @@
         <div class="grid-x grid-margin-x align-middle">
           <div class="cell auto">
             <p class="muted margin-0">Charts</p>
-            <h2 class="margin-0">{{ metric_definition.label }}</h2>
+            <h2 class="margin-0">Dashboard</h2>
             <p class="muted margin-0">Filters default to December 9, 2025 to focus on recent runs.</p>
           </div>
           <div class="cell shrink text-right">
@@ -42,8 +42,8 @@
       <div class="card-shell">
         <h4 class="margin-bottom-1">Filters</h4>
         <form method="get" id="chart-context-form">
-          <label>Metric / Chart
-            {{ chart_form.metric }}
+          <label>Charts
+            {{ chart_form.charts }}
           </label>
           <label>Start date
             {{ chart_form.start_date }}
@@ -57,8 +57,14 @@
           <label>Preset
             {{ chart_form.preset }}
           </label>
-          <label>Overlay
-            {{ chart_form.overlay_group }}
+          <label>Ultimate Weapon
+            {{ chart_form.ultimate_weapon }}
+          </label>
+          <label>Guardian Chip
+            {{ chart_form.guardian_chip }}
+          </label>
+          <label>Bot
+            {{ chart_form.bot }}
           </label>
           <label>Moving average window
             {{ chart_form.moving_average_window }}
@@ -99,32 +105,6 @@
         <div id="active-context" class="muted"></div>
       </div>
 
-      {% if metric_definition.kind == "derived" %}
-        <div class="callout secondary">
-          <p class="margin-0"><strong>Derived metric transparency</strong></p>
-          {% if metric_assumptions %}
-            <ul class="margin-bottom-0">
-              {% for assumption in metric_assumptions %}
-                <li>{{ assumption }}</li>
-              {% endfor %}
-            </ul>
-          {% endif %}
-          {% if used_parameters %}
-            <details class="margin-top-1">
-              <summary>Parameters referenced</summary>
-              <ul>
-                {% for param in used_parameters %}
-                  <li>
-                    {{ param.entity_type }} • {{ param.entity_name }} • {{ param.key }} = {{ param.raw_value }}
-                    {% if param.wiki_revision_id %}(wiki rev {{ param.wiki_revision_id }}){% endif %}
-                  </li>
-                {% endfor %}
-              </ul>
-            </details>
-          {% endif %}
-        </div>
-      {% endif %}
-
       {% if comparison_result %}
         <div class="callout success">
           <p class="margin-0"><strong>Deltas ({{ comparison_result.metric }})</strong></p>
@@ -155,41 +135,23 @@
         <div class="empty-state" role="status">{{ chart_empty_state }}</div>
       {% endif %}
 
-      {% if metric_definition.kind == "derived" %}
-        <div class="grid-x grid-margin-x" {% if chart_empty_state %}hidden{% endif %}>
+      <div class="grid-x grid-margin-x" {% if chart_empty_state %}hidden{% endif %}>
+        {% for panel in chart_panels %}
           <div class="cell">
-            <div class="chart-shell">
+            <div class="chart-shell margin-bottom-1">
               <div class="grid-x align-justify align-middle">
                 <div class="cell auto">
-                  <h4 class="margin-0">{{ metric_definition.label }} <span class="muted">({{ metric_definition.unit }})</span></h4>
+                  <h4 class="margin-0">{{ panel.title }}{% if panel.unit %} <span class="muted">({{ panel.unit }})</span>{% endif %}</h4>
+                  {% if panel.description %}
+                    <p class="muted margin-0">{{ panel.description }}</p>
+                  {% endif %}
                 </div>
               </div>
-              <canvas id="chart-primary" width="900" height="350"></canvas>
+              <canvas id="chart-{{ panel.id }}" width="900" height="350"></canvas>
             </div>
           </div>
-          {% if secondary_metric_definition %}
-            <div class="cell margin-top-1">
-              <div class="chart-shell">
-                <div class="grid-x align-justify align-middle">
-                  <div class="cell auto">
-                    <h4 class="margin-0">{{ secondary_metric_definition.label }} <span class="muted">({{ secondary_metric_definition.unit }})</span></h4>
-                  </div>
-                </div>
-                <canvas id="chart-secondary" width="900" height="350"></canvas>
-              </div>
-            </div>
-          {% endif %}
-        </div>
-      {% else %}
-        <div class="chart-shell" {% if chart_empty_state %}hidden{% endif %}>
-          <div class="grid-x align-justify align-middle">
-            <div class="cell auto">
-              <h4 class="margin-0">{{ metric_definition.label }} <span class="muted">({{ metric_definition.unit }})</span></h4>
-            </div>
-          </div>
-          <canvas id="chart-primary" width="900" height="350"></canvas>
-        </div>
-      {% endif %}
+        {% endfor %}
+      </div>
     </div>
   </div>
 {% endblock %}
@@ -197,10 +159,7 @@
 {% block extra_scripts %}
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
     <script>
-      const primaryLabels = {{ chart_labels_json|safe }};
-      const primaryDatasets = {{ chart_datasets_json|safe }};
-      const secondaryLabels = {{ secondary_chart_labels_json|safe }};
-      const secondaryDatasets = {{ secondary_chart_datasets_json|safe }};
+      const chartPanels = {{ chart_panels_json|safe }};
       const initialContext = {{ chart_context_json|safe }};
 
       function formatCompactNumber(value) {
@@ -233,17 +192,20 @@
         const presetLabel =
           presetEl && presetEl.selectedIndex >= 0 ? presetEl.options[presetEl.selectedIndex].text : null;
 
-        const metricEl = form.elements["metric"];
-        const metricLabel =
-          metricEl && metricEl.selectedIndex >= 0 ? metricEl.options[metricEl.selectedIndex].text : null;
+        const chartsEl = form.elements["charts"];
+        const selectedCharts = [];
+        if (chartsEl && chartsEl.options) {
+          for (const option of chartsEl.options) {
+            if (option.selected) selectedCharts.push(option.text);
+          }
+        }
 
         return {
-          metric: metricLabel || getValue("metric"),
+          charts: selectedCharts.length ? selectedCharts.join(", ") : null,
           start_date: getValue("start_date"),
           end_date: getValue("end_date"),
           tier: getValue("tier"),
           preset: presetLabel && presetLabel !== "All presets" ? presetLabel : null,
-          overlay_group: getValue("overlay_group") || "none",
           moving_average_window: getValue("moving_average_window"),
         };
       }
@@ -251,15 +213,11 @@
       function contextLabel(context) {
         const start = context.start_date || "Any start";
         const end = context.end_date || "Any end";
-        const metric = context.metric ? `Metric: ${context.metric}` : "Metric: (default)";
+        const charts = context.charts ? `Charts: ${context.charts}` : "Charts: (default)";
         const tier = context.tier ? `Tier ${context.tier}` : "All tiers";
         const preset = context.preset ? `Preset: ${context.preset}` : "All presets";
-        const overlay =
-          context.overlay_group && context.overlay_group !== "none"
-            ? `Overlay: ${context.overlay_group}`
-            : "Overlay: none";
-        const ma = context.moving_average_window ? `Moving average: ${context.moving_average_window}` : "Moving average: off";
-        return `${metric} • ${tier} • ${preset} • ${start} → ${end} • ${overlay} • ${ma}`;
+        const ma = context.moving_average_window ? `MA window: ${context.moving_average_window}` : "MA window: default";
+        return `${charts} • ${tier} • ${preset} • ${start} → ${end} • ${ma}`;
       }
 
       function updateContextSummary() {
@@ -318,9 +276,6 @@
                     if (context.start_date || context.end_date) {
                       lines.push(`Date range: ${context.start_date || "…"} → ${context.end_date || "…"}`);
                     }
-                    if (context.overlay_group && context.overlay_group !== "none") {
-                      lines.push(`Overlay: ${context.overlay_group}`);
-                    }
                     if (context.moving_average_window) {
                       lines.push(`Moving average window: ${context.moving_average_window}`);
                     }
@@ -347,7 +302,8 @@
       }
 
       // Empty state is rendered server-side.
-      renderLineChart("chart-primary", primaryLabels, primaryDatasets);
-      renderLineChart("chart-secondary", secondaryLabels, secondaryDatasets);
+      for (const panel of chartPanels) {
+        renderLineChart(`chart-${panel.id}`, panel.labels, panel.datasets);
+      }
     </script>
 {% endblock %}

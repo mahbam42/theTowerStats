@@ -39,6 +39,7 @@ nav:
   - User Guide:
       - Overview: user_guide.md
       - Battle History: battle_history.md
+      - Charts: charts.md
   - Wiki Population: wiki_population.md
   - Development:
       - Phase 1: phase1.md

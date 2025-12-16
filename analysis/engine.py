@@ -88,6 +88,7 @@ def analyze_metric_series(
     records: Iterable[object],
     *,
     metric_key: str,
+    transform: str = "none",
     context: PlayerContextInput | None = None,
     entity_type: str | None = None,
     entity_name: str | None = None,
@@ -100,6 +101,7 @@ def analyze_metric_series(
         records: An iterable of `RunProgress`-like objects, or `GameData` objects
             with a `run_progress` attribute.
         metric_key: Metric key to compute (observed or derived).
+        transform: Optional transform to apply (e.g. "rate_per_hour").
         context: Optional player context + selected parameter tables.
         entity_type: Optional entity category for entity-scoped derived metrics
             (e.g. "ultimate_weapon", "guardian_chip", "bot").
@@ -113,8 +115,8 @@ def analyze_metric_series(
         used parameters/assumptions.
 
     Notes:
-        Records missing required run fields (battle_date, real_time_seconds) are
-        skipped. Missing context never raises; values become None instead.
+        Records missing a battle_date are skipped. Other missing fields do not
+        raise; values become None instead.
     """
 
     metric = get_metric_definition(metric_key)
@@ -145,19 +147,35 @@ def analyze_metric_series(
         coins = _coerce_int(getattr(progress, "coins", None))
         if coins is None:
             coins = _coins_from_raw_text(getattr(record, "raw_text", None))
+        cash = _coerce_int(getattr(progress, "cash_earned", None))
+        cells = _coerce_int(getattr(progress, "cells_earned", None))
+        reroll_shards = _coerce_int(getattr(progress, "reroll_shards_earned", None))
+        wave = _coerce_int(getattr(progress, "wave", None))
         real_time_seconds = _coerce_int(getattr(progress, "real_time_seconds", None))
-        if battle_date is None or real_time_seconds is None:
+        if battle_date is None:
             continue
 
         value, used, assumed = compute_metric_value(
             metric.key,
+            record=record,
             coins=coins,
+            cash=cash,
+            cells=cells,
+            reroll_shards=reroll_shards,
+            wave=wave,
             real_time_seconds=real_time_seconds,
             context=context,
             entity_type=entity_type,
             entity_name=entity_name,
             config=config,
         )
+
+        if transform == "rate_per_hour":
+            if value is None or real_time_seconds is None or real_time_seconds <= 0:
+                value = None
+            else:
+                value = value * 3600.0 / real_time_seconds
+
         used_parameters.extend(used)
         assumptions.update(assumed)
         points.append(

@@ -3,7 +3,7 @@
 Welcome to the documentation hub for **theTowerStats**. Players can explore history, charts, and collection progress without editing or optimizing data.
 
 > **Highlight — Charts**
-> The Charts dashboard uses Foundation layouts with a default start date of 2025-12-09 UTC. Filters and overlays rely on existing `MetricSeries` outputs only.
+> The Charts dashboard starts at 2025-12-09 UTC by default and lets you select one or more charts, then filter by date range, tier, and preset labels.
 
 > **Highlight — Cards**
 > The Cards dashboard surfaces unlocked slots, preset tags, and player card progress in read-only tables.
