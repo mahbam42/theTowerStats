@@ -79,10 +79,148 @@ All code must satisfy:
 
 Each commit must:
 
-* pass pre-commit,
 * include descriptive messages,
 * reference issues when appropriate,
 * never leave failing tests behind.
+
+## Documentation Standards
+
+### Documentation Types (Hard Separation)
+
+This project maintains two distinct kinds of documentation. They must never be mixed.
+
+A. **User Guide Documentation (Primary)**
+
+Audience: Players and non-technical users
+Purpose: Explain how to use the app, not how it is built
+
+Includes:
+- Battle History
+- Charts
+- Cards
+- Ultimate Weapons
+- Guardian Chips
+- Bots
+- General app navigation and workflows
+
+Must NOT include:
+- Internal architecture
+- Model names
+- Django concepts
+- Analysis engine details
+- File paths or implementation notes
+
+B. **Developer / Progress Documentation (Secondary)**
+
+Audience: Contributors and maintainers
+Purpose: Explain how the app works internally and track progress
+
+Includes:
+- Phase roadmaps
+- Architecture diagrams
+- Models
+- Analysis engine behavior
+- Wiki scraping logic
+- Testing standards
+
+These docs live under a Development section and are explicitly not user-facing.
+
+### User Guide Tone & Style Rules (Strict)
+
+When writing User Guide documentation, enforce all of the following.
+- Tone
+  - Professional
+  - Clear
+  - Calm
+  - Technically accurate but non-technical language
+  - Assume the reader has *never seen* the code
+- Avoid:
+  - Slang
+  - Casual phrasing
+  - Developer shorthand
+  - “Just”, “simply”, or “obviously”
+
+### Required Structure for User Guides
+
+Every User Guide page must follow this structure in order:
+
+1. Overview
+  - What this section is
+  - What problem it helps the player solve
+  - One short paragraph only
+
+2. When to Use This
+  - Bullet list of common player situations
+  - No instructions yet
+
+3. How to Use
+  - Step-by-step instructions
+  - Short numbered lists
+  - One action per step
+  - Use direct action verbs:
+    - Select
+    - View
+    - Filter
+    - Compare
+    - Review
+
+4. How to Read the Results
+  - Explain charts, tables, or values
+  - Focus on interpretation, not calculation
+  - Clarify units and trends
+
+5. Notes & Limitations
+  - Use blockquotes
+  - Call out important constraints or misunderstandings
+
+    Example:
+
+    > ⚠️ Note
+    > Values shown here are calculated at the time you view the page and may change if your data changes.
+
+6. (Optional) Advanced Usage
+  - Only include if the feature truly has advanced behavior
+  - Still no code, no internals
+
+4. Formatting Rules
+  - Use hierarchical headings only (##, ###, ####)
+  - Headings must be consistent and descriptive
+(Optimized for auto-generated Tables of Contents)
+  - Prefer:
+    + Bullet lists
+    + Numbered steps
+  - Avoid:
+    + Code blocks
+    + CLI examples
+    + Inline code formatting unless absolutely necessary
+  - Icons and callouts are encouraged for:
+    + Notes
+    + Warnings
+    + Cautions
+
+### Enforcement Rules for Codex
+
+When Codex is instructed to write or modify documentation, it must:
+
+- Explicitly identify whether the doc is:
+  - User Guide, or
+  - Developer Documentation
+
+- Follow the correct structure for that type
+- Reject mixed-purpose documentation
+- Prefer clarity over completeness
+
+- If unsure:
+  - Default to User Guide tone
+  -  Exclude internal details
+
+### Validation Checklist (For Review)
+
+A User Guide page is acceptable only if:
+- A non-technical user can understand it without explanation
+- No internal model or class names are mentioned
+- The document reads as instructions, not a design doc
+- Headings alone form a usable Table of Contents
 
 ## **Execution Pattern (For AI Agents)**
 
