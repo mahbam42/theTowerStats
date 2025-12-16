@@ -1,69 +1,70 @@
 
 # Table of Contents
 
-1.  [Stats Tracking App for The Tower Mobile Game](#org5cd3195)
-    1.  [Goals/Intent](#org4a54bc4)
-    2.  [Requirements](#orgbfacb38)
-    3.  [Overall Architecture](#orgab847fe)
-    4.  [Features](#org0207c29)
-    5.  [Core Responsibilities](#org2cccb09)
-        1.  [Rate Calculations](#org697dc65)
-        2.  [Delta Calculations](#orgf95ec33)
-        3.  [Parameterized Effects](#org84e37d4)
-        4.  [Aggregations by Intent (Presets)](#orga279693)
-        5.  [Analysis Engine Invocation](#org1e26656)
-        6.  [Output Shape](#orga459350)
-        7.  [Module Structure (Suggested)](#org3ea191b)
-    6.  [UX Design](#org231b950)
-    7.  [Example Stat Data](#orgb8f5185)
-    8.  [Models](#org3d12214)
-        1.  [Game Data](#org2e5eea3)
-        2.  [BotsParameters](#org3a39343)
-        3.  [CardDefinition](#org54a391a)
-        4.  [CardLevel / Star](#org4e83a88)
-        5.  [CardParameters](#org0967885)
-        6.  [CardSlots](#orgc0b6f2b)
-        7.  [GuardianChipParemeters](#org6a92d35)
-        8.  [PlayerBot](#org6956064)
-        9.  [PlayerCard](#org1fe6590)
-        10. [PlayerGuardianChip](#orge55c49e)
-        11. [PlayerUltimateWeapon](#org8a9e59c)
-        12. [PresetTags](#org51e92e8)
-        13. [UltimateWeaponParameters](#orga9df948)
-        14. [Unit Model](#org23c65be)
-        15. [WikiData](#org1e204cb)
-    9.  [Views](#org9ab96e2)
-        1.  [Battle History](#org9250926)
-        2.  [Cards](#org3420c43)
-        3.  [Charts](#org78a88b0)
-        4.  [UW Progress](#orgb2f21f9)
-        5.  [Guardian Progress](#orgf165554)
-        6.  [Bots Progress](#orge25f57c)
-    10. [Management Commands](#org84edbbc)
-        1.  [fetch<sub>wiki</sub><sub>data</sub>](#orgc02fe15)
-        2.  [add<sub>battle</sub><sub>report</sub>](#org12b4b86)
-    11. [Repo Structure](#orgee02278)
-    12. [Testing Standards](#org59579b1)
-    13. [Sprint Roadmap](#orgd33a394)
-        1.  [Phase 1 Foundations](#orgfbc02f4)
-        2.  [Phase 2 Context](#org1842768)
-        3.  [Phase 3 — App Structure & UX](#orge7c9d41)
-        4.  [Phase 4 Effects](#org884a3e8)
-        5.  [Phase 5 Dashboard UX <code>[0%]</code>](#org5831831)
-    14. [Backlog <code>[0/5]</code>](#org1d04336)
-        1.  [Allow Multiple Players to Store](#org630bdeb)
-        2.  [Add Chart Builder Modal to Charts Dashboard](#orga004032)
-        3.  [Add Advice for Optimization](#org3290841)
-        4.  [Linking Presets/UW/Guardian Chips/Bots to battle history](#orge8610f4)
-        5.  [Complete](#orgc5e09ba)
+1.  [Stats Tracking App for The Tower Mobile Game](#org4b4324d)
+    1.  [Goals/Intent](#org4aa1d0d)
+    2.  [Requirements](#orgf003790)
+    3.  [Overall Architecture](#orgca7d00f)
+    4.  [Features](#org07a1b30)
+    5.  [Core Responsibilities](#orgc60ae6e)
+        1.  [Rate Calculations](#org9bf6189)
+        2.  [Delta Calculations](#org4a30d3d)
+        3.  [Parameterized Effects](#orgb05bb6b)
+        4.  [Aggregations by Intent (Presets)](#org9cc8396)
+        5.  [Analysis Engine Invocation](#org01e47da)
+        6.  [Output Shape](#org5ec9014)
+        7.  [Module Structure (Suggested)](#orgff8006f)
+    6.  [UX Design](#org61d0fb9)
+    7.  [Example Stat Data](#org16abd70)
+    8.  [Models](#org014d9b1)
+        1.  [Game Data](#org17672f3)
+        2.  [BotsParameters](#orgab0dc53)
+        3.  [CardDefinition](#orgce8a868)
+        4.  [CardLevel / Star](#orgf50f471)
+        5.  [CardParameters](#orgb4c6e97)
+        6.  [CardSlots](#org26913c7)
+        7.  [GuardianChipParemeters](#org702a48a)
+        8.  [PlayerBot](#orgd8c1ff0)
+        9.  [PlayerCard](#org2a3905a)
+        10. [PlayerGuardianChip](#orgfa38e79)
+        11. [PlayerUltimateWeapon](#org1b7c58a)
+        12. [PresetTags](#orga57d49a)
+        13. [UltimateWeaponParameters](#org7b5530e)
+        14. [Unit Model](#org5e8d3e6)
+        15. [WikiData](#org024dfcd)
+    9.  [Views](#org8727835)
+        1.  [Battle History](#org4f479ec)
+        2.  [Cards](#orgaba765a)
+        3.  [Charts](#orgfdf02ee)
+        4.  [UW Progress](#org85cf882)
+        5.  [Guardian Progress](#org443d5a9)
+        6.  [Bots Progress](#org277170c)
+    10. [Management Commands](#orgd39f491)
+        1.  [fetch<sub>wiki</sub><sub>data</sub>](#org140e682)
+        2.  [add<sub>battle</sub><sub>report</sub>](#org0afa252)
+    11. [Repo Structure](#org151a627)
+    12. [Testing Standards](#org2b7e49e)
+    13. [Sprint Roadmap](#orgc5b4ccb)
+        1.  [Phase 1 Foundations](#orgb7cf36b)
+        2.  [Phase 2 Context](#org423fee9)
+        3.  [Phase 3 — App Structure & UX](#orgfce1208)
+        4.  [Phase 4 Effects](#orgc36b138)
+        5.  [Phase 5 Dashboard UX <code>[0%]</code>](#orgbc91bce)
+        6.  [Phase 6 Expansion of Foundation and Context <code>[0%]</code>](#orge2b380a)
+        7.  [Phase 7 Power Tools](#orgd76a3ed)
+        8.  [Phase 8 Multiple Player Support](#org492f200)
+    14. [Backlog <code>[0/4]</code>](#org0cd1fb6)
+        1.  [Linking Presets/UW/Guardian Chips/Bots to battle history](#org9325ce0)
+        2.  [Required Doc Type Header (Must Prepend to All Docs)](#orged9b3e8)
+        3.  [Complete](#org5541dbb)
 
 
-<a id="org5cd3195"></a>
+<a id="org4b4324d"></a>
 
 # Stats Tracking App for The Tower Mobile Game
 
 
-<a id="org4a54bc4"></a>
+<a id="org4aa1d0d"></a>
 
 ## Goals/Intent
 
@@ -78,7 +79,7 @@
     -   Battle Results form is designed for mobile
 
 
-<a id="orgbfacb38"></a>
+<a id="orgf003790"></a>
 
 ## Requirements
 
@@ -94,7 +95,7 @@ ruff
 mypy
 
 
-<a id="orgab847fe"></a>
+<a id="orgca7d00f"></a>
 
 ## Overall Architecture
 
@@ -109,7 +110,7 @@ Derived Metrics
 Charts / Views
 
 
-<a id="org0207c29"></a>
+<a id="org07a1b30"></a>
 
 ## Features
 
@@ -136,12 +137,12 @@ Targets:
 -   UW Upgrade Table
 
 
-<a id="org2cccb09"></a>
+<a id="orgc60ae6e"></a>
 
 ## Core Responsibilities
 
 
-<a id="org697dc65"></a>
+<a id="org9bf6189"></a>
 
 ### Rate Calculations
 
@@ -155,7 +156,7 @@ Targets:
 These back Phase 1 charts directly.
 
 
-<a id="orgf95ec33"></a>
+<a id="org4a30d3d"></a>
 
 ### Delta Calculations
 
@@ -173,7 +174,7 @@ Examples:
 No interpretation — just math.
 
 
-<a id="org84e37d4"></a>
+<a id="orgb05bb6b"></a>
 
 ### Parameterized Effects
 
@@ -190,7 +191,7 @@ These are:
 -   Fully testable with golden tests
 
 
-<a id="orga279693"></a>
+<a id="org9cc8396"></a>
 
 ### Aggregations by Intent (Presets)
 
@@ -203,7 +204,7 @@ These are:
 It does not decide which preset is better.
 
 
-<a id="org1e26656"></a>
+<a id="org01e47da"></a>
 
 ### Analysis Engine Invocation
 
@@ -214,7 +215,7 @@ It does not decide which preset is better.
     -   No DB writes
 
 
-<a id="orga459350"></a>
+<a id="org5ec9014"></a>
 
 ### Output Shape
 
@@ -237,7 +238,7 @@ All outputs should conform to a small set of DTO-style objects:
 This maps cleanly to Chart.js datasets.
 
 
-<a id="org3ea191b"></a>
+<a id="orgff8006f"></a>
 
 ### Module Structure (Suggested)
 
@@ -254,7 +255,7 @@ analysis/
 │   └── fixtures/
 
 
-<a id="org231b950"></a>
+<a id="org61d0fb9"></a>
 
 ## UX Design
 
@@ -265,7 +266,7 @@ analysis/
 -   Maxed Out/Completed Upgrades are highlighted with a Gold Box outline
 
 
-<a id="orgb8f5185"></a>
+<a id="org16abd70"></a>
 
 ## Example Stat Data
 
@@ -368,12 +369,12 @@ Rare Modules	0
 \#+END<sub>SR</sub>
 
 
-<a id="org3d12214"></a>
+<a id="org014d9b1"></a>
 
 ## Models
 
 
-<a id="org2e5eea3"></a>
+<a id="org17672f3"></a>
 
 ### Game Data
 
@@ -524,7 +525,7 @@ Properties:
     Rare Modules	0
 
 
-<a id="org3a39343"></a>
+<a id="orgab0dc53"></a>
 
 ### BotsParameters
 
@@ -532,7 +533,7 @@ Wiki-derived, FK to PlayerBots
 Immutable per revision. When the wiki changes, insert a new row — don’t overwrite.
 
 
-<a id="org54a391a"></a>
+<a id="orgce8a868"></a>
 
 ### CardDefinition
 
@@ -545,7 +546,7 @@ Properties:
 -   preset<sub>tags</sub> (FK)
 
 
-<a id="org4e83a88"></a>
+<a id="orgf50f471"></a>
 
 ### CardLevel / Star
 
@@ -554,7 +555,7 @@ Properties:
 -   **value:** value of current effect (between base and max)
 
 
-<a id="org0967885"></a>
+<a id="orgb4c6e97"></a>
 
 ### CardParameters
 
@@ -562,7 +563,7 @@ Wiki-derived, FK to PlayerCard
 Immutable per revision. When the wiki changes, insert a new row — don’t overwrite.
 
 
-<a id="orgc0b6f2b"></a>
+<a id="org26913c7"></a>
 
 ### CardSlots
 
@@ -575,7 +576,7 @@ Properties:
 -   Cost integer (Gems)
 
 
-<a id="org6a92d35"></a>
+<a id="org702a48a"></a>
 
 ### GuardianChipParemeters
 
@@ -583,7 +584,7 @@ Wiki-derived, FK to PlayerGuardianChip
 Immutable per revision. When the wiki changes, insert a new row — don’t overwrite.
 
 
-<a id="org6956064"></a>
+<a id="orgd8c1ff0"></a>
 
 ### PlayerBot
 
@@ -593,7 +594,7 @@ Properties:
 -   **unlocked:** checkbox
 
 
-<a id="org1fe6590"></a>
+<a id="org2a3905a"></a>
 
 ### PlayerCard
 
@@ -605,7 +606,7 @@ Properties:
 -   **Cards:** integer progress toward next level. 0, 3, 5, 8, 12, 20, 32
 
 
-<a id="orge55c49e"></a>
+<a id="orgfa38e79"></a>
 
 ### PlayerGuardianChip
 
@@ -615,7 +616,7 @@ Properties:
 -   **unlocked:** checkbox
 
 
-<a id="org8a9e59c"></a>
+<a id="org1b7c58a"></a>
 
 ### PlayerUltimateWeapon
 
@@ -625,7 +626,7 @@ Properties:
 -   **unlocked:** checkbox
 
 
-<a id="org51e92e8"></a>
+<a id="orga57d49a"></a>
 
 ### PresetTags
 
@@ -634,7 +635,7 @@ Properties:
 -   **limit:** FK with Card Slots
 
 
-<a id="orga9df948"></a>
+<a id="org7b5530e"></a>
 
 ### UltimateWeaponParameters
 
@@ -653,7 +654,7 @@ Properties:
 -   **Spent:** integer (stones)
 
 
-<a id="org23c65be"></a>
+<a id="org5e8d3e6"></a>
 
 ### Unit Model
 
@@ -667,7 +668,7 @@ Properties:
 -   **unit<sub>type</sub>:** coins, damage, count, time
 
 
-<a id="org1e204cb"></a>
+<a id="org024dfcd"></a>
 
 ### WikiData
 
@@ -683,26 +684,26 @@ Stores the anchor names and retrived data caches for Card, Ultimate Weapons, and
 -   parse<sub>version</sub>
 
 
-<a id="org9ab96e2"></a>
+<a id="org8727835"></a>
 
 ## Views
 
 
-<a id="org9250926"></a>
+<a id="org4f479ec"></a>
 
 ### Battle History
 
 View previously entered stats 
 
 
-<a id="org3420c43"></a>
+<a id="orgaba765a"></a>
 
 ### Cards
 
 Combine 'Cards,' 'CardLevel' and 'CardSlots'
 
 
-<a id="org78a88b0"></a>
+<a id="orgfdf02ee"></a>
 
 ### Charts
 
@@ -746,14 +747,14 @@ Sub Charts:
     -   Coins per wave vs wave number
 
 
-<a id="orgb2f21f9"></a>
+<a id="org85cf882"></a>
 
 ### UW Progress
 
 -   Button to add new UW
 
 
-<a id="orgf165554"></a>
+<a id="org443d5a9"></a>
 
 ### Guardian Progress
 
@@ -761,19 +762,19 @@ Sub Charts:
 -   checkbox to flag equiped
 
 
-<a id="orge25f57c"></a>
+<a id="org277170c"></a>
 
 ### Bots Progress
 
 -   button to add new bot
 
 
-<a id="org84edbbc"></a>
+<a id="orgd39f491"></a>
 
 ## Management Commands
 
 
-<a id="orgc02fe15"></a>
+<a id="org140e682"></a>
 
 ### fetch<sub>wiki</sub><sub>data</sub>
 
@@ -794,7 +795,7 @@ Example:
 -   “Logs entity added / changed / unchanged counts”
 
 
-<a id="org12b4b86"></a>
+<a id="org0afa252"></a>
 
 ### add<sub>battle</sub><sub>report</sub>
 
@@ -803,7 +804,7 @@ Ingest and parse battle report data from the player. This is a large blob of dat
 Parser should gracefully alert the player to new labels that may appear after a game update.
 
 
-<a id="orgee02278"></a>
+<a id="org151a627"></a>
 
 ## Repo Structure
 
@@ -841,7 +842,7 @@ theTower<sub>stats</sub><sub>app</sub>
 └── &#x2026;
 
 
-<a id="org59579b1"></a>
+<a id="org2b7e49e"></a>
 
 ## Testing Standards
 
@@ -852,14 +853,14 @@ theTower<sub>stats</sub><sub>app</sub>
 -   When completing code, start building/executing tests as specific as possible to the code you changed so that you can catch issues efficiently, then make your way to broader tests as you build confidence.
 
 
-<a id="orgd33a394"></a>
+<a id="orgc5b4ccb"></a>
 
 ## Sprint Roadmap
 
 Each phase must be demoable without admin intervention.
 
 
-<a id="orgfbc02f4"></a>
+<a id="orgb7cf36b"></a>
 
 ### DONE Phase 1 Foundations
 
@@ -903,7 +904,7 @@ Each phase must be demoable without admin intervention.
     -   [X] Test suite passes with no skipped tests
 
 
-<a id="org1842768"></a>
+<a id="org423fee9"></a>
 
 ### DONE Phase 2 Context
 
@@ -949,7 +950,7 @@ Each phase must be demoable without admin intervention.
     -   [X] 1 aggregation test using presets
 
 
-<a id="orge7c9d41"></a>
+<a id="orgfce1208"></a>
 
 ### DONE Phase 3 — App Structure & UX
 
@@ -963,7 +964,7 @@ Each phase must be demoable without admin intervention.
     -   [X] Model completeness (structure, not logic)
 
 
-<a id="org884a3e8"></a>
+<a id="orgc36b138"></a>
 
 ### DONE Phase 4 Effects
 
@@ -1087,7 +1088,7 @@ Each phase must be demoable without admin intervention.
         -   [X] 1 test validating revision behavior
 
 
-<a id="org5831831"></a>
+<a id="orgbc91bce"></a>
 
 ### Phase 5 Dashboard UX <code>[0%]</code>
 
@@ -1313,9 +1314,324 @@ General conventions across all Dashboards:
     4.  Understand trends …without explanation.
 
 
-<a id="org1d04336"></a>
+<a id="orge2b380a"></a>
 
-## Backlog <code>[0/5]</code>
+### Phase 6 Expansion of Foundation and Context <code>[0%]</code>
+
+What’s done is minimal by design. Expand it to feel “real”:
+
+****Foundations:****
+
+-   [ ] Add 2–3 more canonical rate metrics
+    -   Damage per wave
+    -   Waves per real minute
+    -   Coins per wave
+-   [ ] Normalize time handling everywhere (game time vs real time vs accelerated)
+-   [ ] Lock down Unit Model correctness
+    -   Explicit tests for %, x, time units, magnitudes
+-   ****Why this matters:****
+    
+        Every chart, comparison, and recommendation later assumes these rates are correct and consistent.
+
+****Context:****
+
+-   [ ] Preset filtering edge cases
+    -   No preset selected
+    -   Preset selected but no matching runs
+-   [ ] Tier + Preset + Date range combinations
+-   [ ] Rolling windows (last N runs, last N days)
+-   [ ] Add:
+    -   One “context matrix” golden test
+        -   Same metric, same data
+        -   Different context inputs
+        -   Assert expected shape, not just values
+
+
+<a id="orgd76a3ed"></a>
+
+### Phase 7 Power Tools
+
+1.  TODO Add Chart Builder Modal to Charts Dashboard
+
+    Let user select chart style and metrics to show. The Chart Builder is not a UI feature — it’s a schema and contract feature.
+    
+    Before UI polish:
+    
+    -   A ChartConfig DTO
+        -   metric key(s)
+        -   chart type
+        -   grouping (time, tier, preset)
+        -   smoothing / aggregation options
+    
+    Validation rules:
+    
+    -   Which metrics are compatible
+    -   Which comparisons make sense
+    -   A small, explicit allowed surface
+    -   No arbitrary math
+    -   No free-form queries
+        **\*** TODO [#A] Comparison / Scenario View and Snapshots
+    
+    Examples:
+    
+    -   Run A vs Run B
+    -   Before vs after unlocking card slot
+    -   With Guardian Chip/UW X vs without
+    
+    This is where the app becomes decision-making, not logging.
+    
+    Named snapshots:
+    
+    -   “Before unlocking UW X”
+    -   “Post Guardian Fetch upgrade”
+    
+    These become reusable comparison anchors in charts
+
+2.  TODO Data Quality & Confidence Signals
+
+    Players will ask:
+    
+    -   “Is this run weird?”
+    -   “Did something change here?”
+    
+    Add:
+    
+    -   Run flags (outlier, partial, anomalous)
+    -   Visual markers on charts
+    -   Simple heuristics, not ML
+    
+    This builds trust without over-engineering.
+
+3.  TODO Performance Guardrails
+
+    As data grows:
+    
+    -   Cached derived results per view
+    -   Explicit limits on chart density
+    -   Warnings when comparisons get statistically thin
+    
+    Do this before you have 30 guild members loading it daily.
+
+4.  TODO UW Sync Graph
+
+    There is synergy to using some UW together, specifically Golden Tower, Blackhole and Death Wave. It's common in the meta to keep the cooldowns and durations in sync. We should have the data to chart the three together and how often they overlap/synchronize
+
+5.  TODO Add Advice for Optimization
+
+    Based on logged performance data, it could be possible to calculate and offer suggestions based on the data.
+    
+    For Example:
+    
+    -   Which UW to unlock next
+    -   Bot properties to improve
+    -   Guardian Chip properties to improve
+    -   Weighted Preset Rankings
+
+
+<a id="org492f200"></a>
+
+### Phase 8 Multiple Player Support
+
+1.  TODO Allow Multiple Players to Store Data
+
+    1.  Core Principle: Everything Belongs to a Player
+    
+        ****Analysis Engine is always player-scoped, even if there’s only one player.****
+        Every player-specific model must be bound to a Player.
+        
+        Recommended structure:
+        
+            from django.contrib.auth.models import User
+            
+            class Player(models.Model):
+                user = models.OneToOneField(User, on_delete=models.CASCADE)
+                display_name = models.CharField(max_length=64)
+                created_at = models.DateTimeField(auto_now_add=True)
+        
+        Then every mutable/progress model gets:
+        
+            player = models.ForeignKey(Player, on_delete=models.CASCADE)
+        
+        This includes:
+        
+        -   player<sub>cards</sub>
+        -   player<sub>relics</sub>
+        -   player<sub>labs</sub>
+        -   battle<sub>report</sub>
+        -   run<sub>history</sub>
+        -   sim<sub>results</sub>
+        -   etc.
+    
+    2.  Authorization
+    
+        Use groups + permissions, not custom flags.
+        
+        Suggested groups
+        
+        <table border="2" cellspacing="0" cellpadding="6" rules="groups" frame="hsides">
+        
+        
+        <colgroup>
+        <col  class="org-left" />
+        
+        <col  class="org-left" />
+        </colgroup>
+        <thead>
+        <tr>
+        <th scope="col" class="org-left">Group</th>
+        <th scope="col" class="org-left">Purpose</th>
+        </tr>
+        </thead>
+        
+        <tbody>
+        <tr>
+        <td class="org-left">admin</td>
+        <td class="org-left">me</td>
+        </tr>
+        
+        
+        <tr>
+        <td class="org-left">player</td>
+        <td class="org-left">Default</td>
+        </tr>
+        </tbody>
+        </table>
+        
+        You can enforce almost everything via queryset filtering, not permissions alone.
+    
+    3.  Queryset Filtering Is the Real Security Layer
+    
+        Permissions stop access.
+        Querysets prevent data leaks.
+        
+        Pattern you’ll use everywhere
+        
+            def get_queryset(self):
+                user = self.request.user
+                if user.is_superuser:
+            	return Model.objects.all()
+                return Model.objects.filter(player__user=user)
+        
+        This applies to:
+        
+        -   Admin
+        -   API views
+        -   List views
+        -   Export endpoints
+        -   Sim endpoints
+        
+        If you forget this once, players see each other’s data.
+    
+    4.  Django Admin: Lock It Down Properly
+    
+        ModelAdmin example
+        
+            class PlayerCardAdmin(admin.ModelAdmin):
+                def get_queryset(self, request):
+            	qs = super().get_queryset(request)
+            	if request.user.is_superuser:
+            	    return qs
+            	return qs.filter(player__user=request.user)
+            
+                def save_model(self, request, obj, form, change):
+            	if not change:
+            	    obj.player = request.user.player
+            	super().save_model(request, obj, form, change)
+        
+        Also:
+        
+        Remove player from editable fields for non-admins
+        
+        Use readonly<sub>fields</sub> where possible
+    
+    5.  API Layer (Even If You Don’t Build One Yet)
+    
+        Design as if you will.
+        
+        Never accept player<sub>id</sub> from the client
+        
+        Always derive it from request.user.
+        
+        ❌ Bad
+        
+        { "player<sub>id</sub>": 12, "wave": 4500 }
+        
+        ✅ Good
+        
+        player = request.user.player
+        
+        This avoids spoofing and simplifies logic everywhere.
+    
+    6.  Shared vs Player-Scoped Models (Important Distinction)
+    
+        You’ll have three categories of models:
+        
+        A. Global Reference Data (NO player FK)
+        
+        Cards
+        
+        Relics
+        
+        Labs
+        
+        Enemies
+        
+        Waves
+        
+        Balance constants
+        
+        These are read-only.
+        
+        B. Player State (HAS player FK)
+        
+        PlayerCard
+        
+        PlayerRelic
+        
+        PlayerLabProgress
+        
+        Unlocks
+        
+        Inventory
+        
+        C. Derived / Cached Results (HAS player FK)
+        
+        BattleReport
+        
+        SimulationRun
+        
+        AggregatedStats
+        
+        You can safely delete category C anytime.
+    
+    7.  Data Migration & Onboarding Flow
+    
+        You’ll need a clean onboarding path:
+        
+        User creates account
+        
+        Auto-create Player via signal
+        
+        Assign default group player
+        
+        Initialize baseline progress rows
+        
+        @receiver(post<sub>save</sub>, sender=User)
+        def create<sub>player</sub>(sender, instance, created, \*\*kwargs):
+            if created:
+                Player.objects.create(user=instance)
+
+2.  TODO Export / Share (Lightweight)
+
+    -   CSV export of derived metrics
+    -   PNG export of charts
+    
+    This dramatically increases perceived value with very little backend work.
+
+
+<a id="org0cd1fb6"></a>
+
+## Backlog <code>[0/4]</code>
 
 “Out of Scope”:
 
@@ -1323,234 +1639,102 @@ General conventions across all Dashboards:
 -   Real-time scraping
 
 
-<a id="org630bdeb"></a>
-
-### TODO Allow Multiple Players to Store
-
-1.  Core Principle: Everything Belongs to a Player
-
-    Yes: every player-specific model must be bound to a Player.
-    
-    Recommended structure:
-    
-        from django.contrib.auth.models import User
-        
-        class Player(models.Model):
-            user = models.OneToOneField(User, on_delete=models.CASCADE)
-            display_name = models.CharField(max_length=64)
-            created_at = models.DateTimeField(auto_now_add=True)
-    
-    Then every mutable/progress model gets:
-    
-        player = models.ForeignKey(Player, on_delete=models.CASCADE)
-    
-    This includes:
-    
-    -   player<sub>cards</sub>
-    -   player<sub>relics</sub>
-    -   player<sub>labs</sub>
-    -   battle<sub>report</sub>
-    -   run<sub>history</sub>
-    -   sim<sub>results</sub>
-    -   etc.
-
-2.  Authorization
-
-    Use groups + permissions, not custom flags.
-    
-    Suggested groups
-    
-    <table border="2" cellspacing="0" cellpadding="6" rules="groups" frame="hsides">
-    
-    
-    <colgroup>
-    <col  class="org-left" />
-    
-    <col  class="org-left" />
-    </colgroup>
-    <thead>
-    <tr>
-    <th scope="col" class="org-left">Group</th>
-    <th scope="col" class="org-left">Purpose</th>
-    </tr>
-    </thead>
-    
-    <tbody>
-    <tr>
-    <td class="org-left">admin</td>
-    <td class="org-left">me</td>
-    </tr>
-    
-    
-    <tr>
-    <td class="org-left">player</td>
-    <td class="org-left">Default</td>
-    </tr>
-    </tbody>
-    </table>
-    
-    You can enforce almost everything via queryset filtering, not permissions alone.
-
-3.  Queryset Filtering Is the Real Security Layer
-
-    Permissions stop access.
-    Querysets prevent data leaks.
-    
-    Pattern you’ll use everywhere
-    
-        def get_queryset(self):
-            user = self.request.user
-            if user.is_superuser:
-        	return Model.objects.all()
-            return Model.objects.filter(player__user=user)
-    
-    This applies to:
-    
-    -   Admin
-    -   API views
-    -   List views
-    -   Export endpoints
-    -   Sim endpoints
-    
-    If you forget this once, players see each other’s data.
-
-4.  Django Admin: Lock It Down Properly
-
-    ModelAdmin example
-    
-        class PlayerCardAdmin(admin.ModelAdmin):
-            def get_queryset(self, request):
-        	qs = super().get_queryset(request)
-        	if request.user.is_superuser:
-        	    return qs
-        	return qs.filter(player__user=request.user)
-        
-            def save_model(self, request, obj, form, change):
-        	if not change:
-        	    obj.player = request.user.player
-        	super().save_model(request, obj, form, change)
-    
-    Also:
-    
-    Remove player from editable fields for non-admins
-    
-    Use readonly<sub>fields</sub> where possible
-
-5.  API Layer (Even If You Don’t Build One Yet)
-
-    Design as if you will.
-    
-    Never accept player<sub>id</sub> from the client
-    
-    Always derive it from request.user.
-    
-    ❌ Bad
-    
-    { "player<sub>id</sub>": 12, "wave": 4500 }
-    
-    ✅ Good
-    
-    player = request.user.player
-    
-    This avoids spoofing and simplifies logic everywhere.
-
-6.  Shared vs Player-Scoped Models (Important Distinction)
-
-    You’ll have three categories of models:
-    
-    A. Global Reference Data (NO player FK)
-    
-    Cards
-    
-    Relics
-    
-    Labs
-    
-    Enemies
-    
-    Waves
-    
-    Balance constants
-    
-    These are read-only.
-    
-    B. Player State (HAS player FK)
-    
-    PlayerCard
-    
-    PlayerRelic
-    
-    PlayerLabProgress
-    
-    Unlocks
-    
-    Inventory
-    
-    C. Derived / Cached Results (HAS player FK)
-    
-    BattleReport
-    
-    SimulationRun
-    
-    AggregatedStats
-    
-    You can safely delete category C anytime.
-
-7.  Data Migration & Onboarding Flow
-
-    You’ll need a clean onboarding path:
-    
-    User creates account
-    
-    Auto-create Player via signal
-    
-    Assign default group player
-    
-    Initialize baseline progress rows
-    
-    @receiver(post<sub>save</sub>, sender=User)
-    def create<sub>player</sub>(sender, instance, created, \*\*kwargs):
-        if created:
-            Player.objects.create(user=instance)
-
-
-<a id="orga004032"></a>
-
-### TODO Add Chart Builder Modal to Charts Dashboard
-
-Let user select chart style and metrics to show\*\*\* TODO [#B] Comparison / Scenario View
-
-Examples:
-
--   Run A vs Run B
--   Before vs after unlocking card slot
--   With Guardian Chip/UW X vs without
-
-This is where the app becomes decision-making, not logging.
-
-
-<a id="org3290841"></a>
-
-### TODO Add Advice for Optimization
-
-Based on logged performance data, it could be possible to calculate and offer suggestions based on the data.
-
-For Example:
-
--   Which UW to unlock next
--   Bot properties to improve
--   Guardian Chip properties to improve
--   Weighted Preset Rankings
-
-
-<a id="orge8610f4"></a>
+<a id="org9325ce0"></a>
 
 ### TODO Linking Presets/UW/Guardian Chips/Bots to battle history
 
 Mostly a visual tweak, but adds context and history for the player to interpert their performance history. 
 
 
-<a id="orgc5e09ba"></a>
+<a id="orged9b3e8"></a>
+
+### TODO Required Doc Type Header (Must Prepend to All Docs)
+
+Every document authored or modified by Codex must begin with exactly one of the following headers, placed at the very top of the file.
+
+    User Guide Document
+    <!--
+    DOC TYPE: User Guide
+    AUDIENCE: Players / Non-technical users
+    PURPOSE: Explain how to use the feature, not how it is built
+    TONE: Professional, concise, non-technical
+    -->
+    
+    Developer / Progress Document
+    <!--
+    DOC TYPE: Developer Documentation
+    AUDIENCE: Contributors / Maintainers
+    PURPOSE: Explain internal behavior, architecture, or project status
+    TONE: Technical, precise, implementation-aware
+    -->
+
+****Enforcement Rules****
+
+-   Exactly one Doc Type Header is allowed per document
+-   The header must appear before any headings or content
+-   The selected doc type determines:
+    -   Tone
+    -   Structure
+    -   Allowed level of technical detail
+-   If the document content conflicts with the declared Doc Type, the document is considered invalid and must be rewritten
+
+****Default Behavior****
+
+If Codex is unsure which header to use:
+
+-   Default to User Guide
+-   Exclude internal details
+-   Favor task-based explanations
+
+1.  Checklist
+
+    Doc Type Validation
+    
+    -   [ ] A Doc Type Header is present at the very top of the document
+    -   [ ] Exactly one Doc Type Header is used
+    -   [ ] The content matches the declared Doc Type
+    
+    User Guide Documents (if applicable)
+    
+    -   [ ] Written for non-technical users
+    -   [ ] No internal model, class, or file names mentioned
+    -   [ ] No code blocks or CLI instructions
+    -   [ ] Uses clear, action-oriented language
+    -   [ ] Explains how to use the feature, not how it works internally
+    
+    Structure & Readability
+    
+    -   [ ] Uses consistent hierarchical headings (H1 → H4 only)
+    -   [ ] Headings alone form a usable Table of Contents
+    -   [ ] Follows task flow where applicable:
+        -   Overview
+        -   When to Use This
+        -   How to Use
+        -   How to Read the Results
+        -   Notes & Limitations
+    -   [ ] Steps are short and limited to one action each
+    
+    Tone & Formatting
+    
+    -   [ ] Professional and concise
+    -   [ ] No slang or casual phrasing
+    -   [ ] Notes and cautions are clearly called out using blockquotes
+    -   [ ] Avoids unnecessary technical detail
+    
+    Final Sanity Check
+    
+    -   [ ] A new user could follow this document without external explanation
+    -   [ ] The document reads as instructions, not a design or implementation spec
+
+2.  Reminder Prompt
+
+    Before writing any documentation, select and prepend the appropriate Doc Type Header.
+    Follow the documentation standards defined in agents.md.
+    If writing a User Guide, prioritize clarity for non-technical users, avoid internal details, and follow the required task-based structure.
+    Validate the final document against the Documentation Self-Check Checklist before completing the task.
+
+
+<a id="org5541dbb"></a>
 
 ### Complete
 
