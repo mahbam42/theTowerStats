@@ -51,9 +51,11 @@ class Command(BaseCommand):
     CARDS_LIST_ANCHOR_ID = "List_of_Cards"
 
     # Bot upgrade costs live under the #Cost anchor; lab tables should be ignored.
-    # For now, target Thunder Bot explicitly until other bot pages are validated.
     BOT_PAGES: tuple[tuple[str, str], ...] = (
+        ("Amplify Bot", "https://the-tower-idle-tower-defense.fandom.com/wiki/Amplify_Bot#Cost"),
+        ("Flame Bot", "https://the-tower-idle-tower-defense.fandom.com/wiki/Flame_Bot#Cost"),
         ("Thunder Bot", "https://the-tower-idle-tower-defense.fandom.com/wiki/Thunder_Bot#Cost"),
+        ("Golden Bot", "https://the-tower-idle-tower-defense.fandom.com/wiki/Golden_Bot#Cost"),
     )
 
     UW_PAGES: tuple[tuple[str, str], ...] = (

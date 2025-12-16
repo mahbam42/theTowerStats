@@ -719,11 +719,11 @@ The labs tables are outside of the current scope.
 - [X] CardParameters → effective values
 - [X] UW / Guardian parameterized metrics
 - [ ] Derived metrics charts
-**** Exit Criteria [0%]
+**** Exit Criteria [8%]
 Wiki Effects Infrastructure
 - [ ] At least one complete pipeline:
   - scrape → version → reference → compute
-- [ ] Demonstrated on one entity type (pick one):
+- [X] Demonstrated on one entity type (pick one):
   - UW or Bot or Guardian
 - [ ] One derived effect chart rendered dynamically
 - [ ] Wiki revision change produces different derived output

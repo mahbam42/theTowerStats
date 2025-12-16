@@ -176,11 +176,15 @@ def rebuild_bots_from_wikidata(*, write: bool, parse_version: str = "bots_v1") -
                     level = _safe_int(row.raw_row.get("Level"))
                     if level <= 0:
                         continue
+                    value_raw = str(row.raw_row.get(header, "")).strip()
+                    cost_raw = str(row.raw_row.get("Cost", "")).strip()
+                    if _is_placeholder_or_total(value_raw) or _is_placeholder_or_total(cost_raw):
+                        continue
                     BotParameterLevel.objects.create(
                         parameter_definition=param_def,
                         level=level,
-                        value_raw=str(row.raw_row.get(header, "")).strip(),
-                        cost_raw=str(row.raw_row.get("Cost", "")).strip(),
+                        value_raw=value_raw,
+                        cost_raw=cost_raw,
                         currency=Currency.MEDALS,
                         source_wikidata=row,
                     )

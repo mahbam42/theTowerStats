@@ -401,3 +401,19 @@ def test_guardian_placeholder_levels_are_omitted_on_rebuild() -> None:
     for param_def in chip.parameter_definitions.all():
         assert param_def.levels.count() == 1
         assert param_def.levels.get().level == 1
+
+
+@pytest.mark.django_db
+def test_bot_empty_parameter_cells_are_omitted_on_rebuild() -> None:
+    """Bots often leave some parameter columns blank at higher levels; omit those levels per parameter."""
+
+    _ingest_bot_page(fixture="wiki_bot_thunder_bot_v1.html", display_name="Thunder Bot")
+    rebuild_bots_from_wikidata(write=True)
+
+    bot = BotDefinition.objects.get(slug="thunder_bot")
+    defs = {param.key: param for param in bot.parameter_definitions.all()}
+
+    # Thunder bot cooldown values end at level 15 in the cost table; higher levels are blank.
+    cooldown = defs["cooldown"]
+    assert cooldown.levels.order_by("-level").first().level == 15
+    assert cooldown.levels.filter(level__gt=15).count() == 0
