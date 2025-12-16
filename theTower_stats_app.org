@@ -793,6 +793,7 @@ Support:
 - Date range filter. Default View is by Event (start is 12/9/2025 00:00 UTC)
 - Tier filter
 - Ensure all charts consume MetricSeries only
+- Select Chart from Multiselect Dropdown Menu 
 
 Top Level Charts:
 - Coins Earned (line)
@@ -934,29 +935,11 @@ A new user can:
 2. View history
 3. Inspect progress
 4. Understand trends …without explanation.
-** Backlog [1/5]
+** Backlog [0/5]
 “Out of Scope”:
 - Cloud sync
 - Real-time scraping
   
-*** TODO [#B] Comparison / Scenario View
-
-Examples:
-- Run A vs Run B
-- Before vs after unlocking card slot
-- With Guardian Chip/UW X vs without
-
-This is where the app becomes decision-making, not logging.
-*** TODO [#B] Add Advice for Optimization
-Based on logged performance data, it could be possible to calculate and offer suggestions based on the data.
-
-For Example:
-- Which UW to unlock next
-- Bot properties to improve
-- Guardian Chip properties to improve
-- Weighted Preset Rankings
-*** TODO [#C] Linking Presets/UW/Guardian Chips/Bots to battle history
-Mostly a visual tweak, but adds context and history for the player to interpert their performance history. 
 *** TODO [#A] Allow Multiple Players to Store
 **** Core Principle: Everything Belongs to a Player
 
@@ -1124,7 +1107,27 @@ def create_player(sender, instance, created, **kwargs):
     if created:
         Player.objects.create(user=instance)
 
-*** DONE [#A] Fix pytest warnings
+*** TODO [#A] Add Chart Builder Modal to Charts Dashboard
+Let user select chart style and metrics to show*** TODO [#B] Comparison / Scenario View
+
+Examples:
+- Run A vs Run B
+- Before vs after unlocking card slot
+- With Guardian Chip/UW X vs without
+
+This is where the app becomes decision-making, not logging.
+*** TODO [#B] Add Advice for Optimization
+Based on logged performance data, it could be possible to calculate and offer suggestions based on the data.
+
+For Example:
+- Which UW to unlock next
+- Bot properties to improve
+- Guardian Chip properties to improve
+- Weighted Preset Rankings
+*** TODO [#C] Linking Presets/UW/Guardian Chips/Bots to battle history
+Mostly a visual tweak, but adds context and history for the player to interpert their performance history. 
+*** Complete
+**** DONE [#A] Fix pytest warnings
 CLOSED: [2025-12-16 Tue 11:01]
 - State "DONE"       from "TODO"       [2025-12-16 Tue 11:01]
 definitions/models.py:279

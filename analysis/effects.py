@@ -106,6 +106,46 @@ def activations_per_minute_from_parameters(
     return EffectResult(value=60.0 / cooldown, used_parameters=tuple(used))
 
 
+def effective_cooldown_seconds_from_parameters(
+    *,
+    entity_type: str,
+    entity_name: str,
+    parameters: tuple[ParameterInput, ...],
+    cooldown_key: str = "cooldown",
+) -> EffectResult:
+    """Compute an effective cooldown in seconds from a cooldown parameter.
+
+    This is a validation-focused effect used to prove that:
+    - wiki-derived parameter revisions are referenced by analysis at request time, and
+    - derived metrics can be charted alongside observed metrics with explicit units.
+
+    Formula:
+        effective_cooldown_seconds = cooldown_seconds
+
+    Args:
+        entity_type: Entity category label (e.g. "ultimate_weapon").
+        entity_name: Human-readable entity name for trace output.
+        parameters: ParameterInput entries (raw + parsed values).
+        cooldown_key: Parameter key used for cooldown seconds.
+
+    Returns:
+        EffectResult with effective cooldown seconds and referenced parameters.
+    """
+
+    cooldown: float | None = None
+    used: list[UsedParameter] = []
+    for param in parameters:
+        if param.key != cooldown_key:
+            continue
+        cooldown = _float_or_none(param.parsed.normalized_value)
+        used.append(_used(entity_type=entity_type, entity_name=entity_name, param=param))
+        break
+
+    if cooldown is None or cooldown <= 0:
+        return EffectResult(value=None, used_parameters=tuple(used))
+    return EffectResult(value=cooldown, used_parameters=tuple(used))
+
+
 def _uptime_percent(*, duration_seconds: float | None, cooldown_seconds: float | None) -> float | None:
     """Return uptime percent for (duration, cooldown) inputs."""
 

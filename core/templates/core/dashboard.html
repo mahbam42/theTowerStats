@@ -2,6 +2,28 @@
 
 {% block title %}Charts • theTowerStats{% endblock %}
 
+{% block head %}
+  <style>
+    .chart-grid {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 16px;
+      align-items: flex-start;
+      margin-top: 12px;
+    }
+    .chart-panel {
+      flex: 1 1 420px;
+      max-width: 980px;
+    }
+    .chart-panel h3 {
+      margin: 0 0 8px 0;
+    }
+    .chart-panel canvas {
+      max-width: 100%;
+    }
+  </style>
+{% endblock %}
+
 {% block content %}
     <h2>Import Battle Report</h2>
     <form method="post">
@@ -90,14 +112,31 @@
       <div class="empty-state" role="status">{{ chart_empty_state }}</div>
     {% endif %}
 
-    <canvas id="chart" width="900" height="350" {% if chart_empty_state %}hidden{% endif %}></canvas>
+    {% if metric_definition.kind == "derived" %}
+      <div class="chart-grid" {% if chart_empty_state %}hidden{% endif %}>
+        <div class="chart-panel">
+          <h3>{{ metric_definition.label }} <span class="muted">({{ metric_definition.unit }})</span></h3>
+          <canvas id="chart-primary" width="900" height="350"></canvas>
+        </div>
+        {% if secondary_metric_definition %}
+          <div class="chart-panel">
+            <h3>{{ secondary_metric_definition.label }} <span class="muted">({{ secondary_metric_definition.unit }})</span></h3>
+            <canvas id="chart-secondary" width="900" height="350"></canvas>
+          </div>
+        {% endif %}
+      </div>
+    {% else %}
+      <canvas id="chart-primary" width="900" height="350" {% if chart_empty_state %}hidden{% endif %}></canvas>
+    {% endif %}
 {% endblock %}
 
 {% block extra_scripts %}
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
     <script>
-      const labels = {{ chart_labels_json|safe }};
-      const datasets = {{ chart_datasets_json|safe }};
+      const primaryLabels = {{ chart_labels_json|safe }};
+      const primaryDatasets = {{ chart_datasets_json|safe }};
+      const secondaryLabels = {{ secondary_chart_labels_json|safe }};
+      const secondaryDatasets = {{ secondary_chart_datasets_json|safe }};
       const initialContext = {{ chart_context_json|safe }};
 
       function formatCompactNumber(value) {
@@ -172,11 +211,10 @@
         chartContextForm.addEventListener("change", updateContextSummary);
       }
 
-      const canvas = document.getElementById("chart");
-      const ctx = canvas ? canvas.getContext("2d") : null;
-      if (!ctx || labels.length === 0 || datasets.length === 0) {
-        // Empty state is rendered server-side.
-      } else {
+      function renderLineChart(canvasId, labels, datasets) {
+        const canvas = document.getElementById(canvasId);
+        const ctx = canvas ? canvas.getContext("2d") : null;
+        if (!ctx || labels.length === 0 || datasets.length === 0) return;
         new Chart(ctx, {
           type: "line",
           data: {
@@ -243,5 +281,9 @@
           },
         });
       }
+
+      // Empty state is rendered server-side.
+      renderLineChart("chart-primary", primaryLabels, primaryDatasets);
+      renderLineChart("chart-secondary", secondaryLabels, secondaryDatasets);
     </script>
 {% endblock %}

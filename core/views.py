@@ -132,6 +132,23 @@ def dashboard(request: HttpRequest) -> HttpResponse:
         moving_average_window=chart_form.cleaned_data.get("moving_average_window"),
     )
 
+    secondary_series_result = None
+    secondary_chart_data: ChartData | None = None
+    if series_result.metric.kind == "derived":
+        secondary_series_result = analyze_metric_series(
+            runs,
+            metric_key="coins_per_hour",
+            context=None,
+            entity_type=None,
+            entity_name=None,
+        )
+        secondary_chart_data = _build_chart_data(
+            secondary_series_result.points,
+            metric_def=secondary_series_result.metric,
+            overlay_group=chart_form.cleaned_data.get("overlay_group") or "none",
+            moving_average_window=chart_form.cleaned_data.get("moving_average_window"),
+        )
+
     comparison_form = ComparisonForm(request.GET, runs_queryset=context_runs)
     comparison_form.is_valid()
     comparison_result = _build_comparison_result(
@@ -158,6 +175,13 @@ def dashboard(request: HttpRequest) -> HttpResponse:
         "chart_empty_state": chart_empty_state,
         "chart_labels_json": json.dumps(chart_data["labels"]),
         "chart_datasets_json": json.dumps(chart_data["datasets"]),
+        "secondary_metric_definition": secondary_series_result.metric if secondary_series_result else None,
+        "secondary_chart_labels_json": json.dumps(secondary_chart_data["labels"])
+        if secondary_chart_data
+        else "[]",
+        "secondary_chart_datasets_json": json.dumps(secondary_chart_data["datasets"])
+        if secondary_chart_data
+        else "[]",
         "chart_values_json": json.dumps(chart_data["datasets"][0]["data"])
         if chart_data["datasets"]
         else "[]",

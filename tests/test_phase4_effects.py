@@ -134,6 +134,53 @@ def test_golden_uw_uptime_percent_effect() -> None:
 
 
 @pytest.mark.django_db
+def test_golden_uw_effective_cooldown_seconds_effect() -> None:
+    """UW effective cooldown uses wiki Cooldown for the selected UW."""
+
+    _create_wikidata_level_row(
+        parse_version="ultimate_weapons_v1",
+        base_entity_id="golden_tower",
+        entity_field="Ultimate Weapon",
+        entity_name="Golden Tower",
+        level=1,
+        last_seen=datetime(2025, 12, 1, tzinfo=timezone.utc),
+        values={"Cooldown": "120"},
+    )
+
+    uw = UltimateWeaponDefinition.objects.create(name="Golden Tower", slug="golden_tower")
+    cooldown = UltimateWeaponParameterDefinition.objects.create(
+        ultimate_weapon_definition=uw,
+        key=ParameterKey.COOLDOWN,
+        display_name="Cooldown",
+        unit_kind="seconds",
+    )
+
+    player = Player.objects.create(name="default")
+    player_uw = PlayerUltimateWeapon.objects.create(
+        player=player,
+        ultimate_weapon_definition=uw,
+        ultimate_weapon_slug=uw.slug,
+        unlocked=True,
+    )
+    PlayerUltimateWeaponParameter.objects.create(player_ultimate_weapon=player_uw, parameter_definition=cooldown, level=1)
+
+    report = _create_run(checksum="c" * 64)
+    context = build_player_context(revision_policy=RevisionPolicy(mode="latest"))
+    series = analyze_metric_series(
+        [report],
+        metric_key="uw_effective_cooldown_seconds",
+        context=context,
+        entity_type="ultimate_weapon",
+        entity_name="Golden Tower",
+    )
+
+    assert series.points[0].value == pytest.approx(120.0)
+    assert len(series.used_parameters) == 1
+    assert series.used_parameters[0].key == "cooldown"
+    assert series.used_parameters[0].wiki_revision_id is not None
+
+
+@pytest.mark.django_db
 def test_golden_guardian_activations_per_minute_effect() -> None:
     """Guardian activations/min uses wiki Cooldown for the selected chip."""
 
@@ -306,3 +353,75 @@ def test_revision_diff_changes_derived_output_without_mutating_runs() -> None:
     progress.refresh_from_db()
     assert progress.wave == original_wave
 
+
+@pytest.mark.django_db
+def test_revision_diff_changes_effective_cooldown_seconds_across_wiki_revisions() -> None:
+    """Same run + different wiki revision produces different effective cooldown output."""
+
+    _create_wikidata_level_row(
+        parse_version="ultimate_weapons_v1",
+        base_entity_id="golden_tower",
+        entity_field="Ultimate Weapon",
+        entity_name="Golden Tower",
+        level=1,
+        last_seen=datetime(2025, 12, 1, tzinfo=timezone.utc),
+        values={"Cooldown": "120"},
+    )
+    _create_wikidata_level_row(
+        parse_version="ultimate_weapons_v1",
+        base_entity_id="golden_tower",
+        entity_field="Ultimate Weapon",
+        entity_name="Golden Tower",
+        level=1,
+        last_seen=datetime(2025, 12, 2, tzinfo=timezone.utc),
+        values={"Cooldown": "100"},
+    )
+
+    uw = UltimateWeaponDefinition.objects.create(name="Golden Tower", slug="golden_tower")
+    cooldown = UltimateWeaponParameterDefinition.objects.create(
+        ultimate_weapon_definition=uw,
+        key=ParameterKey.COOLDOWN,
+        display_name="Cooldown",
+        unit_kind="seconds",
+    )
+
+    player = Player.objects.create(name="default")
+    player_uw = PlayerUltimateWeapon.objects.create(
+        player=player,
+        ultimate_weapon_definition=uw,
+        ultimate_weapon_slug=uw.slug,
+        unlocked=True,
+    )
+    PlayerUltimateWeaponParameter.objects.create(player_ultimate_weapon=player_uw, parameter_definition=cooldown, level=1)
+
+    report = _create_run(checksum="e" * 64)
+    progress = BattleReportProgress.objects.get(battle_report=report)
+    original_wave = progress.wave
+
+    early = build_player_context(
+        revision_policy=RevisionPolicy(mode="as_of", as_of=datetime(2025, 12, 1, 12, tzinfo=timezone.utc))
+    )
+    late = build_player_context(
+        revision_policy=RevisionPolicy(mode="as_of", as_of=datetime(2025, 12, 3, 12, tzinfo=timezone.utc))
+    )
+    series_early = analyze_metric_series(
+        [report],
+        metric_key="uw_effective_cooldown_seconds",
+        context=early,
+        entity_type="ultimate_weapon",
+        entity_name="Golden Tower",
+    )
+    series_late = analyze_metric_series(
+        [report],
+        metric_key="uw_effective_cooldown_seconds",
+        context=late,
+        entity_type="ultimate_weapon",
+        entity_name="Golden Tower",
+    )
+
+    assert series_early.points[0].value == pytest.approx(120.0)
+    assert series_late.points[0].value == pytest.approx(100.0)
+    assert series_early.used_parameters[0].wiki_revision_id != series_late.used_parameters[0].wiki_revision_id
+
+    progress.refresh_from_db()
+    assert progress.wave == original_wave

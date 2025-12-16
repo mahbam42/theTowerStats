@@ -12,6 +12,7 @@ from typing import Final
 from .context import ParameterInput, PlayerContextInput
 from .derived import MonteCarloConfig
 from .effects import activations_per_minute_from_parameters
+from .effects import effective_cooldown_seconds_from_parameters
 from .effects import uptime_percent_from_parameters
 from .dto import MetricDefinition
 from .dto import UsedParameter
@@ -46,6 +47,12 @@ METRICS: Final[dict[str, MetricDefinition]] = {
         key="guardian_activations_per_minute",
         label="Guardian activations/minute",
         unit="activations/min",
+        kind="derived",
+    ),
+    "uw_effective_cooldown_seconds": MetricDefinition(
+        key="uw_effective_cooldown_seconds",
+        label="Ultimate Weapon effective cooldown",
+        unit="seconds",
         kind="derived",
     ),
     "bot_uptime_percent": MetricDefinition(
@@ -142,6 +149,21 @@ def compute_metric_value(
         )
         return effect.value, effect.used_parameters, assumptions
 
+    if metric_key == "uw_effective_cooldown_seconds":
+        params = _entity_parameters(context, entity_type="ultimate_weapon", entity_name=entity_name)
+        if params is None:
+            return None, (), ("Select an Ultimate Weapon to compute effective cooldown.",)
+        effect = effective_cooldown_seconds_from_parameters(
+            entity_type="ultimate_weapon",
+            entity_name=entity_name or "Unknown",
+            parameters=params,
+        )
+        assumptions = (
+            "effective_cooldown_seconds = cooldown_seconds.",
+            "Uses the selected Ultimate Weapon's Cooldown parameter.",
+        )
+        return effect.value, effect.used_parameters, assumptions
+
     if metric_key == "bot_uptime_percent":
         params = _entity_parameters(context, entity_type="bot", entity_name=entity_name)
         if params is None:
@@ -158,6 +180,7 @@ def compute_metric_value(
         return effect.value, effect.used_parameters, assumptions
 
     return None, (), ("Unknown metric key; no value computed.",)
+
 
 def _entity_parameters(
     context: PlayerContextInput,
