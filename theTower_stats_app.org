@@ -604,8 +604,10 @@ Testing:
   - [X] 1 parser golden test
   - [X] 1 rate calculation golden test
 - [X] Test suite passes with no skipped tests
-*** Phase 2 Context
+*** IN PROGRESS Phase 2 Context
 
+- State "IN PROGRESS" from              [2025-12-16 Tue 09:22] \\
+  Needs revisiting
 **** Milestones
 - [ ] Tier filtering
 - [ ] Preset filtering
@@ -636,13 +638,15 @@ Testing
 At least:
 - [X] 1 delta golden test
 - [X] 1 aggregation test using presets
-*** Phase 3 — App Structure & UX
+*** DONE Phase 3 — App Structure & UX
+CLOSED: [2025-12-16 Tue 09:22]
 
-**** Milestones [50%]
+- State "DONE"       from              [2025-12-16 Tue 09:22]
+**** Milestones [100%]
 - [X] Navigation
 - [X] Page separation
-- [ ] Dashboards
-- [ ] Model completeness (structure, not logic)
+- [X] Dashboards
+- [X] Model completeness (structure, not logic)
 *** Phase 4 Effects
 
 **** Scraping Sources and Corrective Behavior
@@ -714,8 +718,8 @@ The labs tables are outside of the current scope.
 **** Need method for handling Player Bots/Cards/UW/Gaurdian Chips
 Hasn't been built out or thought out yet.
 **** Milestones
-- [ ] CardParameters → effective values
-- [ ] UW / Guardian parameterized metrics
+- [X] CardParameters → effective values
+- [X] UW / Guardian parameterized metrics
 - [ ] Derived metrics charts
 **** Exit Criteria [0%]
 Parameterized Effects
