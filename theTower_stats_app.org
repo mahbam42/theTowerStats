@@ -937,7 +937,7 @@ A new user can:
 2. View history
 3. Inspect progress
 4. Understand trends …without explanation.
-** Backlog [0/5]
+** Backlog [1/5]
 “Out of Scope”:
 - Cloud sync
 - Real-time scraping
@@ -1127,7 +1127,9 @@ def create_player(sender, instance, created, **kwargs):
     if created:
         Player.objects.create(user=instance)
 
-*** TODO [#A] Fix pytest warnings
+*** DONE [#A] Fix pytest warnings
+CLOSED: [2025-12-16 Tue 11:01]
+- State "DONE"       from "TODO"       [2025-12-16 Tue 11:01]
 definitions/models.py:279
   /Users/mrmax/projects/theTowerStats/definitions/models.py:279: RemovedInDjango60Warning: CheckConstraint.check is deprecated in favor of `.condition`.
     models.CheckConstraint(

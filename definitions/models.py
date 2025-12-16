@@ -277,7 +277,7 @@ class BotParameterLevel(models.Model):
                 name="uniq_bot_param_level",
             ),
             models.CheckConstraint(
-                check=models.Q(currency=Currency.MEDALS),
+                condition=models.Q(currency=Currency.MEDALS),
                 name="bot_param_currency_medals",
             ),
         ]
@@ -341,7 +341,7 @@ class UltimateWeaponParameterLevel(models.Model):
                 name="uniq_uw_param_level",
             ),
             models.CheckConstraint(
-                check=models.Q(currency=Currency.STONES),
+                condition=models.Q(currency=Currency.STONES),
                 name="uw_param_currency_stones",
             ),
         ]
@@ -405,7 +405,7 @@ class GuardianChipParameterLevel(models.Model):
                 name="uniq_guardian_param_level",
             ),
             models.CheckConstraint(
-                check=models.Q(currency=Currency.BITS),
+                condition=models.Q(currency=Currency.BITS),
                 name="guardian_param_currency_bits",
             ),
         ]
