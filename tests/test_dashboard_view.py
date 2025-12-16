@@ -11,6 +11,8 @@ from analysis.engine import analyze_runs
 from gamedata.models import BattleReport, BattleReportProgress
 from player_state.models import Player, Preset
 
+FILTER_START = date(2025, 12, 1)
+
 
 @pytest.mark.django_db
 def test_dashboard_view_renders(client) -> None:
@@ -27,7 +29,7 @@ def test_dashboard_view_renders(client) -> None:
         real_time_seconds=600,
     )
 
-    response = client.get("/")
+    response = client.get("/", {"start_date": FILTER_START})
     assert response.status_code == 200
 
 
@@ -35,9 +37,9 @@ def test_dashboard_view_renders(client) -> None:
 def test_dashboard_view_renders_with_no_data(client) -> None:
     """Render the dashboard with no imported runs and show a neutral empty state."""
 
-    response = client.get("/")
+    response = client.get("/", {"start_date": FILTER_START})
     assert response.status_code == 200
-    assert response.context["chart_empty_state"] == "No battle reports yet. Import one to see charts."
+    assert response.context["chart_empty_state"] == "No runs match the current filters."
 
 
 @pytest.mark.django_db
@@ -115,7 +117,7 @@ def test_dashboard_view_filters_by_tier(client) -> None:
         real_time_seconds=600,
     )
 
-    response = client.get("/", {"tier": 2})
+    response = client.get("/", {"tier": 2, "start_date": FILTER_START})
     assert response.status_code == 200
 
     labels = json.loads(response.context["chart_labels_json"])
@@ -156,7 +158,7 @@ def test_dashboard_view_filters_by_preset(client) -> None:
         real_time_seconds=600,
     )
 
-    response = client.get("/", {"preset": preset.pk})
+    response = client.get("/", {"preset": preset.pk, "start_date": FILTER_START})
     assert response.status_code == 200
 
     labels = json.loads(response.context["chart_labels_json"])
@@ -193,7 +195,7 @@ def test_dashboard_view_overlays_by_tier(client) -> None:
         real_time_seconds=600,
     )
 
-    response = client.get("/", {"overlay_group": "tier"})
+    response = client.get("/", {"overlay_group": "tier", "start_date": FILTER_START})
     assert response.status_code == 200
 
     datasets = json.loads(response.context["chart_datasets_json"])
@@ -234,6 +236,7 @@ def test_dashboard_view_overlays_include_moving_average(client) -> None:
         {
             "overlay_group": "tier",
             "moving_average_window": 2,
+            "start_date": FILTER_START,
         },
     )
     assert response.status_code == 200
@@ -259,7 +262,7 @@ def test_dashboard_view_includes_legend_toggle_handler(client) -> None:
         real_time_seconds=600,
     )
 
-    response = client.get("/")
+    response = client.get("/", {"start_date": FILTER_START})
     assert response.status_code == 200
     assert b"setDatasetVisibility" in response.content
 
@@ -292,7 +295,7 @@ def test_dashboard_view_run_delta_comparison(client) -> None:
         real_time_seconds=600,
     )
 
-    response = client.get("/", {"run_a": first.pk, "run_b": second.pk})
+    response = client.get("/", {"run_a": first.pk, "run_b": second.pk, "start_date": FILTER_START})
     assert response.status_code == 200
 
     result = response.context["comparison_result"]

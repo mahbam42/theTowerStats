@@ -4,130 +4,194 @@
 
 {% block head %}
   <style>
-    .chart-grid {
-      display: flex;
-      flex-wrap: wrap;
-      gap: 16px;
-      align-items: flex-start;
-      margin-top: 12px;
-    }
-    .chart-panel {
-      flex: 1 1 420px;
-      max-width: 980px;
-    }
-    .chart-panel h3 {
-      margin: 0 0 8px 0;
-    }
     .chart-panel canvas {
       max-width: 100%;
+    }
+
+    .chart-shell {
+      background: #fff;
+      border: 1px solid #e5e5e5;
+      border-radius: 8px;
+      padding: 1rem;
+      box-shadow: 0 1px 4px rgba(0, 0, 0, 0.04);
     }
   </style>
 {% endblock %}
 
 {% block content %}
-    <h2>Import Battle Report</h2>
-    <form method="post">
-      {% csrf_token %}
-      {{ import_form.as_p }}
-      <button type="submit">Import</button>
-    </form>
-
-    <h2>
-      {{ metric_definition.label }}
-      <span class="muted">({{ metric_definition.kind }})</span>
-    </h2>
-    <div class="context-bar" aria-live="polite">
-      <div class="context-bar__title">Active context</div>
-      <div id="active-context" class="muted"></div>
+  <div class="grid-x grid-margin-x">
+    <div class="cell">
+      <div class="card-shell">
+        <div class="grid-x grid-margin-x align-middle">
+          <div class="cell auto">
+            <p class="muted margin-0">Charts</p>
+            <h2 class="margin-0">{{ metric_definition.label }}</h2>
+            <p class="muted margin-0">Filters default to December 9, 2025 to focus on recent runs.</p>
+          </div>
+          <div class="cell shrink text-right">
+            <a class="button" href="{% url 'core:battle_history' %}">View history</a>
+            <p class="muted text-right margin-0">Use the Battle History dashboard to paste new runs.</p>
+          </div>
+        </div>
+      </div>
     </div>
-    <form method="get" id="chart-context-form">
-      {{ chart_form.as_p }}
-      <button type="submit">Apply</button>
-      <a href="{% url 'core:dashboard' %}">Clear</a>
-    </form>
+  </div>
 
-    {% if metric_definition.kind == "derived" %}
-      <div class="empty-state" role="note">
-        <strong>Derived metric transparency</strong>
-        {% if metric_assumptions %}
-          <ul>
-            {% for assumption in metric_assumptions %}
-              <li>{{ assumption }}</li>
-            {% endfor %}
-          </ul>
-        {% endif %}
-        {% if used_parameters %}
-          <details>
-            <summary>Parameters referenced</summary>
-            <ul>
-              {% for param in used_parameters %}
-                <li>
-                  {{ param.entity_type }} • {{ param.entity_name }} • {{ param.key }} = {{ param.raw_value }}
-                  {% if param.wiki_revision_id %}(wiki rev {{ param.wiki_revision_id }}){% endif %}
-                </li>
+  <div class="grid-x grid-margin-x">
+    <div class="cell large-3 medium-4">
+      <div class="card-shell">
+        <h4 class="margin-bottom-1">Filters</h4>
+        <form method="get" id="chart-context-form">
+          <label>Metric / Chart
+            {{ chart_form.metric }}
+          </label>
+          <label>Start date
+            {{ chart_form.start_date }}
+          </label>
+          <label>End date
+            {{ chart_form.end_date }}
+          </label>
+          <label>Tier
+            {{ chart_form.tier }}
+          </label>
+          <label>Preset
+            {{ chart_form.preset }}
+          </label>
+          <label>Overlay
+            {{ chart_form.overlay_group }}
+          </label>
+          <label>Moving average window
+            {{ chart_form.moving_average_window }}
+          </label>
+          <div class="button-group expanded stack-for-small margin-top-1">
+            <button class="button" type="submit">Apply</button>
+            <a class="button secondary" href="{% url 'core:dashboard' %}">Clear</a>
+          </div>
+        </form>
+      </div>
+
+      <div class="card-shell margin-top-1">
+        <h5>Compare</h5>
+        <form method="get">
+          {{ comparison_form.as_p }}
+          <button class="button hollow" type="submit">Compare</button>
+        </form>
+      </div>
+
+      <div class="card-shell margin-top-1">
+        <h5>Quick import</h5>
+        <form method="post">
+          {% csrf_token %}
+          <label>{{ import_form.raw_text.label }}
+            {{ import_form.raw_text }}
+          </label>
+          <label>{{ import_form.preset_name.label }}
+            {{ import_form.preset_name }}
+          </label>
+          <button class="button expanded" type="submit">Import Battle Report</button>
+        </form>
+      </div>
+    </div>
+
+    <div class="cell large-9 medium-8">
+      <div class="callout primary context-bar" aria-live="polite">
+        <strong>Active context</strong>
+        <div id="active-context" class="muted"></div>
+      </div>
+
+      {% if metric_definition.kind == "derived" %}
+        <div class="callout secondary">
+          <p class="margin-0"><strong>Derived metric transparency</strong></p>
+          {% if metric_assumptions %}
+            <ul class="margin-bottom-0">
+              {% for assumption in metric_assumptions %}
+                <li>{{ assumption }}</li>
               {% endfor %}
             </ul>
-          </details>
-        {% endif %}
-      </div>
-    {% endif %}
-
-    <h3>Compare</h3>
-    <form method="get">
-      {{ comparison_form.as_p }}
-      <button type="submit">Compare</button>
-    </form>
-
-    {% if comparison_result %}
-      <div>
-        <h4>Deltas ({{ comparison_result.metric }})</h4>
-        {% if comparison_result.kind == "runs" %}
-          <p>
-            Baseline: Run A ({{ comparison_result.label_a }}) • Comparison: Run B ({{ comparison_result.label_b }})
-          </p>
-        {% else %}
-          <p>
-            Baseline: Window A ({{ comparison_result.window_a.start_date }} to {{ comparison_result.window_a.end_date }})
-            • Comparison: Window B ({{ comparison_result.window_b.start_date }} to {{ comparison_result.window_b.end_date }})
-          </p>
-        {% endif %}
-        <ul>
-          <li>
-            Baseline: {{ comparison_result.baseline_value|floatformat:2 }} {{ comparison_result.metric }}
-          </li>
-          <li>
-            Comparison: {{ comparison_result.comparison_value|floatformat:2 }} {{ comparison_result.metric }}
-          </li>
-          <li>Absolute: {{ comparison_result.delta.absolute|floatformat:2 }}</li>
-          {% if comparison_result.percent_display is not None %}
-            <li>Percent: {{ comparison_result.percent_display|floatformat:2 }}%</li>
-          {% else %}
-            <li>Percent: n/a (baseline is 0)</li>
           {% endif %}
-        </ul>
-      </div>
-    {% endif %}
+          {% if used_parameters %}
+            <details class="margin-top-1">
+              <summary>Parameters referenced</summary>
+              <ul>
+                {% for param in used_parameters %}
+                  <li>
+                    {{ param.entity_type }} • {{ param.entity_name }} • {{ param.key }} = {{ param.raw_value }}
+                    {% if param.wiki_revision_id %}(wiki rev {{ param.wiki_revision_id }}){% endif %}
+                  </li>
+                {% endfor %}
+              </ul>
+            </details>
+          {% endif %}
+        </div>
+      {% endif %}
 
-    {% if chart_empty_state %}
-      <div class="empty-state" role="status">{{ chart_empty_state }}</div>
-    {% endif %}
+      {% if comparison_result %}
+        <div class="callout success">
+          <p class="margin-0"><strong>Deltas ({{ comparison_result.metric }})</strong></p>
+          {% if comparison_result.kind == "runs" %}
+            <p class="margin-0">
+              Baseline: Run A ({{ comparison_result.label_a }}) • Comparison: Run B ({{ comparison_result.label_b }})
+            </p>
+          {% else %}
+            <p class="margin-0">
+              Baseline: Window A ({{ comparison_result.window_a.start_date }} to {{ comparison_result.window_a.end_date }})
+              • Comparison: Window B ({{ comparison_result.window_b.start_date }} to {{ comparison_result.window_b.end_date }})
+            </p>
+          {% endif %}
+          <ul class="margin-bottom-0">
+            <li>Baseline: {{ comparison_result.baseline_value|floatformat:2 }} {{ comparison_result.metric }}</li>
+            <li>Comparison: {{ comparison_result.comparison_value|floatformat:2 }} {{ comparison_result.metric }}</li>
+            <li>Absolute: {{ comparison_result.delta.absolute|floatformat:2 }}</li>
+            {% if comparison_result.percent_display is not None %}
+              <li>Percent: {{ comparison_result.percent_display|floatformat:2 }}%</li>
+            {% else %}
+              <li>Percent: n/a (baseline is 0)</li>
+            {% endif %}
+          </ul>
+        </div>
+      {% endif %}
 
-    {% if metric_definition.kind == "derived" %}
-      <div class="chart-grid" {% if chart_empty_state %}hidden{% endif %}>
-        <div class="chart-panel">
-          <h3>{{ metric_definition.label }} <span class="muted">({{ metric_definition.unit }})</span></h3>
+      {% if chart_empty_state %}
+        <div class="empty-state" role="status">{{ chart_empty_state }}</div>
+      {% endif %}
+
+      {% if metric_definition.kind == "derived" %}
+        <div class="grid-x grid-margin-x" {% if chart_empty_state %}hidden{% endif %}>
+          <div class="cell">
+            <div class="chart-shell">
+              <div class="grid-x align-justify align-middle">
+                <div class="cell auto">
+                  <h4 class="margin-0">{{ metric_definition.label }} <span class="muted">({{ metric_definition.unit }})</span></h4>
+                </div>
+              </div>
+              <canvas id="chart-primary" width="900" height="350"></canvas>
+            </div>
+          </div>
+          {% if secondary_metric_definition %}
+            <div class="cell margin-top-1">
+              <div class="chart-shell">
+                <div class="grid-x align-justify align-middle">
+                  <div class="cell auto">
+                    <h4 class="margin-0">{{ secondary_metric_definition.label }} <span class="muted">({{ secondary_metric_definition.unit }})</span></h4>
+                  </div>
+                </div>
+                <canvas id="chart-secondary" width="900" height="350"></canvas>
+              </div>
+            </div>
+          {% endif %}
+        </div>
+      {% else %}
+        <div class="chart-shell" {% if chart_empty_state %}hidden{% endif %}>
+          <div class="grid-x align-justify align-middle">
+            <div class="cell auto">
+              <h4 class="margin-0">{{ metric_definition.label }} <span class="muted">({{ metric_definition.unit }})</span></h4>
+            </div>
+          </div>
           <canvas id="chart-primary" width="900" height="350"></canvas>
         </div>
-        {% if secondary_metric_definition %}
-          <div class="chart-panel">
-            <h3>{{ secondary_metric_definition.label }} <span class="muted">({{ secondary_metric_definition.unit }})</span></h3>
-            <canvas id="chart-secondary" width="900" height="350"></canvas>
-          </div>
-        {% endif %}
-      </div>
-    {% else %}
-      <canvas id="chart-primary" width="900" height="350" {% if chart_empty_state %}hidden{% endif %}></canvas>
-    {% endif %}
+      {% endif %}
+    </div>
+  </div>
 {% endblock %}
 
 {% block extra_scripts %}

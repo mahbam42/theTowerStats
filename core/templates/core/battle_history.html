@@ -3,34 +3,111 @@
 {% block title %}Battle History • theTowerStats{% endblock %}
 
 {% block content %}
-  <h2>Battle History</h2>
+  <div class="grid-x grid-margin-x">
+    <div class="cell">
+      <div class="card-shell">
+        <div class="grid-x grid-margin-x align-middle">
+          <div class="cell auto">
+            <h2 class="margin-0">Battle History</h2>
+            <p class="muted margin-0">Scan past runs with filters for tier, cause of death, and goal.</p>
+          </div>
+          <div class="cell shrink text-right">
+            <a class="button hollow" href="{% url 'core:dashboard' %}">View charts</a>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
 
-  {% if runs %}
-    <table>
-      <thead>
-        <tr>
-          <th>Battle date</th>
-          <th>Tier</th>
-          <th>Wave</th>
-          <th>Real time (s)</th>
-          <th>Preset</th>
-          <th>Imported</th>
-        </tr>
-      </thead>
-      <tbody>
-        {% for run in runs %}
-          <tr>
-            <td>{{ run.run_progress.battle_date|default:"—" }}</td>
-            <td>{{ run.run_progress.tier|default:"—" }}</td>
-            <td>{{ run.run_progress.wave|default:"—" }}</td>
-            <td>{{ run.run_progress.real_time_seconds|default:"—" }}</td>
-            <td>{{ run.run_progress.preset.name|default:"—" }}</td>
-            <td>{{ run.parsed_at }}</td>
-          </tr>
-        {% endfor %}
-      </tbody>
-    </table>
-  {% else %}
-    <p class="muted">No battle reports yet.</p>
-  {% endif %}
+  <div class="grid-x grid-margin-x">
+    <div class="cell large-3 medium-4">
+      <div class="card-shell">
+        <h4>Filters</h4>
+        <form method="get" class="stacked">
+          <label>Tier
+            {{ filter_form.tier }}
+          </label>
+          <label>Killed by
+            {{ filter_form.killed_by }}
+          </label>
+          <label>Goal
+            {{ filter_form.goal }}
+          </label>
+          <label>Sort
+            {{ filter_form.sort }}
+          </label>
+          <div class="button-group expanded stack-for-small margin-top-1">
+            <button class="button" type="submit">Apply</button>
+            <a class="button secondary" href="{% url 'core:battle_history' %}">Reset</a>
+          </div>
+        </form>
+        <div class="callout secondary margin-top-1">
+          <p class="margin-0">
+            Filters rely on imported data only; values not present in a Battle Report appear as em dashes.
+          </p>
+        </div>
+      </div>
+    </div>
+    <div class="cell large-9 medium-8">
+      <div class="card-shell">
+        {% if page_obj.object_list %}
+          <div class="table-scroll">
+            <table class="stack">
+              <thead>
+                <tr>
+                  <th scope="col">Battle date</th>
+                  <th scope="col">Tier</th>
+                  <th scope="col">Killed by</th>
+                  <th scope="col">Coins earned</th>
+                  <th scope="col">Coins/hour</th>
+                  <th scope="col">Cash earned</th>
+                  <th scope="col">Interest earned</th>
+                  <th scope="col">Cells earned</th>
+                  <th scope="col">Reroll shards</th>
+                  <th scope="col">Preset</th>
+                </tr>
+              </thead>
+              <tbody>
+                {% for run, metric in page_rows %}
+                  <tr>
+                    <td>{{ run.run_progress.battle_date|default:"—" }}</td>
+                    <td>{{ run.run_progress.tier|default:"—" }}</td>
+                    <td><span class="muted">—</span></td>
+                    <td><span class="muted">—</span></td>
+                    <td>{% if metric %}{{ metric.coins_per_hour|floatformat:2 }}{% else %}<span class="muted">—</span>{% endif %}</td>
+                    <td><span class="muted">—</span></td>
+                    <td><span class="muted">—</span></td>
+                    <td><span class="muted">—</span></td>
+                    <td><span class="muted">—</span></td>
+                    <td>{{ run.run_progress.preset.name|default:"—" }}</td>
+                  </tr>
+                {% endfor %}
+              </tbody>
+            </table>
+          </div>
+          {% if page_obj.paginator.num_pages > 1 %}
+            <nav aria-label="Pagination" class="pagination text-center margin-top-1">
+              <ul class="pagination">
+                {% if page_obj.has_previous %}
+                  <li class="pagination-previous"><a href="?page={{ page_obj.previous_page_number }}{% if base_querystring %}&{{ base_querystring }}{% endif %}">Previous</a></li>
+                {% else %}
+                  <li class="pagination-previous disabled">Previous</li>
+                {% endif %}
+                <li class="current">Page {{ page_obj.number }} of {{ page_obj.paginator.num_pages }}</li>
+                {% if page_obj.has_next %}
+                  <li class="pagination-next"><a href="?page={{ page_obj.next_page_number }}{% if base_querystring %}&{{ base_querystring }}{% endif %}">Next</a></li>
+                {% else %}
+                  <li class="pagination-next disabled">Next</li>
+                {% endif %}
+              </ul>
+            </nav>
+          {% endif %}
+        {% else %}
+          <div class="empty-state" role="status">
+            No battle reports match the current filters. Import a Battle Report to see history.
+          </div>
+        {% endif %}
+      </div>
+    </div>
+  </div>
 {% endblock %}
