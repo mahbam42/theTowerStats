@@ -49,6 +49,22 @@ def validate_chart_config(config: ChartConfig, *, registry: MetricSeriesRegistry
     if not config.metric_series:
         errors.append(f"ChartConfig[{config.id}].metric_series must contain at least one entry.")
 
+    allowed_categories = {
+        "top_level",
+        "sub_chart",
+        "uw_performance",
+        "guardian_stats",
+        "bot_stats",
+        "comparison",
+        "derived",
+    }
+    if config.category not in allowed_categories:
+        errors.append(f"ChartConfig[{config.id}].category is not a supported value: {config.category!r}.")
+
+    allowed_chart_types = {"line", "bar", "area", "scatter"}
+    if config.chart_type not in allowed_chart_types:
+        errors.append(f"ChartConfig[{config.id}].chart_type is not a supported value: {config.chart_type!r}.")
+
     for idx, series in enumerate(config.metric_series):
         spec = registry.get(series.metric_key)
         if spec is None:
@@ -78,16 +94,48 @@ def validate_chart_config(config: ChartConfig, *, registry: MetricSeriesRegistry
 
     if config.comparison is not None:
         mode = config.comparison.mode
+        if config.category != "comparison" and mode != "none":
+            errors.append(
+                f"ChartConfig[{config.id}] comparison.mode={mode!r} is only allowed for category='comparison'."
+            )
         if mode == "none":
             warnings.append(f"ChartConfig[{config.id}].comparison.mode is 'none' but comparison is present.")
         if mode in ("by_tier", "by_preset") and config.comparison.entities:
             warnings.append(f"ChartConfig[{config.id}].comparison.entities is ignored for mode={mode}.")
         if mode == "by_entity" and not config.comparison.entities:
             errors.append(f"ChartConfig[{config.id}] comparison mode 'by_entity' requires entities.")
+        if mode == "by_tier":
+            _validate_comparison_dimension(config, registry=registry, dimension="tier", errors=errors)
+        if mode == "by_preset":
+            _validate_comparison_dimension(config, registry=registry, dimension="preset", errors=errors)
+        if mode == "by_entity":
+            enabled_entity_filters = [
+                key for key in ("uw", "guardian", "bot") if getattr(config.filters, key).enabled
+            ]
+            if len(enabled_entity_filters) != 1:
+                errors.append(
+                    f"ChartConfig[{config.id}] comparison mode 'by_entity' requires exactly one entity filter enabled "
+                    f"(uw/guardian/bot); got {enabled_entity_filters}."
+                )
+            else:
+                _validate_comparison_dimension(
+                    config, registry=registry, dimension=enabled_entity_filters[0], errors=errors
+                )
 
     if config.derived is not None:
-        referenced = registry.formula_metric_keys(config.derived.formula)
-        if not referenced:
+        inspection = registry.inspect_formula(config.derived.formula)
+        if not inspection.is_valid_syntax:
+            errors.append(f"ChartConfig[{config.id}].derived.formula must be valid syntax.")
+        if inspection.is_valid_syntax and not inspection.is_safe:
+            errors.append(f"ChartConfig[{config.id}].derived.formula contains unsupported operations.")
+        if inspection.unknown_identifiers:
+            errors.append(
+                f"ChartConfig[{config.id}].derived.formula references unknown identifiers: "
+                f"{sorted(inspection.unknown_identifiers)}."
+            )
+
+        referenced = set(inspection.referenced_metric_keys)
+        if inspection.is_valid_syntax and inspection.is_safe and not inspection.unknown_identifiers and not referenced:
             errors.append(f"ChartConfig[{config.id}].derived.formula must reference at least one metric key.")
         available = {series.metric_key for series in config.metric_series}
         missing = referenced - available
@@ -96,6 +144,12 @@ def validate_chart_config(config: ChartConfig, *, registry: MetricSeriesRegistry
                 f"ChartConfig[{config.id}].derived.formula references metrics not present in metric_series: "
                 f"{sorted(missing)}."
             )
+        _validate_derived_axes(
+            config,
+            registry=registry,
+            referenced=referenced,
+            errors=errors,
+        )
 
     return ValidationResult(is_valid=not errors, errors=tuple(errors), warnings=tuple(warnings))
 
@@ -149,3 +203,46 @@ def _enabled_filter_keys(config: ChartConfig) -> set[str]:
         enabled.add("date_range")
     return enabled
 
+
+def _validate_comparison_dimension(
+    config: ChartConfig,
+    *,
+    registry: MetricSeriesRegistry,
+    dimension: str,
+    errors: list[str],
+) -> None:
+    """Ensure all metrics in a comparison chart support the comparison dimension."""
+
+    for idx, series in enumerate(config.metric_series):
+        spec = registry.get(series.metric_key)
+        if spec is None:
+            continue
+        if dimension not in spec.supported_filters:
+            errors.append(
+                f"ChartConfig[{config.id}].metric_series[{idx}] metric_key={series.metric_key!r} "
+                f"does not support comparison dimension: {dimension}."
+            )
+
+
+def _validate_derived_axes(
+    config: ChartConfig,
+    *,
+    registry: MetricSeriesRegistry,
+    referenced: set[str],
+    errors: list[str],
+) -> None:
+    """Validate derived metric axis compatibility against referenced series specs."""
+
+    if config.derived is None:
+        return
+
+    expected_time_index = "timestamp" if config.derived.x_axis == "time" else "wave_number"
+    for key in referenced:
+        spec = registry.get(key)
+        if spec is None:
+            continue
+        if spec.time_index != expected_time_index:
+            errors.append(
+                f"ChartConfig[{config.id}].derived.x_axis={config.derived.x_axis!r} is incompatible with "
+                f"metric_key={key!r} (time_index={spec.time_index!r})."
+            )

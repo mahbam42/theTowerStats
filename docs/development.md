@@ -13,3 +13,23 @@ If you want `checks` available in your virtualenv's `PATH`, create a symlink:
 ```bash
 ln -sf ../../scripts/checks .venv/bin/checks
 ```
+
+## Chart configuration
+
+The Charts dashboard is driven by declarative `ChartConfig` entries and a central `MetricSeries` registry.
+
+- Metric keys and capabilities are declared in `analysis/series_registry.py`.
+- Built-in charts are declared in `core/charting/configs.py` and validated at import time.
+- `core/charting/validator.py` enforces strict rules so future Chart Builder output fails fast with clear errors.
+
+### Derived formulas
+
+- Formulas may use numeric constants, metric-key identifiers, unary `+/-`, and binary `+ - * /` only.
+- All identifiers must be registered metric keys and must also appear in the chart’s `metric_series`.
+- `derived.x_axis` must match the referenced metrics’ time index (`time` → `timestamp`, `wave_number` → `wave_number`).
+
+### Comparisons
+
+- Comparison modes other than `none` are only allowed when `category="comparison"`.
+- `by_tier` and `by_preset` require every metric series to support that dimension.
+- `by_entity` requires `comparison.entities` and exactly one entity filter enabled (`uw`, `guardian`, or `bot`).
