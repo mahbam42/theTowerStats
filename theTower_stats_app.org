@@ -13,7 +13,7 @@
 python
 django
 Chart.js
-tailwinds
+Foundation
 Sass
 sqlite
 pytest
@@ -748,6 +748,8 @@ Testing
 
 - [ ] 1 test validating revision behavior
 *** Phase 5 Dashboard UX [0%]
+Previous drafts indicated using Tailwind CSS for this project. We will now be implementing Foundation Framework.
+
 General conventions across all Dashboards
 - Nav Header
 - Global Search Box
@@ -850,12 +852,13 @@ markdown_extensions:
 - Merge 'Management Command' section for 'fetch_wiki_data' with 'Wiki Population' page
 - Add Docs for Each Dashboard
   - Callout Charts and Cards in index.md
-** Backlog
+**** TODO Add Github Action to publish Docs to Github Pages
+** Backlog [0/5]
 “Out of Scope”:
-- Multiplayer
 - Cloud sync
 - Real-time scraping
-*** [#B] Comparison / Scenario View
+  
+*** TODO [#B] Comparison / Scenario View
 
 Examples:
 - Run A vs Run B
@@ -863,7 +866,7 @@ Examples:
 - With Guardian Chip/UW X vs without
 
 This is where the app becomes decision-making, not logging.
-*** Add Advice for Optimization
+*** TODO [#B] Add Advice for Optimization
 Based on logged performance data, it could be possible to calculate and offer suggestions based on the data.
 
 For Example:
@@ -871,9 +874,9 @@ For Example:
 - Bot properties to improve
 - Guardian Chip properties to improve
 - Weighted Preset Rankings
-*** Linking Presets/UW/Guardian Chips/Bots to battle history
+*** TODO [#C] Linking Presets/UW/Guardian Chips/Bots to battle history
 Mostly a visual tweak, but adds context and history for the player to interpert their performance history. 
-*** Allow Multiple Players to Store
+*** TODO [#A] Allow Multiple Players to Store
 **** Core Principle: Everything Belongs to a Player
 
 Yes: every player-specific model must be bound to a Player.
@@ -1039,3 +1042,18 @@ Initialize baseline progress rows
 def create_player(sender, instance, created, **kwargs):
     if created:
         Player.objects.create(user=instance)
+
+*** TODO [#A] Fix pytest warnings
+definitions/models.py:279
+  /Users/mrmax/projects/theTowerStats/definitions/models.py:279: RemovedInDjango60Warning: CheckConstraint.check is deprecated in favor of `.condition`.
+    models.CheckConstraint(
+
+definitions/models.py:343
+  /Users/mrmax/projects/theTowerStats/definitions/models.py:343: RemovedInDjango60Warning: CheckConstraint.check is deprecated in favor of `.condition`.
+    models.CheckConstraint(
+
+definitions/models.py:407
+  /Users/mrmax/projects/theTowerStats/definitions/models.py:407: RemovedInDjango60Warning: CheckConstraint.check is deprecated in favor of `.condition`.
+    models.CheckConstraint(
+
+-- Docs: https://docs.pytest.org/en/stable/how-to/capture-warnings.html

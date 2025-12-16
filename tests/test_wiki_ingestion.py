@@ -9,6 +9,7 @@ import pytest
 
 from definitions.models import WikiData
 from core.wiki_ingestion import (
+    ScrapedWikiRow,
     compute_content_hash,
     find_table_indexes_by_anchor,
     ingest_wiki_rows,
@@ -256,6 +257,48 @@ def test_find_table_indexes_by_anchor_selects_guardian_chip_section_tables() -> 
     html = _fixture_html("wiki_guardian_ally_chip_table_v1.html")
     indexes = find_table_indexes_by_anchor(html, anchor_id="Ally_Chip")
     assert indexes == [0]
+
+
+@pytest.mark.django_db
+def test_ingest_wiki_rows_skips_total_and_placeholder_rows() -> None:
+    """Skip non-entity summary rows such as 'Total' or all-placeholder rows."""
+
+    total_row = {"Name": "Total", "Effect": "-", "Notes": ""}
+    placeholder_row = {"Name": "—", "Effect": "-", "Notes": "null"}
+    valid_row = {"Name": "Coin Bonus", "Effect": "+5%"}
+
+    scraped = [
+        ScrapedWikiRow(
+            canonical_name=total_row["Name"],
+            entity_id=make_entity_id(total_row["Name"]),
+            raw_row=total_row,
+            content_hash=compute_content_hash(total_row),
+        ),
+        ScrapedWikiRow(
+            canonical_name=placeholder_row["Name"],
+            entity_id=make_entity_id(placeholder_row["Name"]),
+            raw_row=placeholder_row,
+            content_hash=compute_content_hash(placeholder_row),
+        ),
+        ScrapedWikiRow(
+            canonical_name=valid_row["Name"],
+            entity_id=make_entity_id(valid_row["Name"]),
+            raw_row=valid_row,
+            content_hash=compute_content_hash(valid_row),
+        ),
+    ]
+
+    summary = ingest_wiki_rows(
+        scraped,
+        page_url="https://example.test/wiki/Cards",
+        source_section="cards_table_0",
+        parse_version="cards_v1",
+        write=True,
+    )
+
+    assert summary.added == 1
+    assert WikiData.objects.count() == 1
+    assert WikiData.objects.get().canonical_name == "Coin Bonus"
 
 
 def test_scrape_leveled_entity_rows_injects_level_and_alias_keys() -> None:

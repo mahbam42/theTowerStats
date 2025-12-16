@@ -24,6 +24,54 @@ from definitions.models import WikiData
 _WHITESPACE_RE = re.compile(r"\s+")
 _ENTITY_ID_RE = re.compile(r"[^a-z0-9]+")
 _DEDUP_HEADER_RE = re.compile(r"__\d+$")
+_SKIPPABLE_CELL_RE = re.compile(r"^(?:-|—|–|null|none)?$", re.IGNORECASE)
+
+
+def _is_skippable_cell(value: str) -> bool:
+    """Return True when a cell value is non-informational for ingestion.
+
+    Args:
+        value: A whitespace-normalized cell value.
+
+    Returns:
+        True when the value is empty/placeholder (ex: "", "-", "null").
+    """
+
+    return _SKIPPABLE_CELL_RE.match(value.strip()) is not None
+
+
+def _should_skip_scraped_row(row: ScrapedWikiRow) -> bool:
+    """Return True when a scraped row should be ignored.
+
+    The wiki sometimes includes non-entity summary rows such as "Total", or rows
+    that are effectively empty placeholders. These are ignored during ingestion
+    to avoid creating noisy revisions and false drift.
+
+    Rules (conservative):
+    - Skip when canonical_name is "total" or a placeholder.
+    - Skip when all non-metadata cell values are placeholders.
+    - Skip when any cell is "total" and every other cell is a placeholder.
+    """
+
+    canonical = normalize_whitespace(row.canonical_name).casefold()
+    if canonical == "total" or _is_skippable_cell(canonical):
+        return True
+
+    values: list[str] = []
+    for key, value in row.raw_row.items():
+        if str(key).startswith("_"):
+            continue
+        values.append(normalize_whitespace(str(value)))
+
+    if not values:
+        return True
+    if all(_is_skippable_cell(value) for value in values):
+        return True
+
+    has_total = any(value.casefold() == "total" for value in values)
+    if has_total and all(_is_skippable_cell(value) or value.casefold() == "total" for value in values):
+        return True
+    return False
 
 
 def normalize_whitespace(value: str) -> str:
@@ -508,7 +556,8 @@ def ingest_wiki_rows(
     """
 
     now = timezone.now()
-    seen_entity_ids = {row.entity_id for row in rows}
+    filtered_rows = [row for row in rows if not _should_skip_scraped_row(row)]
+    seen_entity_ids = {row.entity_id for row in filtered_rows}
 
     existing = list(
         WikiData.objects.filter(
@@ -580,10 +629,10 @@ def ingest_wiki_rows(
 
     if write:
         with transaction.atomic():
-            for scraped in rows:
+            for scraped in filtered_rows:
                 apply_one(scraped)
     else:
-        for scraped in rows:
+        for scraped in filtered_rows:
             apply_one(scraped)
 
     deprecated = 0

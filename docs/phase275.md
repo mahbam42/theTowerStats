@@ -61,6 +61,7 @@ Notes:
 
 - For `--target cards_list`, each ingested row includes `_wiki_table_label` in `raw_row` to preserve which table it came from (e.g., rarity headings).
 - Some wiki tables repeat column names (ex: multiple “Bits” or “Stones” columns); ingestion suffixes duplicates with `__2`, `__3`, ... to avoid data loss.
+- Ingestion skips non-entity rows such as table "Total" summary rows and rows that are effectively empty placeholders (empty/`-`/`null`).
 
 ## Next step (optional): Populate Phase 3 models
 
