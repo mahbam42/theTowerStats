@@ -57,14 +57,41 @@ def _should_skip_scraped_row(row: ScrapedWikiRow) -> bool:
     if canonical == "total" or _is_skippable_cell(canonical):
         return True
 
+    def _is_cost_or_currency_header(key: str) -> bool:
+        """Return True when a header looks like a cost/currency column."""
+
+        lowered = key.casefold()
+        if "cost" in lowered:
+            return True
+        return any(token in lowered for token in ("stones", "stone", "bits", "medals", "gems", "gem"))
+
+    ignored_headers = {
+        "level",
+        "star",
+        "tier",
+        "bot",
+        "guardian",
+        "ultimate weapon",
+        "chip",
+        "card",
+        "name",
+    }
+
     values: list[str] = []
     for key, value in row.raw_row.items():
         if str(key).startswith("_"):
             continue
+        key_str = normalize_whitespace(str(key))
+        if key_str.casefold() in ignored_headers:
+            continue
+        if _is_cost_or_currency_header(key_str):
+            continue
         values.append(normalize_whitespace(str(value)))
 
+    # If a row contains only identifier/cost metadata, keep it (it may represent
+    # a definition-only row) unless the canonical name itself is skippable.
     if not values:
-        return True
+        return False
     if all(_is_skippable_cell(value) for value in values):
         return True
 

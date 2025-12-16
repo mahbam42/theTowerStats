@@ -34,6 +34,7 @@ from definitions.models import (
 )
 
 _SLUG_RE = re.compile(r"[^a-z0-9]+")
+_PLACEHOLDER_RE = re.compile(r"^(?:-|—|–|null|none)?$", re.IGNORECASE)
 
 
 def _slugify(value: str) -> str:
@@ -191,6 +192,15 @@ def rebuild_bots_from_wikidata(*, write: bool, parse_version: str = "bots_v1") -
     return summary
 
 
+def _is_placeholder_or_total(value: str) -> bool:
+    """Return True when a value represents a placeholder or a total row marker."""
+
+    cleaned = (value or "").strip()
+    if cleaned.casefold() == "total":
+        return True
+    return _PLACEHOLDER_RE.match(cleaned) is not None
+
+
 def rebuild_ultimate_weapons_from_wikidata(
     *, write: bool, parse_version: str = "ultimate_weapons_v1"
 ) -> RebuildSummary:
@@ -250,11 +260,15 @@ def rebuild_ultimate_weapons_from_wikidata(
                     level = _safe_int(row.raw_row.get("Level"))
                     if level <= 0:
                         continue
+                    value_raw = str(row.raw_row.get(value_header, "")).strip()
+                    cost_raw = str(row.raw_row.get(cost_header, "")).strip()
+                    if _is_placeholder_or_total(value_raw) or _is_placeholder_or_total(cost_raw):
+                        continue
                     UltimateWeaponParameterLevel.objects.create(
                         parameter_definition=param_def,
                         level=level,
-                        value_raw=str(row.raw_row.get(value_header, "")).strip(),
-                        cost_raw=str(row.raw_row.get(cost_header, "")).strip(),
+                        value_raw=value_raw,
+                        cost_raw=cost_raw,
                         currency=Currency.STONES,
                         source_wikidata=row,
                     )

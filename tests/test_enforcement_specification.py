@@ -300,3 +300,25 @@ def test_preset_delete_does_not_delete_battle_reports() -> None:
     progress.refresh_from_db()
     assert BattleReport.objects.filter(pk=report.pk).exists()
     assert progress.preset_id is None
+
+
+@pytest.mark.django_db
+def test_spotlight_placeholder_levels_are_omitted_and_max_levels_hold() -> None:
+    """Spotlight placeholder/total rows are omitted from rebuilt parameter levels."""
+
+    _ingest_uw_page(fixture="wiki_uw_spotlight_v1.html", display_name="Spotlight")
+    rebuild_ultimate_weapons_from_wikidata(write=True)
+
+    uw = UltimateWeaponDefinition.objects.get(slug="spotlight")
+    defs = {param.key: param for param in uw.parameter_definitions.all()}
+
+    quantity = defs["quantity"]
+    assert quantity.levels.count() == 4
+    assert quantity.levels.order_by("-level").first().level == 4
+
+    angle = defs["angle"]
+    assert angle.levels.filter(level=62).count() == 0
+
+    coins_bonus = defs["coins_bonus"]
+    assert coins_bonus.levels.order_by("-level").first().level == 26
+    assert coins_bonus.levels.filter(level__gt=26).count() == 0

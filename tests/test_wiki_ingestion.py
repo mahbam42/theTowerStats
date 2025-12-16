@@ -301,6 +301,35 @@ def test_ingest_wiki_rows_skips_total_and_placeholder_rows() -> None:
     assert WikiData.objects.get().canonical_name == "Coin Bonus"
 
 
+@pytest.mark.django_db
+def test_ingest_wiki_rows_skips_leveled_placeholder_rows_with_ids_present() -> None:
+    """Skip leveled rows where all parameter values are placeholders even when Level/entity is present."""
+
+    raw_row = {
+        "Ultimate Weapon": "Spotlight",
+        "Level": "62",
+        "Bonus": "-",
+        "Cost": "29690",
+    }
+    scraped = [
+        ScrapedWikiRow(
+            canonical_name="Spotlight",
+            entity_id="spotlight__level_62__star_none",
+            raw_row=raw_row,
+            content_hash=compute_content_hash(raw_row),
+        )
+    ]
+    summary = ingest_wiki_rows(
+        scraped,
+        page_url="https://example.test/wiki/Spotlight",
+        source_section="ultimate_weapons_spotlight_table_0",
+        parse_version="ultimate_weapons_v1",
+        write=True,
+    )
+    assert summary.added == 0
+    assert WikiData.objects.count() == 0
+
+
 def test_scrape_leveled_entity_rows_injects_level_and_alias_keys() -> None:
     """Leveled scraping can add a Level field and header aliases."""
 
