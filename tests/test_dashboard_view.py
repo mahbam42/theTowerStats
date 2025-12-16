@@ -349,3 +349,192 @@ def test_dashboard_view_window_delta_comparison(client) -> None:
     assert result["baseline_value"] == 7200.0
     assert result["comparison_value"] == 14400.0
     assert result["delta"].absolute == 7200.0
+
+
+@pytest.mark.django_db
+def test_dashboard_view_window_delta_ignores_chart_date_filters(client) -> None:
+    """Keep comparison windows independent from chart start/end filters."""
+
+    first = BattleReport.objects.create(
+        raw_text="Battle Report\nCoins earned    1,200\n",
+        checksum="chartwin-a".ljust(64, "h"),
+    )
+    BattleReportProgress.objects.create(
+        battle_report=first,
+        battle_date=datetime(2025, 12, 1, tzinfo=timezone.utc),
+        tier=1,
+        wave=100,
+        real_time_seconds=600,
+    )
+
+    second = BattleReport.objects.create(
+        raw_text="Battle Report\nCoins earned    2,400\n",
+        checksum="chartwin-b".ljust(64, "i"),
+    )
+    BattleReportProgress.objects.create(
+        battle_report=second,
+        battle_date=datetime(2025, 12, 10, tzinfo=timezone.utc),
+        tier=1,
+        wave=100,
+        real_time_seconds=600,
+    )
+
+    response = client.get(
+        "/",
+        {
+            "start_date": date(2025, 12, 9),
+            "window_a_start": date(2025, 12, 1),
+            "window_a_end": date(2025, 12, 1),
+            "window_b_start": date(2025, 12, 10),
+            "window_b_end": date(2025, 12, 10),
+        },
+    )
+    assert response.status_code == 200
+
+    result = response.context["comparison_result"]
+    assert result["kind"] == "windows"
+    assert result["baseline_value"] == 7200.0
+    assert result["comparison_value"] == 14400.0
+    assert result["delta"].absolute == 7200.0
+
+
+@pytest.mark.django_db
+def test_dashboard_view_window_delta_respects_tier_filter(client) -> None:
+    """Compute window deltas using only runs in the requested tier context."""
+
+    # Window A: one run at tier 1 and one at tier 2 (same date window).
+    a_tier_one = BattleReport.objects.create(
+        raw_text="Battle Report\nCoins earned    1,200\n",
+        checksum="tierwin-a1".ljust(64, "a"),
+    )
+    BattleReportProgress.objects.create(
+        battle_report=a_tier_one,
+        battle_date=datetime(2025, 12, 1, tzinfo=timezone.utc),
+        tier=1,
+        wave=100,
+        real_time_seconds=600,
+    )
+
+    a_tier_two = BattleReport.objects.create(
+        raw_text="Battle Report\nCoins earned    3,600\n",
+        checksum="tierwin-a2".ljust(64, "b"),
+    )
+    BattleReportProgress.objects.create(
+        battle_report=a_tier_two,
+        battle_date=datetime(2025, 12, 1, tzinfo=timezone.utc),
+        tier=2,
+        wave=100,
+        real_time_seconds=600,
+    )
+
+    # Window B: again, one run at each tier.
+    b_tier_one = BattleReport.objects.create(
+        raw_text="Battle Report\nCoins earned    2,400\n",
+        checksum="tierwin-b1".ljust(64, "c"),
+    )
+    BattleReportProgress.objects.create(
+        battle_report=b_tier_one,
+        battle_date=datetime(2025, 12, 10, tzinfo=timezone.utc),
+        tier=1,
+        wave=100,
+        real_time_seconds=600,
+    )
+
+    b_tier_two = BattleReport.objects.create(
+        raw_text="Battle Report\nCoins earned    1,800\n",
+        checksum="tierwin-b2".ljust(64, "d"),
+    )
+    BattleReportProgress.objects.create(
+        battle_report=b_tier_two,
+        battle_date=datetime(2025, 12, 10, tzinfo=timezone.utc),
+        tier=2,
+        wave=100,
+        real_time_seconds=600,
+    )
+
+    # With tier=2, the comparison should use only the tier 2 runs:
+    # - Window A avg: 3,600/600*3600 = 21,600
+    # - Window B avg: 1,800/600*3600 = 10,800
+    response = client.get(
+        "/",
+        {
+            "tier": 2,
+            "window_a_start": date(2025, 12, 1),
+            "window_a_end": date(2025, 12, 1),
+            "window_b_start": date(2025, 12, 10),
+            "window_b_end": date(2025, 12, 10),
+        },
+    )
+    assert response.status_code == 200
+
+    result = response.context["comparison_result"]
+    assert result["kind"] == "windows"
+    assert result["baseline_value"] == 21600.0
+    assert result["comparison_value"] == 10800.0
+    assert result["delta"].absolute == -10800.0
+    assert result["percent_display"] == -50.0
+
+
+@pytest.mark.django_db
+def test_dashboard_view_window_delta_respects_preset_filter(client) -> None:
+    """Compute window deltas using only runs in the requested preset context."""
+
+    player = Player.objects.create(name="default")
+    farming = Preset.objects.create(player=player, name="Farming")
+
+    tagged_a = BattleReport.objects.create(
+        raw_text="Battle Report\nCoins earned    1,200\n",
+        checksum="presetwin-a".ljust(64, "e"),
+    )
+    BattleReportProgress.objects.create(
+        battle_report=tagged_a,
+        battle_date=datetime(2025, 12, 1, tzinfo=timezone.utc),
+        tier=1,
+        wave=100,
+        real_time_seconds=600,
+        preset=farming,
+    )
+
+    untagged_a = BattleReport.objects.create(
+        raw_text="Battle Report\nCoins earned    2,400\n",
+        checksum="presetwin-a2".ljust(64, "f"),
+    )
+    BattleReportProgress.objects.create(
+        battle_report=untagged_a,
+        battle_date=datetime(2025, 12, 1, tzinfo=timezone.utc),
+        tier=1,
+        wave=100,
+        real_time_seconds=600,
+    )
+
+    tagged_b = BattleReport.objects.create(
+        raw_text="Battle Report\nCoins earned    2,400\n",
+        checksum="presetwin-b".ljust(64, "g"),
+    )
+    BattleReportProgress.objects.create(
+        battle_report=tagged_b,
+        battle_date=datetime(2025, 12, 10, tzinfo=timezone.utc),
+        tier=1,
+        wave=100,
+        real_time_seconds=600,
+        preset=farming,
+    )
+
+    response = client.get(
+        "/",
+        {
+            "preset": farming.pk,
+            "window_a_start": date(2025, 12, 1),
+            "window_a_end": date(2025, 12, 1),
+            "window_b_start": date(2025, 12, 10),
+            "window_b_end": date(2025, 12, 10),
+        },
+    )
+    assert response.status_code == 200
+
+    result = response.context["comparison_result"]
+    assert result["kind"] == "windows"
+    assert result["baseline_value"] == 7200.0
+    assert result["comparison_value"] == 14400.0
+    assert result["delta"].absolute == 7200.0
+    assert result["percent_display"] == 100.0

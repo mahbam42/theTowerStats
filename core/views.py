@@ -76,7 +76,8 @@ def dashboard(request: HttpRequest) -> HttpResponse:
 
     runs = _filtered_runs(chart_form)
     total_filtered_runs = runs.count()
-    base_analysis = analyze_runs(runs)
+    context_runs = _context_filtered_runs(chart_form)
+    base_analysis = analyze_runs(context_runs)
 
     metric_key = chart_form.cleaned_data.get("metric") or "coins_per_hour"
     metric_def = get_metric_definition(metric_key)
@@ -106,7 +107,7 @@ def dashboard(request: HttpRequest) -> HttpResponse:
         moving_average_window=chart_form.cleaned_data.get("moving_average_window"),
     )
 
-    comparison_form = ComparisonForm(request.GET, runs_queryset=runs)
+    comparison_form = ComparisonForm(request.GET, runs_queryset=context_runs)
     comparison_form.is_valid()
     comparison_result = _build_comparison_result(
         comparison_form,
@@ -209,6 +210,29 @@ def _filtered_runs(filter_form: ChartContextForm) -> QuerySet[BattleReport]:
         runs = runs.filter(run_progress__battle_date__date__gte=start_date)
     if end_date:
         runs = runs.filter(run_progress__battle_date__date__lte=end_date)
+    if tier:
+        runs = runs.filter(run_progress__tier=tier)
+    if preset:
+        runs = runs.filter(run_progress__preset=preset)
+    return runs
+
+
+def _context_filtered_runs(filter_form: ChartContextForm) -> QuerySet[BattleReport]:
+    """Return a queryset filtered only by tier/preset context.
+
+    This is used for comparisons where the selected windows should remain
+    independent of any chart date filters.
+    """
+
+    runs = BattleReport.objects.select_related(
+        "run_progress",
+        "run_progress__preset",
+    ).order_by("run_progress__battle_date")
+    if not filter_form.is_valid():
+        return runs
+
+    tier = filter_form.cleaned_data.get("tier")
+    preset = filter_form.cleaned_data.get("preset")
     if tier:
         runs = runs.filter(run_progress__tier=tier)
     if preset:

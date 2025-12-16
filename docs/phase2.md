@@ -55,6 +55,9 @@ Deltas are computed on demand and are never persisted:
   - `window_a_start`, `window_a_end`
   - `window_b_start`, `window_b_end`
 
+Comparisons run within the current tier/preset context, but do not depend on the
+chart `start_date`/`end_date` filters (the window dates control inclusion).
+
 Currently displayed delta metric:
 
 - coins/hour (absolute + percent)
