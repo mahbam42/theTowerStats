@@ -31,6 +31,54 @@ class MetricComputeConfig:
 
 
 METRICS: Final[dict[str, MetricDefinition]] = {
+    "coins_earned": MetricDefinition(
+        key="coins_earned",
+        label="Coins earned",
+        unit="coins",
+        kind="observed",
+    ),
+    "cash_earned": MetricDefinition(
+        key="cash_earned",
+        label="Cash earned",
+        unit="cash",
+        kind="observed",
+    ),
+    "cells_earned": MetricDefinition(
+        key="cells_earned",
+        label="Cells earned",
+        unit="cells",
+        kind="observed",
+    ),
+    "reroll_shards_earned": MetricDefinition(
+        key="reroll_shards_earned",
+        label="Reroll shards earned",
+        unit="shards",
+        kind="observed",
+    ),
+    "waves_reached": MetricDefinition(
+        key="waves_reached",
+        label="Waves reached",
+        unit="waves",
+        kind="observed",
+    ),
+    "uw_runs_count": MetricDefinition(
+        key="uw_runs_count",
+        label="Runs using selected ultimate weapon",
+        unit="runs",
+        kind="observed",
+    ),
+    "guardian_runs_count": MetricDefinition(
+        key="guardian_runs_count",
+        label="Runs using selected guardian chip",
+        unit="runs",
+        kind="observed",
+    ),
+    "bot_runs_count": MetricDefinition(
+        key="bot_runs_count",
+        label="Runs using selected bot",
+        unit="runs",
+        kind="observed",
+    ),
     "coins_per_hour": MetricDefinition(
         key="coins_per_hour",
         label="Coins/hour",
@@ -87,7 +135,12 @@ def compute_observed_coins_per_hour(*, coins: int | None, real_time_seconds: int
 def compute_metric_value(
     metric_key: str,
     *,
+    record: object,
     coins: int | None,
+    cash: int | None,
+    cells: int | None,
+    reroll_shards: int | None,
+    wave: int | None,
     real_time_seconds: int | None,
     context: PlayerContextInput | None,
     entity_type: str | None,
@@ -98,7 +151,12 @@ def compute_metric_value(
 
     Args:
         metric_key: Metric key to compute.
+        record: Run-like object used for relationship-based metrics (e.g. usage presence).
         coins: Observed coins for the run.
+        cash: Observed cash for the run.
+        cells: Observed cells for the run.
+        reroll_shards: Observed reroll shards for the run.
+        wave: Observed wave reached for the run.
         real_time_seconds: Observed duration seconds for the run.
         context: Optional player context + selected parameters.
         config: MetricComputeConfig.
@@ -108,6 +166,57 @@ def compute_metric_value(
     """
 
     _ = (entity_type, config)
+
+    if metric_key == "coins_earned":
+        return (float(coins) if coins is not None else None, (), ())
+
+    if metric_key == "cash_earned":
+        return (float(cash) if cash is not None else None, (), ())
+
+    if metric_key == "cells_earned":
+        return (float(cells) if cells is not None else None, (), ())
+
+    if metric_key == "reroll_shards_earned":
+        return (float(reroll_shards) if reroll_shards is not None else None, (), ())
+
+    if metric_key == "waves_reached":
+        return (float(wave) if wave is not None else None, (), ())
+
+    if metric_key == "uw_runs_count":
+        if not entity_name:
+            return None, (), ("Select an Ultimate Weapon to chart usage counts.",)
+        related = getattr(record, "run_combat_uws", None)
+        if related is None:
+            return None, (), ()
+        for row in getattr(related, "all", lambda: related)():
+            uw_def = getattr(row, "ultimate_weapon_definition", None)
+            if getattr(uw_def, "name", None) == entity_name:
+                return 1.0, (), ()
+        return 0.0, (), ()
+
+    if metric_key == "guardian_runs_count":
+        if not entity_name:
+            return None, (), ("Select a Guardian Chip to chart usage counts.",)
+        related = getattr(record, "run_guardians", None)
+        if related is None:
+            return None, (), ()
+        for row in getattr(related, "all", lambda: related)():
+            chip_def = getattr(row, "guardian_chip_definition", None)
+            if getattr(chip_def, "name", None) == entity_name:
+                return 1.0, (), ()
+        return 0.0, (), ()
+
+    if metric_key == "bot_runs_count":
+        if not entity_name:
+            return None, (), ("Select a Bot to chart usage counts.",)
+        related = getattr(record, "run_bots", None)
+        if related is None:
+            return None, (), ()
+        for row in getattr(related, "all", lambda: related)():
+            bot_def = getattr(row, "bot_definition", None)
+            if getattr(bot_def, "name", None) == entity_name:
+                return 1.0, (), ()
+        return 0.0, (), ()
 
     if metric_key == "coins_per_hour":
         return (

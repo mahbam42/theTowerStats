@@ -11,7 +11,7 @@ from datetime import date
 
 from django import forms
 
-from analysis.metrics import list_metric_definitions
+from core.charting.configs import default_selected_chart_ids, list_selectable_chart_configs
 from definitions.models import BotDefinition, GuardianChipDefinition, UltimateWeaponDefinition
 from gamedata.models import BattleReport
 from player_state.models import Preset
@@ -35,11 +35,12 @@ class BattleReportImportForm(forms.Form):
 class ChartContextForm(forms.Form):
     """Validate contextual filters and chart overlay options."""
 
-    metric = forms.ChoiceField(
+    charts = forms.MultipleChoiceField(
         required=False,
         choices=(),
-        label="Metric",
-        help_text="Choose an observed or derived metric to chart.",
+        label="Charts",
+        help_text="Select one or more charts to display.",
+        widget=forms.SelectMultiple(attrs={"size": 8}),
     )
     start_date = forms.DateField(
         required=False,
@@ -90,16 +91,6 @@ class ChartContextForm(forms.Form):
         label="Wiki revision (as of)",
         help_text="Optional: select wiki-derived parameters as-of this timestamp instead of latest.",
     )
-    overlay_group = forms.ChoiceField(
-        required=False,
-        choices=(
-            ("none", "None"),
-            ("tier", "Tier"),
-            ("preset", "Preset"),
-        ),
-        label="Overlay",
-        help_text="Overlay multiple datasets grouped by tier or preset.",
-    )
     moving_average_window = forms.IntegerField(
         required=False,
         min_value=2,
@@ -130,9 +121,9 @@ class ChartContextForm(forms.Form):
         self.fields["ultimate_weapon"].queryset = UltimateWeaponDefinition.objects.order_by("name")
         self.fields["guardian_chip"].queryset = GuardianChipDefinition.objects.order_by("name")
         self.fields["bot"].queryset = BotDefinition.objects.order_by("name")
-        metrics = list_metric_definitions()
-        self.fields["metric"].choices = [
-            (m.key, f"{m.label} ({m.kind})") for m in metrics
+        charts = list_selectable_chart_configs()
+        self.fields["charts"].choices = [
+            (chart.id, f"{chart.title} ({chart.category})") for chart in charts
         ]
 
     def clean(self) -> dict[str, object]:
@@ -141,6 +132,8 @@ class ChartContextForm(forms.Form):
         cleaned = super().clean()
         if not cleaned.get("start_date"):
             cleaned["start_date"] = date(2025, 12, 9)
+        if not cleaned.get("charts"):
+            cleaned["charts"] = list(default_selected_chart_ids())
         return cleaned
 
 

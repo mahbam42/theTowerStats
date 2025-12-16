@@ -27,10 +27,10 @@ Welcome to **theTowerStats** — a read-only dashboard that turns imported Battl
 
 ### Charts
 
-- Open **Charts** to view time-series graphs powered by existing `MetricSeries` outputs.
-- Filters default to a start date of **2025-12-09 UTC**; adjust date range, tier, preset, overlay, and moving average window as needed.
-- Choose a metric from the chart selector. Derived metrics (e.g., cooldown) include a transparency panel listing assumptions and parameters referenced.
-- Context and filter chips stay visible above the chart so you can trust the scope of each graph.
+- Open **Charts** to view time-series graphs from your imported runs.
+- Filters default to a start date of **2025-12-09 UTC**; adjust date range, tier, preset, and moving average window as needed.
+- Select one or more charts from the chart selector to control what is displayed.
+- Context and filters stay visible above the charts so you can trust the scope of each graph.
 
 > **Caution**
 > Charts never perform inline math in the browser. All values come from precomputed series returned by the analysis engine.

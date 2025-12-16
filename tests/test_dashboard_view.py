@@ -73,8 +73,10 @@ def test_dashboard_view_filters_and_plots_from_analysis_engine(client) -> None:
     response = client.get("/", {"start_date": date(2025, 12, 2)})
     assert response.status_code == 200
 
-    labels = json.loads(response.context["chart_labels_json"])
-    values = json.loads(response.context["chart_values_json"])
+    panels = {p["id"]: p for p in json.loads(response.context["chart_panels_json"])}
+    panel = panels["coins_per_hour"]
+    labels = panel["labels"]
+    values = panel["datasets"][0]["data"]
 
     assert labels == ["2025-12-02"]
     assert values == [7200.0]
@@ -120,8 +122,10 @@ def test_dashboard_view_filters_by_tier(client) -> None:
     response = client.get("/", {"tier": 2, "start_date": FILTER_START})
     assert response.status_code == 200
 
-    labels = json.loads(response.context["chart_labels_json"])
-    values = json.loads(response.context["chart_values_json"])
+    panels = {p["id"]: p for p in json.loads(response.context["chart_panels_json"])}
+    panel = panels["coins_per_hour"]
+    labels = panel["labels"]
+    values = panel["datasets"][0]["data"]
     assert labels == ["2025-12-02"]
     assert values == [14400.0]
 
@@ -161,15 +165,17 @@ def test_dashboard_view_filters_by_preset(client) -> None:
     response = client.get("/", {"preset": preset.pk, "start_date": FILTER_START})
     assert response.status_code == 200
 
-    labels = json.loads(response.context["chart_labels_json"])
-    values = json.loads(response.context["chart_values_json"])
+    panels = {p["id"]: p for p in json.loads(response.context["chart_panels_json"])}
+    panel = panels["coins_per_hour"]
+    labels = panel["labels"]
+    values = panel["datasets"][0]["data"]
     assert labels == ["2025-12-01"]
     assert values == [7200.0]
 
 
 @pytest.mark.django_db
-def test_dashboard_view_overlays_by_tier(client) -> None:
-    """Overlay tier datasets when requested."""
+def test_dashboard_view_comparison_chart_by_tier(client) -> None:
+    """Render a tier comparison chart with multiple datasets."""
 
     first = BattleReport.objects.create(
         raw_text="Battle Report\nCoins earned    1,200\n",
@@ -195,17 +201,18 @@ def test_dashboard_view_overlays_by_tier(client) -> None:
         real_time_seconds=600,
     )
 
-    response = client.get("/", {"overlay_group": "tier", "start_date": FILTER_START})
+    response = client.get("/", {"charts": ["coins_earned_by_tier"], "start_date": FILTER_START})
     assert response.status_code == 200
 
-    datasets = json.loads(response.context["chart_datasets_json"])
+    panels = {p["id"]: p for p in json.loads(response.context["chart_panels_json"])}
+    datasets = panels["coins_earned_by_tier"]["datasets"]
     dataset_labels = [d["label"] for d in datasets]
     assert dataset_labels == ["Tier 1", "Tier 2"]
 
 
 @pytest.mark.django_db
-def test_dashboard_view_overlays_include_moving_average(client) -> None:
-    """Include moving-average datasets when requested."""
+def test_dashboard_view_series_includes_moving_average_transform(client) -> None:
+    """Include explicit moving-average series when selected."""
 
     first = BattleReport.objects.create(
         raw_text="Battle Report\nCoins earned    1,200\n",
@@ -231,19 +238,13 @@ def test_dashboard_view_overlays_include_moving_average(client) -> None:
         real_time_seconds=600,
     )
 
-    response = client.get(
-        "/",
-        {
-            "overlay_group": "tier",
-            "moving_average_window": 2,
-            "start_date": FILTER_START,
-        },
-    )
+    response = client.get("/", {"charts": ["coins_per_hour_moving_average"], "moving_average_window": 2, "start_date": FILTER_START})
     assert response.status_code == 200
 
-    datasets = json.loads(response.context["chart_datasets_json"])
+    panels = {p["id"]: p for p in json.loads(response.context["chart_panels_json"])}
+    datasets = panels["coins_per_hour_moving_average"]["datasets"]
     dataset_labels = [d["label"] for d in datasets]
-    assert dataset_labels == ["Tier 1", "Tier 1 (MA2)"]
+    assert dataset_labels == ["Coins per Hour", "Moving Average"]
 
 
 @pytest.mark.django_db
