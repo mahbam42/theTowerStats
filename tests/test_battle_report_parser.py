@@ -27,6 +27,14 @@ def test_parse_battle_report_extracts_phase1_fields() -> None:
     assert parsed.tier == 6
     assert parsed.wave == 1234
     assert parsed.real_time_seconds == 3723
+    assert parsed.killed_by is None
+    assert parsed.coins_earned_raw == "999999"
+    assert parsed.coins_earned == 999_999
+    assert parsed.cash_earned is None
+    assert parsed.interest_earned is None
+    assert parsed.gem_blocks_tapped is None
+    assert parsed.cells_earned is None
+    assert parsed.reroll_shards_earned is None
 
 
 def test_parse_battle_report_handles_tab_separated_labels() -> None:
@@ -59,6 +67,16 @@ def test_parse_battle_report_handles_tab_separated_labels() -> None:
     assert parsed.tier == 7
     assert parsed.wave == 1301
     assert parsed.real_time_seconds == 8243
+    assert parsed.killed_by == "Boss"
+    assert parsed.coins_earned_raw == "17.55M"
+    assert parsed.coins_earned == 17_550_000
+    assert parsed.cash_earned_raw == "$55.90M"
+    assert parsed.cash_earned == 55_900_000
+    assert parsed.interest_earned_raw == "$2.13M"
+    assert parsed.interest_earned == 2_130_000
+    assert parsed.gem_blocks_tapped == 3
+    assert parsed.cells_earned == 346
+    assert parsed.reroll_shards_earned == 373
 
 
 def test_parse_battle_report_handles_real_game_sample() -> None:
@@ -173,6 +191,16 @@ def test_parse_battle_report_handles_real_game_sample() -> None:
     assert parsed.tier == 11
     assert parsed.wave == 121
     assert parsed.real_time_seconds == 1055
+    assert parsed.killed_by == "Boss"
+    assert parsed.coins_earned_raw == "1.24M"
+    assert parsed.coins_earned == 1_240_000
+    assert parsed.cash_earned_raw == "$1.00M"
+    assert parsed.cash_earned == 1_000_000
+    assert parsed.interest_earned_raw == "$220.24K"
+    assert parsed.interest_earned == 220_240
+    assert parsed.gem_blocks_tapped == 1
+    assert parsed.cells_earned == 0
+    assert parsed.reroll_shards_earned == 94
 
 
 def test_parse_battle_report_tolerates_missing_sections() -> None:

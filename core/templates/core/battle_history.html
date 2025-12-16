@@ -20,6 +20,24 @@
   </div>
 
   <div class="grid-x grid-margin-x">
+    <div class="cell">
+      <div class="card-shell">
+        <h4 class="margin-bottom-1">Add Battle Report</h4>
+        <form method="post">
+          {% csrf_token %}
+          <label>{{ import_form.raw_text.label }}
+            {{ import_form.raw_text }}
+          </label>
+          <label>{{ import_form.preset_name.label }}
+            {{ import_form.preset_name }}
+          </label>
+          <button class="button" type="submit">Import Battle Report</button>
+        </form>
+      </div>
+    </div>
+  </div>
+
+  <div class="grid-x grid-margin-x">
     <div class="cell large-3 medium-4">
       <div class="card-shell">
         <h4>Filters</h4>
@@ -55,16 +73,17 @@
             <table class="stack">
               <thead>
                 <tr>
-                  <th scope="col">Battle date</th>
-                  <th scope="col">Tier</th>
-                  <th scope="col">Killed by</th>
-                  <th scope="col">Coins earned</th>
-                  <th scope="col">Coins/hour</th>
-                  <th scope="col">Cash earned</th>
-                  <th scope="col">Interest earned</th>
-                  <th scope="col">Cells earned</th>
-                  <th scope="col">Reroll shards</th>
-                  <th scope="col">Preset</th>
+                  <th scope="col"><a href="?{{ sort_querystrings.battle_date }}">Battle date</a></th>
+                  <th scope="col"><a href="?{{ sort_querystrings.tier }}">Tier</a></th>
+                  <th scope="col"><a href="?{{ sort_querystrings.killed_by }}">Killed by</a></th>
+                  <th scope="col"><a href="?{{ sort_querystrings.coins_earned }}">Coins earned</a></th>
+                  <th scope="col"><a href="?{{ sort_querystrings.coins_per_hour }}">Coins/hour</a></th>
+                  <th scope="col"><a href="?{{ sort_querystrings.cash_earned }}">Cash earned</a></th>
+                  <th scope="col"><a href="?{{ sort_querystrings.interest_earned }}">Interest earned</a></th>
+                  <th scope="col"><a href="?{{ sort_querystrings.gem_blocks }}">Gem blocks</a></th>
+                  <th scope="col"><a href="?{{ sort_querystrings.cells_earned }}">Cells earned</a></th>
+                  <th scope="col"><a href="?{{ sort_querystrings.reroll_shards }}">Reroll shards</a></th>
+                  <th scope="col"><a href="?{{ sort_querystrings.preset }}">Preset</a></th>
                 </tr>
               </thead>
               <tbody>
@@ -72,13 +91,14 @@
                   <tr>
                     <td>{{ run.run_progress.battle_date|default:"—" }}</td>
                     <td>{{ run.run_progress.tier|default:"—" }}</td>
-                    <td><span class="muted">—</span></td>
-                    <td><span class="muted">—</span></td>
+                    <td>{{ run.run_progress.killed_by|default:"—" }}</td>
+                    <td>{{ run.run_progress.coins_earned_raw|default:"—" }}</td>
                     <td>{% if metric %}{{ metric.coins_per_hour|floatformat:2 }}{% else %}<span class="muted">—</span>{% endif %}</td>
-                    <td><span class="muted">—</span></td>
-                    <td><span class="muted">—</span></td>
-                    <td><span class="muted">—</span></td>
-                    <td><span class="muted">—</span></td>
+                    <td>{{ run.run_progress.cash_earned_raw|default:"—" }}</td>
+                    <td>{{ run.run_progress.interest_earned_raw|default:"—" }}</td>
+                    <td>{{ run.run_progress.gem_blocks_tapped|default:"—" }}</td>
+                    <td>{{ run.run_progress.cells_earned|default:"—" }}</td>
+                    <td>{{ run.run_progress.reroll_shards_earned|default:"—" }}</td>
                     <td>{{ run.run_progress.preset.name|default:"—" }}</td>
                   </tr>
                 {% endfor %}

@@ -1,15 +1,11 @@
-"""Minimal Battle Report parsing utilities.
+"""Best-effort Battle Report parsing utilities.
 
-Phase 1 intentionally extracts only a small subset of run metadata needed for
-the first chart:
+Phase 1 intentionally extracted only a small subset of run metadata needed for
+the first chart. Phase 3 extends the extracted subset to support Battle History
+table columns while keeping the same guiding rules:
 
-- Battle Date
-- Tier
-- Wave
-- Real Time
-
-All other labels are ignored (unknown labels are non-fatal). The raw text is
-preserved unchanged when persisted.
+- Unknown labels are non-fatal.
+- Raw report text is always preserved unchanged when persisted.
 """
 
 from __future__ import annotations
@@ -19,10 +15,12 @@ import re
 from dataclasses import dataclass
 from datetime import datetime, timezone
 
+from analysis.quantity import UnitType, parse_quantity
+
 
 @dataclass(frozen=True)
 class RawBattleReportFields:
-    """Raw Phase 1 field values extracted from a Battle Report.
+    """Raw field values extracted from a Battle Report.
 
     This dataclass stores the untrusted, raw string values extracted from the
     report. Normalization/parsing into typed values happens separately.
@@ -32,17 +30,31 @@ class RawBattleReportFields:
         tier: Raw tier string if present.
         wave: Raw wave string if present.
         real_time: Raw real time string if present.
+        killed_by: Raw "Killed By" string if present.
+        coins_earned: Raw coins earned string if present.
+        cash_earned: Raw cash earned string if present.
+        interest_earned: Raw interest earned string if present.
+        gem_blocks_tapped: Raw gem blocks tapped string if present.
+        cells_earned: Raw cells earned string if present.
+        reroll_shards_earned: Raw reroll shards earned string if present.
     """
 
     battle_date: str | None
     tier: str | None
     wave: str | None
     real_time: str | None
+    killed_by: str | None
+    coins_earned: str | None
+    cash_earned: str | None
+    interest_earned: str | None
+    gem_blocks_tapped: str | None
+    cells_earned: str | None
+    reroll_shards_earned: str | None
 
 
 @dataclass(frozen=True)
 class ParsedBattleReport:
-    """Parsed output for Phase 1 Battle Report ingestion.
+    """Parsed output for Battle Report ingestion.
 
     Attributes:
         checksum: SHA-256 checksum of the normalized raw text.
@@ -50,6 +62,16 @@ class ParsedBattleReport:
         tier: Parsed tier value if present.
         wave: Parsed wave value if present.
         real_time_seconds: Parsed real time duration in seconds if present.
+        killed_by: Parsed killed-by label if present.
+        coins_earned: Parsed coins earned as an integer if present.
+        coins_earned_raw: Raw coins earned string if present.
+        cash_earned: Parsed cash earned as an integer if present.
+        cash_earned_raw: Raw cash earned string if present.
+        interest_earned: Parsed interest earned as an integer if present.
+        interest_earned_raw: Raw interest earned string if present.
+        gem_blocks_tapped: Parsed gem blocks tapped as an integer if present.
+        cells_earned: Parsed cells earned as an integer if present.
+        reroll_shards_earned: Parsed reroll shards earned as an integer if present.
     """
 
     checksum: str
@@ -57,6 +79,16 @@ class ParsedBattleReport:
     tier: int | None
     wave: int | None
     real_time_seconds: int | None
+    killed_by: str | None
+    coins_earned: int | None
+    coins_earned_raw: str | None
+    cash_earned: int | None
+    cash_earned_raw: str | None
+    interest_earned: int | None
+    interest_earned_raw: str | None
+    gem_blocks_tapped: int | None
+    cells_earned: int | None
+    reroll_shards_earned: int | None
 
 
 _LABEL_SEPARATOR = r"(?:[ \t]*:[ \t]*|\t+[ \t]*|[ \t]{2,})"
@@ -64,11 +96,19 @@ _LABEL_VALUE_RE = re.compile(
     rf"(?im)^[ \t]*(?P<label>.+?){_LABEL_SEPARATOR}(?P<value>.*?)[ \t]*$"
 )
 
-_PHASE1_LABELS = {
+_LABELS = {
     "battle date": "battle_date",
     "tier": "tier",
     "wave": "wave",
     "real time": "real_time",
+    "killed by": "killed_by",
+    "coins": "coins_earned",
+    "coins earned": "coins_earned",
+    "cash earned": "cash_earned",
+    "interest earned": "interest_earned",
+    "gem blocks tapped": "gem_blocks_tapped",
+    "cells earned": "cells_earned",
+    "reroll shards earned": "reroll_shards_earned",
 }
 
 
@@ -92,7 +132,7 @@ def compute_battle_report_checksum(raw_text: str) -> str:
 
 
 def parse_battle_report(raw_text: str) -> ParsedBattleReport:
-    """Parse the Phase 1 subset of Battle Report metadata.
+    """Parse a Battle Report into typed metadata.
 
     Args:
         raw_text: Raw Battle Report text as pasted by the user.
@@ -102,11 +142,21 @@ def parse_battle_report(raw_text: str) -> ParsedBattleReport:
     """
 
     checksum = compute_battle_report_checksum(raw_text)
-    raw_fields = _extract_phase1_raw_fields(raw_text)
+    raw_fields = _extract_raw_fields(raw_text)
     battle_date = _parse_battle_date(raw_fields.battle_date)
     tier = _parse_int(raw_fields.tier)
     wave = _parse_int(raw_fields.wave)
     real_time_seconds = _parse_real_time_seconds(raw_fields.real_time)
+    killed_by = _parse_text(raw_fields.killed_by)
+    coins_earned_raw = _parse_text(raw_fields.coins_earned)
+    coins_earned = _parse_compact_int(coins_earned_raw, unit_type=UnitType.coins)
+    cash_earned_raw = _parse_text(raw_fields.cash_earned)
+    cash_earned = _parse_compact_int(cash_earned_raw, unit_type=UnitType.count)
+    interest_earned_raw = _parse_text(raw_fields.interest_earned)
+    interest_earned = _parse_compact_int(interest_earned_raw, unit_type=UnitType.count)
+    gem_blocks_tapped = _parse_int(raw_fields.gem_blocks_tapped)
+    cells_earned = _parse_int(raw_fields.cells_earned)
+    reroll_shards_earned = _parse_int(raw_fields.reroll_shards_earned)
 
     return ParsedBattleReport(
         checksum=checksum,
@@ -114,11 +164,21 @@ def parse_battle_report(raw_text: str) -> ParsedBattleReport:
         tier=tier,
         wave=wave,
         real_time_seconds=real_time_seconds,
+        killed_by=killed_by,
+        coins_earned=coins_earned,
+        coins_earned_raw=coins_earned_raw,
+        cash_earned=cash_earned,
+        cash_earned_raw=cash_earned_raw,
+        interest_earned=interest_earned,
+        interest_earned_raw=interest_earned_raw,
+        gem_blocks_tapped=gem_blocks_tapped,
+        cells_earned=cells_earned,
+        reroll_shards_earned=reroll_shards_earned,
     )
 
 
-def _extract_phase1_raw_fields(raw_text: str) -> RawBattleReportFields:
-    """Extract raw Phase 1 values from Battle Report text.
+def _extract_raw_fields(raw_text: str) -> RawBattleReportFields:
+    """Extract raw values from Battle Report text.
 
     Args:
         raw_text: Raw Battle Report text as pasted by the user.
@@ -131,17 +191,24 @@ def _extract_phase1_raw_fields(raw_text: str) -> RawBattleReportFields:
     extracted: dict[str, str] = {}
     for label, value in _iter_label_value_lines(raw_text):
         normalized_label = _normalize_label(label)
-        phase1_name = _PHASE1_LABELS.get(normalized_label)
-        if phase1_name is None:
+        field_name = _LABELS.get(normalized_label)
+        if field_name is None:
             continue
-        if phase1_name not in extracted:
-            extracted[phase1_name] = value
+        if field_name not in extracted:
+            extracted[field_name] = value
 
     return RawBattleReportFields(
         battle_date=extracted.get("battle_date"),
         tier=extracted.get("tier"),
         wave=extracted.get("wave"),
         real_time=extracted.get("real_time"),
+        killed_by=extracted.get("killed_by"),
+        coins_earned=extracted.get("coins_earned"),
+        cash_earned=extracted.get("cash_earned"),
+        interest_earned=extracted.get("interest_earned"),
+        gem_blocks_tapped=extracted.get("gem_blocks_tapped"),
+        cells_earned=extracted.get("cells_earned"),
+        reroll_shards_earned=extracted.get("reroll_shards_earned"),
     )
 
 
@@ -178,9 +245,37 @@ def _parse_int(value: str | None) -> int | None:
 
     if value is None:
         return None
+    cleaned = value.strip().replace(",", "")
+    if not cleaned:
+        return None
     try:
-        return int(value)
+        return int(cleaned)
     except ValueError:
+        return None
+
+
+def _parse_text(value: str | None) -> str | None:
+    """Return a trimmed string, or None when empty."""
+
+    if value is None:
+        return None
+    cleaned = value.strip()
+    if not cleaned:
+        return None
+    return cleaned
+
+
+def _parse_compact_int(value: str | None, *, unit_type: UnitType) -> int | None:
+    """Parse compact Battle Report numbers (e.g. `7.67M`, `$55.90M`) into an int."""
+
+    if value is None:
+        return None
+    parsed = parse_quantity(value, unit_type=unit_type)
+    if parsed.normalized_value is None or parsed.normalized_value <= 0:
+        return None
+    try:
+        return int(parsed.normalized_value)
+    except (OverflowError, ValueError):
         return None
 
 

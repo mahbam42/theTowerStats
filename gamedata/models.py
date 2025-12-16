@@ -46,6 +46,16 @@ class BattleReportProgress(models.Model):
     )
     wave = models.PositiveIntegerField(null=True, blank=True)
     real_time_seconds = models.PositiveIntegerField(null=True, blank=True)
+    killed_by = models.CharField(max_length=255, null=True, blank=True)
+    coins_earned = models.BigIntegerField(null=True, blank=True)
+    coins_earned_raw = models.CharField(max_length=64, null=True, blank=True)
+    cash_earned = models.BigIntegerField(null=True, blank=True)
+    cash_earned_raw = models.CharField(max_length=64, null=True, blank=True)
+    interest_earned = models.BigIntegerField(null=True, blank=True)
+    interest_earned_raw = models.CharField(max_length=64, null=True, blank=True)
+    gem_blocks_tapped = models.PositiveIntegerField(null=True, blank=True)
+    cells_earned = models.PositiveIntegerField(null=True, blank=True)
+    reroll_shards_earned = models.PositiveIntegerField(null=True, blank=True)
 
     class Meta:
         verbose_name = "Battle Report Progress"
@@ -55,6 +65,12 @@ class BattleReportProgress(models.Model):
         """Return a concise display string for admin/debug usage."""
 
         return f"BattleReportProgress(tier={self.tier}, wave={self.wave}, battle_date={self.battle_date})"
+
+    @property
+    def coins(self) -> int | None:
+        """Return coins earned for analysis-engine compatibility."""
+
+        return self.coins_earned
 
 
 class RunBot(models.Model):
@@ -99,4 +115,3 @@ class RunUtilityUltimateWeapon(models.Model):
         UltimateWeaponDefinition, on_delete=models.CASCADE, related_name="run_utility_uws"
     )
     notes = models.TextField(blank=True)
-

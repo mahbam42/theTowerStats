@@ -7,8 +7,8 @@ import json
 from datetime import date
 
 from django.contrib import messages
-from django.db.models import QuerySet
-from django.http import HttpRequest, HttpResponse
+from django.db.models import Case, ExpressionWrapper, F, FloatField, QuerySet, Value, When
+from django.http import HttpRequest, HttpResponse, QueryDict
 from django.shortcuts import redirect, render
 from django.core.paginator import Paginator
 
@@ -211,13 +211,44 @@ def dashboard(request: HttpRequest) -> HttpResponse:
 def battle_history(request: HttpRequest) -> HttpResponse:
     """Render the Battle History dashboard with filters and pagination."""
 
+    if request.method == "POST":
+        import_form = BattleReportImportForm(request.POST)
+        if import_form.is_valid():
+            raw_text = import_form.cleaned_data["raw_text"]
+            preset_name = import_form.cleaned_data.get("preset_name") or None
+            _, created = ingest_battle_report(raw_text, preset_name=preset_name)
+            if created:
+                messages.success(request, "Battle Report imported.")
+            else:
+                messages.warning(request, "Duplicate Battle Report ignored.")
+            return redirect("core:battle_history")
+    else:
+        import_form = BattleReportImportForm()
+
     filter_form = BattleHistoryFilterForm(request.GET)
     filter_form.is_valid()
 
-    runs = (
-        BattleReport.objects.select_related("run_progress", "run_progress__preset")
-        .order_by(filter_form.cleaned_data.get("sort") or "-run_progress__battle_date", "-parsed_at")
-    )
+    sort_key = filter_form.cleaned_data.get("sort") or "-run_progress__battle_date"
+    runs = BattleReport.objects.select_related("run_progress", "run_progress__preset")
+    if sort_key.lstrip("-") == "coins_per_hour":
+        coins_per_hour_expr = Case(
+            When(
+                run_progress__coins_earned__isnull=False,
+                run_progress__real_time_seconds__gt=0,
+                then=ExpressionWrapper(
+                    F("run_progress__coins_earned") * Value(3600.0) / F("run_progress__real_time_seconds"),
+                    output_field=FloatField(),
+                ),
+            ),
+            default=Value(None),
+            output_field=FloatField(),
+        )
+        runs = runs.annotate(coins_per_hour=coins_per_hour_expr)
+
+    ordering = [sort_key]
+    if sort_key.lstrip("-") != "parsed_at":
+        ordering.append("-parsed_at")
+    runs = runs.order_by(*ordering)
 
     tier = filter_form.cleaned_data.get("tier") if filter_form.is_valid() else None
     if tier:
@@ -225,7 +256,7 @@ def battle_history(request: HttpRequest) -> HttpResponse:
 
     killed_by = filter_form.cleaned_data.get("killed_by") if filter_form.is_valid() else None
     if killed_by:
-        runs = runs.filter(raw_text__icontains=killed_by)
+        runs = runs.filter(run_progress__killed_by__icontains=killed_by)
 
     goal = filter_form.cleaned_data.get("goal") if filter_form.is_valid() else None
     if goal:
@@ -237,7 +268,29 @@ def battle_history(request: HttpRequest) -> HttpResponse:
 
     analyzed_runs = analyze_runs(page_obj.object_list).runs
     run_metrics = {entry.run_id: entry for entry in analyzed_runs}
-    page_rows = [(run, run_metrics.get(run.id)) for run in page_obj.object_list]
+    page_rows = [
+        (run, run_metrics.get(getattr(getattr(run, "run_progress", None), "id", None) or run.id))
+        for run in page_obj.object_list
+    ]
+
+    sort_querystrings = _build_sort_querystrings(
+        request.GET,
+        current_sort=sort_key,
+        sortable_keys={
+            "battle_date": "run_progress__battle_date",
+            "tier": "run_progress__tier",
+            "killed_by": "run_progress__killed_by",
+            "coins_earned": "run_progress__coins_earned",
+            "coins_per_hour": "coins_per_hour",
+            "cash_earned": "run_progress__cash_earned",
+            "interest_earned": "run_progress__interest_earned",
+            "gem_blocks": "run_progress__gem_blocks_tapped",
+            "cells_earned": "run_progress__cells_earned",
+            "reroll_shards": "run_progress__reroll_shards_earned",
+            "preset": "run_progress__preset__name",
+            "imported": "parsed_at",
+        },
+    )
 
     querystring = request.GET.copy()
     if "page" in querystring:
@@ -248,12 +301,48 @@ def battle_history(request: HttpRequest) -> HttpResponse:
         request,
         "core/battle_history.html",
         {
+            "import_form": import_form,
             "filter_form": filter_form,
             "page_obj": page_obj,
             "page_rows": page_rows,
             "base_querystring": base_querystring,
+            "sort_querystrings": sort_querystrings,
+            "current_sort": sort_key,
         },
     )
+
+
+def _build_sort_querystrings(
+    query_params: QueryDict, *, current_sort: str, sortable_keys: dict[str, str]
+) -> dict[str, str]:
+    """Build encoded querystrings for clickable column sorting.
+
+    Args:
+        query_params: A QueryDict-like object (e.g. request.GET).
+        current_sort: Current validated sort key.
+        sortable_keys: Mapping of template keys to base sort expressions.
+
+    Returns:
+        A mapping of template keys to urlencoded querystrings (without leading `?`).
+    """
+
+    base = query_params.copy()
+    if "page" in base:
+        base.pop("page")
+
+    def _toggle(sort_expr: str) -> str:
+        asc = sort_expr.lstrip("-")
+        desc = f"-{asc}"
+        if current_sort == desc:
+            return asc
+        return desc
+
+    querystrings: dict[str, str] = {}
+    for template_key, sort_expr in sortable_keys.items():
+        params = base.copy()
+        params["sort"] = _toggle(sort_expr)
+        querystrings[template_key] = params.urlencode()
+    return querystrings
 
 
 def cards(request: HttpRequest) -> HttpResponse:
