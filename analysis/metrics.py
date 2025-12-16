@@ -7,17 +7,14 @@ their labels/units so the UI can offer consistent selections.
 from __future__ import annotations
 
 from dataclasses import dataclass
-from decimal import Decimal
 from typing import Final
 
-from .context import PlayerContextInput
+from .context import ParameterInput, PlayerContextInput
 from .derived import MonteCarloConfig
-from .derived import apply_multiplier
-from .derived import effective_cooldown_seconds
-from .derived import monte_carlo_expected_multiplier_bernoulli
+from .effects import activations_per_minute_from_parameters
+from .effects import uptime_percent_from_parameters
 from .dto import MetricDefinition
 from .dto import UsedParameter
-from .quantity import UnitType
 from .rates import coins_per_hour
 
 
@@ -39,22 +36,22 @@ METRICS: Final[dict[str, MetricDefinition]] = {
         unit="coins/hour",
         kind="observed",
     ),
-    "coins_per_hour_effective_multiplier": MetricDefinition(
-        key="coins_per_hour_effective_multiplier",
-        label="Coins/hour (effective multiplier)",
-        unit="coins/hour",
+    "uw_uptime_percent": MetricDefinition(
+        key="uw_uptime_percent",
+        label="Ultimate Weapon uptime",
+        unit="percent",
         kind="derived",
     ),
-    "coins_per_hour_ev_simulated": MetricDefinition(
-        key="coins_per_hour_ev_simulated",
-        label="Coins/hour (EV, simulated)",
-        unit="coins/hour",
+    "guardian_activations_per_minute": MetricDefinition(
+        key="guardian_activations_per_minute",
+        label="Guardian activations/minute",
+        unit="activations/min",
         kind="derived",
     ),
-    "effective_cooldown_seconds": MetricDefinition(
-        key="effective_cooldown_seconds",
-        label="Effective cooldown",
-        unit="seconds",
+    "bot_uptime_percent": MetricDefinition(
+        key="bot_uptime_percent",
+        label="Bot uptime",
+        unit="percent",
         kind="derived",
     ),
 }
@@ -86,6 +83,8 @@ def compute_metric_value(
     coins: int | None,
     real_time_seconds: int | None,
     context: PlayerContextInput | None,
+    entity_type: str | None,
+    entity_name: str | None,
     config: MetricComputeConfig,
 ) -> tuple[float | None, tuple[UsedParameter, ...], tuple[str, ...]]:
     """Compute a metric value and return used parameters + assumptions.
@@ -101,211 +100,101 @@ def compute_metric_value(
         Tuple of (value, used_parameters, assumptions).
     """
 
-    observed = compute_observed_coins_per_hour(coins=coins, real_time_seconds=real_time_seconds)
+    _ = (entity_type, config)
+
     if metric_key == "coins_per_hour":
-        return observed, (), ()
+        return (
+            compute_observed_coins_per_hour(coins=coins, real_time_seconds=real_time_seconds),
+            (),
+            (),
+        )
 
     if context is None:
         return None, (), ("Missing player context; derived metric not computed.",)
 
-    if metric_key == "coins_per_hour_effective_multiplier":
-        multiplier, used = _effective_multiplier_from_context(context)
-        value = apply_multiplier(observed, multiplier=multiplier)
-        assumptions = (
-            "Applies selected multipliers multiplicatively to observed coins/hour.",
-            "This is a numerical implication of parameters, not a recommendation.",
+    if metric_key == "uw_uptime_percent":
+        params = _entity_parameters(context, entity_type="ultimate_weapon", entity_name=entity_name)
+        if params is None:
+            return None, (), ("Select an Ultimate Weapon to compute uptime.",)
+        effect = uptime_percent_from_parameters(
+            entity_type="ultimate_weapon",
+            entity_name=entity_name or "Unknown",
+            parameters=params,
         )
-        return value, used, assumptions
+        assumptions = (
+            "uptime% = 100 * clamp(duration / cooldown, 0..1).",
+            "Uses the selected Ultimate Weapon's Duration and Cooldown parameters.",
+        )
+        return effect.value, effect.used_parameters, assumptions
 
-    if metric_key == "coins_per_hour_ev_simulated":
-        config_mc = config.monte_carlo or MonteCarloConfig(trials=1_000, seed=1337)
-        multiplier, used = _ev_multiplier_simulated_from_context(context, config=config_mc)
-        value = apply_multiplier(observed, multiplier=multiplier)
-        assumptions = (
-            f"Monte Carlo EV with trials={config_mc.trials} seed={config_mc.seed}.",
-            "Proc modeled as independent Bernoulli trials.",
+    if metric_key == "guardian_activations_per_minute":
+        params = _entity_parameters(context, entity_type="guardian_chip", entity_name=entity_name)
+        if params is None:
+            return None, (), ("Select a Guardian Chip to compute activations/minute.",)
+        effect = activations_per_minute_from_parameters(
+            entity_type="guardian_chip",
+            entity_name=entity_name or "Unknown",
+            parameters=params,
         )
-        return value, used, assumptions
+        assumptions = (
+            "activations/min = 60 / cooldown_seconds.",
+            "Uses the selected Guardian Chip's Cooldown parameter.",
+        )
+        return effect.value, effect.used_parameters, assumptions
 
-    if metric_key == "effective_cooldown_seconds":
-        base_seconds, reductions, used = _cooldown_inputs_from_context(context)
-        value = effective_cooldown_seconds(
-            base_seconds=base_seconds, reduction_fractions=reductions
+    if metric_key == "bot_uptime_percent":
+        params = _entity_parameters(context, entity_type="bot", entity_name=entity_name)
+        if params is None:
+            return None, (), ("Select a Bot to compute uptime.",)
+        effect = uptime_percent_from_parameters(
+            entity_type="bot",
+            entity_name=entity_name or "Unknown",
+            parameters=params,
         )
         assumptions = (
-            "effective = base * (1 - sum(reductions)) (clamped to >= 0).",
-            "Base cooldown chosen from the first unlocked ultimate weapon with a base cooldown parameter.",
+            "uptime% = 100 * clamp(duration / cooldown, 0..1).",
+            "Uses the selected Bot's Duration and Cooldown parameters.",
         )
-        return value, used, assumptions
+        return effect.value, effect.used_parameters, assumptions
 
     return None, (), ("Unknown metric key; no value computed.",)
 
-
-def _float_or_none(value: Decimal | None) -> float | None:
-    """Convert a Decimal to float, returning None when missing."""
-
-    if value is None:
-        return None
-    return float(value)
-
-
-def _interpret_multiplier_param(raw_key: str, *, parsed_value: Decimal | None) -> float | None:
-    """Interpret a parsed multiplier-like parameter into a multiplier factor.
-
-    Rules:
-    - Percent strings are parsed as fractional multipliers (e.g. 15% -> 0.15);
-      treat those as additive: multiplier = 1 + fraction.
-    - x-prefixed strings are parsed as multiplier factors directly (e.g. x1.15 -> 1.15).
-    - Otherwise, treat parsed numeric values as multiplier factors when plausible.
-    """
-
-    if parsed_value is None:
-        return None
-    lowered = raw_key.casefold()
-    if "percent" in lowered or lowered.endswith("_pct") or lowered.endswith("_percent"):
-        return 1.0 + float(parsed_value)
-    return float(parsed_value)
-
-
-def _effective_multiplier_from_context(context: PlayerContextInput) -> tuple[float | None, tuple[UsedParameter, ...]]:
-    """Compute a combined multiplicative factor from selected context parameters."""
-
-    used: list[UsedParameter] = []
-    product = 1.0
-    found_any = False
-
-    for card in context.cards:
-        if not card.owned:
-            continue
-        for param in card.parameters + card.level_parameters:
-            if param.parsed.unit_type is not UnitType.multiplier:
-                continue
-            if param.key not in {"coins_multiplier", "coins_bonus_percent"}:
-                continue
-            multiplier = _interpret_multiplier_param(param.key, parsed_value=param.parsed.normalized_value)
-            used.append(
-                UsedParameter(
-                    entity_type="card",
-                    entity_name=card.name,
-                    key=param.key,
-                    raw_value=param.raw_value,
-                    normalized_value=_float_or_none(param.parsed.normalized_value),
-                    wiki_revision_id=param.wiki_revision_id,
-                )
-            )
-            if multiplier is None:
-                continue
-            product *= multiplier
-            found_any = True
-
-    if not found_any:
-        return None, tuple(used)
-    return product, tuple(used)
-
-
-def _ev_multiplier_simulated_from_context(
+def _entity_parameters(
     context: PlayerContextInput,
     *,
-    config: MonteCarloConfig,
-) -> tuple[float | None, tuple[UsedParameter, ...]]:
-    """Compute a Monte Carlo expected multiplier from proc parameters."""
+    entity_type: str,
+    entity_name: str | None,
+) -> tuple[ParameterInput, ...] | None:
+    """Return parameters for a specific entity selection, or None when missing.
 
-    used: list[UsedParameter] = []
+    Args:
+        context: PlayerContextInput containing unlocked/owned entities.
+        entity_type: One of "ultimate_weapon", "guardian_chip", "bot".
+        entity_name: Display name to match against context entries.
 
-    proc_chance: float | None = None
-    proc_multiplier: float | None = None
-
-    for card in context.cards:
-        if not card.owned:
-            continue
-        for param in card.parameters + card.level_parameters:
-            if param.key == "proc_chance":
-                proc_chance = _float_or_none(param.parsed.normalized_value)
-                used.append(
-                    UsedParameter(
-                        entity_type="card",
-                        entity_name=card.name,
-                        key=param.key,
-                        raw_value=param.raw_value,
-                        normalized_value=_float_or_none(param.parsed.normalized_value),
-                        wiki_revision_id=param.wiki_revision_id,
-                    )
-                )
-            if param.key == "proc_multiplier":
-                proc_multiplier = _float_or_none(param.parsed.normalized_value)
-                used.append(
-                    UsedParameter(
-                        entity_type="card",
-                        entity_name=card.name,
-                        key=param.key,
-                        raw_value=param.raw_value,
-                        normalized_value=_float_or_none(param.parsed.normalized_value),
-                        wiki_revision_id=param.wiki_revision_id,
-                    )
-                )
-
-    multiplier = monte_carlo_expected_multiplier_bernoulli(
-        proc_chance=proc_chance,
-        proc_multiplier=proc_multiplier,
-        config=config,
-    )
-    return multiplier, tuple(used)
-
-
-def _cooldown_inputs_from_context(
-    context: PlayerContextInput,
-) -> tuple[float | None, tuple[float, ...], tuple[UsedParameter, ...]]:
-    """Extract cooldown inputs from context parameters.
-
-    Base cooldown: first unlocked ultimate weapon with a `base_cooldown_seconds` parameter.
-    Reductions: sum of any `cooldown_reduction_percent` multiplier-like parameters from owned cards.
+    Returns:
+        Tuple of ParameterInput entries, or None when selection/context is missing.
     """
 
-    used: list[UsedParameter] = []
+    if not entity_name:
+        return None
 
-    base_seconds: float | None = None
-    for uw in sorted(context.ultimate_weapons, key=lambda u: u.name.casefold()):
-        if not uw.unlocked:
-            continue
-        for param in uw.parameters:
-            if param.key != "base_cooldown_seconds":
-                continue
-            base_seconds = _float_or_none(param.parsed.normalized_value)
-            used.append(
-                UsedParameter(
-                    entity_type="ultimate_weapon",
-                    entity_name=uw.name,
-                    key=param.key,
-                    raw_value=param.raw_value,
-                    normalized_value=_float_or_none(param.parsed.normalized_value),
-                    wiki_revision_id=param.wiki_revision_id,
-                )
-            )
-            break
-        if base_seconds is not None:
-            break
+    if entity_type == "ultimate_weapon":
+        for uw in context.ultimate_weapons:
+            if uw.name == entity_name and uw.unlocked:
+                return uw.parameters
+        return None
 
-    reductions: list[float] = []
-    for card in context.cards:
-        if not card.owned:
-            continue
-        for param in card.parameters + card.level_parameters:
-            if param.key != "cooldown_reduction_percent":
-                continue
-            value = _float_or_none(param.parsed.normalized_value)
-            used.append(
-                UsedParameter(
-                    entity_type="card",
-                    entity_name=card.name,
-                    key=param.key,
-                    raw_value=param.raw_value,
-                    normalized_value=value,
-                    wiki_revision_id=param.wiki_revision_id,
-                )
-            )
-            if value is None:
-                continue
-            reductions.append(value)
+    if entity_type == "guardian_chip":
+        for chip in context.guardian_chips:
+            if chip.name == entity_name and chip.owned:
+                return chip.parameters
+        return None
 
-    return base_seconds, tuple(reductions), tuple(used)
+    if entity_type == "bot":
+        for bot in context.bots:
+            if bot.name == entity_name and bot.unlocked:
+                return bot.parameters
+        return None
 
+    return None

@@ -604,29 +604,31 @@ Testing:
   - [X] 1 parser golden test
   - [X] 1 rate calculation golden test
 - [X] Test suite passes with no skipped tests
-*** IN PROGRESS Phase 2 Context
+*** DONE Phase 2 Context
+CLOSED: [2025-12-16 Tue 10:33]
 
+- State "DONE"       from "IN PROGRESS" [2025-12-16 Tue 10:33]
 - State "IN PROGRESS" from              [2025-12-16 Tue 09:22] \\
   Needs revisiting
 **** Milestones
-- [ ] Tier filtering
-- [ ] Preset filtering
-- [ ] Delta calculations
-**** Exit Criteria [50%]
+- [X] Tier filtering
+- [X] Preset filtering
+- [X] Delta calculations
+**** Exit Criteria [100%]
 Context Filters
-- [ ] Tier filter affects:
+- [X] Tier filter affects:
   - analysis output
   - chart display
-- [ ]  Preset filter:
+- [X]  Preset filter:
   - allows selecting one active preset
   - correctly limits aggregation scope
 
 Delta Calculations
 
-- [ ] At least one delta metric exists:
+- [X] At least one delta metric exists:
   - absolute and percentage
 
-- [ ] Delta calculations:
+- [X] Delta calculations:
   - work between arbitrary time windows
   - are covered by golden tests
 
@@ -650,7 +652,7 @@ CLOSED: [2025-12-16 Tue 09:22]
 *** Phase 4 Effects
 
 **** Scraping Sources and Corrective Behavior
-- [ ] Need a Management Command to Purge WikiData, Bot Definitions, Bot Levels, Bot Parameters, Guardian Chip Definitions, Guardian Chip levels, Guardian Chip Parameters, UW Definitions, UW Levels, UW Parameters.
+- [X] Need a Management Command to Purge WikiData, Bot Definitions, Bot Levels, Bot Parameters, Guardian Chip Definitions, Guardian Chip levels, Guardian Chip Parameters, UW Definitions, UW Levels, UW Parameters.
 
   
 - Each parameter can be upgraded individually, so they aren't in sync by level. Current level/level unlocked can be tracked within Parameters.
@@ -759,13 +761,21 @@ Testing
 
 - [ ] 1 test validating revision behavior
 *** Phase 5 Dashboard UX [0%]
+Goal:
+- Turn the analysis engine outputs into clear, usable, player-facing dashboards.
+- No new math. No new scraping logic. No new domain models.
+
 Previous drafts indicated using Tailwind CSS for this project. We will now be implementing Foundation Framework.
 
-General conventions across all Dashboards
+General conventions across all Dashboards:
 - Nav Header
 - Global Search Box
 - Links to Docs and Admin
-- 
+- Apply Foundation styles consistently
+- Establish shared dashboard components:
+  - Filters (Tier, Date Range, Preset)
+  - Empty states
+  - Loading states
 **** TODO Battle History
 - Display Results in a Styled Table with Sortable Columns
 - Include:
@@ -780,7 +790,38 @@ General conventions across all Dashboards
 - Filter by Tier, Killed By
 - Can be paginated 
 **** TODO Charts
-Needs a lot of work 
+Pretty dashboard of metrics over time (filterable by date range and tier)
+
+Support:
+- Date range filter. Default View is by Event (start is 12/9/2025 00:00 UTC)
+- Tier filter
+- Ensure all charts consume MetricSeries only
+
+Top Level Charts:
+- Coins Earned (line)
+- Coins per Hour (line)
+
+Sub Charts:
+- Cash Earned
+- Cells Earned
+- Reroll Dice Earned
+
+- UW Performance
+  : Breakdown and Comparison Views of RunCombat filtered to Given UW
+  : - List unlocked UWs
+  : - Show parameter levels + effective values
+- Guardian Stats
+  : Breakdown and comparison views of RunGuardian over time
+  : Equipped State
+  : Parameter Summary
+- Bots Stats 
+- Comparison Charts
+  - Same metric, different tiers
+  - With / without specific preset active
+  - Moving averages
+- Derived Metrics
+  - Effective cooldown reduction
+  - Coins per wave vs wave number
 **** TODO Cards
 - Show a utility widget with 'CardSlots' Unlocked and a button to 'Unlock Next Slot'
 - List all Cards in a Collapsible Table
@@ -793,7 +834,7 @@ Needs a lot of work
 The naming is important 
 **** TODO Bots Progress
 **** TODO Add Github Action to publish Docs to Github Pages
-**** TODO [#C] Docs Cleanup
+**** TODO [#C] Documentation and Polish 
 - Add Material Theme, mkdocstrings-python support
   Similar to mscrInventory's mkdocs.yml
 
@@ -866,6 +907,36 @@ markdown_extensions:
   - Callout Charts and Cards in index.md
 **** TODO Need method for handling Player Bots/Cards/UW/Gaurdian Chips
 Hasn't been built out or thought out yet.
+**** Milestones
+- [ ] All dashboards share a single visual and structural language
+- [ ] On Battle History Player can scan, filter, and trust historical data quickly
+- [ ] A new contributor understands the app without a walkthrough
+**** Exit Criteria [0%]
+UX & Data Integrity:
+- [ ] Dashboards display only computed outputs
+- [ ] No dashboard performs calculations inline
+- [ ] All filters affect views consistently
+
+Coverage:
+Every major entity has a visible dashboard:
+- [ ] Battle History
+- [ ] Charts
+- [ ] Cards
+- [ ] UWs
+- [ ] Guardians
+- [ ] Bots
+
+Stability:
+- [ ] No new models added
+- [ ] No migrations required
+- [ ] Test suite passes unchanged
+
+### Demo Test
+A new user can:
+1. Import runs
+2. View history
+3. Inspect progress
+4. Understand trends …without explanation.
 ** Backlog [0/5]
 “Out of Scope”:
 - Cloud sync

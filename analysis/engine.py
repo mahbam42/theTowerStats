@@ -89,6 +89,8 @@ def analyze_metric_series(
     *,
     metric_key: str,
     context: PlayerContextInput | None = None,
+    entity_type: str | None = None,
+    entity_name: str | None = None,
     monte_carlo_trials: int | None = None,
     monte_carlo_seed: int | None = None,
 ) -> MetricSeriesResult:
@@ -99,6 +101,9 @@ def analyze_metric_series(
             with a `run_progress` attribute.
         metric_key: Metric key to compute (observed or derived).
         context: Optional player context + selected parameter tables.
+        entity_type: Optional entity category for entity-scoped derived metrics
+            (e.g. "ultimate_weapon", "guardian_chip", "bot").
+        entity_name: Optional entity name for entity-scoped derived metrics.
         monte_carlo_trials: Optional override for Monte Carlo trial count used by
             simulated EV metrics.
         monte_carlo_seed: Optional override for the Monte Carlo RNG seed.
@@ -149,6 +154,8 @@ def analyze_metric_series(
             coins=coins,
             real_time_seconds=real_time_seconds,
             context=context,
+            entity_type=entity_type,
+            entity_name=entity_name,
             config=config,
         )
         used_parameters.extend(used)

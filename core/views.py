@@ -84,15 +84,40 @@ def dashboard(request: HttpRequest) -> HttpResponse:
     player_context = None
     revision_assumption: str | None = None
     if metric_def.kind == "derived":
-        player_context = build_player_context(revision_policy=RevisionPolicy(mode="latest"))
-        revision_assumption = (
-            "Parameter revision policy: latest by WikiData.last_seen (tie-breaker: id)."
-        )
+        as_of = chart_form.cleaned_data.get("wiki_as_of")
+        policy = RevisionPolicy(mode="latest") if as_of is None else RevisionPolicy(mode="as_of", as_of=as_of)
+        player_context = build_player_context(revision_policy=policy)
+        if policy.mode == "latest":
+            revision_assumption = "Parameter revision policy: latest by WikiData.last_seen (tie-breaker: id)."
+        else:
+            revision_assumption = (
+                f"Parameter revision policy: as_of={as_of.isoformat()} (latest row with last_seen <= as_of)."
+            )
+
+    entity_type: str | None = None
+    entity_name: str | None = None
+    if metric_key.startswith("uw_"):
+        selection = chart_form.cleaned_data.get("ultimate_weapon")
+        if selection is not None:
+            entity_type = "ultimate_weapon"
+            entity_name = selection.name
+    elif metric_key.startswith("guardian_"):
+        selection = chart_form.cleaned_data.get("guardian_chip")
+        if selection is not None:
+            entity_type = "guardian_chip"
+            entity_name = selection.name
+    elif metric_key.startswith("bot_"):
+        selection = chart_form.cleaned_data.get("bot")
+        if selection is not None:
+            entity_type = "bot"
+            entity_name = selection.name
 
     series_result = analyze_metric_series(
         runs,
         metric_key=metric_key,
         context=player_context,
+        entity_type=entity_type,
+        entity_name=entity_name,
         monte_carlo_trials=chart_form.cleaned_data.get("ev_trials"),
         monte_carlo_seed=chart_form.cleaned_data.get("ev_seed"),
     )

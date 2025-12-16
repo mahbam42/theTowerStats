@@ -10,6 +10,7 @@ from __future__ import annotations
 from django import forms
 
 from analysis.metrics import list_metric_definitions
+from definitions.models import BotDefinition, GuardianChipDefinition, UltimateWeaponDefinition
 from gamedata.models import BattleReport
 from player_state.models import Preset
 
@@ -60,6 +61,33 @@ class ChartContextForm(forms.Form):
         label="Preset",
         empty_label="All presets",
     )
+    ultimate_weapon = forms.ModelChoiceField(
+        required=False,
+        queryset=UltimateWeaponDefinition.objects.none(),
+        label="Ultimate Weapon",
+        empty_label="(select)",
+        help_text="Used by Ultimate Weapon-derived metrics.",
+    )
+    guardian_chip = forms.ModelChoiceField(
+        required=False,
+        queryset=GuardianChipDefinition.objects.none(),
+        label="Guardian Chip",
+        empty_label="(select)",
+        help_text="Used by Guardian-derived metrics.",
+    )
+    bot = forms.ModelChoiceField(
+        required=False,
+        queryset=BotDefinition.objects.none(),
+        label="Bot",
+        empty_label="(select)",
+        help_text="Used by Bot-derived metrics.",
+    )
+    wiki_as_of = forms.DateTimeField(
+        required=False,
+        widget=forms.DateTimeInput(attrs={"type": "datetime-local"}),
+        label="Wiki revision (as of)",
+        help_text="Optional: select wiki-derived parameters as-of this timestamp instead of latest.",
+    )
     overlay_group = forms.ChoiceField(
         required=False,
         choices=(
@@ -97,6 +125,9 @@ class ChartContextForm(forms.Form):
 
         super().__init__(*args, **kwargs)
         self.fields["preset"].queryset = Preset.objects.order_by("name")
+        self.fields["ultimate_weapon"].queryset = UltimateWeaponDefinition.objects.order_by("name")
+        self.fields["guardian_chip"].queryset = GuardianChipDefinition.objects.order_by("name")
+        self.fields["bot"].queryset = BotDefinition.objects.order_by("name")
         metrics = list_metric_definitions()
         self.fields["metric"].choices = [
             (m.key, f"{m.label} ({m.kind})") for m in metrics
