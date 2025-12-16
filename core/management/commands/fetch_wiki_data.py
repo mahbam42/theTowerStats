@@ -50,11 +50,10 @@ class Command(BaseCommand):
     PARSE_VERSION_ULTIMATE_WEAPONS = "ultimate_weapons_v1"
     CARDS_LIST_ANCHOR_ID = "List_of_Cards"
 
+    # Bot upgrade costs live under the #Cost anchor; lab tables should be ignored.
+    # For now, target Thunder Bot explicitly until other bot pages are validated.
     BOT_PAGES: tuple[tuple[str, str], ...] = (
-        ("Amplify Bot", "https://the-tower-idle-tower-defense.fandom.com/wiki/Amplify_Bot"),
-        ("Flame Bot", "https://the-tower-idle-tower-defense.fandom.com/wiki/Flame_Bot"),
-        ("Thunder Bot", "https://the-tower-idle-tower-defense.fandom.com/wiki/Thunder_Bot"),
-        ("Golden Bot", "https://the-tower-idle-tower-defense.fandom.com/wiki/Golden_Bot"),
+        ("Thunder Bot", "https://the-tower-idle-tower-defense.fandom.com/wiki/Thunder_Bot#Cost"),
     )
 
     UW_PAGES: tuple[tuple[str, str], ...] = (
@@ -190,6 +189,10 @@ def _resolve_table_indexes(
             )
         return indexes
     if target == "bots":
+        anchor_id = spec.section_anchor_id or "Cost"
+        indexes = find_table_indexes_by_anchor(html, anchor_id=anchor_id)
+        if indexes:
+            return indexes
         return _find_table_indexes_with_headers(html, required={"Level", "Cost"})
     if target == "ultimate_weapons":
         indexes = _find_table_indexes_with_header_substrings(
@@ -328,6 +331,7 @@ def _iter_ingestion_specs(*, target: str, url_override: str | None) -> list[tupl
                         entity_name=name,
                         entity_field="Bot",
                         entity_id=make_entity_id(name),
+                        section_anchor_id="Cost",
                     ),
                 )
             ]
@@ -343,6 +347,7 @@ def _iter_ingestion_specs(*, target: str, url_override: str | None) -> list[tupl
                         entity_name=name,
                         entity_field="Bot",
                         entity_id=make_entity_id(name),
+                        section_anchor_id="Cost",
                     ),
                 )
             )

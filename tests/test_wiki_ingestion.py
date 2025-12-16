@@ -259,6 +259,25 @@ def test_find_table_indexes_by_anchor_selects_guardian_chip_section_tables() -> 
     assert indexes == [0]
 
 
+def test_fetch_wiki_data_resolves_bot_cost_table_under_anchor() -> None:
+    """Bot ingestion should select the #Cost table, not lab tables."""
+
+    from core.management.commands.fetch_wiki_data import _IngestionSpec, _resolve_table_indexes
+
+    html = _fixture_html("wiki_bot_thunder_bot_v1.html")
+    spec = _IngestionSpec(
+        kind="leveled_entity",
+        parse_version="bots_v1",
+        source_prefix="bots_thunder_bot",
+        entity_name="Thunder Bot",
+        entity_field="Bot",
+        entity_id=make_entity_id("Thunder Bot"),
+        section_anchor_id="Cost",
+    )
+    indexes = _resolve_table_indexes(html, target="bots", explicit_indexes=None, spec=spec)
+    assert indexes == [0]
+
+
 @pytest.mark.django_db
 def test_ingest_wiki_rows_skips_total_and_placeholder_rows() -> None:
     """Skip non-entity summary rows such as 'Total' or all-placeholder rows."""
