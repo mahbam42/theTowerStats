@@ -7,6 +7,8 @@ Phase 1 requires:
 
 from __future__ import annotations
 
+from datetime import date
+
 from django import forms
 
 from analysis.metrics import list_metric_definitions
@@ -132,6 +134,33 @@ class ChartContextForm(forms.Form):
         self.fields["metric"].choices = [
             (m.key, f"{m.label} ({m.kind})") for m in metrics
         ]
+
+    def clean(self) -> dict[str, object]:
+        """Apply a default start date to keep charts scoped."""
+
+        cleaned = super().clean()
+        if not cleaned.get("start_date"):
+            cleaned["start_date"] = date(2025, 12, 9)
+        return cleaned
+
+
+class BattleHistoryFilterForm(forms.Form):
+    """Validate filter controls for the Battle History dashboard."""
+
+    tier = forms.IntegerField(required=False, min_value=1, label="Tier")
+    killed_by = forms.CharField(required=False, label="Killed by")
+    goal = forms.CharField(required=False, label="Goal")
+    sort = forms.ChoiceField(
+        required=False,
+        choices=(
+            ("-run_progress__battle_date", "Battle date (newest)"),
+            ("run_progress__battle_date", "Battle date (oldest)"),
+            ("-run_progress__tier", "Tier (high → low)"),
+            ("run_progress__tier", "Tier (low → high)"),
+            ("-parsed_at", "Imported (newest)"),
+        ),
+        label="Sort",
+    )
 
 
 class GameDataChoiceField(forms.ModelChoiceField):

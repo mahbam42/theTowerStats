@@ -4,11 +4,13 @@ from __future__ import annotations
 
 import hashlib
 import json
+from datetime import date
 
 from django.contrib import messages
 from django.db.models import QuerySet
 from django.http import HttpRequest, HttpResponse
 from django.shortcuts import redirect, render
+from django.core.paginator import Paginator
 
 from typing import Callable, TypedDict
 
@@ -21,10 +23,22 @@ from analysis.engine import analyze_metric_series, analyze_runs
 from analysis.dto import MetricPoint, RunAnalysis
 from analysis.metrics import get_metric_definition
 from core.analysis_context import RevisionPolicy, build_player_context
-from core.forms import BattleReportImportForm, ChartContextForm, ComparisonForm
+from core.forms import (
+    BattleHistoryFilterForm,
+    BattleReportImportForm,
+    ChartContextForm,
+    ComparisonForm,
+)
 from definitions.models import CardDefinition
 from gamedata.models import BattleReport
-from player_state.models import Player, PlayerCard, Preset
+from player_state.models import (
+    Player,
+    PlayerBot,
+    PlayerCard,
+    PlayerGuardianChip,
+    PlayerUltimateWeapon,
+    Preset,
+)
 from core.services import ingest_battle_report
 
 
@@ -71,7 +85,12 @@ def dashboard(request: HttpRequest) -> HttpResponse:
     else:
         import_form = BattleReportImportForm()
 
-    chart_form = ChartContextForm(request.GET)
+    default_chart_data = request.GET.copy()
+    if "start_date" not in default_chart_data:
+        default_chart_data = default_chart_data.copy()
+        default_chart_data["start_date"] = date(2025, 12, 9).isoformat()
+
+    chart_form = ChartContextForm(default_chart_data)
     chart_form.is_valid()
 
     runs = _filtered_runs(chart_form)
@@ -190,16 +209,50 @@ def dashboard(request: HttpRequest) -> HttpResponse:
 
 
 def battle_history(request: HttpRequest) -> HttpResponse:
-    """Render a simple list of imported runs with minimal metadata."""
+    """Render the Battle History dashboard with filters and pagination."""
+
+    filter_form = BattleHistoryFilterForm(request.GET)
+    filter_form.is_valid()
 
     runs = (
         BattleReport.objects.select_related("run_progress", "run_progress__preset")
-        .order_by("-run_progress__battle_date", "-parsed_at")
+        .order_by(filter_form.cleaned_data.get("sort") or "-run_progress__battle_date", "-parsed_at")
     )
+
+    tier = filter_form.cleaned_data.get("tier") if filter_form.is_valid() else None
+    if tier:
+        runs = runs.filter(run_progress__tier=tier)
+
+    killed_by = filter_form.cleaned_data.get("killed_by") if filter_form.is_valid() else None
+    if killed_by:
+        runs = runs.filter(raw_text__icontains=killed_by)
+
+    goal = filter_form.cleaned_data.get("goal") if filter_form.is_valid() else None
+    if goal:
+        runs = runs.filter(run_progress__preset__name__icontains=goal)
+
+    paginator = Paginator(runs, 12)
+    page_number = request.GET.get("page")
+    page_obj = paginator.get_page(page_number)
+
+    analyzed_runs = analyze_runs(page_obj.object_list).runs
+    run_metrics = {entry.run_id: entry for entry in analyzed_runs}
+    page_rows = [(run, run_metrics.get(run.id)) for run in page_obj.object_list]
+
+    querystring = request.GET.copy()
+    if "page" in querystring:
+        querystring.pop("page")
+    base_querystring = querystring.urlencode()
+
     return render(
         request,
         "core/battle_history.html",
-        {"runs": runs},
+        {
+            "filter_form": filter_form,
+            "page_obj": page_obj,
+            "page_rows": page_rows,
+            "base_querystring": base_querystring,
+        },
     )
 
 
@@ -212,6 +265,10 @@ def cards(request: HttpRequest) -> HttpResponse:
         "card_slug"
     )
     presets = Preset.objects.filter(player=player).order_by("name")
+    card_slots = {
+        "unlocked": player_cards.count(),
+        "next_cost": None,
+    }
     return render(
         request,
         "core/cards.html",
@@ -219,26 +276,96 @@ def cards(request: HttpRequest) -> HttpResponse:
             "definitions": definitions,
             "player_cards": player_cards,
             "presets": presets,
+            "card_slots": card_slots,
         },
     )
 
 
 def ultimate_weapon_progress(request: HttpRequest) -> HttpResponse:
     """Render the Ultimate Weapon progress page."""
+    player, _ = Player.objects.get_or_create(name="default")
+    ultimate_weapons = (
+        PlayerUltimateWeapon.objects.filter(player=player)
+        .select_related("ultimate_weapon_definition")
+        .prefetch_related("parameters__parameter_definition")
+        .order_by("ultimate_weapon_slug")
+    )
+    progress = [
+        {
+            "name": uw.ultimate_weapon_definition.name if uw.ultimate_weapon_definition else uw.ultimate_weapon_slug,
+            "unlocked": uw.unlocked,
+            "parameters": _parameter_rows(uw.parameters.all()),
+        }
+        for uw in ultimate_weapons
+    ]
 
-    return render(request, "core/ultimate_weapon_progress.html", {})
+    return render(request, "core/ultimate_weapon_progress.html", {"ultimate_weapons": progress})
 
 
 def guardian_progress(request: HttpRequest) -> HttpResponse:
     """Render the Guardian progress page."""
-
-    return render(request, "core/guardian_progress.html", {})
+    player, _ = Player.objects.get_or_create(name="default")
+    guardians = (
+        PlayerGuardianChip.objects.filter(player=player)
+        .select_related("guardian_chip_definition")
+        .prefetch_related("parameters__parameter_definition")
+        .order_by("guardian_chip_slug")
+    )
+    progress = [
+        {
+            "name": chip.guardian_chip_definition.name if chip.guardian_chip_definition else chip.guardian_chip_slug,
+            "unlocked": chip.unlocked,
+            "parameters": _parameter_rows(chip.parameters.all()),
+        }
+        for chip in guardians
+    ]
+    return render(request, "core/guardian_progress.html", {"guardians": progress})
 
 
 def bots_progress(request: HttpRequest) -> HttpResponse:
     """Render the Bots progress page."""
 
-    return render(request, "core/bots_progress.html", {})
+    player, _ = Player.objects.get_or_create(name="default")
+    bots = (
+        PlayerBot.objects.filter(player=player)
+        .select_related("bot_definition")
+        .prefetch_related("parameters__parameter_definition")
+        .order_by("bot_slug")
+    )
+    progress = [
+        {
+            "name": bot.bot_definition.name if bot.bot_definition else bot.bot_slug,
+            "unlocked": bot.unlocked,
+            "parameters": _parameter_rows(bot.parameters.all()),
+        }
+        for bot in bots
+    ]
+    return render(request, "core/bots_progress.html", {"bots": progress})
+
+
+def _parameter_rows(parameters: QuerySet) -> list[dict[str, object | None]]:
+    """Return display-ready parameter summaries for progress widgets."""
+
+    rows: list[dict[str, object | None]] = []
+    for param in parameters:
+        definition = getattr(param, "parameter_definition", None)
+        value = None
+        unit = None
+        if definition is not None:
+            level_row = definition.levels.filter(level=param.level).first()
+            if level_row is None:
+                level_row = definition.levels.order_by("level").last()
+            value = getattr(level_row, "value_raw", None)
+            unit = definition.get_unit_kind_display()
+        rows.append(
+            {
+                "name": getattr(definition, "display_name", "Unknown"),
+                "level": getattr(param, "level", 0),
+                "value": value,
+                "unit": unit,
+            }
+        )
+    return rows
 
 
 def _filtered_runs(filter_form: ChartContextForm) -> QuerySet[BattleReport]:

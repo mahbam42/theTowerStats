@@ -4,67 +4,107 @@
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1" />
     <title>{% block title %}theTowerStats{% endblock %}</title>
+    <link
+      rel="stylesheet"
+      href="https://cdn.jsdelivr.net/npm/foundation-sites@6.8.1/dist/css/foundation.min.css"
+      integrity="sha256-gYhq6MsZ1oSwqxERzoqBuZqyVd8ruAcC7qMP4Uux6rk="
+      crossorigin="anonymous"
+    />
+    <link
+      rel="stylesheet"
+      href="https://cdn.jsdelivr.net/npm/motion-ui@2.0.6/dist/motion-ui.min.css"
+      integrity="sha256-mvyGOf4JtHt4/Cm7gbB1c1KtvCkqwL41RZ4I1tPuVIA="
+      crossorigin="anonymous"
+    />
     <style>
       body {
-        font-family: system-ui, -apple-system, Segoe UI, Roboto, sans-serif;
-        margin: 16px;
+        background: #f8f8f8;
       }
-      nav {
-        border: 1px solid #ddd;
-        padding: 10px 12px;
-        margin-bottom: 12px;
-        background: #fff;
-      }
-      nav a {
-        margin-right: 10px;
-        white-space: nowrap;
-      }
-      .context-bar {
+
+      .top-bar {
+        box-shadow: 0 2px 12px rgba(0, 0, 0, 0.08);
         position: sticky;
         top: 0;
-        z-index: 10;
-        background: #fff;
-        border: 1px solid #ddd;
-        padding: 10px 12px;
-        margin-bottom: 12px;
+        z-index: 20;
       }
-      .context-bar__title {
-        font-weight: 600;
-        margin-bottom: 6px;
+
+      .app-shell {
+        padding: 1.5rem 0;
       }
+
       .muted {
         color: #666;
       }
-      .empty-state {
-        border: 1px dashed #bbb;
-        padding: 12px;
-        margin: 12px 0;
+
+      .card-shell {
+        background: #fff;
+        border: 1px solid #e5e5e5;
+        border-radius: 8px;
+        padding: 1.25rem;
+        box-shadow: 0 1px 4px rgba(0, 0, 0, 0.04);
+      }
+
+      .context-bar {
+        border-radius: 6px;
+        margin-bottom: 1rem;
+      }
+
+      .empty-state,
+      .loading-state {
+        border: 1px dashed #d3d3d3;
+        padding: 1rem 1.25rem;
+        background: #fafafa;
+        border-radius: 6px;
+      }
+
+      .filter-row {
+        margin-bottom: 1rem;
       }
     </style>
     {% block head %}{% endblock %}
   </head>
   <body>
-    <h1>theTowerStats</h1>
+    <div class="top-bar" role="banner">
+      <div class="top-bar-left">
+        <ul class="menu">
+          <li class="menu-text">theTowerStats</li>
+          <li><a href="{% url 'core:battle_history' %}">Battle History</a></li>
+          <li><a href="{% url 'core:dashboard' %}">Charts</a></li>
+          <li><a href="{% url 'core:cards' %}">Cards</a></li>
+          <li><a href="{% url 'core:ultimate_weapon_progress' %}">Ultimate Weapons</a></li>
+          <li><a href="{% url 'core:guardian_progress' %}">Guardians</a></li>
+          <li><a href="{% url 'core:bots_progress' %}">Bots</a></li>
+        </ul>
+      </div>
+      <div class="top-bar-right">
+        <ul class="menu">
+          <li>
+            <input type="search" placeholder="Search (coming soon)" aria-label="Search theTowerStats" />
+          </li>
+          <li><a href="/docs/" target="_blank" rel="noreferrer">Docs</a></li>
+          <li><a href="/admin/" target="_blank" rel="noreferrer">Admin</a></li>
+        </ul>
+      </div>
+    </div>
 
-    <nav aria-label="Primary">
-      <a href="{% url 'core:battle_history' %}">Battle History</a>
-      <a href="{% url 'core:dashboard' %}">Charts</a>
-      <a href="{% url 'core:cards' %}">Cards</a>
-      <a href="{% url 'core:ultimate_weapon_progress' %}">Ultimate Weapon Progress</a>
-      <a href="{% url 'core:guardian_progress' %}">Guardian Progress</a>
-      <a href="{% url 'core:bots_progress' %}">Bots Progress</a>
-    </nav>
+    <div class="grid-container app-shell">
+      {% if messages %}
+        <div class="grid-x grid-margin-x">
+          <div class="cell">
+            {% for message in messages %}
+              <div class="callout {% if message.tags %}{{ message.tags }}{% endif %}" role="status">{{ message }}</div>
+            {% endfor %}
+          </div>
+        </div>
+      {% endif %}
 
-    {% if messages %}
-      <ul>
-        {% for message in messages %}
-          <li>{{ message }}</li>
-        {% endfor %}
-      </ul>
-    {% endif %}
+      {% block content %}{% endblock %}
+    </div>
 
-    {% block content %}{% endblock %}
+    <script src="https://cdn.jsdelivr.net/npm/jquery@3.6.4/dist/jquery.min.js" integrity="sha256-o88AwDo+Zr5B6QYq1IQDyJw/F3ScxHd9VX+0bk4rHjE=" crossorigin="anonymous"></script>
+    <script src="https://cdn.jsdelivr.net/npm/what-input@5.2.12/dist/what-input.min.js" integrity="sha256-Ui3g6OHEdB3Kjn9PVp0v99V80f2QB/Kw8LkzOYjX8tQ=" crossorigin="anonymous"></script>
+    <script src="https://cdn.jsdelivr.net/npm/foundation-sites@6.8.1/dist/js/foundation.min.js" integrity="sha256-NuDmdJ0Zu+VzwJX0f6wjs2j5l3AnIJMZ3AiH+nNdJBM=" crossorigin="anonymous"></script>
+    <script>$(document).foundation();</script>
     {% block extra_scripts %}{% endblock %}
   </body>
 </html>
-

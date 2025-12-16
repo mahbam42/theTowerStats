@@ -1,69 +1,44 @@
-# Wiki Rebuild (WikiData → Definitions → Player State)
+# Wiki Population (Offline Safe)
 
-After running wiki ingestion (`definitions.WikiData`), you can rebuild the
-structured Definitions layer and then synchronize Player State rows, while
-preserving traceability to the exact wiki revision used.
+Populate wiki-derived data in two steps: ingest raw tables, then rebuild structured definitions and player state rows.
 
-This step is intentionally **offline** (no network access): it reads only from
-the local `definitions.WikiData` table.
+> **Warning**
+> These steps are for maintainers. They write to the database and expect stable network access only during ingestion.
 
-## Prerequisite: Ingest WikiData
+## Step 1 — Ingest wiki rows
 
-Populate is a translation step only. If `definitions.WikiData` is empty (or missing a
-target’s `parse_version`), population will report no changes.
+Use `fetch_wiki_data` to capture raw tables into `definitions.WikiData`. Pick the target that matches the section you need.
 
-Ingest the relevant wiki tables first:
+- Slots table: `python manage.py fetch_wiki_data --target slots --write`
+- Card list tables: `python manage.py fetch_wiki_data --target cards_list --write`
+- Bots: `python manage.py fetch_wiki_data --target bots --write`
+- Guardian chips: `python manage.py fetch_wiki_data --target guardian_chips --write`
+- Ultimate weapons: `python manage.py fetch_wiki_data --target ultimate_weapons --write`
 
-```bash
-python manage.py fetch_wiki_data --target slots --write
-python manage.py fetch_wiki_data --target cards_list --write
-python manage.py fetch_wiki_data --target bots --write
-python manage.py fetch_wiki_data --target guardian_chips --write
-python manage.py fetch_wiki_data --target ultimate_weapons --write
-```
+> **Note**
+> Use `--check` for a dry run when validating selectors or table indexes.
 
-## Commands
+## Step 2 — Rebuild definitions
 
-### Rebuild Definitions
+Translate stored wiki rows into structured definitions without re-downloading pages:
 
-```bash
-python manage.py rebuild_wiki_definitions --skip-fetch --check
-```
+- Dry run: `python manage.py rebuild_wiki_definitions --skip-fetch --check`
+- Apply changes: `python manage.py rebuild_wiki_definitions --skip-fetch --write`
 
-Apply changes:
+Targets (`--target`): `cards`, `bots`, `guardians`, `ultimate_weapons`, or `all` (default).
 
-```bash
-python manage.py rebuild_wiki_definitions --skip-fetch --write
-```
+## Step 3 — Sync player state
 
-Targets (`--target`):
+Create or refresh Player State rows so dashboards can display ownership:
 
-- `cards`
-- `bots`
-- `guardians`
-- `ultimate_weapons`
-- `all` (default)
+- Apply: `python manage.py sync_player_state --write`
 
-By default, `rebuild_wiki_definitions` also performs ingestion (network) by
-invoking `fetch_wiki_data`. Use `--skip-fetch` to run fully offline.
+## Optional — Purge structured tables
 
-### Sync Player State
+For refactors where you need to rebuild definitions from scratch while keeping `WikiData` intact:
 
-After rebuilding definitions, ensure Player State rows exist for every known
-definition and are linked by slug:
-
-```bash
-python manage.py sync_player_state --write
-```
-
-### Purge (Development Refactors)
-
-To delete only structured definition + parameter tables (WikiData is retained):
-
-```bash
-python manage.py purge_wiki_definitions --check
-python manage.py purge_wiki_definitions --force
-```
+- Dry run: `python manage.py purge_wiki_definitions --check`
+- Apply: `python manage.py purge_wiki_definitions --force`
 
 ## Traceability rules
 

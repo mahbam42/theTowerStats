@@ -3,7 +3,62 @@
 {% block title %}Guardian Progress • theTowerStats{% endblock %}
 
 {% block content %}
-  <h2>Guardian Progress</h2>
-  <p class="muted">Placeholder page for Phase 3 structure.</p>
-{% endblock %}
+  <div class="grid-x grid-margin-x">
+    <div class="cell">
+      <div class="card-shell">
+        <p class="muted margin-0">Progress</p>
+        <h2 class="margin-0">Guardian Chips</h2>
+        <p class="muted margin-0">Unlocked state, equipped flag, and parameter levels are read-only.</p>
+      </div>
+    </div>
+  </div>
 
+  <div class="grid-x grid-margin-x margin-top-1">
+    <div class="cell">
+      {% if guardians %}
+        <div class="grid-x grid-margin-x">
+          {% for guardian in guardians %}
+            <div class="cell medium-6">
+              <div class="callout {% if guardian.unlocked %}success{% else %}secondary{% endif %}">
+                <div class="grid-x align-justify align-middle">
+                  <div class="cell auto">
+                    <h5 class="margin-0">{{ guardian.name }}</h5>
+                    <p class="muted margin-0">Status: {% if guardian.unlocked %}Unlocked{% else %}Locked{% endif %}</p>
+                    <p class="muted margin-0">Equipped: <span class="muted">Display only</span></p>
+                  </div>
+                  <div class="cell shrink">
+                    <span class="label">Guardian</span>
+                  </div>
+                </div>
+                {% if guardian.parameters %}
+                  <table class="stack margin-top-1">
+                    <thead>
+                      <tr>
+                        <th scope="col">Parameter</th>
+                        <th scope="col">Level</th>
+                        <th scope="col">Value</th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      {% for param in guardian.parameters %}
+                        <tr>
+                          <td>{{ param.name }}</td>
+                          <td>{{ param.level }}</td>
+                          <td>{% if param.value %}{{ param.value }}{% else %}<span class="muted">—</span>{% endif %}</td>
+                        </tr>
+                      {% endfor %}
+                    </tbody>
+                  </table>
+                {% else %}
+                  <p class="muted margin-0">No parameter levels recorded.</p>
+                {% endif %}
+              </div>
+            </div>
+          {% endfor %}
+        </div>
+      {% else %}
+        <div class="empty-state" role="status">No guardian progress stored.</div>
+      {% endif %}
+    </div>
+  </div>
+{% endblock %}

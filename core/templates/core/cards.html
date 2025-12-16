@@ -3,53 +3,95 @@
 {% block title %}Cards • theTowerStats{% endblock %}
 
 {% block content %}
-  <h2>Cards</h2>
+  <div class="grid-x grid-margin-x">
+    <div class="cell">
+      <div class="card-shell">
+        <div class="grid-x grid-margin-x align-middle">
+          <div class="cell auto">
+            <p class="muted margin-0">Progress</p>
+            <h2 class="margin-0">Cards</h2>
+            <p class="muted margin-0">Read-only snapshot of unlocked cards and presets.</p>
+          </div>
+          <div class="cell shrink text-right">
+            <a class="button hollow" href="{% url 'core:dashboard' %}">View charts</a>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
 
-  <h3>Preset labels</h3>
-  {% if presets %}
-    <ul>
-      {% for preset in presets %}
-        <li>{{ preset.name }}</li>
-      {% endfor %}
-    </ul>
-  {% else %}
-    <p class="muted">No presets yet.</p>
-  {% endif %}
+  <div class="grid-x grid-margin-x margin-top-1">
+    <div class="cell medium-4">
+      <div class="card-shell">
+        <h4 class="margin-bottom-1">Card slots</h4>
+        <p class="lead margin-0">Slots unlocked: {{ card_slots.unlocked }}</p>
+        <p class="muted margin-0">Next slot cost: {% if card_slots.next_cost %}{{ card_slots.next_cost }}{% else %}Not tracked yet{% endif %}</p>
+      </div>
 
-  <h3>Card definitions</h3>
-  {% if definitions %}
-    <ul>
-      {% for card in definitions %}
-        <li>
-          {{ card.name }}
-        </li>
-      {% endfor %}
-    </ul>
-  {% else %}
-    <p class="muted">No card definitions yet.</p>
-  {% endif %}
+      <div class="card-shell margin-top-1">
+        <h5>Preset tags</h5>
+        {% if presets %}
+          <ul class="no-bullet">
+            {% for preset in presets %}
+              <li>• {{ preset.name }}</li>
+            {% endfor %}
+          </ul>
+        {% else %}
+          <div class="empty-state" role="status">No presets recorded.</div>
+        {% endif %}
+      </div>
+    </div>
+    <div class="cell medium-8">
+      <div class="card-shell">
+        <div class="grid-x align-justify align-middle margin-bottom-1">
+          <div class="cell auto">
+            <h4 class="margin-0">Player cards</h4>
+            <p class="muted margin-0">Stars and last updated timestamps are read-only.</p>
+          </div>
+        </div>
+        {% if player_cards %}
+          <div class="table-scroll">
+            <table class="stack">
+              <thead>
+                <tr>
+                  <th scope="col">Card</th>
+                  <th scope="col">Stars</th>
+                  <th scope="col">Last updated</th>
+                </tr>
+              </thead>
+              <tbody>
+                {% for entry in player_cards %}
+                  <tr>
+                    <td>{{ entry.card_definition.name|default:entry.card_slug }}</td>
+                    <td>{{ entry.stars_unlocked }}</td>
+                    <td>{{ entry.updated_at }}</td>
+                  </tr>
+                {% endfor %}
+              </tbody>
+            </table>
+          </div>
+        {% else %}
+          <div class="empty-state" role="status">No player card progress yet.</div>
+        {% endif %}
+      </div>
 
-  <h3>Player progress</h3>
-  {% if player_cards %}
-    <table>
-      <thead>
-        <tr>
-          <th>Card</th>
-          <th>Stars unlocked</th>
-          <th>Updated</th>
-        </tr>
-      </thead>
-      <tbody>
-        {% for entry in player_cards %}
-          <tr>
-            <td>{{ entry.card_definition.name|default:entry.card_slug }}</td>
-            <td>{{ entry.stars_unlocked }}</td>
-            <td>{{ entry.updated_at }}</td>
-          </tr>
-        {% endfor %}
-      </tbody>
-    </table>
-  {% else %}
-    <p class="muted">No player card progress yet.</p>
-  {% endif %}
+      <div class="card-shell margin-top-1">
+        <h5>Card library</h5>
+        {% if definitions %}
+          <div class="grid-x grid-margin-x small-up-2 medium-up-3">
+            {% for card in definitions %}
+              <div class="cell">
+                <div class="callout secondary">
+                  <strong>{{ card.name }}</strong>
+                  {% if card.rarity %}<p class="muted margin-0">{{ card.rarity }}</p>{% endif %}
+                </div>
+              </div>
+            {% endfor %}
+          </div>
+        {% else %}
+          <div class="empty-state" role="status">Card definitions have not been imported yet.</div>
+        {% endif %}
+      </div>
+    </div>
+  </div>
 {% endblock %}

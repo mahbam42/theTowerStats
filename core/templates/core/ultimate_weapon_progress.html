@@ -3,7 +3,61 @@
 {% block title %}Ultimate Weapon Progress • theTowerStats{% endblock %}
 
 {% block content %}
-  <h2>Ultimate Weapon Progress</h2>
-  <p class="muted">Placeholder page for Phase 3 structure.</p>
-{% endblock %}
+  <div class="grid-x grid-margin-x">
+    <div class="cell">
+      <div class="card-shell">
+        <p class="muted margin-0">Progress</p>
+        <h2 class="margin-0">Ultimate Weapons</h2>
+        <p class="muted margin-0">Unlocked state and parameter levels are read-only.</p>
+      </div>
+    </div>
+  </div>
 
+  <div class="grid-x grid-margin-x margin-top-1">
+    <div class="cell">
+      {% if ultimate_weapons %}
+        <div class="grid-x grid-margin-x">
+          {% for uw in ultimate_weapons %}
+            <div class="cell medium-6">
+              <div class="callout {% if uw.unlocked %}success{% else %}secondary{% endif %}">
+                <div class="grid-x align-justify align-middle">
+                  <div class="cell auto">
+                    <h5 class="margin-0">{{ uw.name }}</h5>
+                    <p class="muted margin-0">Status: {% if uw.unlocked %}Unlocked{% else %}Locked{% endif %}</p>
+                  </div>
+                  <div class="cell shrink">
+                    <span class="label">UW</span>
+                  </div>
+                </div>
+                {% if uw.parameters %}
+                  <table class="stack margin-top-1">
+                    <thead>
+                      <tr>
+                        <th scope="col">Parameter</th>
+                        <th scope="col">Level</th>
+                        <th scope="col">Value</th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      {% for param in uw.parameters %}
+                        <tr>
+                          <td>{{ param.name }}</td>
+                          <td>{{ param.level }}</td>
+                          <td>{% if param.value %}{{ param.value }}{% else %}<span class="muted">—</span>{% endif %}</td>
+                        </tr>
+                      {% endfor %}
+                    </tbody>
+                  </table>
+                {% else %}
+                  <p class="muted margin-0">No parameter levels recorded.</p>
+                {% endif %}
+              </div>
+            </div>
+          {% endfor %}
+        </div>
+      {% else %}
+        <div class="empty-state" role="status">No Ultimate Weapon progress stored.</div>
+      {% endif %}
+    </div>
+  </div>
+{% endblock %}

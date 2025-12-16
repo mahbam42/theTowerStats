@@ -14,9 +14,9 @@ Paste your battle history, visualize your progress over time, and explore how di
 - Gracefully handles new or unknown stat labels after game updates
 
 ### 📊 Track Progress Over Time
-- Coins per hour, waves reached, damage output, and more
-- Filter charts by **date range** and **tier**
-- Designed for fast visual feedback, not spreadsheets
+- Coins per hour and other precomputed series (no client-side math)
+- Filter charts by **date range**, **tier**, **preset**, and overlays
+- Default chart window starts on **2025-12-09 UTC** for recent-run focus
 
 ### 🧮 Analysis Engine (The Core Feature)
 - Deterministic, testable calculations
@@ -27,8 +27,8 @@ Paste your battle history, visualize your progress over time, and explore how di
 - No strategy preaching — just numbers you can interpret yourself
 
 ### 🧩 Card, UW, Guardian, and Bot Tracking
-- Log your collection and unlock progress
-- See how upgrades evolve over time
+- Read-only dashboards for cards, ultimate weapons, guardian chips, and bots
+- See unlocks, parameter levels, and last-updated timestamps
 - Wiki‑derived data is versioned and attributed, never overwritten
 
 ### 🗂 Presets (Player Intent, Not Strategy)
@@ -36,9 +36,9 @@ Paste your battle history, visualize your progress over time, and explore how di
 - Use presets as filters for analysis and charts
 - The app never tells you what’s “best” — it shows you what happened
 
-### 🌙 Clean, Focused UI
-- Dark‑mode by default
-- Mobile‑friendly battle report input
+### 🌙 Foundation-powered UI
+- Shared dashboard shell with top navigation, global search stub, and consistent callouts
+- Foundation grid/forms for Battle History, Charts, and progress dashboards
 - Clear charts designed to answer real questions quickly
 
 ---
@@ -66,12 +66,10 @@ This app is about:
 
 ## Project Status
 
-🚧 **In active development**
+🚧 **Phase 5 in progress**
 
-The app is being built in clearly scoped phases:
-1. End‑to‑end ingestion and charting
-2. Contextual filtering and comparisons
-3. Parameterized effects and derived metrics
+- UI refit with Foundation across all dashboards
+- Read-only progress pages for cards, ultimate weapons, guardians, and bots
+- Player-facing documentation published via MkDocs Material
 
-See the planning documents in `/docs` for deeper technical detail.
-
+See the User Guide and Development sections in `/docs` (or the published site) for deeper detail.
