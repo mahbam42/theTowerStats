@@ -14,7 +14,7 @@ from django import forms
 from core.charting.configs import default_selected_chart_ids, list_selectable_chart_configs
 from definitions.models import BotDefinition, GuardianChipDefinition, UltimateWeaponDefinition
 from gamedata.models import BattleReport
-from player_state.models import Preset
+from player_state.models import Player, Preset
 
 
 class BattleReportImportForm(forms.Form):
@@ -172,6 +172,61 @@ class BattleHistoryFilterForm(forms.Form):
         ),
         label="Sort",
     )
+
+
+class CardsFilterForm(forms.Form):
+    """Validate preset filters for the Cards dashboard."""
+
+    presets = forms.ModelMultipleChoiceField(
+        required=False,
+        queryset=Preset.objects.none(),
+        label="Presets",
+        widget=forms.SelectMultiple(attrs={"size": 6}),
+        help_text="Optional: show only cards tagged with these presets.",
+    )
+
+    def __init__(self, *args, **kwargs) -> None:
+        """Initialize the filter form with a player-scoped preset queryset."""
+
+        player: Player = kwargs.pop("player")
+        super().__init__(*args, **kwargs)
+        self.fields["presets"].queryset = Preset.objects.filter(player=player).order_by("name")
+
+
+class CardInventoryUpdateForm(forms.Form):
+    """Validate inline updates for a card inventory count."""
+
+    action = forms.CharField(widget=forms.HiddenInput())
+    next = forms.CharField(required=False, widget=forms.HiddenInput())
+    card_id = forms.IntegerField(widget=forms.HiddenInput())
+    inventory_count = forms.IntegerField(required=True, min_value=0, label="Inventory")
+
+
+class CardPresetUpdateForm(forms.Form):
+    """Validate inline updates for card preset assignments."""
+
+    action = forms.CharField(widget=forms.HiddenInput())
+    next = forms.CharField(required=False, widget=forms.HiddenInput())
+    card_id = forms.IntegerField(widget=forms.HiddenInput())
+    presets = forms.ModelMultipleChoiceField(
+        required=False,
+        queryset=Preset.objects.none(),
+        label="Presets",
+        widget=forms.SelectMultiple(attrs={"size": 4}),
+    )
+    new_preset_name = forms.CharField(required=False, label="New preset")
+
+    def __init__(self, *args, **kwargs) -> None:
+        """Initialize the update form with a player-scoped preset queryset."""
+
+        player: Player = kwargs.pop("player")
+        super().__init__(*args, **kwargs)
+        self.fields["presets"].queryset = Preset.objects.filter(player=player).order_by("name")
+
+    def clean_new_preset_name(self) -> str:
+        """Normalize the optional new preset name."""
+
+        return (self.cleaned_data.get("new_preset_name") or "").strip()
 
 
 class GameDataChoiceField(forms.ModelChoiceField):

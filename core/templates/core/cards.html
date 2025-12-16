@@ -10,7 +10,7 @@
           <div class="cell auto">
             <p class="muted margin-0">Progress</p>
             <h2 class="margin-0">Cards</h2>
-            <p class="muted margin-0">Read-only snapshot of unlocked cards and presets.</p>
+            <p class="muted margin-0">Track card slots, inventory, and preset tags.</p>
           </div>
           <div class="cell shrink text-right">
             <a class="button hollow" href="{% url 'core:dashboard' %}">View charts</a>
@@ -24,8 +24,31 @@
     <div class="cell medium-4">
       <div class="card-shell">
         <h4 class="margin-bottom-1">Card slots</h4>
-        <p class="lead margin-0">Slots unlocked: {{ card_slots.unlocked }}</p>
-        <p class="muted margin-0">Next slot cost: {% if card_slots.next_cost %}{{ card_slots.next_cost }}{% else %}Not tracked yet{% endif %}</p>
+        <p class="lead margin-0">
+          Slots unlocked:
+          {{ card_slots.unlocked }}
+          {% if card_slots.max %} / {{ card_slots.max }}{% endif %}
+        </p>
+        <p class="muted margin-0">
+          Next slot cost:
+          {% if card_slots.next_cost %}
+            {{ card_slots.next_cost }}
+          {% else %}
+            Not tracked yet
+          {% endif %}
+        </p>
+        <form method="post" class="margin-top-1">
+          {% csrf_token %}
+          <input type="hidden" name="action" value="unlock_slot">
+          <input type="hidden" name="next" value="{{ request.get_full_path }}">
+          <button
+            class="button"
+            type="submit"
+            {% if not card_slots.max or card_slots.unlocked >= card_slots.max %}disabled{% endif %}
+          >
+            Unlock Next Slot
+          </button>
+        </form>
       </div>
 
       <div class="card-shell margin-top-1">
@@ -46,44 +69,105 @@
         <div class="grid-x align-justify align-middle margin-bottom-1">
           <div class="cell auto">
             <h4 class="margin-0">Player cards</h4>
-            <p class="muted margin-0">Stars and last updated timestamps are read-only.</p>
+            <p class="muted margin-0">Edits save on change. Card level is derived from inventory.</p>
           </div>
         </div>
-        {% if player_cards %}
-          <div class="table-scroll">
-            <table class="stack">
-              <thead>
-                <tr>
-                  <th scope="col">Card</th>
-                  <th scope="col">Stars</th>
-                  <th scope="col">Last updated</th>
-                </tr>
-              </thead>
-              <tbody>
-                {% for entry in player_cards %}
-                  <tr>
-                    <td>{{ entry.card_definition.name|default:entry.card_slug }}</td>
-                    <td>{{ entry.stars_unlocked }}</td>
-                    <td>{{ entry.updated_at }}</td>
-                  </tr>
-                {% endfor %}
-              </tbody>
-            </table>
+        <form method="get" class="grid-x grid-margin-x align-middle margin-bottom-1">
+          <div class="cell auto">
+            <label class="margin-bottom-0">
+              Preset filter
+              {{ filter_form.presets }}
+            </label>
           </div>
-        {% else %}
-          <div class="empty-state" role="status">No player card progress yet.</div>
-        {% endif %}
+          <div class="cell shrink">
+            <button class="button" type="submit">Apply</button>
+          </div>
+        </form>
+
+        <details open>
+          <summary class="muted margin-bottom-1">Cards table</summary>
+          {% if rows %}
+            <div class="table-scroll">
+              <table class="stack">
+                <thead>
+                  <tr>
+                    <th scope="col">Card</th>
+                    <th scope="col">Level</th>
+                    <th scope="col">Parameters</th>
+                    <th scope="col">Inventory</th>
+                    <th scope="col">Presets</th>
+                    <th scope="col">Last updated</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {% for row in rows %}
+                    <tr>
+                      <td>{{ row.name }}</td>
+                      <td>{{ row.level }}</td>
+                      <td>{{ row.effect_raw|default:"—" }}</td>
+                      <td>
+                        <form method="post">
+                          {% csrf_token %}
+                          <input type="hidden" name="action" value="update_inventory">
+                          <input type="hidden" name="next" value="{{ request.get_full_path }}">
+                          <input type="hidden" name="card_id" value="{{ row.id }}">
+                          <input
+                            type="number"
+                            name="inventory_count"
+                            min="0"
+                            value="{{ row.inventory_count }}"
+                            style="max-width: 6rem;"
+                            onchange="this.form.submit()"
+                          >
+                        </form>
+                      </td>
+                      <td>
+                        <form method="post">
+                          {% csrf_token %}
+                          <input type="hidden" name="action" value="update_presets">
+                          <input type="hidden" name="next" value="{{ request.get_full_path }}">
+                          <input type="hidden" name="card_id" value="{{ row.id }}">
+                          <select name="presets" multiple size="4" onchange="this.form.submit()">
+                            {% for preset in presets %}
+                              <option
+                                value="{{ preset.id }}"
+                                {% if preset in row.presets %}selected{% endif %}
+                              >
+                                {{ preset.name }}
+                              </option>
+                            {% endfor %}
+                          </select>
+                          <input
+                            type="text"
+                            name="new_preset_name"
+                            placeholder="New preset"
+                            style="max-width: 10rem;"
+                          >
+                          <button class="button tiny" type="submit">Save</button>
+                        </form>
+                      </td>
+                      <td>{{ row.updated_at }}</td>
+                    </tr>
+                  {% endfor %}
+                </tbody>
+              </table>
+            </div>
+          {% else %}
+            <div class="empty-state" role="status">No cards match the current filters.</div>
+          {% endif %}
+        </details>
       </div>
 
       <div class="card-shell margin-top-1">
         <h5>Card library</h5>
         {% if definitions %}
-          <div class="grid-x grid-margin-x small-up-2 medium-up-3">
+          <div class="grid-x grid-margin-x small-up-2 medium-up-3 margin-top-1">
             {% for card in definitions %}
               <div class="cell">
                 <div class="callout secondary">
                   <strong>{{ card.name }}</strong>
                   {% if card.rarity %}<p class="muted margin-0">{{ card.rarity }}</p>{% endif %}
+                  {% if card.effect_raw %}<p class="muted margin-0">{{ card.effect_raw }}</p>{% endif %}
                 </div>
               </div>
             {% endfor %}

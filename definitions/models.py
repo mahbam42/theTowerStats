@@ -157,6 +157,7 @@ class CardDefinition(models.Model):
     wiki_entity_id = models.CharField(max_length=200, blank=True, db_index=True)
     description = models.TextField(blank=True)
     rarity = models.CharField(max_length=80, blank=True)
+    effect_raw = models.CharField(max_length=255, blank=True)
     unlock_text = models.TextField(blank=True)
     source_wikidata = models.ForeignKey(
         WikiData, null=True, blank=True, on_delete=models.SET_NULL, related_name="card_definitions"

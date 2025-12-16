@@ -107,13 +107,16 @@ def rebuild_cards_from_wikidata(*, write: bool, parse_version: str = "cards_list
     with transaction.atomic():
         for row in latest:
             slug = _slugify(row.canonical_name)
+            table_rarity = (row.raw_row.get("_wiki_table_label") or "").strip()
+            rarity = (row.raw_row.get("Rarity") or table_rarity or "").strip()
             defaults = {
                 "name": row.canonical_name,
                 "slug": slug,
                 "wiki_page_url": row.page_url,
                 "wiki_entity_id": row.raw_row.get("_wiki_entity_id", row.entity_id),
                 "description": (row.raw_row.get("Description") or "").strip(),
-                "rarity": (row.raw_row.get("Rarity") or "").strip(),
+                "rarity": rarity,
+                "effect_raw": (row.raw_row.get("Effect") or "").strip(),
                 "unlock_text": (row.raw_row.get("Unlock") or row.raw_row.get("Unlock Text") or "").strip(),
                 "source_wikidata": row,
             }
