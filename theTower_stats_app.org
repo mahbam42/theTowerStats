@@ -721,15 +721,15 @@ The labs tables are outside of the current scope.
 - [X] CardParameters → effective values
 - [X] UW / Guardian parameterized metrics
 - [ ] Derived metrics charts
-**** Exit Criteria [8%]
+**** Exit Criteria [50%]
 Wiki Effects Infrastructure
-- [ ] At least one complete pipeline:
+- [X] At least one complete pipeline:
   - scrape → version → reference → compute
 - [X] Demonstrated on one entity type (pick one):
   - UW or Bot or Guardian
+- [X] Wiki revision change produces different derived output
+- [X] Golden test proving revision safety
 - [ ] One derived effect chart rendered dynamically
-- [ ] Wiki revision change produces different derived output
-- [ ] Golden test proving revision safety
 
 Parameterized Effects
 - [ ]  At least one wiki-derived parameter table is:
@@ -744,22 +744,19 @@ Derived Metrics
 - [ ] Derived metrics:
   - are computed dynamically
   - are not persisted
-
 - [ ] Derived metrics appear as charts:
   - alongside raw metrics
   - with correct units
 
 Backward Safety
-- [ ]  Changing wiki parameters:
+- [X]  Changing wiki parameters:
   - does not invalidate existing runs
   - produces different derived results when re-run
 
 Testing
  - At least:
-
-- [ ] 1 golden test for a parameterized effect
-
-- [ ] 1 test validating revision behavior
+   - [X] 1 golden test for a parameterized effect
+   - [X] 1 test validating revision behavior
 *** Phase 5 Dashboard UX [0%]
 Goal:
 - Turn the analysis engine outputs into clear, usable, player-facing dashboards.
