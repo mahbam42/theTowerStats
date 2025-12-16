@@ -25,11 +25,16 @@ from core.charting.render import render_charts
 from core.forms import (
     BattleHistoryFilterForm,
     BattleReportImportForm,
+    CardInventoryUpdateForm,
+    CardPresetUpdateForm,
     ChartContextForm,
+    CardsFilterForm,
     ComparisonForm,
 )
 from definitions.models import CardDefinition
+from definitions.models import WikiData
 from gamedata.models import BattleReport
+from player_state.cards import derive_card_level
 from player_state.models import (
     Player,
     PlayerBot,
@@ -279,28 +284,180 @@ def _build_sort_querystrings(
 
 
 def cards(request: HttpRequest) -> HttpResponse:
-    """Render the cards page (definitions + player progress + preset labels)."""
+    """Render the Cards dashboard (slots + inventory + preset tagging)."""
 
-    definitions = CardDefinition.objects.order_by("name")
     player, _ = Player.objects.get_or_create(name="default")
-    player_cards = PlayerCard.objects.filter(player=player).select_related("card_definition").order_by(
-        "card_slug"
+    definitions = list(CardDefinition.objects.order_by("name"))
+
+    for definition in definitions:
+        PlayerCard.objects.get_or_create(
+            player=player,
+            card_slug=definition.slug,
+            defaults={
+                "card_definition": definition,
+                "stars_unlocked": 0,
+                "inventory_count": 0,
+            },
+        )
+
+    if request.method == "POST":
+        action = (request.POST.get("action") or "").strip()
+        redirect_to = request.POST.get("next") or request.path
+
+        if action == "unlock_slot":
+            max_slots, _ = _card_slot_limits(unlocked=player.card_slots_unlocked)
+            if max_slots is not None and player.card_slots_unlocked < max_slots:
+                player.card_slots_unlocked += 1
+                player.save(update_fields=["card_slots_unlocked"])
+                messages.success(request, "Unlocked the next card slot.")
+            else:
+                messages.warning(request, "No additional card slots are available.")
+            return redirect(redirect_to)
+
+        if action == "update_inventory":
+            form = CardInventoryUpdateForm(request.POST)
+            if not form.is_valid():
+                messages.error(request, "Could not save card inventory.")
+                return redirect(redirect_to)
+
+            card = PlayerCard.objects.filter(player=player, id=form.cleaned_data["card_id"]).first()
+            if card is None:
+                messages.error(request, "Card row not found.")
+                return redirect(redirect_to)
+
+            card.inventory_count = int(form.cleaned_data["inventory_count"])
+            card.save(update_fields=["inventory_count", "updated_at"])
+            messages.success(request, "Saved card inventory.")
+            return redirect(redirect_to)
+
+        if action == "update_presets":
+            form = CardPresetUpdateForm(request.POST, player=player)
+            if not form.is_valid():
+                messages.error(request, "Could not save card presets.")
+                return redirect(redirect_to)
+
+            card = PlayerCard.objects.filter(player=player, id=form.cleaned_data["card_id"]).first()
+            if card is None:
+                messages.error(request, "Card row not found.")
+                return redirect(redirect_to)
+
+            chosen_presets = list(form.cleaned_data["presets"])
+            new_name = form.cleaned_data["new_preset_name"]
+            if new_name:
+                preset, _ = Preset.objects.get_or_create(player=player, name=new_name)
+                chosen_presets.append(preset)
+            card.presets.set(chosen_presets)
+            messages.success(request, "Saved card presets.")
+            return redirect(redirect_to)
+
+        messages.error(request, "Unknown cards action.")
+        return redirect(redirect_to)
+
+    filter_form = CardsFilterForm(request.GET, player=player)
+    filter_form.is_valid()
+    selected_presets = tuple(filter_form.cleaned_data.get("presets") or ())
+
+    card_qs = (
+        PlayerCard.objects.filter(player=player)
+        .select_related("card_definition")
+        .prefetch_related("presets")
+        .order_by("card_definition__name", "card_slug")
     )
-    presets = Preset.objects.filter(player=player).order_by("name")
+    if selected_presets:
+        card_qs = card_qs.filter(presets__in=selected_presets).distinct()
+
+    cards = list(card_qs)
+    library_definitions = definitions
+    if selected_presets:
+        seen_def_ids: set[int] = set()
+        filtered: list[CardDefinition] = []
+        for card in cards:
+            if card.card_definition_id is None or card.card_definition is None:
+                continue
+            if card.card_definition_id in seen_def_ids:
+                continue
+            seen_def_ids.add(card.card_definition_id)
+            filtered.append(card.card_definition)
+        filtered.sort(key=lambda d: d.name)
+        library_definitions = filtered
+
+    rows = []
+    for card in cards:
+        definition = card.card_definition
+        name = definition.name if definition is not None else card.card_slug
+        level = derive_card_level(inventory_count=card.inventory_count)
+        rows.append(
+            {
+                "id": card.id,
+                "name": name,
+                "level": level,
+                "inventory_count": card.inventory_count,
+                "effect_raw": (definition.effect_raw if definition is not None else ""),
+                "presets": tuple(card.presets.all()),
+                "updated_at": card.updated_at,
+            }
+        )
+
+    max_slots, next_cost = _card_slot_limits(unlocked=player.card_slots_unlocked)
     card_slots = {
-        "unlocked": player_cards.count(),
-        "next_cost": None,
+        "unlocked": player.card_slots_unlocked,
+        "max": max_slots,
+        "next_cost": next_cost,
     }
+
+    presets = Preset.objects.filter(player=player).order_by("name")
     return render(
         request,
         "core/cards.html",
         {
-            "definitions": definitions,
-            "player_cards": player_cards,
-            "presets": presets,
+            "definitions": library_definitions,
             "card_slots": card_slots,
+            "filter_form": filter_form,
+            "presets": presets,
+            "rows": rows,
         },
     )
+
+
+def _card_slot_limits(*, unlocked: int) -> tuple[int | None, str | None]:
+    """Return (max_slots, next_cost_raw) from latest cards slot WikiData when available.
+
+    Args:
+        unlocked: Current number of unlocked card slots.
+
+    Returns:
+        Tuple of (max_slots, next_cost_raw). When wiki slot data is missing,
+        both values are None.
+    """
+
+    qs = (
+        WikiData.objects.filter(parse_version="cards_v1", source_section__startswith="cards_table_")
+        .order_by("entity_id", "-last_seen", "-id")
+    )
+    latest_by_entity: dict[str, WikiData] = {}
+    for row in qs.iterator():
+        latest_by_entity.setdefault(row.entity_id, row)
+    if not latest_by_entity:
+        return None, None
+
+    max_slot = 0
+    costs_by_slot: dict[int, str] = {}
+    for record in latest_by_entity.values():
+        raw_row = record.raw_row or {}
+        slot_number = raw_row.get("Slots") or raw_row.get("Slot") or raw_row.get("Card Slots") or record.canonical_name
+        try:
+            slot_int = int(str(slot_number).strip())
+        except (TypeError, ValueError):
+            continue
+        max_slot = max(max_slot, slot_int)
+        cost_raw = str(raw_row.get("Cost") or raw_row.get("Unlock Cost") or "").strip()
+        if cost_raw:
+            costs_by_slot[slot_int] = cost_raw
+    if max_slot <= 0:
+        return None, None
+
+    next_cost = costs_by_slot.get(unlocked + 1)
+    return max_slot, next_cost
 
 
 def ultimate_weapon_progress(request: HttpRequest) -> HttpResponse:

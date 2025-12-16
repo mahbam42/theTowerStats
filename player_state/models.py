@@ -20,6 +20,7 @@ class Player(models.Model):
     """A single-player (by default) root entity for progress ownership."""
 
     name = models.CharField(max_length=80, unique=True, default="default")
+    card_slots_unlocked = models.PositiveSmallIntegerField(default=0)
     created_at = models.DateTimeField(auto_now_add=True)
 
     def __str__(self) -> str:
@@ -62,7 +63,9 @@ class PlayerCard(models.Model):
         related_name="player_cards",
     )
     card_slug = models.CharField(max_length=200, db_index=True)
+    inventory_count = models.PositiveIntegerField(default=0)
     stars_unlocked = models.PositiveSmallIntegerField(default=0)
+    presets = models.ManyToManyField("Preset", through="PlayerCardPreset", blank=True, related_name="player_cards")
     updated_at = models.DateTimeField(auto_now=True)
 
     class Meta:
@@ -85,7 +88,29 @@ class PlayerCard(models.Model):
     def __str__(self) -> str:
         """Return a concise display string."""
 
-        return f"PlayerCard({self.card_slug}, stars={self.stars_unlocked})"
+        return (
+            "PlayerCard("
+            f"{self.card_slug}, inventory={self.inventory_count}, stars={self.stars_unlocked}"
+            ")"
+        )
+
+
+class PlayerCardPreset(models.Model):
+    """Many-to-many join table connecting player cards to preset labels."""
+
+    player_card = models.ForeignKey(PlayerCard, on_delete=models.CASCADE, related_name="preset_links")
+    preset = models.ForeignKey(Preset, on_delete=models.CASCADE, related_name="card_links")
+    created_at = models.DateTimeField(auto_now_add=True)
+
+    class Meta:
+        constraints = [
+            models.UniqueConstraint(fields=["player_card", "preset"], name="uniq_player_card_preset")
+        ]
+
+    def __str__(self) -> str:
+        """Return a concise display string."""
+
+        return f"PlayerCardPreset(card={self.player_card_id}, preset={self.preset_id})"
 
 
 class PlayerBot(models.Model):
@@ -352,4 +377,3 @@ class PlayerGuardianChipParameter(models.Model):
 
         self.full_clean()
         super().save(*args, **kwargs)
-

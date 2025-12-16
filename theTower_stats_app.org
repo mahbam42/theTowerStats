@@ -759,7 +759,7 @@ Testing
  - At least:
    - [X] 1 golden test for a parameterized effect
    - [X] 1 test validating revision behavior
-*** Phase 5 Dashboard UX [0%]
+*** Phase 5 Dashboard UX [10%]
 Goal:
 - Turn the analysis engine outputs into clear, usable, player-facing dashboards.
 - No new math. No new scraping logic. No new domain models.
@@ -775,7 +775,9 @@ General conventions across all Dashboards:
   - Filters (Tier, Date Range, Preset)
   - Empty states
   - Loading states
-**** IN PROGRESS Battle History
+**** DONE Battle History
+CLOSED: [2025-12-16 Tue 16:54]
+- State "DONE"       from "IN PROGRESS" [2025-12-16 Tue 16:54]
 - State "IN PROGRESS" from "TODO"       [2025-12-16 Tue 14:13]
 - Display Results in a Styled Table with Sortable Columns
 - Include:
@@ -803,7 +805,9 @@ Killed By, Coins Earned, Interest, Gem Blocks, Cells Earned, Reroll all empty. N
 CLOSED: [2025-12-16 Tue 16:01]
 - State "DONE"       from              [2025-12-16 Tue 16:01]
 Click on header to sort table
-**** TODO Charts
+**** IN PROGRESS Charts
+- State "IN PROGRESS" from "TODO"       [2025-12-16 Tue 16:55] \\
+  vastly improved but need to build out support for Bots/UWs/Guardian Chips before they show properly on Charts.
 Pretty dashboard of metrics over time (filterable by date range and tier)
 
 Support:
@@ -1059,6 +1063,8 @@ For Example:
 - Guardian Chip properties to improve
 - Weighted Preset Rankings
 *** Phase 8 Multiple Player Support
+**** TODO [#A] Wireup Github Actions to Run Tests
+Run checks or Ruff Check, mypy ., pytest -q
 **** TODO [#A] Allow Multiple Players to Store Data
 ***** Core Principle: Everything Belongs to a Player
 **Analysis Engine is always player-scoped, even if there’s only one player.**

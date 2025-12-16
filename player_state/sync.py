@@ -71,7 +71,7 @@ def _sync_cards(player: Player, *, summary: SyncSummary) -> SyncSummary:
         obj, created = PlayerCard.objects.get_or_create(
             player=player,
             card_slug=definition.slug,
-            defaults={"card_definition": definition, "stars_unlocked": 0},
+            defaults={"card_definition": definition, "stars_unlocked": 0, "inventory_count": 0},
         )
         if created:
             summary = SyncSummary(
@@ -203,4 +203,3 @@ def _sync_guardians(player: Player, *, summary: SyncSummary) -> SyncSummary:
                     created_parameter_rows=summary.created_parameter_rows + 1,
                 )
     return summary
-
