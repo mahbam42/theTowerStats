@@ -47,7 +47,6 @@ Paste your battle history, visualize your progress over time, and explore how di
 
 - ❌ A strategy guide
 - ❌ An auto‑optimizer
-- ❌ Multiplayer or cloud‑synced
 - ❌ Real‑time wiki scraper
 
 Any future advice or recommendations are explicitly out of scope unless added later.
@@ -75,10 +74,4 @@ The app is being built in clearly scoped phases:
 3. Parameterized effects and derived metrics
 
 See the planning documents in `/docs` for deeper technical detail.
-
----
-
-## Repo Summary (Short Description)
-
-> A stats‑tracking and analysis app for The Tower mobile game, focused on battle‑history ingestion, deterministic metrics, and clean visualizations — without prescriptive strategy advice.
 

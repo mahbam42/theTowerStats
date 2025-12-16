@@ -907,6 +907,9 @@ markdown_extensions:
   - Callout Charts and Cards in index.md
 **** TODO Need method for handling Player Bots/Cards/UW/Gaurdian Chips
 Hasn't been built out or thought out yet.
+**** TODO Update readme.md
+- Make sure it's still aligned with App Behavior and Features
+- Project Status reflects docs/ revisions 
 **** Milestones
 - [ ] All dashboards share a single visual and structural language
 - [ ] On Battle History Player can scan, filter, and trust historical data quickly
