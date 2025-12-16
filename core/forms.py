@@ -157,6 +157,8 @@ class BattleHistoryFilterForm(forms.Form):
             ("run_progress__battle_date", "Battle date (oldest)"),
             ("-run_progress__tier", "Tier (high → low)"),
             ("run_progress__tier", "Tier (low → high)"),
+            ("-run_progress__wave", "Wave (high → low)"),
+            ("run_progress__wave", "Wave (low → high)"),
             ("-run_progress__coins_earned", "Coins earned (high → low)"),
             ("run_progress__coins_earned", "Coins earned (low → high)"),
             ("-run_progress__cash_earned", "Cash earned (high → low)"),

@@ -14,15 +14,17 @@ Battle History helps you review your past runs in a table so you can compare res
 ## How to Use
 
 1. Select **Battle History** in the navigation.
-2. Paste your Battle Report text into **Add Battle Report**.
-3. (Optional) Enter a preset label to group runs by your own goal.
-4. Select **Import Battle Report**.
-5. Select values in **Filters** to narrow the table.
-6. Select a column header to sort the table by that column.
+2. Select **Add Battle Report** to expand the import panel.
+3. Paste your Battle Report text into the import field.
+4. (Optional) Enter a preset label to group runs by your own goal.
+5. Select **Import Battle Report**.
+6. Select values in **Filters** to narrow the table.
+7. Select a column header to sort the table by that column.
 
 ## How to Read the Results
 
 - **Battle date** and **Tier** come from the report header and help you locate runs in time.
+- **Highest wave** shows the highest wave reached in that run.
 - **Killed by** shows the cause of death when it exists in the report.
 - **Coins earned**, **Cash earned**, and **Interest earned** match the values shown in the report summary.
 - **Gem blocks**, **Cells earned**, and **Reroll shards** show run resources that may be missing in older or incomplete reports.
@@ -36,3 +38,5 @@ Battle History helps you review your past runs in a table so you can compare res
 > **Caution**
 > Sorting can only use values that were present when the report was imported. The app does not invent missing labels.
 
+> **Note**
+> The **Add Battle Report** panel is collapsed by default to keep the page focused on your table.

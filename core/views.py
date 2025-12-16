@@ -279,6 +279,7 @@ def battle_history(request: HttpRequest) -> HttpResponse:
         sortable_keys={
             "battle_date": "run_progress__battle_date",
             "tier": "run_progress__tier",
+            "wave": "run_progress__wave",
             "killed_by": "run_progress__killed_by",
             "coins_earned": "run_progress__coins_earned",
             "coins_per_hour": "coins_per_hour",

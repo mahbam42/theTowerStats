@@ -789,11 +789,19 @@ General conventions across all Dashboards:
   - Reroll Shards Earned	94
 - Filter by Tier, Killed By
 - Can be paginated 
-***** [#A] Need Widget to add new Battle History
+***** DONE [#A] Need Widget to add new Battle History
+CLOSED: [2025-12-16 Tue 16:06]
+- State "DONE"       from "IN PROGRESS" [2025-12-16 Tue 16:06]
+- State "IN PROGRESS" from              [2025-12-16 Tue 16:00] \\
+  make it collapsible
 It got moved to Charts/. It should also be at the top of Battle History.
-***** [#A] Need to Populate New Columns
+***** DONE [#A] Need to Populate New Columns
+CLOSED: [2025-12-16 Tue 16:01]
+- State "DONE"       from              [2025-12-16 Tue 16:01]
 Killed By, Coins Earned, Interest, Gem Blocks, Cells Earned, Reroll all empty. Need to reparse previous Battle Reports
-***** [#C] Table Columns should be sortable
+***** DONE [#C] Table Columns should be sortable
+CLOSED: [2025-12-16 Tue 16:01]
+- State "DONE"       from              [2025-12-16 Tue 16:01]
 Click on header to sort table
 **** TODO Charts
 Pretty dashboard of metrics over time (filterable by date range and tier)
