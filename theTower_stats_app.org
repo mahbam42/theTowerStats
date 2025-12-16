@@ -952,15 +952,102 @@ A new user can:
 2. View history
 3. Inspect progress
 4. Understand trends …without explanation.
-** Backlog [0/5]
-“Out of Scope”:
-- Cloud sync
-- Real-time scraping
-  
-*** TODO [#A] Allow Multiple Players to Store
-**** Core Principle: Everything Belongs to a Player
+*** Phase 6 Expansion of Foundation and Context [0%]
+What’s done is minimal by design. Expand it to feel “real”:
 
-Yes: every player-specific model must be bound to a Player.
+**Foundations:**
+- [ ] Add 2–3 more canonical rate metrics
+  - Damage per wave
+  - Waves per real minute
+  - Coins per wave
+- [ ] Normalize time handling everywhere (game time vs real time vs accelerated)
+- [ ] Lock down Unit Model correctness
+  - Explicit tests for %, x, time units, magnitudes
+- **Why this matters:**
+  : Every chart, comparison, and recommendation later assumes these rates are correct and consistent.
+
+
+**Context:**
+- [ ] Preset filtering edge cases
+  - No preset selected
+  - Preset selected but no matching runs
+- [ ] Tier + Preset + Date range combinations
+- [ ] Rolling windows (last N runs, last N days)
+- [ ] Add:
+  - One “context matrix” golden test
+    - Same metric, same data
+    - Different context inputs
+    - Assert expected shape, not just values
+*** Phase 7 Power Tools
+
+**** TODO [#A] Add Chart Builder Modal to Charts Dashboard
+Let user select chart style and metrics to show. The Chart Builder is not a UI feature — it’s a schema and contract feature.
+
+Before UI polish:
+- A ChartConfig DTO
+  - metric key(s)
+  - chart type
+  - grouping (time, tier, preset)
+  - smoothing / aggregation options
+
+Validation rules:
+- Which metrics are compatible
+- Which comparisons make sense
+- A small, explicit allowed surface
+- No arbitrary math
+- No free-form queries
+  *** TODO [#A] Comparison / Scenario View and Snapshots
+
+Examples:
+- Run A vs Run B
+- Before vs after unlocking card slot
+- With Guardian Chip/UW X vs without
+
+This is where the app becomes decision-making, not logging.
+
+Named snapshots:
+- “Before unlocking UW X”
+- “Post Guardian Fetch upgrade”
+
+These become reusable comparison anchors in charts
+
+**** TODO [#B] Data Quality & Confidence Signals
+
+Players will ask:
+- “Is this run weird?”
+- “Did something change here?”
+
+Add:
+- Run flags (outlier, partial, anomalous)
+- Visual markers on charts
+- Simple heuristics, not ML
+
+This builds trust without over-engineering.
+
+**** TODO [#B] Performance Guardrails
+
+As data grows:
+- Cached derived results per view
+- Explicit limits on chart density
+- Warnings when comparisons get statistically thin
+
+Do this before you have 30 guild members loading it daily.
+**** TODO [#B] UW Sync Graph
+There is synergy to using some UW together, specifically Golden Tower, Blackhole and Death Wave. It's common in the meta to keep the cooldowns and durations in sync. We should have the data to chart the three together and how often they overlap/synchronize
+
+**** TODO [#C] Add Advice for Optimization
+Based on logged performance data, it could be possible to calculate and offer suggestions based on the data.
+
+For Example:
+- Which UW to unlock next
+- Bot properties to improve
+- Guardian Chip properties to improve
+- Weighted Preset Rankings
+*** Phase 8 Multiple Player Support
+**** TODO [#A] Allow Multiple Players to Store Data
+***** Core Principle: Everything Belongs to a Player
+**Analysis Engine is always player-scoped, even if there’s only one player.**
+Every player-specific model must be bound to a Player.
 
 Recommended structure:
 
@@ -987,7 +1074,7 @@ This includes:
 - sim_results
 - etc.
 
-**** Authorization
+***** Authorization
 
 Use groups + permissions, not custom flags.
 
@@ -999,7 +1086,7 @@ Suggested groups
 
 You can enforce almost everything via queryset filtering, not permissions alone.
 
-**** Queryset Filtering Is the Real Security Layer
+***** Queryset Filtering Is the Real Security Layer
 
 Permissions stop access.
 Querysets prevent data leaks.
@@ -1023,7 +1110,7 @@ This applies to:
 
 If you forget this once, players see each other’s data.
 
-**** Django Admin: Lock It Down Properly
+***** Django Admin: Lock It Down Properly
 ModelAdmin example
 #+BEGIN_SRC python
 class PlayerCardAdmin(admin.ModelAdmin):
@@ -1045,7 +1132,7 @@ Remove player from editable fields for non-admins
 
 Use readonly_fields where possible
 
-**** API Layer (Even If You Don’t Build One Yet)
+***** API Layer (Even If You Don’t Build One Yet)
 
 Design as if you will.
 
@@ -1065,7 +1152,7 @@ player = request.user.player
 
 This avoids spoofing and simplifies logic everywhere.
 
-**** Shared vs Player-Scoped Models (Important Distinction)
+***** Shared vs Player-Scoped Models (Important Distinction)
 
 You’ll have three categories of models:
 
@@ -1107,7 +1194,7 @@ AggregatedStats
 
 You can safely delete category C anytime.
 
-**** Data Migration & Onboarding Flow
+***** Data Migration & Onboarding Flow
 
 You’ll need a clean onboarding path:
 
@@ -1123,26 +1210,96 @@ Initialize baseline progress rows
 def create_player(sender, instance, created, **kwargs):
     if created:
         Player.objects.create(user=instance)
+**** TODO [#C] Export / Share (Lightweight)
 
-*** TODO [#A] Add Chart Builder Modal to Charts Dashboard
-Let user select chart style and metrics to show*** TODO [#B] Comparison / Scenario View
+- CSV export of derived metrics
+- PNG export of charts
 
-Examples:
-- Run A vs Run B
-- Before vs after unlocking card slot
-- With Guardian Chip/UW X vs without
-
-This is where the app becomes decision-making, not logging.
-*** TODO [#B] Add Advice for Optimization
-Based on logged performance data, it could be possible to calculate and offer suggestions based on the data.
-
-For Example:
-- Which UW to unlock next
-- Bot properties to improve
-- Guardian Chip properties to improve
-- Weighted Preset Rankings
+This dramatically increases perceived value with very little backend work.
+** Backlog [0/4]
+“Out of Scope”:
+- Cloud sync
+- Real-time scraping
+  
 *** TODO [#C] Linking Presets/UW/Guardian Chips/Bots to battle history
 Mostly a visual tweak, but adds context and history for the player to interpert their performance history. 
+*** TODO [#C] Required Doc Type Header (Must Prepend to All Docs)
+Every document authored or modified by Codex must begin with exactly one of the following headers, placed at the very top of the file.
+
+#+BEGIN_SRC html
+User Guide Document
+<!--
+DOC TYPE: User Guide
+AUDIENCE: Players / Non-technical users
+PURPOSE: Explain how to use the feature, not how it is built
+TONE: Professional, concise, non-technical
+-->
+
+Developer / Progress Document
+<!--
+DOC TYPE: Developer Documentation
+AUDIENCE: Contributors / Maintainers
+PURPOSE: Explain internal behavior, architecture, or project status
+TONE: Technical, precise, implementation-aware
+-->
+#+END_SRC
+
+**Enforcement Rules**
+- Exactly one Doc Type Header is allowed per document
+- The header must appear before any headings or content
+- The selected doc type determines:
+  - Tone
+  - Structure
+  - Allowed level of technical detail
+- If the document content conflicts with the declared Doc Type, the document is considered invalid and must be rewritten
+
+**Default Behavior**
+
+If Codex is unsure which header to use:
+
+- Default to User Guide
+- Exclude internal details
+- Favor task-based explanations
+**** Checklist
+Doc Type Validation
+- [ ] A Doc Type Header is present at the very top of the document
+- [ ] Exactly one Doc Type Header is used
+- [ ] The content matches the declared Doc Type
+
+User Guide Documents (if applicable)
+- [ ] Written for non-technical users
+- [ ] No internal model, class, or file names mentioned
+- [ ] No code blocks or CLI instructions
+- [ ] Uses clear, action-oriented language
+- [ ]  Explains how to use the feature, not how it works internally
+
+Structure & Readability
+- [ ] Uses consistent hierarchical headings (H1 → H4 only)
+- [ ] Headings alone form a usable Table of Contents
+- [ ] Follows task flow where applicable:
+  - Overview
+  - When to Use This
+  - How to Use
+  - How to Read the Results
+  - Notes & Limitations
+- [ ] Steps are short and limited to one action each
+
+Tone & Formatting
+- [ ] Professional and concise
+- [ ] No slang or casual phrasing
+- [ ] Notes and cautions are clearly called out using blockquotes
+- [ ] Avoids unnecessary technical detail
+
+Final Sanity Check
+- [ ] A new user could follow this document without external explanation
+- [ ] The document reads as instructions, not a design or implementation spec
+**** Reminder Prompt
+Before writing any documentation, select and prepend the appropriate Doc Type Header.
+Follow the documentation standards defined in agents.md.
+If writing a User Guide, prioritize clarity for non-technical users, avoid internal details, and follow the required task-based structure.
+Validate the final document against the Documentation Self-Check Checklist before completing the task.
+
+
 *** Complete
 **** DONE [#A] Fix pytest warnings
 CLOSED: [2025-12-16 Tue 11:01]
