@@ -55,11 +55,23 @@ METRICS: Final[dict[str, MetricDefinition]] = {
         unit="shards",
         kind="observed",
     ),
+    "reroll_dice_earned": MetricDefinition(
+        key="reroll_dice_earned",
+        label="Reroll dice earned",
+        unit="shards",
+        kind="observed",
+    ),
     "waves_reached": MetricDefinition(
         key="waves_reached",
         label="Waves reached",
         unit="waves",
         kind="observed",
+    ),
+    "coins_per_wave": MetricDefinition(
+        key="coins_per_wave",
+        label="Coins per wave",
+        unit="coins/wave",
+        kind="derived",
     ),
     "uw_runs_count": MetricDefinition(
         key="uw_runs_count",
@@ -100,6 +112,12 @@ METRICS: Final[dict[str, MetricDefinition]] = {
     "uw_effective_cooldown_seconds": MetricDefinition(
         key="uw_effective_cooldown_seconds",
         label="Ultimate Weapon effective cooldown",
+        unit="seconds",
+        kind="derived",
+    ),
+    "cooldown_reduction_effective": MetricDefinition(
+        key="cooldown_reduction_effective",
+        label="Effective cooldown",
         unit="seconds",
         kind="derived",
     ),
@@ -159,13 +177,15 @@ def compute_metric_value(
         wave: Observed wave reached for the run.
         real_time_seconds: Observed duration seconds for the run.
         context: Optional player context + selected parameters.
+        entity_type: Optional entity category for entity-scoped derived metrics.
+        entity_name: Optional entity name for entity-scoped derived metrics.
         config: MetricComputeConfig.
 
     Returns:
         Tuple of (value, used_parameters, assumptions).
     """
 
-    _ = (entity_type, config)
+    _ = config
 
     if metric_key == "coins_earned":
         return (float(coins) if coins is not None else None, (), ())
@@ -176,11 +196,16 @@ def compute_metric_value(
     if metric_key == "cells_earned":
         return (float(cells) if cells is not None else None, (), ())
 
-    if metric_key == "reroll_shards_earned":
+    if metric_key in ("reroll_shards_earned", "reroll_dice_earned"):
         return (float(reroll_shards) if reroll_shards is not None else None, (), ())
 
     if metric_key == "waves_reached":
         return (float(wave) if wave is not None else None, (), ())
+
+    if metric_key == "coins_per_wave":
+        if coins is None or wave is None or wave <= 0:
+            return None, (), ()
+        return float(coins) / float(wave), (), ("coins_per_wave = coins_earned / waves_reached.",)
 
     if metric_key == "uw_runs_count":
         if not entity_name:
@@ -227,6 +252,23 @@ def compute_metric_value(
 
     if context is None:
         return None, (), ("Missing player context; derived metric not computed.",)
+
+    if metric_key == "cooldown_reduction_effective":
+        if entity_type not in ("ultimate_weapon", "guardian_chip", "bot"):
+            return None, (), ("Select an entity type to compute effective cooldown.",)
+        params = _entity_parameters(context, entity_type=entity_type, entity_name=entity_name)
+        if params is None:
+            return None, (), ("Select an entity to compute effective cooldown.",)
+        effect = effective_cooldown_seconds_from_parameters(
+            entity_type=entity_type,
+            entity_name=entity_name or "Unknown",
+            parameters=params,
+        )
+        assumptions = (
+            "effective_cooldown_seconds = cooldown_seconds.",
+            "Uses the selected entity's Cooldown parameter.",
+        )
+        return effect.value, effect.used_parameters, assumptions
 
     if metric_key == "uw_uptime_percent":
         params = _entity_parameters(context, entity_type="ultimate_weapon", entity_name=entity_name)
