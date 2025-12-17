@@ -239,6 +239,16 @@ class BattleHistoryPresetUpdateForm(forms.Form):
 class CardsFilterForm(forms.Form):
     """Validate preset filters for the Cards dashboard."""
 
+    maxed = forms.ChoiceField(
+        required=False,
+        choices=(
+            ("", "All cards"),
+            ("maxed", "Maxed only"),
+            ("unmaxed", "Unmaxed only"),
+        ),
+        label="Maxed filter",
+        help_text="Optional: filter to cards that are fully maxed or not maxed yet.",
+    )
     presets = forms.ModelMultipleChoiceField(
         required=False,
         queryset=Preset.objects.none(),
@@ -246,6 +256,7 @@ class CardsFilterForm(forms.Form):
         widget=forms.SelectMultiple(attrs={"size": 6}),
         help_text="Optional: show only cards tagged with these presets.",
     )
+    sort = forms.CharField(required=False, widget=forms.HiddenInput())
 
     def __init__(self, *args, **kwargs) -> None:
         """Initialize the filter form with a player-scoped preset queryset."""

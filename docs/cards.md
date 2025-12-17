@@ -9,6 +9,7 @@ Cards help you track your card slot progression and keep an organized view of yo
 - You want to confirm how many card slots you have unlocked.
 - You want to record how many copies of a card you currently have.
 - You want to group cards into named presets for quick filtering.
+- You want to compare cards by level, rarity, progress, or maxed status.
 - You want a fast table view of all cards and their current values.
 
 ## How to Use
@@ -22,15 +23,20 @@ Cards help you track your card slot progression and keep an organized view of yo
 7. Review the **Inventory** display to confirm the shown threshold for that card level.
 8. Select a card’s **Presets** section to add or remove preset tags.
 9. Select **Preset filter** to show only cards tagged with specific presets.
-10. Select **Reset Filters** to return to the full list.
+10. Select **Maxed** to show all cards, only maxed cards, or only unmaxed cards.
+11. Select a column header in the cards table to sort the table.
+12. Select the same column header again to reverse the sort order.
+13. Select **Reset Filters** to return to the full list.
 
 ## How to Read the Results
 
 - **Slots unlocked** shows your current slot count, and the maximum when it is available.
 - **Next slot cost** shows the cost for the next slot when the app has that data available.
 - **Level** increases automatically when your inventory progress rolls over into the next tier.
-- **Parameters** show the card description text for quick reference.
-- **Inventory** is shown as current / threshold. When you exceed a threshold, the remainder carries into the next tier.
+- **Rarity** shows the card’s rarity for quick scanning.
+- **Progress** is shown as current / threshold. When you exceed a threshold, the remainder carries into the next tier.
+- **Maxed** shows **MAX** when the card is fully maxed.
+- **Parameters** show the card description and the effect value at your current level when available.
 - **(MAX)** indicates the card is fully maxed and can no longer be increased.
 - **Presets** are labels that help you filter and group cards; they do not change gameplay outcomes.
 

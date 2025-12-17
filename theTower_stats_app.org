@@ -759,7 +759,7 @@ Testing
  - At least:
    - [X] 1 golden test for a parameterized effect
    - [X] 1 test validating revision behavior
-*** Phase 5 Dashboard UX [55%]
+*** Phase 5 Dashboard UX [66%]
 Goal:
 - Turn the analysis engine outputs into clear, usable, player-facing dashboards.
 - No new math. No new scraping logic. No new domain models.
@@ -1041,6 +1041,26 @@ CLOSED: [2025-12-17 Wed 15:53]
         - +X%
         - −0.3s
         - +2 targets
+**** DONE Guardian Chip Progress
+CLOSED: [2025-12-17 Wed 17:14]
+- State "DONE"       from "TODO"       [2025-12-17 Wed 17:14]
+The naming is important
+
+This dashboard will be similar to 'Ulitmate Weapons'
+    
+    -   Each Chip needs a checkbox for 'active'
+        -   Currently only 2 can be active during a round of the game
+    -   Upgrade Costs are in Bits
+    - Exactly 3 parameters per Guardian Chip
+        ParameterKey registry validation
+        No “Unknown” rendering path in the UI
+***** DONE Need Hero Block for the 'Active Chips'
+CLOSED: [2025-12-17 Wed 17:14]
+- State "DONE"       from "TODO"       [2025-12-17 Wed 17:14]
+- Display the two marked active at the top of the dashboard
+- Only two chips can be active at a time (this may change in future updates
+- 
+
 **** DONE Bots Progress
 CLOSED: [2025-12-17 Wed 16:31]
 - State "DONE"       from "TODO"       [2025-12-17 Wed 16:31]
@@ -1052,24 +1072,10 @@ CLOSED: [2025-12-17 Wed 16:31]
     -   Once unlocked each bot is permantly active
     -   Upgrade Costs are in Medals
 
-***** TODO Bots Dashboard check math on 'total medals invested'
+***** DONE Bots Dashboard check math on 'total medals invested'
+CLOSED: [2025-12-17 Wed 17:14]
+- State "DONE"       from "TODO"       [2025-12-17 Wed 17:14]
 It's showing values before any upgrades have been applied 
-**** TODO Guardian Chip Progress
-The naming is important
-
-This dashboard will be similar to 'Ulitmate Weapons'
-    
-    -   Each Chip needs a checkbox for 'active'
-        -   Currently only 2 can be active during a round of the game
-    -   Upgrade Costs are in Bits
-    - Exactly 3 parameters per Guardian Chip
-        ParameterKey registry validation
-        No “Unknown” rendering path in the UI
-***** TODO Need Hero Block for the 'Active Chips'
-- Display the two marked active at the top of the dashboard
-- Only two chips can be active at a time (this may change in future updates
-- 
-
 **** TODO Update readme.md
 - Make sure it's still aligned with App Behavior and Features
 - Project Status reflects docs/ revisions 
@@ -1109,7 +1115,6 @@ What’s done is minimal by design. Expand it to feel “real”:
 **Foundations:**
 - [ ] Add 2–3 more canonical rate metrics
   - Damage per wave
-  - Waves per real minute
   - Coins per wave
 - [ ] Normalize time handling everywhere (game time vs real time vs accelerated)
 - [ ] Lock down Unit Model correctness
@@ -1506,5 +1511,5 @@ Mostly a visual tweak, but adds context and history for the player to interpert 
 - [X] prompt 20 Battle History ↔ Preset Tagging
 - [X] prompt 21 UW Dashboard
 - [X] prompt 22 Bots/Guardian Chips Dashboards
-- [ ] prompt 24 Cards Dashboard Enhancements
+- [X] prompt 24 Cards Dashboard Enhancements
 - [ ] prompt 23 phase 5 exit criteria validation

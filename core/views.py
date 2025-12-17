@@ -4,6 +4,7 @@ from __future__ import annotations
 
 import json
 from datetime import date
+from typing import Any
 
 from django.contrib import messages
 from django.conf import settings
@@ -345,6 +346,139 @@ def _build_sort_querystrings(
     return querystrings
 
 
+def _build_sort_querystrings_default_asc(
+    query_params: QueryDict, *, current_sort: str, sortable_keys: dict[str, str]
+) -> dict[str, str]:
+    """Build encoded querystrings for clickable column sorting (default asc).
+
+    The Battle History default sort behavior is "first click sorts descending"
+    (useful for newest-first timestamps). The Cards dashboard is primarily a
+    catalog view, so it defaults to ascending on the first click.
+
+    Args:
+        query_params: A QueryDict-like object (e.g. request.GET).
+        current_sort: Current validated sort key.
+        sortable_keys: Mapping of template keys to base sort expressions.
+
+    Returns:
+        A mapping of template keys to urlencoded querystrings (without leading `?`).
+    """
+
+    base = query_params.copy()
+
+    def _toggle(sort_expr: str) -> str:
+        asc = sort_expr.lstrip("-")
+        desc = f"-{asc}"
+        if current_sort == asc:
+            return desc
+        return asc
+
+    querystrings: dict[str, str] = {}
+    for template_key, sort_expr in sortable_keys.items():
+        params = base.copy()
+        params["sort"] = _toggle(sort_expr)
+        querystrings[template_key] = params.urlencode()
+    return querystrings
+
+
+def _render_card_parameters_text(*, description: str, effect_raw: str, level: int) -> str:
+    """Render a readable parameter string that includes the current effective value.
+
+    Args:
+        description: Wiki-derived description text for the card.
+        effect_raw: Wiki-derived effect value text for the card.
+        level: Current displayed card level (0 when unowned).
+
+    Returns:
+        A multi-line string suitable for `white-space: pre-line` rendering.
+    """
+
+    cleaned_description = (description or "").strip()
+    cleaned_effect = (effect_raw or "").strip()
+    if not cleaned_description and not cleaned_effect:
+        return ""
+
+    effect_with_level = cleaned_effect
+    if cleaned_effect and level > 0:
+        effect_with_level = f"{cleaned_effect} (Level {level})"
+
+    if cleaned_description and "#" in cleaned_description and effect_with_level:
+        # Prefer replacing placeholders when present (common in wiki text like "x #").
+        return cleaned_description.replace("#", effect_with_level)
+
+    if cleaned_description and effect_with_level:
+        return f"{cleaned_description}\n{effect_with_level}"
+
+    return cleaned_description or effect_with_level
+
+
+def _sort_card_rows(rows: list[dict[str, object]], *, sort_key: str) -> list[dict[str, object]]:
+    """Sort Cards dashboard rows using the validated sort key.
+
+    Args:
+        rows: Cards dashboard row dictionaries.
+        sort_key: A validated sort key (with optional leading '-' for desc).
+
+    Returns:
+        A new list of rows in the requested order.
+    """
+
+    normalized = (sort_key or "name").strip()
+    descending = normalized.startswith("-")
+    base_key = normalized.lstrip("-")
+
+    def _as_str(value: object) -> str:
+        return str(value or "").casefold()
+
+    def _as_int(value: object) -> int:
+        try:
+            return int(str(value).strip() or "0")
+        except (TypeError, ValueError):
+            return 0
+
+    rarity_order = {
+        "common": 1,
+        "rare": 2,
+        "epic": 3,
+        "legendary": 4,
+        "mythic": 5,
+    }
+
+    def key_fn(r: dict[str, object]) -> Any:
+        if base_key == "name":
+            return _as_str(r.get("name"))
+        if base_key == "rarity":
+            return (rarity_order.get(_as_str(r.get("rarity")), 999), _as_str(r.get("name")))
+        if base_key == "level":
+            return (_as_int(r.get("level")), _as_str(r.get("name")))
+        if base_key == "progress":
+            inventory = _as_int(r.get("inventory_count"))
+            threshold = _as_int(r.get("inventory_threshold"))
+            ratio = float(inventory) / float(threshold) if threshold > 0 else 0.0
+            return (ratio, _as_str(r.get("name")))
+        if base_key == "maxed":
+            return (bool(r.get("is_maxed")), _as_str(r.get("name")))
+        return _as_str(r.get("name"))
+
+    return sorted(rows, key=key_fn, reverse=descending)
+
+
+def _preset_filter_querystring(query_params: QueryDict, *, preset_id: int) -> str:
+    """Build a querystring that sets the preset filter to a single preset.
+
+    Args:
+        query_params: A QueryDict-like object (e.g. request.GET).
+        preset_id: The preset id to select.
+
+    Returns:
+        A urlencoded querystring (without leading `?`).
+    """
+
+    params = query_params.copy()
+    params.setlist("presets", [str(preset_id)])
+    return params.urlencode()
+
+
 def cards(request: HttpRequest) -> HttpResponse:
     """Render the Cards dashboard (slots + inventory + preset tagging)."""
 
@@ -446,6 +580,8 @@ def cards(request: HttpRequest) -> HttpResponse:
     filter_form = CardsFilterForm(request.GET, player=player)
     filter_form.is_valid()
     selected_presets = tuple(filter_form.cleaned_data.get("presets") or ())
+    selected_maxed = (filter_form.cleaned_data.get("maxed") or "").strip()
+    requested_sort = (filter_form.cleaned_data.get("sort") or "").strip()
 
     card_qs = (
         PlayerCard.objects.filter(player=player)
@@ -470,6 +606,11 @@ def cards(request: HttpRequest) -> HttpResponse:
         display_level = 0 if is_unowned else progress.level
         display_inventory = 0 if is_unowned else progress.inventory
         display_threshold = 0 if is_unowned else progress.threshold
+        parameters_text = _render_card_parameters_text(
+            description=(definition.description if definition is not None else ""),
+            effect_raw=(definition.effect_raw if definition is not None else ""),
+            level=display_level,
+        )
         rows.append(
             {
                 "id": card.id,
@@ -479,11 +620,20 @@ def cards(request: HttpRequest) -> HttpResponse:
                 "inventory_threshold": display_threshold,
                 "is_maxed": (not is_unowned and progress.is_maxed),
                 "rarity": (definition.rarity if definition is not None else ""),
-                "description": (definition.description if definition is not None else ""),
+                "parameters_text": parameters_text,
                 "presets": tuple(card.presets.all()),
                 "updated_at": card.updated_at,
             }
         )
+
+    if selected_maxed == "maxed":
+        rows = [row for row in rows if row.get("is_maxed")]
+    elif selected_maxed == "unmaxed":
+        rows = [row for row in rows if not row.get("is_maxed")]
+
+    allowed_sort_keys = {"name", "rarity", "level", "progress", "maxed"}
+    current_sort = requested_sort if requested_sort.lstrip("-") in allowed_sort_keys else "name"
+    rows = _sort_card_rows(rows, sort_key=current_sort)
 
     max_slots = card_slot_max_slots()
     next_cost = next_card_slot_unlock_cost_raw(unlocked=player.card_slots_unlocked)
@@ -494,6 +644,24 @@ def cards(request: HttpRequest) -> HttpResponse:
     }
 
     presets = Preset.objects.filter(player=player).order_by("name")
+    preset_links = [
+        {
+            "preset": preset,
+            "querystring": _preset_filter_querystring(request.GET, preset_id=preset.id),
+        }
+        for preset in presets
+    ]
+    sort_querystrings = _build_sort_querystrings_default_asc(
+        request.GET,
+        current_sort=current_sort,
+        sortable_keys={
+            "name": "name",
+            "rarity": "rarity",
+            "level": "level",
+            "progress": "progress",
+            "maxed": "maxed",
+        },
+    )
     return render(
         request,
         "core/cards.html",
@@ -501,7 +669,10 @@ def cards(request: HttpRequest) -> HttpResponse:
             "card_slots": card_slots,
             "filter_form": filter_form,
             "presets": presets,
+            "preset_links": preset_links,
             "rows": rows,
+            "sort_querystrings": sort_querystrings,
+            "current_sort": current_sort,
         },
     )
 

@@ -70,17 +70,17 @@
 
       <div class="card-shell margin-top-1">
         <h5>Preset tags</h5>
-        {% if presets %}
+        {% if preset_links %}
           <div class="grid-x grid-margin-x">
             <div class="cell">
-              {% for preset in presets %}
+              {% for entry in preset_links %}
                 <a
-                  class="badge preset-badge preset-color-{{ preset.badge_color }}"
-                  href="?presets={{ preset.id }}"
+                  class="badge preset-badge preset-color-{{ entry.preset.badge_color }}"
+                  href="?{{ entry.querystring }}"
                   data-preset-filter
-                  data-preset-id="{{ preset.id }}"
+                  data-preset-id="{{ entry.preset.id }}"
                 >
-                  {{ preset.name }}
+                  {{ entry.preset.name }}
                 </a>
               {% endfor %}
             </div>
@@ -99,10 +99,17 @@
           </div>
         </div>
         <form method="get" class="grid-x grid-margin-x align-middle margin-bottom-1">
+          {{ filter_form.sort }}
           <div class="cell auto">
             <label class="margin-bottom-0">
               Preset filter
               {{ filter_form.presets }}
+            </label>
+          </div>
+          <div class="cell shrink">
+            <label class="margin-bottom-0">
+              Maxed
+              {{ filter_form.maxed }}
             </label>
           </div>
           <div class="cell shrink">
@@ -120,10 +127,32 @@
               <table class="stack cards-table">
                 <thead>
                   <tr>
-                    <th scope="col">Card</th>
-                    <th scope="col">Level</th>
+                    <th scope="col">
+                      <a href="?{{ sort_querystrings.name }}">
+                        Card{% if current_sort == "name" %} ▲{% elif current_sort == "-name" %} ▼{% endif %}
+                      </a>
+                    </th>
+                    <th scope="col">
+                      <a href="?{{ sort_querystrings.rarity }}">
+                        Rarity{% if current_sort == "rarity" %} ▲{% elif current_sort == "-rarity" %} ▼{% endif %}
+                      </a>
+                    </th>
+                    <th scope="col">
+                      <a href="?{{ sort_querystrings.level }}">
+                        Level{% if current_sort == "level" %} ▲{% elif current_sort == "-level" %} ▼{% endif %}
+                      </a>
+                    </th>
+                    <th scope="col">
+                      <a href="?{{ sort_querystrings.progress }}">
+                        Progress{% if current_sort == "progress" %} ▲{% elif current_sort == "-progress" %} ▼{% endif %}
+                      </a>
+                    </th>
+                    <th scope="col">
+                      <a href="?{{ sort_querystrings.maxed }}">
+                        Maxed{% if current_sort == "maxed" %} ▲{% elif current_sort == "-maxed" %} ▼{% endif %}
+                      </a>
+                    </th>
                     <th scope="col">Parameters</th>
-                    <th scope="col">Inventory</th>
                     <th scope="col">Presets</th>
                     <th scope="col">Last updated</th>
                   </tr>
@@ -135,15 +164,15 @@
                     >
                       <td>{{ row.name }}</td>
                       <td>
-                        {% if row.level %}
-                          {{ row.level }}
+                        {% if row.rarity %}
+                          {{ row.rarity }}
                         {% else %}
                           —
                         {% endif %}
                       </td>
                       <td>
-                        {% if row.description %}
-                          <div style="white-space: pre-line;">{{ row.description }}</div>
+                        {% if row.level %}
+                          {{ row.level }}
                         {% else %}
                           —
                         {% endif %}
@@ -167,6 +196,20 @@
                             / {{ row.inventory_threshold }}{% if row.is_maxed %} (MAX){% endif %}
                           </span>
                         </form>
+                      </td>
+                      <td>
+                        {% if row.is_maxed %}
+                          MAX
+                        {% else %}
+                          —
+                        {% endif %}
+                      </td>
+                      <td>
+                        {% if row.parameters_text %}
+                          <div style="white-space: pre-line;">{{ row.parameters_text }}</div>
+                        {% else %}
+                          —
+                        {% endif %}
                       </td>
                       <td>
                         <div>

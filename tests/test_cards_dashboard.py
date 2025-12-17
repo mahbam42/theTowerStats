@@ -2,6 +2,8 @@
 
 from __future__ import annotations
 
+import re
+
 import pytest
 from django.urls import reverse
 
@@ -121,6 +123,91 @@ def test_cards_dashboard_updates_inventory_and_presets(client) -> None:
     assert "Coin Bonus" in content
     assert "Wave Skip" not in content
     assert "Increase coins earned." in content
+    assert "+5% (Level 3)" in content
+
+
+def _card_names_in_table(html: str) -> list[str]:
+    """Extract card names from the Cards table body, in rendered order."""
+
+    match = re.search(r"<tbody>(?P<body>.*?)</tbody>", html, flags=re.DOTALL)
+    if match is None:
+        return []
+    body = match.group("body")
+    return re.findall(
+        r'<tr[^>]*class="[^"]*card-row[^"]*"[^>]*>.*?<td>(?P<name>[^<]+)</td>',
+        body,
+        flags=re.DOTALL,
+    )
+
+
+@pytest.mark.django_db
+def test_cards_dashboard_supports_sorting_and_maxed_filter(client) -> None:
+    """Cards table supports sortable columns plus maxed/unmaxed filtering."""
+
+    player = Player.objects.create(name="default")
+    alpha = CardDefinition.objects.create(
+        name="Alpha",
+        slug="alpha",
+        rarity="Common",
+        effect_raw="+5%",
+        description="Increase coins earned.",
+    )
+    beta = CardDefinition.objects.create(
+        name="Beta",
+        slug="beta",
+        rarity="Rare",
+        effect_raw="Skip 1 wave",
+        description="Skip waves.",
+    )
+
+    PlayerCard.objects.create(
+        player=player,
+        card_definition=alpha,
+        card_slug=alpha.slug,
+        stars_unlocked=7,
+        inventory_count=32,
+    )
+    PlayerCard.objects.create(
+        player=player,
+        card_definition=beta,
+        card_slug=beta.slug,
+        stars_unlocked=3,
+        inventory_count=1,
+    )
+
+    url = reverse("core:cards")
+
+    response = client.get(url)
+    assert _card_names_in_table(response.content.decode("utf-8")) == ["Alpha", "Beta"]
+
+    response = client.get(url, data={"sort": "-name"})
+    assert _card_names_in_table(response.content.decode("utf-8")) == ["Beta", "Alpha"]
+
+    response = client.get(url, data={"maxed": "maxed"})
+    assert _card_names_in_table(response.content.decode("utf-8")) == ["Alpha"]
+
+    response = client.get(url, data={"maxed": "unmaxed", "sort": "-level"})
+    assert _card_names_in_table(response.content.decode("utf-8")) == ["Beta"]
+
+
+@pytest.mark.django_db
+def test_cards_dashboard_preserves_filter_state_in_links(client) -> None:
+    """Sortable headers and preset badges preserve the current filter state."""
+
+    player = Player.objects.create(name="default")
+    definition = CardDefinition.objects.create(name="Alpha", slug="alpha", rarity="Common")
+    card = PlayerCard.objects.create(player=player, card_definition=definition, card_slug=definition.slug)
+    preset = Preset.objects.create(player=player, name="Farming")
+    card.presets.add(preset)
+
+    url = reverse("core:cards")
+    response = client.get(url, data={"maxed": "unmaxed", "sort": "-level"})
+    content = response.content.decode("utf-8")
+
+    assert re.search(r'href="\\?[^"]*maxed=unmaxed[^"]*sort=level', content)
+    assert re.search(r'href="\\?[^"]*presets=.*maxed=unmaxed[^"]*sort=-level', content) or re.search(
+        r'href="\\?[^"]*maxed=unmaxed[^"]*sort=-level[^"]*presets=', content
+    )
 
 
 @pytest.mark.django_db
