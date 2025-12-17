@@ -160,3 +160,31 @@ def test_bot_dashboard_omits_invalid_bot_in_production(client, settings) -> None
     assert response.status_code == 200
     assert all(tile["slug"] != "bad_bot" for tile in response.context["bots"])
 
+
+@pytest.mark.django_db
+def test_bot_dashboard_deletes_orphaned_parameter_rows(client) -> None:
+    """Orphaned parameter rows are deleted so the page can render in debug mode."""
+
+    bot_def = _bot_with_four_parameters(slug="thunder_bot", name="Thunder Bot")
+    player = Player.objects.create(name="default")
+    bot = PlayerBot.objects.create(
+        player=player,
+        bot_definition=bot_def,
+        bot_slug=bot_def.slug,
+        unlocked=True,
+    )
+    param_def = bot_def.parameter_definitions.order_by("id").first()
+    assert param_def is not None
+    orphan = PlayerBotParameter.objects.create(
+        player_bot=bot,
+        parameter_definition=param_def,
+        level=1,
+    )
+    param_def.delete()
+    orphan.refresh_from_db()
+    assert orphan.parameter_definition is None
+
+    url = reverse("core:bots_progress")
+    response = client.get(url)
+    assert response.status_code == 200
+    assert PlayerBotParameter.objects.filter(player_bot=bot).count() == 0

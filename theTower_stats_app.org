@@ -759,7 +759,7 @@ Testing
  - At least:
    - [X] 1 golden test for a parameterized effect
    - [X] 1 test validating revision behavior
-*** Phase 5 Dashboard UX [33%]
+*** Phase 5 Dashboard UX [55%]
 Goal:
 - Turn the analysis engine outputs into clear, usable, player-facing dashboards.
 - No new math. No new scraping logic. No new domain models.
@@ -963,7 +963,9 @@ This dashboard will be similar to 'Ulitmate Weapons'
         No “Unknown” rendering path in the UI
     -   Once unlocked each bot is permantly active
     -   Upgrade Costs are in Medals
-**** TODO Documentation and Polish
+**** DONE Documentation and Polish
+CLOSED: [2025-12-17 Wed 16:01]
+- State "DONE"       from "TODO"       [2025-12-17 Wed 16:01]
 the tone and structure I'm  aiming for: professional, concise, technically accurate but still readable for non-technical users. 
 
 - Consistent, hierarchical headings → perfect for generating a table of contents automatically in Google Docs.
@@ -1046,7 +1048,9 @@ markdown_extensions:
   - Callout Charts and Cards in index.md
 
 - [ ] Add mkdocstrings pages for commands/API/etc.
-**** TODO Need method for handling Player Bots/Cards/UW/Gaurdian Chips
+**** DONE Need method for handling Player Bots/Cards/UW/Gaurdian Chips
+CLOSED: [2025-12-17 Wed 16:01]
+- State "DONE"       from "TODO"       [2025-12-17 Wed 16:01]
 Hasn't been built out or thought out yet.
 **** TODO Update readme.md
 - Make sure it's still aligned with App Behavior and Features

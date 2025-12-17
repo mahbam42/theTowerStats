@@ -819,6 +819,13 @@ def guardian_progress(request: HttpRequest) -> HttpResponse:
 
     player, _ = Player.objects.get_or_create(name="default")
 
+    orphaned_guardian_params_deleted, _ = PlayerGuardianChipParameter.objects.filter(
+        player_guardian_chip__player=player,
+        parameter_definition__isnull=True,
+    ).delete()
+    if orphaned_guardian_params_deleted and not request.headers.get("x-requested-with") == "XMLHttpRequest":
+        messages.warning(request, "Removed guardian chip parameter rows that no longer match known definitions.")
+
     guardian_definitions = list(GuardianChipDefinition.objects.order_by("name"))
     for guardian_def in guardian_definitions:
         chip, created = PlayerGuardianChip.objects.get_or_create(
@@ -1104,12 +1111,6 @@ def guardian_progress(request: HttpRequest) -> HttpResponse:
             messages.warning(request, f"Skipping {chip_def.name}: {exc}")
             continue
 
-        if chip.unlocked and chip.parameters.filter(parameter_definition__isnull=True).exists():
-            if settings.DEBUG:
-                raise ValueError(f"Guardian chip {chip_def.slug!r} has unknown parameter rows.")
-            messages.warning(request, f"Skipping {chip_def.name}: unknown parameter rows present.")
-            continue
-
         player_params_by_def_id = {
             p.parameter_definition_id: p for p in chip.parameters.all() if p.parameter_definition_id
         }
@@ -1184,6 +1185,13 @@ def bots_progress(request: HttpRequest) -> HttpResponse:
     """Render the Bots progress dashboard."""
 
     player, _ = Player.objects.get_or_create(name="default")
+
+    orphaned_bot_params_deleted, _ = PlayerBotParameter.objects.filter(
+        player_bot__player=player,
+        parameter_definition__isnull=True,
+    ).delete()
+    if orphaned_bot_params_deleted and not request.headers.get("x-requested-with") == "XMLHttpRequest":
+        messages.warning(request, "Removed bot parameter rows that no longer match known definitions.")
 
     bot_definitions = list(BotDefinition.objects.order_by("name"))
     for bot_def in bot_definitions:

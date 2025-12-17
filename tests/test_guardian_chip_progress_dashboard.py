@@ -205,3 +205,32 @@ def test_guardian_dashboard_omits_invalid_guardian_in_production(client, setting
     assert response.status_code == 200
     assert all(tile["slug"] != "bad_guardian" for tile in response.context["guardian_chips"])
 
+
+@pytest.mark.django_db
+def test_guardian_dashboard_deletes_orphaned_parameter_rows(client) -> None:
+    """Orphaned parameter rows are deleted so the page can render in debug mode."""
+
+    guardian = _guardian_with_three_parameters(slug="ally", name="Ally")
+    player = Player.objects.create(name="default")
+    chip = PlayerGuardianChip.objects.create(
+        player=player,
+        guardian_chip_definition=guardian,
+        guardian_chip_slug=guardian.slug,
+        unlocked=True,
+        active=False,
+    )
+    param_def = guardian.parameter_definitions.order_by("id").first()
+    assert param_def is not None
+    orphan = PlayerGuardianChipParameter.objects.create(
+        player_guardian_chip=chip,
+        parameter_definition=param_def,
+        level=1,
+    )
+    param_def.delete()
+    orphan.refresh_from_db()
+    assert orphan.parameter_definition is None
+
+    url = reverse("core:guardian_progress")
+    response = client.get(url)
+    assert response.status_code == 200
+    assert PlayerGuardianChipParameter.objects.filter(player_guardian_chip=chip).count() == 0
