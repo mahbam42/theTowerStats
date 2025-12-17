@@ -759,7 +759,7 @@ Testing
  - At least:
    - [X] 1 golden test for a parameterized effect
    - [X] 1 test validating revision behavior
-*** Phase 5 Dashboard UX [10%]
+*** Phase 5 Dashboard UX [22%]
 Goal:
 - Turn the analysis engine outputs into clear, usable, player-facing dashboards.
 - No new math. No new scraping logic. No new domain models.
@@ -841,7 +841,9 @@ Sub Charts:
 - Derived Metrics
   - Effective cooldown reduction
   - Coins per wave vs wave number
-**** TODO Cards [87%]
+**** DONE Cards [100%]
+CLOSED: [2025-12-17 Wed 14:58]
+- State "DONE"       from "TODO"       [2025-12-17 Wed 14:58]
 - Show a utility widget with 'CardSlots' Unlocked and a button to 'Unlock Next Slot'
 - List all Cards in a Collapsible Table
   - Multiselect to add/create preset relationship to a card.
@@ -883,7 +885,9 @@ It's big and not necessary.
 ***** DONE [#B] Battle History <-> Preset Linking
 CLOSED: [2025-12-17 Wed 14:11]
 - State "DONE"       from "TODO"       [2025-12-17 Wed 14:11]
-***** TODO Card Slots Widget should be functional
+***** DONE Card Slots Widget should be functional
+CLOSED: [2025-12-17 Wed 14:58]
+- State "DONE"       from "TODO"       [2025-12-17 Wed 14:58]
 Shows count of unlocked card slots and Gems cost of next slot
 **** TODO UW Progress
     - Clean up source of 'Unknown' Parameters. There should only be 3 for each UW
@@ -945,14 +949,14 @@ This dashboard will be similar to 'Ulitmate Weapons'
     -   Each Chip needs a checkbox for 'active'
         -   Currently only 2 can be active during a round of the game
     -   Upgrade Costs are in Bits
-    - Exactly 3 parameters per UW
+    - Exactly 3 parameters per Guardian Chip
         ParameterKey registry validation
         No “Unknown” rendering path in the UI
 
 **** TODO Bots Progress
  This dashboard will be similar to 'Ulitmate Weapons'
 
-    - Exactly 3 parameters per UW
+    - Exactly 4 parameters per Bot
         ParameterKey registry validation
         No “Unknown” rendering path in the UI
     -   Once unlocked each bot is permantly active
@@ -1475,4 +1479,6 @@ Mostly a visual tweak, but adds context and history for the player to interpert 
 - [X] prompt 17
 - [X] prompt 18
 - [X] prompt 19 cards improvements
-- [ ] prompt 20 Battle History ↔ Preset Tagging
+- [X] prompt 20 Battle History ↔ Preset Tagging
+- [ ] prompt 21 UW Dashboard
+- [ ] Bots/Guardian Chips Dashboards 

@@ -114,6 +114,5 @@ def _parse_slot_cost(record: WikiData) -> str | None:
     """Extract the raw unlock cost value from a wiki row."""
 
     raw_row = record.raw_row or {}
-    cost_raw = str(raw_row.get("Cost") or raw_row.get("Unlock Cost") or "").strip()
+    cost_raw = str(raw_row.get("Gem Cost") or raw_row.get("Cost") or raw_row.get("Unlock Cost") or "").strip()
     return cost_raw or None
-

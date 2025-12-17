@@ -50,6 +50,15 @@ def test_card_slot_helpers_extract_max_and_costs() -> None:
     assert card_slot_unlock_cost_raw_for_slot(slot_number=2) == "25 Gems"
 
 
+@pytest.mark.django_db
+def test_card_slot_helpers_accept_gem_cost_column() -> None:
+    """Card slot helpers accept wiki rows that use a Gem Cost column."""
+
+    _wikidata_row(canonical_name="21", entity_id="21", raw_row={"Slot": "21", "Gem Cost": "8500"}, content_hash="c" * 64)
+    assert card_slot_max_slots() == 21
+    assert next_card_slot_unlock_cost_raw(unlocked=20) == "8500"
+
+
 def test_parse_cost_amount_extracts_integer() -> None:
     """parse_cost_amount extracts the first integer-like token."""
 
@@ -69,4 +78,3 @@ def test_enforce_and_deduct_gems_is_noop_when_player_has_no_gem_field() -> None:
     result, parsed_cost = enforce_and_deduct_gems_if_tracked(player=player, cost_raw="50 Gems")
     assert result is None
     assert parsed_cost == 50
-

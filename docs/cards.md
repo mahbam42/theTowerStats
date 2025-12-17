@@ -39,6 +39,9 @@ Cards help you track your card slot progression and keep an organized view of yo
 > **Note**
 > Slot costs are shown only when the app has card slot data available.
 
+> **Note**
+> Some slot costs may be shown as a plain number, depending on how the source data is formatted.
+
 > **Caution**
 > If the maximum slot count is not available, the app will not allow unlocking slots until that data is available.
 
