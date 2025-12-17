@@ -759,7 +759,7 @@ Testing
  - At least:
    - [X] 1 golden test for a parameterized effect
    - [X] 1 test validating revision behavior
-*** Phase 5 Dashboard UX [66%]
+*** Phase 5 Dashboard UX [87%]
 Goal:
 - Turn the analysis engine outputs into clear, usable, player-facing dashboards.
 - No new math. No new scraping logic. No new domain models.
@@ -930,7 +930,9 @@ markdown_extensions:
 CLOSED: [2025-12-17 Wed 16:01]
 - State "DONE"       from "TODO"       [2025-12-17 Wed 16:01]
 Hasn't been built out or thought out yet.
-**** IN PROGRESS Cards [72%]
+**** DONE Cards [100%]
+CLOSED: [2025-12-17 Wed 18:04]
+- State "DONE"       from "IN PROGRESS" [2025-12-17 Wed 18:04]
 - State "IN PROGRESS" from "DONE"       [2025-12-17 Wed 16:45] \\
   scope creep!
 - State "DONE"       from "TODO"       [2025-12-17 Wed 14:58]
@@ -979,9 +981,15 @@ CLOSED: [2025-12-17 Wed 14:11]
 CLOSED: [2025-12-17 Wed 14:58]
 - State "DONE"       from "TODO"       [2025-12-17 Wed 14:58]
 Shows count of unlocked card slots and Gems cost of next slot
-***** TODO Table Columns should be wortable
-***** TODO Filter by Maxed/Unmaxed Cards
-***** TODO Show Level Effect in Parameters
+***** DONE Table Columns should be wortable
+CLOSED: [2025-12-17 Wed 18:04]
+- State "DONE"       from "TODO"       [2025-12-17 Wed 18:04]
+***** DONE Filter by Maxed/Unmaxed Cards
+CLOSED: [2025-12-17 Wed 18:04]
+- State "DONE"       from "TODO"       [2025-12-17 Wed 18:04]
+***** DONE Show Level Effect in Parameters
+CLOSED: [2025-12-17 Wed 18:04]
+- State "DONE"       from "TODO"       [2025-12-17 Wed 18:04]
 For 'Attack Speed':
 Increase tower attack speed by x #
 
@@ -1076,32 +1084,30 @@ CLOSED: [2025-12-17 Wed 16:31]
 CLOSED: [2025-12-17 Wed 17:14]
 - State "DONE"       from "TODO"       [2025-12-17 Wed 17:14]
 It's showing values before any upgrades have been applied 
-**** TODO Update readme.md
-- Make sure it's still aligned with App Behavior and Features
-- Project Status reflects docs/ revisions 
+
 **** Milestones
 - [X] All dashboards share a single visual and structural language
 - [X] On Battle History Player can scan, filter, and trust historical data quickly
 - [X] A new contributor understands the app without a walkthrough
-**** Exit Criteria [16%]
+**** Exit Criteria [91%]
 UX & Data Integrity:
-- [ ] Dashboards display only computed outputs
-- [ ] No dashboard performs calculations inline
-- [ ] All filters affect views consistently
+- [X] Dashboards display only computed outputs
+- [X] No dashboard performs calculations inline
+- [X] All filters affect views consistently
 
 Coverage:
 Every major entity has a visible dashboard:
-- [ ] Battle History
-- [ ] Charts
-- [ ] Cards
-- [ ] UWs
-- [ ] Guardians
-- [ ] Bots
+- [X] Battle History
+- [X] Charts
+- [X] Cards
+- [X] UWs
+- [X] Guardians
+- [X] Bots
 
 Stability:
 - [ ] No new models added
-- [ ] No migrations required
-- [ ] Test suite passes unchanged
+- [X] No migrations required
+- [X] Test suite passes unchanged
 
 ### Demo Test
 A new user can:
@@ -1109,7 +1115,7 @@ A new user can:
 2. View history
 3. Inspect progress
 4. Understand trends …without explanation.
-*** Phase 6 Expansion of Foundation and Context [0%]
+*** Phase 6 Expansion of Foundation and Context [11%]
 What’s done is minimal by design. Expand it to feel “real”:
 
 **Foundations:**
@@ -1153,7 +1159,7 @@ What’s done is minimal by design. Expand it to feel “real”:
   
 **Documentation**
 
-- [ ]  Add Github Action to publish Docs to Github Pages
+- [X]  Add Github Action to publish Docs to Github Pages
 *** Phase 7 Power Tools
 
 **** TODO [#A] Add Chart Builder Modal to Charts Dashboard
@@ -1388,6 +1394,10 @@ Initialize baseline progress rows
 def create_player(sender, instance, created, **kwargs):
     if created:
         Player.objects.create(user=instance)
+**** TODO [#A] Update readme.md
+
+- Make sure it's still aligned with App Behavior and Features
+- Project Status reflects docs/ revisions 
 **** TODO [#C] Export / Share (Lightweight)
 
 - CSV export of derived metrics

@@ -10,6 +10,7 @@ def _assert_nav_links(response) -> None:
     """Assert the global navigation renders and links resolve."""
 
     content = response.content.decode("utf-8")
+    assert 'href="https://mahbam42.github.io/theTowerStats/"' in content
     expected_hrefs = [
         reverse("core:battle_history"),
         reverse("core:dashboard"),
@@ -40,4 +41,3 @@ def test_phase3_views_load_and_include_nav(client, url_name: str) -> None:
     response = client.get(reverse(url_name))
     assert response.status_code == 200
     _assert_nav_links(response)
-
