@@ -759,7 +759,7 @@ Testing
  - At least:
    - [X] 1 golden test for a parameterized effect
    - [X] 1 test validating revision behavior
-*** Phase 5 Dashboard UX [66%]
+*** Phase 5 Dashboard UX [55%]
 Goal:
 - Turn the analysis engine outputs into clear, usable, player-facing dashboards.
 - No new math. No new scraping logic. No new domain models.
@@ -930,8 +930,9 @@ markdown_extensions:
 CLOSED: [2025-12-17 Wed 16:01]
 - State "DONE"       from "TODO"       [2025-12-17 Wed 16:01]
 Hasn't been built out or thought out yet.
-**** DONE Cards [100%]
-CLOSED: [2025-12-17 Wed 14:58]
+**** IN PROGRESS Cards [72%]
+- State "IN PROGRESS" from "DONE"       [2025-12-17 Wed 16:45] \\
+  scope creep!
 - State "DONE"       from "TODO"       [2025-12-17 Wed 14:58]
 - Show a utility widget with 'CardSlots' Unlocked and a button to 'Unlock Next Slot'
 - List all Cards in a Collapsible Table
@@ -978,6 +979,14 @@ CLOSED: [2025-12-17 Wed 14:11]
 CLOSED: [2025-12-17 Wed 14:58]
 - State "DONE"       from "TODO"       [2025-12-17 Wed 14:58]
 Shows count of unlocked card slots and Gems cost of next slot
+***** TODO Table Columns should be wortable
+***** TODO Filter by Maxed/Unmaxed Cards
+***** TODO Show Level Effect in Parameters
+For 'Attack Speed':
+Increase tower attack speed by x #
+
+Should read:
+Increase tower attack speed by x 2.15 (for level 7)
 **** DONE UW Progress
 CLOSED: [2025-12-17 Wed 15:53]
 - State "DONE"       from "TODO"       [2025-12-17 Wed 15:53]

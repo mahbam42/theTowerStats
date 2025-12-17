@@ -177,6 +177,46 @@ def test_guardian_active_enforces_max_two(client, settings) -> None:
 
 
 @pytest.mark.django_db
+def test_guardian_active_checkbox_payload_sets_active(client) -> None:
+    """Checkbox posts include both hidden and checked values; checked wins."""
+
+    guardian = _guardian_with_three_parameters(slug="ally", name="Ally")
+    player = Player.objects.create(name="default")
+    chip = PlayerGuardianChip.objects.create(
+        player=player,
+        guardian_chip_definition=guardian,
+        guardian_chip_slug=guardian.slug,
+        unlocked=True,
+        active=False,
+    )
+
+    url = reverse("core:guardian_progress")
+    response = client.post(
+        url,
+        data={
+            "action": "set_guardian_active",
+            "entity_id": chip.id,
+            "active": ["0", "1"],
+        },
+    )
+    assert response.status_code == 302
+    chip.refresh_from_db()
+    assert chip.active is True
+
+    response = client.post(
+        url,
+        data={
+            "action": "set_guardian_active",
+            "entity_id": chip.id,
+            "active": ["0"],
+        },
+    )
+    assert response.status_code == 302
+    chip.refresh_from_db()
+    assert chip.active is False
+
+
+@pytest.mark.django_db
 def test_guardian_dashboard_omits_invalid_guardian_in_production(client, settings) -> None:
     """Production mode omits guardian chips that do not have exactly 3 parameters."""
 

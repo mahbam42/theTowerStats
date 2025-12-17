@@ -1005,7 +1005,7 @@ def guardian_progress(request: HttpRequest) -> HttpResponse:
 
         if action == "set_guardian_active":
             chip_id = int(request.POST.get("entity_id") or 0)
-            desired_active = (request.POST.get("active") or "0").strip() == "1"
+            desired_active = "1" in {(value or "").strip() for value in request.POST.getlist("active")}
             chip = PlayerGuardianChip.objects.filter(player=player, id=chip_id).first()
             if chip is None:
                 if is_ajax:
