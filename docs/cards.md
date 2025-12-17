@@ -17,21 +17,28 @@ Cards help you track your card slot progression and keep an organized view of yo
 2. View **Card slots** to review your unlocked slot count.
 3. Select **Unlock Next Slot** to increase your unlocked slot count.
 4. View the **Cards table** to review all cards.
-5. Select a card’s **Inventory** value to enter your current count.
-6. Select one or more **Presets** to tag that card.
-7. Select **Preset filter** to show only cards tagged with specific presets.
+5. Select a card’s **Inventory** value to enter your current progress.
+6. Review the **Inventory** display to confirm the shown threshold for that card level.
+7. Select a card’s **Presets** section to add or remove preset tags.
+8. Select **Preset filter** to show only cards tagged with specific presets.
+9. Select **Reset Filters** to return to the full list.
 
 ## How to Read the Results
 
 - **Slots unlocked** shows your current slot count, and the maximum when it is available.
-- **Level** is derived from the inventory count shown for that card.
-- **Parameters** show the stored card effect text used for quick reference.
+- **Level** increases automatically when your inventory progress rolls over into the next tier.
+- **Parameters** show the card description text for quick reference.
+- **Inventory** is shown as current / threshold. When you exceed a threshold, the remainder carries into the next tier.
+- **(MAX)** indicates the card is fully maxed and can no longer be increased.
 - **Presets** are labels that help you filter and group cards; they do not change gameplay outcomes.
 
 ## Notes & Limitations
 
 > **Note**
 > Slot costs are shown only when the app has card slot data available.
+
+> **Note**
+> Preset tags are shown as colored badges for readability. Colors are assigned automatically and remain consistent.
 
 > **Caution**
 > The Cards page is an organizer and tracker. It does not recommend builds or presets.
@@ -40,4 +47,3 @@ Cards help you track your card slot progression and keep an organized view of yo
 
 1. Select multiple items in **Preset filter** to narrow the table to a combined view.
 2. Review the **Preset tags** list to confirm which labels exist.
-

@@ -34,7 +34,7 @@ from core.forms import (
 from definitions.models import CardDefinition
 from definitions.models import WikiData
 from gamedata.models import BattleReport
-from player_state.cards import derive_card_level
+from player_state.cards import apply_inventory_rollover, derive_card_progress
 from player_state.models import (
     Player,
     PlayerBot,
@@ -325,8 +325,18 @@ def cards(request: HttpRequest) -> HttpResponse:
                 messages.error(request, "Card row not found.")
                 return redirect(redirect_to)
 
-            card.inventory_count = int(form.cleaned_data["inventory_count"])
-            card.save(update_fields=["inventory_count", "updated_at"])
+            inventory_input = int(form.cleaned_data["inventory_count"])
+            if card.stars_unlocked <= 0 and inventory_input <= 0:
+                card.inventory_count = 0
+                card.save(update_fields=["inventory_count", "updated_at"])
+            else:
+                new_level, new_inventory = apply_inventory_rollover(
+                    level=card.stars_unlocked,
+                    inventory=inventory_input,
+                )
+                card.stars_unlocked = new_level
+                card.inventory_count = new_inventory
+                card.save(update_fields=["stars_unlocked", "inventory_count", "updated_at"])
             messages.success(request, "Saved card inventory.")
             return redirect(redirect_to)
 
@@ -367,32 +377,29 @@ def cards(request: HttpRequest) -> HttpResponse:
         card_qs = card_qs.filter(presets__in=selected_presets).distinct()
 
     cards = list(card_qs)
-    library_definitions = definitions
-    if selected_presets:
-        seen_def_ids: set[int] = set()
-        filtered: list[CardDefinition] = []
-        for card in cards:
-            if card.card_definition_id is None or card.card_definition is None:
-                continue
-            if card.card_definition_id in seen_def_ids:
-                continue
-            seen_def_ids.add(card.card_definition_id)
-            filtered.append(card.card_definition)
-        filtered.sort(key=lambda d: d.name)
-        library_definitions = filtered
 
     rows = []
     for card in cards:
         definition = card.card_definition
         name = definition.name if definition is not None else card.card_slug
-        level = derive_card_level(inventory_count=card.inventory_count)
+        progress = derive_card_progress(
+            stars_unlocked=card.stars_unlocked,
+            inventory_count=card.inventory_count,
+        )
+        is_unowned = card.stars_unlocked <= 0 and card.inventory_count <= 0
+        display_level = 0 if is_unowned else progress.level
+        display_inventory = 0 if is_unowned else progress.inventory
+        display_threshold = 0 if is_unowned else progress.threshold
         rows.append(
             {
                 "id": card.id,
                 "name": name,
-                "level": level,
-                "inventory_count": card.inventory_count,
-                "effect_raw": (definition.effect_raw if definition is not None else ""),
+                "level": display_level,
+                "inventory_count": display_inventory,
+                "inventory_threshold": display_threshold,
+                "is_maxed": (not is_unowned and progress.is_maxed),
+                "rarity": (definition.rarity if definition is not None else ""),
+                "description": (definition.description if definition is not None else ""),
                 "presets": tuple(card.presets.all()),
                 "updated_at": card.updated_at,
             }
@@ -410,7 +417,6 @@ def cards(request: HttpRequest) -> HttpResponse:
         request,
         "core/cards.html",
         {
-            "definitions": library_definitions,
             "card_slots": card_slots,
             "filter_form": filter_form,
             "presets": presets,

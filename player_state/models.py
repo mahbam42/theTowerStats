@@ -15,6 +15,31 @@ from definitions.models import (
     UltimateWeaponParameterDefinition,
 )
 
+PRESET_COLOR_KEYS: tuple[str, ...] = (
+    "blue",
+    "teal",
+    "green",
+    "orange",
+    "red",
+    "purple",
+)
+PRESET_COLOR_CHOICES: tuple[tuple[str, str], ...] = tuple(
+    (key, key.title()) for key in PRESET_COLOR_KEYS
+)
+
+
+def preset_color_for_id(*, preset_id: int) -> str:
+    """Select a stable preset color key for a database id.
+
+    Args:
+        preset_id: Database primary key for a Preset.
+
+    Returns:
+        A stable color key chosen from the supported palette.
+    """
+
+    return PRESET_COLOR_KEYS[preset_id % len(PRESET_COLOR_KEYS)]
+
 
 class Player(models.Model):
     """A single-player (by default) root entity for progress ownership."""
@@ -34,6 +59,7 @@ class Preset(models.Model):
 
     player = models.ForeignKey(Player, on_delete=models.CASCADE, related_name="presets")
     name = models.CharField(max_length=80)
+    color = models.CharField(max_length=20, blank=True, choices=PRESET_COLOR_CHOICES, default="")
     notes = models.TextField(blank=True)
     created_at = models.DateTimeField(auto_now_add=True)
 
@@ -46,6 +72,28 @@ class Preset(models.Model):
         """Return preset display name."""
 
         return self.name
+
+    def save(self, *args, **kwargs) -> None:
+        """Save while ensuring the preset has a stable badge color."""
+
+        super().save(*args, **kwargs)
+        if self.color or self.pk is None:
+            return
+        self.color = preset_color_for_id(preset_id=self.pk)
+        super().save(update_fields=["color"])
+
+    def badge_color(self) -> str:
+        """Return the effective color key for UI badges.
+
+        Returns:
+            A palette key for use in CSS class names.
+        """
+
+        if self.color:
+            return self.color
+        if self.pk is None:
+            return PRESET_COLOR_KEYS[0]
+        return preset_color_for_id(preset_id=self.pk)
 
 
 class PlayerCard(models.Model):
