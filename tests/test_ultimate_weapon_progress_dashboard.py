@@ -247,3 +247,31 @@ def test_uw_unlock_form_posts_to_page_path(client) -> None:
     assert response.status_code == 200
     content = response.content.decode("utf-8")
     assert 'action="/ultimate-weapons/"' in content
+
+
+@pytest.mark.django_db
+def test_uw_dashboard_labels_observed_usage_for_locked_vs_unlocked(client) -> None:
+    """Locked UWs use a distinct observed-from-runs usage label."""
+
+    uw_locked = _uw_with_three_parameters(slug="locked_uw", name="Locked UW")
+    uw_unlocked = _uw_with_three_parameters(slug="unlocked_uw", name="Unlocked UW")
+    player = Player.objects.create(name="default")
+    PlayerUltimateWeapon.objects.create(
+        player=player,
+        ultimate_weapon_definition=uw_locked,
+        ultimate_weapon_slug=uw_locked.slug,
+        unlocked=False,
+    )
+    PlayerUltimateWeapon.objects.create(
+        player=player,
+        ultimate_weapon_definition=uw_unlocked,
+        ultimate_weapon_slug=uw_unlocked.slug,
+        unlocked=True,
+    )
+
+    url = reverse("core:ultimate_weapon_progress")
+    response = client.get(url)
+    assert response.status_code == 200
+    tiles = {tile["slug"]: tile for tile in response.context["ultimate_weapons"]}
+    assert tiles["locked_uw"]["summary"]["headline_label"] == "Runs used while locked (observed)"
+    assert tiles["unlocked_uw"]["summary"]["headline_label"] == "Runs used (observed)"

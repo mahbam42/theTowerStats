@@ -967,7 +967,11 @@ def ultimate_weapon_progress(request: HttpRequest) -> HttpResponse:
                 "summary": {
                     "total_invested": total_stones_invested,
                     "total_stones_invested": total_stones_invested,
-                    "headline_label": "Runs used",
+                    "headline_label": (
+                        "Runs used (observed)"
+                        if uw.unlocked
+                        else "Runs used while locked (observed)"
+                    ),
                     "headline_value": runs_count,
                     "headline_empty": (not any_battles),
                 },

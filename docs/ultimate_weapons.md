@@ -43,6 +43,9 @@ The Ultimate Weapons page helps you track which Ultimate Weapons you have unlock
 > If no Battle Reports have been imported yet, **Runs used** will show “No battles recorded yet”.
 
 > **Caution**
+> **Runs used (observed)** is based on what appears in your imported Battle Reports. Some game effects (such as Perks) can temporarily enable an Ultimate Weapon for a single run, so this count may include runs where the weapon is not permanently unlocked.
+
+> **Caution**
 > If an Ultimate Weapon’s upgrade parameters are incomplete or not recognized, it may not appear on this page until the underlying data is available.
 
 ## Advanced Usage

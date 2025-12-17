@@ -3,7 +3,7 @@
 {% block title %}Ultimate Weapon Progress • theTowerStats{% endblock %}
 
 {% block content %}
-  {% include "core/components/upgradeable_entity_dashboard.html" with dashboard_kicker="Progress" dashboard_title="Ultimate Weapons" dashboard_note="Upgrades currently assume sufficient Stones. Costs are informational only." filter_form=filter_form entities=ultimate_weapons entity_badge="UW" total_invested_label="Total Stones invested" unlock_cost_currency_label="Stones" unlock_action_value="unlock_uw" level_up_action_value="level_up_uw_param" show_activation=False %}
+  {% include "core/components/upgradeable_entity_dashboard.html" with dashboard_kicker="Progress" dashboard_title="Ultimate Weapons" dashboard_note="Upgrades currently assume sufficient Stones. Costs are informational only. Runs used is observed from imported runs and may include temporary unlocks from Perks." filter_form=filter_form entities=ultimate_weapons entity_badge="UW" total_invested_label="Total Stones invested" unlock_cost_currency_label="Stones" unlock_action_value="unlock_uw" level_up_action_value="level_up_uw_param" show_activation=False %}
 {% endblock %}
 
 {% block extra_scripts %}
