@@ -6,9 +6,10 @@ import json
 from datetime import date
 
 from django.contrib import messages
+from django.conf import settings
 from django.db import transaction
 from django.db.models import Case, ExpressionWrapper, F, FloatField, QuerySet, Value, When
-from django.http import HttpRequest, HttpResponse, QueryDict
+from django.http import HttpRequest, HttpResponse, JsonResponse, QueryDict
 from django.shortcuts import redirect, render
 from django.core.paginator import Paginator
 from django.urls import reverse
@@ -33,8 +34,15 @@ from core.forms import (
     ChartContextForm,
     CardsFilterForm,
     ComparisonForm,
+    UltimateWeaponProgressFilterForm,
 )
-from definitions.models import CardDefinition
+from core.upgradeables import (
+    ParameterLevelRow,
+    build_uw_parameter_view,
+    total_stones_invested_for_parameter,
+    validate_uw_parameter_definitions,
+)
+from definitions.models import CardDefinition, UltimateWeaponDefinition
 from gamedata.models import BattleReport, BattleReportProgress
 from player_state.card_slots import card_slot_max_slots, next_card_slot_unlock_cost_raw
 from player_state.cards import apply_inventory_rollover, derive_card_progress
@@ -45,6 +53,7 @@ from player_state.models import (
     PlayerCard,
     PlayerGuardianChip,
     PlayerUltimateWeapon,
+    PlayerUltimateWeaponParameter,
     Preset,
 )
 from core.services import ingest_battle_report
@@ -492,22 +501,308 @@ def cards(request: HttpRequest) -> HttpResponse:
 def ultimate_weapon_progress(request: HttpRequest) -> HttpResponse:
     """Render the Ultimate Weapon progress page."""
     player, _ = Player.objects.get_or_create(name="default")
-    ultimate_weapons = (
+
+    uw_definitions = list(UltimateWeaponDefinition.objects.order_by("name"))
+    for uw_def in uw_definitions:
+        uw, created = PlayerUltimateWeapon.objects.get_or_create(
+            player=player,
+            ultimate_weapon_slug=uw_def.slug,
+            defaults={"ultimate_weapon_definition": uw_def, "unlocked": False},
+        )
+        if not created and uw.ultimate_weapon_definition_id is None:
+            uw.ultimate_weapon_definition = uw_def
+            uw.save(update_fields=["ultimate_weapon_definition"])
+
+    if request.method == "POST":
+        action = (request.POST.get("action") or "").strip()
+        is_ajax = request.headers.get("x-requested-with") == "XMLHttpRequest"
+        redirect_to = request.POST.get("next") or request.path
+
+        if action == "unlock_uw":
+            uw_id = int(request.POST.get("uw_id") or 0)
+            uw = (
+                PlayerUltimateWeapon.objects.filter(player=player, id=uw_id)
+                .select_related("ultimate_weapon_definition")
+                .first()
+            )
+            if uw is None or uw.ultimate_weapon_definition is None:
+                if is_ajax:
+                    return JsonResponse({"ok": False, "error": "Ultimate Weapon not found."}, status=404)
+                messages.error(request, "Ultimate Weapon not found.")
+                return redirect(redirect_to)
+
+            try:
+                validate_uw_parameter_definitions(uw_definition=uw.ultimate_weapon_definition)
+            except ValueError as exc:
+                if settings.DEBUG:
+                    raise
+                messages.warning(request, f"Skipping {uw.ultimate_weapon_definition.name}: {exc}")
+                if is_ajax:
+                    return JsonResponse({"ok": False, "error": str(exc)}, status=400)
+                return redirect(redirect_to)
+
+            with transaction.atomic():
+                uw.unlocked = True
+                uw.save(update_fields=["unlocked", "updated_at"])
+                for param_def in uw.ultimate_weapon_definition.parameter_definitions.all():
+                    min_level = (
+                        param_def.levels.order_by("level").values_list("level", flat=True).first() or 0
+                    )
+                    player_param, created_param = PlayerUltimateWeaponParameter.objects.get_or_create(
+                        player_ultimate_weapon=uw,
+                        parameter_definition=param_def,
+                        defaults={"level": min_level},
+                    )
+                    if not created_param and player_param.level <= 0 and min_level > 0:
+                        player_param.level = min_level
+                        player_param.save(update_fields=["level", "updated_at"])
+
+            if is_ajax:
+                uw = (
+                    PlayerUltimateWeapon.objects.filter(player=player, id=uw.id)
+                    .select_related("ultimate_weapon_definition")
+                    .prefetch_related("parameters__parameter_definition__levels")
+                    .first()
+                )
+                if uw is None or uw.ultimate_weapon_definition is None:
+                    return JsonResponse({"ok": False, "error": "Ultimate Weapon not found."}, status=404)
+
+                parameters = []
+                total_stones = 0
+                for player_param in uw.parameters.all().select_related("parameter_definition"):
+                    param_def = player_param.parameter_definition
+                    if param_def is None:
+                        continue
+                    levels = [
+                        ParameterLevelRow(level=row.level, value_raw=row.value_raw, cost_raw=row.cost_raw)
+                        for row in param_def.levels.order_by("level")
+                    ]
+                    param_view = build_uw_parameter_view(
+                        player_param=player_param,
+                        levels=levels,
+                        unit_kind=param_def.unit_kind,
+                    )
+                    total_stones += total_stones_invested_for_parameter(
+                        parameter_definition=param_def,
+                        level=player_param.level,
+                    )
+                    parameters.append(param_view)
+                return JsonResponse(
+                    {
+                        "ok": True,
+                        "uw": {
+                            "id": uw.id,
+                            "unlocked": True,
+                            "parameters": parameters,
+                            "total_stones_invested": total_stones,
+                        },
+                    }
+                )
+
+            messages.success(request, f"Unlocked {uw.ultimate_weapon_definition.name}.")
+            return redirect(redirect_to)
+
+        if action == "level_up_uw_param":
+            player_param_id = int(request.POST.get("param_id") or 0)
+            player_param = (
+                PlayerUltimateWeaponParameter.objects.filter(id=player_param_id)
+                .select_related(
+                    "player_ultimate_weapon",
+                    "player_ultimate_weapon__ultimate_weapon_definition",
+                    "parameter_definition",
+                )
+                .first()
+            )
+            if (
+                player_param is None
+                or player_param.parameter_definition is None
+                or player_param.player_ultimate_weapon.player_id != player.id
+            ):
+                if is_ajax:
+                    return JsonResponse({"ok": False, "error": "Parameter not found."}, status=404)
+                messages.error(request, "Ultimate Weapon parameter not found.")
+                return redirect(redirect_to)
+
+            if not player_param.player_ultimate_weapon.unlocked:
+                if is_ajax:
+                    return JsonResponse({"ok": False, "error": "Ultimate Weapon is locked."}, status=400)
+                messages.error(request, "Cannot upgrade a locked Ultimate Weapon.")
+                return redirect(redirect_to)
+
+            param_def = player_param.parameter_definition
+            levels_qs = param_def.levels.order_by("level")
+            max_level = levels_qs.values_list("level", flat=True).last() or 0
+            if player_param.level >= max_level:
+                if is_ajax:
+                    return JsonResponse({"ok": False, "error": "Already at max level."}, status=400)
+                messages.warning(request, "That parameter is already maxed.")
+                return redirect(redirect_to)
+
+            with transaction.atomic():
+                player_param.level += 1
+                player_param.save(update_fields=["level", "updated_at"])
+
+            if is_ajax:
+                levels = [
+                    ParameterLevelRow(level=row.level, value_raw=row.value_raw, cost_raw=row.cost_raw)
+                    for row in levels_qs
+                ]
+                param_view = build_uw_parameter_view(
+                    player_param=player_param,
+                    levels=levels,
+                    unit_kind=param_def.unit_kind,
+                )
+                total_stones = total_stones_invested_for_parameter(
+                    parameter_definition=param_def,
+                    level=player_param.level,
+                )
+                return JsonResponse(
+                    {
+                        "ok": True,
+                        "param": param_view,
+                        "total_stones_invested_for_param": total_stones,
+                    }
+                )
+
+            messages.success(request, f"Upgraded {param_def.display_name}.")
+            return redirect(redirect_to)
+
+        if is_ajax:
+            return JsonResponse({"ok": False, "error": "Unknown action."}, status=400)
+        messages.error(request, "Unknown action.")
+        return redirect(redirect_to)
+
+    filter_form = UltimateWeaponProgressFilterForm(request.GET)
+    filter_form.is_valid()
+    status = (filter_form.cleaned_data.get("status") or "").strip()
+
+    unlocked_rows = (
+        PlayerUltimateWeapon.objects.filter(player=player, unlocked=True)
+        .select_related("ultimate_weapon_definition")
+        .prefetch_related("ultimate_weapon_definition__parameter_definitions__levels")
+    )
+    for uw in unlocked_rows:
+        uw_def = uw.ultimate_weapon_definition
+        if uw_def is None:
+            continue
+        try:
+            validate_uw_parameter_definitions(uw_definition=uw_def)
+        except ValueError:
+            continue
+        for param_def in uw_def.parameter_definitions.all():
+            min_level = param_def.levels.order_by("level").values_list("level", flat=True).first() or 0
+            player_param, created_param = PlayerUltimateWeaponParameter.objects.get_or_create(
+                player_ultimate_weapon=uw,
+                parameter_definition=param_def,
+                defaults={"level": min_level},
+            )
+            if not created_param and player_param.level <= 0 and min_level > 0:
+                player_param.level = min_level
+                player_param.save(update_fields=["level", "updated_at"])
+
+    ultimate_weapons_qs = (
         PlayerUltimateWeapon.objects.filter(player=player)
         .select_related("ultimate_weapon_definition")
-        .prefetch_related("parameters__parameter_definition")
-        .order_by("ultimate_weapon_slug")
+        .prefetch_related(
+            "parameters__parameter_definition__levels",
+            "ultimate_weapon_definition__parameter_definitions__levels",
+        )
+        .order_by("-unlocked", "ultimate_weapon_definition__name", "ultimate_weapon_slug")
     )
-    progress = [
-        {
-            "name": uw.ultimate_weapon_definition.name if uw.ultimate_weapon_definition else uw.ultimate_weapon_slug,
-            "unlocked": uw.unlocked,
-            "parameters": _parameter_rows(uw.parameters.all()),
-        }
-        for uw in ultimate_weapons
-    ]
+    if status == "unlocked":
+        ultimate_weapons_qs = ultimate_weapons_qs.filter(unlocked=True)
+    elif status == "locked":
+        ultimate_weapons_qs = ultimate_weapons_qs.filter(unlocked=False)
 
-    return render(request, "core/ultimate_weapon_progress.html", {"ultimate_weapons": progress})
+    any_battles = BattleReport.objects.exists()
+
+    tiles: list[dict[str, object]] = []
+    for uw in ultimate_weapons_qs:
+        uw_def = uw.ultimate_weapon_definition
+        if uw_def is None:
+            if settings.DEBUG:
+                raise ValueError(f"PlayerUltimateWeapon {uw.id} is missing its definition.")
+            messages.warning(request, f"Skipping unknown UW slug={uw.ultimate_weapon_slug!r}.")
+            continue
+
+        try:
+            validate_uw_parameter_definitions(uw_definition=uw_def)
+        except ValueError as exc:
+            if settings.DEBUG:
+                raise
+            messages.warning(request, f"Skipping {uw_def.name}: {exc}")
+            continue
+
+        player_params_by_def_id = {
+            p.parameter_definition_id: p for p in uw.parameters.all() if p.parameter_definition_id
+        }
+        parameters = []
+        total_stones_invested = 0
+        for param_def in uw_def.parameter_definitions.all().order_by("id"):
+            player_param = player_params_by_def_id.get(param_def.id)
+            if player_param is None:
+                if uw.unlocked:
+                    if settings.DEBUG:
+                        raise ValueError(
+                            f"Missing PlayerUltimateWeaponParameter for uw={uw_def.slug} param={param_def.key}."
+                        )
+                continue
+            levels = [
+                ParameterLevelRow(level=row.level, value_raw=row.value_raw, cost_raw=row.cost_raw)
+                for row in param_def.levels.order_by("level")
+            ]
+            view = build_uw_parameter_view(
+                player_param=player_param,
+                levels=levels,
+                unit_kind=param_def.unit_kind,
+            )
+            total_stones_invested += total_stones_invested_for_parameter(
+                parameter_definition=param_def,
+                level=player_param.level,
+            )
+            parameters.append(view)
+
+        if uw.unlocked and len(parameters) != 3:
+            if settings.DEBUG:
+                raise ValueError(
+                    f"UW {uw_def.slug!r} rendered with {len(parameters)} parameters; expected 3."
+                )
+            messages.warning(request, f"Skipping {uw_def.name}: missing parameter rows.")
+            continue
+
+        runs_using = (
+            BattleReport.objects.filter(run_combat_uws__ultimate_weapon_definition=uw_def)
+            | BattleReport.objects.filter(run_utility_uws__ultimate_weapon_definition=uw_def)
+        ).distinct()
+        runs_count = runs_using.count() if any_battles else 0
+
+        tiles.append(
+            {
+                "id": uw.id,
+                "name": uw_def.name,
+                "slug": uw_def.slug,
+                "description": ((uw_def.description or "").splitlines() or [""])[0].strip(),
+                "unlocked": uw.unlocked,
+                "unlock_cost_raw": None,
+                "summary": {
+                    "total_stones_invested": total_stones_invested,
+                    "headline_label": "Runs used",
+                    "headline_value": runs_count,
+                    "headline_empty": (not any_battles),
+                },
+                "parameters": parameters,
+            }
+        )
+
+    return render(
+        request,
+        "core/ultimate_weapon_progress.html",
+        {
+            "filter_form": filter_form,
+            "ultimate_weapons": tiles,
+            "has_battles": any_battles,
+        },
+    )
 
 
 def guardian_progress(request: HttpRequest) -> HttpResponse:

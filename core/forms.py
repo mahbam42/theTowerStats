@@ -137,6 +137,20 @@ class ChartContextForm(forms.Form):
         return cleaned
 
 
+class UltimateWeaponProgressFilterForm(forms.Form):
+    """Validate filters for the Ultimate Weapons Progress dashboard."""
+
+    status = forms.ChoiceField(
+        required=False,
+        choices=(
+            ("", "All ultimate weapons"),
+            ("unlocked", "Unlocked only"),
+            ("locked", "Locked only"),
+        ),
+        label="Show",
+    )
+
+
 class BattleHistoryFilterForm(forms.Form):
     """Validate filter controls for the Battle History dashboard."""
 

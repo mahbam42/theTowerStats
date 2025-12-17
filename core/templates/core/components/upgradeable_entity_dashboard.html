@@ -1,0 +1,154 @@
+{# Reusable dashboard pattern for unlockable entities with 3 upgrade parameters. #}
+
+<div class="grid-x grid-margin-x">
+  <div class="cell">
+    <div class="card-shell">
+      <p class="muted margin-0">{{ dashboard_kicker }}</p>
+      <h2 class="margin-0">{{ dashboard_title }}</h2>
+      <p class="muted margin-0">{{ dashboard_note }}</p>
+    </div>
+  </div>
+</div>
+
+<div class="grid-x grid-margin-x margin-top-1">
+  <div class="cell">
+    <form method="get" class="card-shell">
+      <div class="grid-x grid-margin-x align-middle">
+        <div class="cell medium-4">
+          <label class="margin-0">
+            {{ filter_form.status.label }}
+            {{ filter_form.status }}
+          </label>
+        </div>
+        <div class="cell shrink">
+          <button class="button" type="submit">Filter</button>
+        </div>
+      </div>
+    </form>
+  </div>
+</div>
+
+<div class="grid-x grid-margin-x margin-top-1">
+  <div class="cell">
+    {% if entities %}
+      <div class="grid-x grid-margin-x">
+        {% for entity in entities %}
+          <div class="cell medium-6">
+            <div class="callout entity-tile {% if entity.unlocked %}success{% else %}secondary{% endif %}" data-entity-id="{{ entity.id }}">
+              <div class="grid-x align-justify align-middle">
+                <div class="cell auto">
+                  <h5 class="margin-0">{{ entity.name }}</h5>
+                  <p class="muted margin-0">
+                    Status:
+                    <span class="entity-status">{% if entity.unlocked %}Unlocked{% else %}Locked{% endif %}</span>
+                  </p>
+                </div>
+                <div class="cell shrink">
+                  <span class="label">{{ entity_badge }}</span>
+                </div>
+              </div>
+
+              <div class="grid-x grid-margin-x margin-top-1">
+                <div class="cell">
+                  <div class="card-shell">
+                    <div class="grid-x grid-margin-x align-middle">
+                      <div class="cell auto">
+                        <p class="muted margin-0">Total Stones invested</p>
+                        <h5 class="margin-0 entity-total-stones">{{ entity.summary.total_stones_invested }}</h5>
+                      </div>
+                      <div class="cell auto">
+                        <p class="muted margin-0">{{ entity.summary.headline_label }}</p>
+                        {% if entity.summary.headline_empty %}
+                          <p class="muted margin-0">No battles recorded yet</p>
+                        {% else %}
+                          <h5 class="margin-0">{{ entity.summary.headline_value }}</h5>
+                        {% endif %}
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              </div>
+
+              {% if entity.unlocked %}
+                <details class="margin-top-1" open>
+                  <summary>Details</summary>
+                  <table class="stack margin-top-1">
+                    <thead>
+                      <tr>
+                        <th scope="col">Parameter</th>
+                        <th scope="col">Level</th>
+                        <th scope="col">Current</th>
+                        <th scope="col">Next</th>
+                        <th scope="col">Cost</th>
+                        <th scope="col"></th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      {% for param in entity.parameters %}
+                        {% with param_id_str=param.id|stringformat:"s" %}
+                          {% with json_id="param-levels-"|add:param_id_str %}
+                            {{ param.levels|json_script:json_id }}
+                          {% endwith %}
+                        {% endwith %}
+                        <tr class="entity-param-row" data-param-id="{{ param.id }}" data-unit-kind="{{ param.unit_kind }}" data-level="{{ param.level }}" data-max-level="{{ param.max_level }}">
+                          <td>{{ param.name }}</td>
+                          <td class="entity-param-level">{{ param.level }}</td>
+                          <td class="entity-param-current">{{ param.current_value_raw }}</td>
+                          <td class="entity-param-next">
+                            {% if param.next_value_raw %}
+                              {{ param.next_value_raw }}
+                              {% if param.delta %}
+                                <strong class="entity-param-delta">({{ param.delta }})</strong>
+                              {% endif %}
+                            {% else %}
+                              <span class="muted">—</span>
+                            {% endif %}
+                          </td>
+                          <td class="entity-param-cost">
+                            {% if param.next_cost_raw %}
+                              {{ param.next_cost_raw }}
+                            {% else %}
+                              <span class="muted">—</span>
+                            {% endif %}
+                          </td>
+                          <td class="text-right">
+                            <form method="post" class="inline entity-action-form" data-action="level_up" data-param-id="{{ param.id }}">
+                              {% csrf_token %}
+                              <input type="hidden" name="action" value="level_up_uw_param" />
+                              <input type="hidden" name="param_id" value="{{ param.id }}" />
+                              <input type="hidden" name="next" value="{{ request.get_full_path }}" />
+                              <button class="button tiny {% if param.is_maxed %}disabled{% endif %} entity-level-up" type="submit" {% if param.is_maxed %}disabled aria-disabled="true"{% endif %}>
+                                {% if param.is_maxed %}MAX{% else %}Level Up{% endif %}
+                              </button>
+                            </form>
+                          </td>
+                        </tr>
+                      {% endfor %}
+                    </tbody>
+                  </table>
+                </details>
+              {% else %}
+                <div class="card-shell margin-top-1 entity-locked-panel">
+                  <p class="muted margin-0">Unlock cost (Stones)</p>
+                  <p class="margin-0">{% if entity.unlock_cost_raw %}{{ entity.unlock_cost_raw }}{% else %}<span class="muted">Not tracked yet</span>{% endif %}</p>
+                  {% if entity.description %}
+                    <p class="muted margin-top-1 margin-bottom-0">{{ entity.description }}</p>
+                  {% endif %}
+                  <form method="post" class="margin-top-1 entity-action-form" data-action="unlock" data-uw-id="{{ entity.id }}">
+                    {% csrf_token %}
+                    <input type="hidden" name="action" value="unlock_uw" />
+                    <input type="hidden" name="uw_id" value="{{ entity.id }}" />
+                    <input type="hidden" name="next" value="{{ request.get_full_path }}" />
+                    <button class="button entity-unlock" type="submit">Unlock</button>
+                  </form>
+                </div>
+              {% endif %}
+            </div>
+          </div>
+        {% endfor %}
+      </div>
+    {% else %}
+      <div class="empty-state" role="status">No entities found.</div>
+    {% endif %}
+  </div>
+</div>
