@@ -29,7 +29,7 @@ class PlayerAdmin(admin.ModelAdmin):
 class PresetAdmin(admin.ModelAdmin):
     """Admin configuration for Preset."""
 
-    list_display = ("player", "name", "created_at")
+    list_display = ("player", "name", "color", "created_at")
     search_fields = ("name",)
     list_filter = ("player",)
 
@@ -85,4 +85,3 @@ class PlayerGuardianChipParameterAdmin(admin.ModelAdmin):
     """Admin configuration for PlayerGuardianChipParameter."""
 
     list_display = ("player_guardian_chip", "parameter_definition", "level", "updated_at")
-

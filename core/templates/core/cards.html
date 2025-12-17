@@ -2,6 +2,26 @@
 
 {% block title %}Cards • theTowerStats{% endblock %}
 
+{% block head %}
+  <style>
+    .cards-table tr.card-row.rarity-common { background: #fcfcff; }
+    .cards-table tr.card-row.rarity-rare { background: #f5fbff; }
+    .cards-table tr.card-row.rarity-epic { background: #fbf6ff; }
+    .cards-table tr.card-row.rarity-legendary { background: #fff9f0; }
+    .cards-table tr.card-row.rarity-mythic { background: #fff4f4; }
+    .cards-table tr.card-maxed { opacity: 0.85; }
+    .cards-table tr.card-maxed td { font-weight: 600; }
+
+    .preset-badge { margin-right: 0.25rem; margin-bottom: 0.25rem; }
+    .preset-color-blue { background: #1779ba; }
+    .preset-color-teal { background: #1d9a8a; }
+    .preset-color-green { background: #3adb76; color: #0b351d; }
+    .preset-color-orange { background: #ffae00; color: #3b2a00; }
+    .preset-color-red { background: #cc4b37; }
+    .preset-color-purple { background: #6f42c1; }
+  </style>
+{% endblock %}
+
 {% block content %}
   <div class="grid-x grid-margin-x">
     <div class="cell">
@@ -46,7 +66,7 @@
             type="submit"
             {% if not card_slots.max or card_slots.unlocked >= card_slots.max %}disabled{% endif %}
           >
-            Unlock Next Slot
+            Unlock Next Slot{% if card_slots.next_cost %} ({{ card_slots.next_cost }}){% endif %}
           </button>
         </form>
       </div>
@@ -54,11 +74,20 @@
       <div class="card-shell margin-top-1">
         <h5>Preset tags</h5>
         {% if presets %}
-          <ul class="no-bullet">
-            {% for preset in presets %}
-              <li>• {{ preset.name }}</li>
-            {% endfor %}
-          </ul>
+          <div class="grid-x grid-margin-x">
+            <div class="cell">
+              {% for preset in presets %}
+                <a
+                  class="badge preset-badge preset-color-{{ preset.badge_color }}"
+                  href="?presets={{ preset.id }}"
+                  data-preset-filter
+                  data-preset-id="{{ preset.id }}"
+                >
+                  {{ preset.name }}
+                </a>
+              {% endfor %}
+            </div>
+          </div>
         {% else %}
           <div class="empty-state" role="status">No presets recorded.</div>
         {% endif %}
@@ -82,13 +111,16 @@
           <div class="cell shrink">
             <button class="button" type="submit">Apply</button>
           </div>
+          <div class="cell shrink">
+            <a class="button secondary hollow" href="{% url 'core:cards' %}">Reset Filters</a>
+          </div>
         </form>
 
         <details open>
           <summary class="muted margin-bottom-1">Cards table</summary>
           {% if rows %}
             <div class="table-scroll">
-              <table class="stack">
+              <table class="stack cards-table">
                 <thead>
                   <tr>
                     <th scope="col">Card</th>
@@ -101,10 +133,24 @@
                 </thead>
                 <tbody>
                   {% for row in rows %}
-                    <tr>
+                    <tr
+                      class="card-row rarity-{{ row.rarity|default:''|slugify }} {% if row.is_maxed %}card-maxed{% endif %}"
+                    >
                       <td>{{ row.name }}</td>
-                      <td>{{ row.level }}</td>
-                      <td>{{ row.effect_raw|default:"—" }}</td>
+                      <td>
+                        {% if row.level %}
+                          {{ row.level }}
+                        {% else %}
+                          —
+                        {% endif %}
+                      </td>
+                      <td>
+                        {% if row.description %}
+                          <div style="white-space: pre-line;">{{ row.description }}</div>
+                        {% else %}
+                          —
+                        {% endif %}
+                      </td>
                       <td>
                         <form method="post">
                           {% csrf_token %}
@@ -118,33 +164,47 @@
                             value="{{ row.inventory_count }}"
                             style="max-width: 6rem;"
                             onchange="this.form.submit()"
+                            {% if row.is_maxed %}disabled{% endif %}
                           >
+                          <span class="muted">
+                            / {{ row.inventory_threshold }}{% if row.is_maxed %} (MAX){% endif %}
+                          </span>
                         </form>
                       </td>
                       <td>
-                        <form method="post">
-                          {% csrf_token %}
-                          <input type="hidden" name="action" value="update_presets">
-                          <input type="hidden" name="next" value="{{ request.get_full_path }}">
-                          <input type="hidden" name="card_id" value="{{ row.id }}">
-                          <select name="presets" multiple size="4" onchange="this.form.submit()">
-                            {% for preset in presets %}
-                              <option
-                                value="{{ preset.id }}"
-                                {% if preset in row.presets %}selected{% endif %}
-                              >
-                                {{ preset.name }}
-                              </option>
-                            {% endfor %}
-                          </select>
-                          <input
-                            type="text"
-                            name="new_preset_name"
-                            placeholder="New preset"
-                            style="max-width: 10rem;"
-                          >
-                          <button class="button tiny" type="submit">Save</button>
-                        </form>
+                        <div>
+                          {% for preset in row.presets %}
+                            <span class="badge preset-badge preset-color-{{ preset.badge_color }}">{{ preset.name }}</span>
+                          {% empty %}
+                            —
+                          {% endfor %}
+                        </div>
+                        <details class="margin-top-1">
+                          <summary class="muted">Edit</summary>
+                          <form method="post" class="margin-top-1">
+                            {% csrf_token %}
+                            <input type="hidden" name="action" value="update_presets">
+                            <input type="hidden" name="next" value="{{ request.get_full_path }}">
+                            <input type="hidden" name="card_id" value="{{ row.id }}">
+                            <select name="presets" multiple size="4">
+                              {% for preset in presets %}
+                                <option
+                                  value="{{ preset.id }}"
+                                  {% if preset in row.presets %}selected{% endif %}
+                                >
+                                  {{ preset.name }}
+                                </option>
+                              {% endfor %}
+                            </select>
+                            <input
+                              type="text"
+                              name="new_preset_name"
+                              placeholder="New preset"
+                              style="max-width: 10rem;"
+                            >
+                            <button class="button tiny" type="submit">Save</button>
+                          </form>
+                        </details>
                       </td>
                       <td>{{ row.updated_at }}</td>
                     </tr>
@@ -157,25 +217,45 @@
           {% endif %}
         </details>
       </div>
-
-      <div class="card-shell margin-top-1">
-        <h5>Card library</h5>
-        {% if definitions %}
-          <div class="grid-x grid-margin-x small-up-2 medium-up-3 margin-top-1">
-            {% for card in definitions %}
-              <div class="cell">
-                <div class="callout secondary">
-                  <strong>{{ card.name }}</strong>
-                  {% if card.rarity %}<p class="muted margin-0">{{ card.rarity }}</p>{% endif %}
-                  {% if card.effect_raw %}<p class="muted margin-0">{{ card.effect_raw }}</p>{% endif %}
-                </div>
-              </div>
-            {% endfor %}
-          </div>
-        {% else %}
-          <div class="empty-state" role="status">Card definitions have not been imported yet.</div>
-        {% endif %}
-      </div>
     </div>
   </div>
+{% endblock %}
+
+{% block extra_scripts %}
+  <script>
+    (function () {
+      function updatePresetFilters(presetId) {
+        const url = new URL(window.location.href);
+        const params = url.searchParams;
+        const existing = params.getAll("presets");
+        const next = [];
+        let removed = false;
+        for (const value of existing) {
+          if (value === presetId) {
+            removed = true;
+            continue;
+          }
+          next.push(value);
+        }
+        params.delete("presets");
+        for (const value of next) {
+          params.append("presets", value);
+        }
+        if (!removed) {
+          params.append("presets", presetId);
+        }
+        url.search = params.toString();
+        window.location.assign(url.toString());
+      }
+
+      document.querySelectorAll("[data-preset-filter]").forEach(function (el) {
+        el.addEventListener("click", function (event) {
+          const presetId = el.getAttribute("data-preset-id");
+          if (!presetId) return;
+          event.preventDefault();
+          updatePresetFilters(presetId);
+        });
+      });
+    })();
+  </script>
 {% endblock %}
