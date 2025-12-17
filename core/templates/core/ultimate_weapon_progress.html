@@ -47,7 +47,8 @@
     function postForm(form) {
       const token = getCookie('csrftoken');
       const data = new FormData(form);
-      return fetch(form.action || window.location.href, {
+      const target = form.getAttribute('action') || window.location.href;
+      return fetch(target, {
         method: 'POST',
         headers: {
           'X-CSRFToken': token,

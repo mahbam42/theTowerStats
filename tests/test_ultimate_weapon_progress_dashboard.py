@@ -186,3 +186,23 @@ def test_uw_dashboard_omits_invalid_uw_in_production(client, settings) -> None:
     response = client.get(url)
     assert response.status_code == 200
     assert all(tile["slug"] != "bad_uw" for tile in response.context["ultimate_weapons"])
+
+
+@pytest.mark.django_db
+def test_uw_unlock_form_posts_to_page_path(client) -> None:
+    """Unlock form includes an explicit action attribute to avoid DOM shadowing issues."""
+
+    uw = _uw_with_three_parameters(slug="chain_lightning", name="Chain Lightning")
+    player = Player.objects.create(name="default")
+    PlayerUltimateWeapon.objects.create(
+        player=player,
+        ultimate_weapon_definition=uw,
+        ultimate_weapon_slug=uw.slug,
+        unlocked=False,
+    )
+
+    url = reverse("core:ultimate_weapon_progress")
+    response = client.get(url)
+    assert response.status_code == 200
+    content = response.content.decode("utf-8")
+    assert 'action="/ultimate-weapons/"' in content

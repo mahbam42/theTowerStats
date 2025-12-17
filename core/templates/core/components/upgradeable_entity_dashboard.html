@@ -112,7 +112,7 @@
                             {% endif %}
                           </td>
                           <td class="text-right">
-                            <form method="post" class="inline entity-action-form" data-action="level_up" data-param-id="{{ param.id }}">
+                            <form method="post" action="{{ request.path }}" class="inline entity-action-form" data-action="level_up" data-param-id="{{ param.id }}">
                               {% csrf_token %}
                               <input type="hidden" name="action" value="level_up_uw_param" />
                               <input type="hidden" name="param_id" value="{{ param.id }}" />
@@ -134,7 +134,7 @@
                   {% if entity.description %}
                     <p class="muted margin-top-1 margin-bottom-0">{{ entity.description }}</p>
                   {% endif %}
-                  <form method="post" class="margin-top-1 entity-action-form" data-action="unlock" data-uw-id="{{ entity.id }}">
+                  <form method="post" action="{{ request.path }}" class="margin-top-1 entity-action-form" data-action="unlock" data-uw-id="{{ entity.id }}">
                     {% csrf_token %}
                     <input type="hidden" name="action" value="unlock_uw" />
                     <input type="hidden" name="uw_id" value="{{ entity.id }}" />
