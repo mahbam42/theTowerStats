@@ -39,7 +39,12 @@
         <p class="lead margin-0">
           Slots unlocked:
           {{ card_slots.unlocked }}
-          {% if card_slots.max %} / {{ card_slots.max }}{% endif %}
+          /
+          {% if card_slots.max %}
+            {{ card_slots.max }}
+          {% else %}
+            Not tracked yet
+          {% endif %}
         </p>
         <p class="muted margin-0">
           Next slot cost:

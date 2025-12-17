@@ -43,6 +43,9 @@ Cards help you track your card slot progression and keep an organized view of yo
 > If the maximum slot count is not available, the app will not allow unlocking slots until that data is available.
 
 > **Note**
+> Unlocking a slot records the unlock in the app. It does not currently verify your in-game gem balance.
+
+> **Note**
 > Preset tags are shown as colored badges for readability. Colors are assigned automatically and remain consistent.
 
 > **Caution**

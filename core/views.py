@@ -6,6 +6,7 @@ import json
 from datetime import date
 
 from django.contrib import messages
+from django.db import transaction
 from django.db.models import Case, ExpressionWrapper, F, FloatField, QuerySet, Value, When
 from django.http import HttpRequest, HttpResponse, QueryDict
 from django.shortcuts import redirect, render
@@ -34,9 +35,10 @@ from core.forms import (
     ComparisonForm,
 )
 from definitions.models import CardDefinition
-from definitions.models import WikiData
 from gamedata.models import BattleReport, BattleReportProgress
+from player_state.card_slots import card_slot_max_slots, next_card_slot_unlock_cost_raw
 from player_state.cards import apply_inventory_rollover, derive_card_progress
+from player_state.economy import enforce_and_deduct_gems_if_tracked
 from player_state.models import (
     Player,
     PlayerBot,
@@ -348,13 +350,25 @@ def cards(request: HttpRequest) -> HttpResponse:
         redirect_to = request.POST.get("next") or request.path
 
         if action == "unlock_slot":
-            max_slots, next_cost = _card_slot_limits(unlocked=player.card_slots_unlocked)
+            max_slots = card_slot_max_slots()
+            next_cost = next_card_slot_unlock_cost_raw(unlocked=player.card_slots_unlocked)
             if max_slots is None:
                 messages.warning(request, "Card slot limits are not available yet.")
                 return redirect(redirect_to)
             if player.card_slots_unlocked < max_slots:
-                player.card_slots_unlocked += 1
-                player.save(update_fields=["card_slots_unlocked"])
+                with transaction.atomic():
+                    can_afford, parsed_cost = enforce_and_deduct_gems_if_tracked(
+                        player=player,
+                        cost_raw=next_cost,
+                    )
+                    if can_afford is False:
+                        messages.error(
+                            request,
+                            f"Not enough gems to unlock the next slot (cost: {parsed_cost}).",
+                        )
+                        return redirect(redirect_to)
+                    player.card_slots_unlocked += 1
+                    player.save(update_fields=["card_slots_unlocked"])
                 if next_cost:
                     messages.success(request, f"Unlocked the next card slot (cost: {next_cost}).")
                 else:
@@ -454,7 +468,8 @@ def cards(request: HttpRequest) -> HttpResponse:
             }
         )
 
-    max_slots, next_cost = _card_slot_limits(unlocked=player.card_slots_unlocked)
+    max_slots = card_slot_max_slots()
+    next_cost = next_card_slot_unlock_cost_raw(unlocked=player.card_slots_unlocked)
     card_slots = {
         "unlocked": player.card_slots_unlocked,
         "max": max_slots,
@@ -472,47 +487,6 @@ def cards(request: HttpRequest) -> HttpResponse:
             "rows": rows,
         },
     )
-
-
-def _card_slot_limits(*, unlocked: int) -> tuple[int | None, str | None]:
-    """Return (max_slots, next_cost_raw) from latest cards slot WikiData when available.
-
-    Args:
-        unlocked: Current number of unlocked card slots.
-
-    Returns:
-        Tuple of (max_slots, next_cost_raw). When wiki slot data is missing,
-        both values are None.
-    """
-
-    qs = (
-        WikiData.objects.filter(parse_version="cards_v1", source_section__startswith="cards_table_")
-        .order_by("entity_id", "-last_seen", "-id")
-    )
-    latest_by_entity: dict[str, WikiData] = {}
-    for row in qs.iterator():
-        latest_by_entity.setdefault(row.entity_id, row)
-    if not latest_by_entity:
-        return None, None
-
-    max_slot = 0
-    costs_by_slot: dict[int, str] = {}
-    for record in latest_by_entity.values():
-        raw_row = record.raw_row or {}
-        slot_number = raw_row.get("Slots") or raw_row.get("Slot") or raw_row.get("Card Slots") or record.canonical_name
-        try:
-            slot_int = int(str(slot_number).strip())
-        except (TypeError, ValueError):
-            continue
-        max_slot = max(max_slot, slot_int)
-        cost_raw = str(raw_row.get("Cost") or raw_row.get("Unlock Cost") or "").strip()
-        if cost_raw:
-            costs_by_slot[slot_int] = cost_raw
-    if max_slot <= 0:
-        return None, None
-
-    next_cost = costs_by_slot.get(unlocked + 1)
-    return max_slot, next_cost
 
 
 def ultimate_weapon_progress(request: HttpRequest) -> HttpResponse:
