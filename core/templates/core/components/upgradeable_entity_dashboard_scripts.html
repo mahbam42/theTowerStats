@@ -126,8 +126,10 @@
 
       const currentLevel = Number(row.dataset.level || 0);
       const levels = jsonScript(`param-levels-${form.dataset.paramId}`) || [];
+      const currentRow = levels.find(r => r.level === currentLevel);
       const nextRow = levels.find(r => r.level === currentLevel + 1);
       const nextNextRow = levels.find(r => r.level === currentLevel + 2);
+      const upgradeCostRaw = currentRow ? currentRow.cost_raw : null;
 
       if (nextRow) {
         row.dataset.level = String(currentLevel + 1);
@@ -144,12 +146,15 @@
         }
 
         if (costCell) {
-          costCell.textContent = nextNextRow ? (nextNextRow.cost_raw || '') : '';
-          if (!nextNextRow) costCell.innerHTML = '<span class="muted">—</span>';
+          if (nextNextRow) {
+            costCell.textContent = nextRow.cost_raw || '';
+          } else {
+            costCell.innerHTML = '<span class="muted">—</span>';
+          }
         }
 
         if (totalInvestedEl) {
-          const parsed = parseNumber(nextRow.cost_raw);
+          const parsed = parseNumber(upgradeCostRaw);
           const currentTotal = parseNumber(totalInvestedEl.textContent) || 0;
           if (parsed !== null) totalInvestedEl.textContent = String(currentTotal + parsed);
         }
@@ -172,4 +177,3 @@
     }
   });
 </script>
-

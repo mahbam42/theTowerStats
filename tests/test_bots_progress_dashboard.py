@@ -93,6 +93,12 @@ def test_bot_unlock_creates_four_parameter_rows(client) -> None:
     assert len(params) == 4
     assert all(p.level == 1 for p in params)
 
+    response = client.get(url)
+    assert response.status_code == 200
+    tiles = response.context["bots"]
+    tile = next(entry for entry in tiles if entry["slug"] == bot_def.slug)
+    assert tile["summary"]["total_invested"] == 0
+
 
 @pytest.mark.django_db
 def test_bot_level_up_increments_until_max(client) -> None:

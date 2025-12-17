@@ -10,6 +10,38 @@
   </div>
 </div>
 
+{% if hero_enabled %}
+  <div class="grid-x grid-margin-x margin-top-1">
+    <div class="cell">
+      <div class="card-shell">
+        <p class="muted margin-0">{{ hero_kicker|default:"Overview" }}</p>
+        <h4 class="margin-0">{{ hero_title|default:"Featured" }}</h4>
+        {% if hero_note %}
+          <p class="muted margin-0">{{ hero_note }}</p>
+        {% endif %}
+        <div class="grid-x grid-margin-x margin-top-1">
+          {% if hero_entities %}
+            {% for hero in hero_entities %}
+              <div class="cell medium-6">
+                <div class="callout success margin-0">
+                  <h5 class="margin-0">{{ hero.name }}</h5>
+                  {% if hero.subtitle %}
+                    <p class="muted margin-0">{{ hero.subtitle }}</p>
+                  {% endif %}
+                </div>
+              </div>
+            {% endfor %}
+          {% else %}
+            <div class="cell">
+              <p class="muted margin-0">{{ hero_empty|default:"No selections yet." }}</p>
+            </div>
+          {% endif %}
+        </div>
+      </div>
+    </div>
+  </div>
+{% endif %}
+
 <div class="grid-x grid-margin-x margin-top-1">
   <div class="cell">
     <form method="get" class="card-shell">

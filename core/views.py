@@ -53,6 +53,7 @@ from player_state.card_slots import card_slot_max_slots, next_card_slot_unlock_c
 from player_state.cards import apply_inventory_rollover, derive_card_progress
 from player_state.economy import enforce_and_deduct_gems_if_tracked
 from player_state.models import (
+    MAX_ACTIVE_GUARDIAN_CHIPS,
     Player,
     PlayerBot,
     PlayerBotParameter,
@@ -1087,7 +1088,22 @@ def guardian_progress(request: HttpRequest) -> HttpResponse:
 
     any_battles = BattleReport.objects.exists()
     active_count = PlayerGuardianChip.objects.filter(player=player, active=True).count()
-    activation_limit_reached = active_count >= 2
+    activation_limit_reached = active_count >= MAX_ACTIVE_GUARDIAN_CHIPS
+
+    active_chip_rows = (
+        PlayerGuardianChip.objects.filter(player=player, active=True)
+        .select_related("guardian_chip_definition")
+        .order_by("guardian_chip_definition__name", "guardian_chip_slug")
+    )
+    active_chip_hero = [
+        {
+            "name": row.guardian_chip_definition.name
+            if row.guardian_chip_definition
+            else row.guardian_chip_slug,
+            "subtitle": "Active",
+        }
+        for row in active_chip_rows[:MAX_ACTIVE_GUARDIAN_CHIPS]
+    ]
 
     tiles: list[dict[str, object]] = []
     for chip in chips_qs:
@@ -1177,6 +1193,7 @@ def guardian_progress(request: HttpRequest) -> HttpResponse:
             "filter_form": filter_form,
             "guardian_chips": tiles,
             "activation_limit_reached": activation_limit_reached,
+            "active_chip_hero": active_chip_hero,
         },
     )
 

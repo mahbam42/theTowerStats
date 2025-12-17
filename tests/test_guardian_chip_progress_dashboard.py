@@ -93,6 +93,12 @@ def test_guardian_unlock_creates_three_parameter_rows(client) -> None:
     assert len(params) == 3
     assert all(p.level == 1 for p in params)
 
+    response = client.get(url)
+    assert response.status_code == 200
+    tiles = response.context["guardian_chips"]
+    tile = next(entry for entry in tiles if entry["slug"] == guardian.slug)
+    assert tile["summary"]["total_invested"] == 0
+
 
 @pytest.mark.django_db
 def test_guardian_level_up_increments_until_max(client) -> None:

@@ -25,7 +25,7 @@ The Guardian Chips page helps you track which chips are unlocked, which chips ar
 ## How to Read the Results
 
 - **Active** shows whether a chip is currently selected as active.
-- **Total Bits invested** is the sum of the shown upgrade costs up to your current levels.
+- **Total Bits invested** is the sum of the upgrade costs for the levels you have increased in the app.
 - **Runs used** counts how many of your imported Battle Reports include that Guardian Chip.
 - **Level** is your saved upgrade level for that parameter.
 - **Current** is the current raw value for your saved level.
@@ -51,4 +51,3 @@ The Guardian Chips page helps you track which chips are unlocked, which chips ar
 
 1. Select **Unlocked only** to review only the chips you actively track.
 2. Select **Locked only** to focus on chips you have not unlocked in the app yet.
-

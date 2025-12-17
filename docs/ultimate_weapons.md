@@ -23,7 +23,7 @@ The Ultimate Weapons page helps you track which Ultimate Weapons you have unlock
 
 ## How to Read the Results
 
-- **Total Stones invested** is the sum of the shown upgrade costs up to your current levels.
+- **Total Stones invested** is the sum of the upgrade costs for the levels you have increased in the app.
 - **Runs used** counts how many of your imported Battle Reports include that Ultimate Weapon.
 - **Level** is your saved upgrade level for that parameter.
 - **Current** is the current raw value for your saved level.
@@ -46,4 +46,3 @@ The Ultimate Weapons page helps you track which Ultimate Weapons you have unlock
 
 1. Select **Unlocked only** to review only the weapons you actively track.
 2. Select **Locked only** to focus on the remaining weapons not yet unlocked in the app.
-

@@ -27,6 +27,8 @@ PRESET_COLOR_CHOICES: tuple[tuple[str, str], ...] = tuple(
     (key, key.title()) for key in PRESET_COLOR_KEYS
 )
 
+MAX_ACTIVE_GUARDIAN_CHIPS = 2
+
 
 def preset_color_for_id(*, preset_id: int) -> str:
     """Select a stable preset color key for a database id.
@@ -290,8 +292,8 @@ class PlayerGuardianChip(models.Model):
                 .exclude(pk=self.pk)
                 .count()
             )
-            if other_active > 1:
-                raise ValidationError("At most 2 guardian chips may be active at once.")
+            if other_active >= MAX_ACTIVE_GUARDIAN_CHIPS:
+                raise ValidationError(f"At most {MAX_ACTIVE_GUARDIAN_CHIPS} guardian chips may be active at once.")
 
     def save(self, *args, **kwargs) -> None:
         """Save while enforcing invariants."""

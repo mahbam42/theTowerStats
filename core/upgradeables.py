@@ -103,7 +103,7 @@ def _total_cost_invested_for_parameter(*, parameter_definition, level: int) -> i
     if level <= 0:
         return 0
     total = 0
-    for row in parameter_definition.levels.filter(level__lte=level):
+    for row in parameter_definition.levels.filter(level__lt=level):
         parsed = parse_cost_amount(cost_raw=getattr(row, "cost_raw", None))
         if parsed is not None:
             total += parsed
@@ -178,7 +178,7 @@ def build_upgradeable_parameter_view(
 
     current_value_raw = current_row.value_raw if current_row else ""
     next_value_raw = next_row.value_raw if next_row else ""
-    next_cost_raw = next_row.cost_raw if next_row else ""
+    next_cost_raw = current_row.cost_raw if (current_row and next_row) else ""
 
     return {
         "id": player_param.id,
