@@ -3,62 +3,9 @@
 {% block title %}Bots Progress • theTowerStats{% endblock %}
 
 {% block content %}
-  <div class="grid-x grid-margin-x">
-    <div class="cell">
-      <div class="card-shell">
-        <p class="muted margin-0">Progress</p>
-        <h2 class="margin-0">Bots</h2>
-        <p class="muted margin-0">Unlocked bots with parameter levels and effective values (raw) only.</p>
-      </div>
-    </div>
-  </div>
+  {% include "core/components/upgradeable_entity_dashboard.html" with dashboard_kicker="Progress" dashboard_title="Bots" dashboard_note="Upgrades currently assume sufficient Medals. Costs are informational only." filter_form=filter_form entities=bots entity_badge="Bot" total_invested_label="Total Medals invested" unlock_cost_currency_label="Medals" unlock_action_value="unlock_bot" level_up_action_value="level_up_bot_param" show_activation=False %}
+{% endblock %}
 
-  <div class="grid-x grid-margin-x margin-top-1">
-    <div class="cell">
-      {% if bots %}
-        <div class="grid-x grid-margin-x">
-          {% for bot in bots %}
-            <div class="cell medium-6">
-              <div class="callout {% if bot.unlocked %}success{% else %}secondary{% endif %}">
-                <div class="grid-x align-justify align-middle">
-                  <div class="cell auto">
-                    <h5 class="margin-0">{{ bot.name }}</h5>
-                    <p class="muted margin-0">Status: {% if bot.unlocked %}Unlocked{% else %}Locked{% endif %}</p>
-                    <p class="muted margin-0">Equipped: <span class="muted">Display only</span></p>
-                  </div>
-                  <div class="cell shrink">
-                    <span class="label">Bot</span>
-                  </div>
-                </div>
-                {% if bot.parameters %}
-                  <table class="stack margin-top-1">
-                    <thead>
-                      <tr>
-                        <th scope="col">Parameter</th>
-                        <th scope="col">Level</th>
-                        <th scope="col">Value</th>
-                      </tr>
-                    </thead>
-                    <tbody>
-                      {% for param in bot.parameters %}
-                        <tr>
-                          <td>{{ param.name }}</td>
-                          <td>{{ param.level }}</td>
-                          <td>{% if param.value %}{{ param.value }}{% else %}<span class="muted">—</span>{% endif %}</td>
-                        </tr>
-                      {% endfor %}
-                    </tbody>
-                  </table>
-                {% else %}
-                  <p class="muted margin-0">No parameter levels recorded.</p>
-                {% endif %}
-              </div>
-            </div>
-          {% endfor %}
-        </div>
-      {% else %}
-        <div class="empty-state" role="status">No bot progress stored.</div>
-      {% endif %}
-    </div>
-  </div>
+{% block extra_scripts %}
+  {% include "core/components/upgradeable_entity_dashboard_scripts.html" %}
 {% endblock %}

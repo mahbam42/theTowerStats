@@ -1,6 +1,6 @@
 # theTowerStats
 
-Welcome to the documentation hub for **theTowerStats**. Players can explore history, charts, and collection progress without editing or optimizing data.
+Welcome to the documentation hub for **theTowerStats**. Players can explore history, charts, and collection progress without changing imported Battle Report data.
 
 > **Highlight — Charts**
 > The Charts dashboard starts at 2025-12-09 UTC by default and lets you select one or more charts, then filter by date range, tier, and preset labels.

@@ -1,0 +1,54 @@
+# Guardian Chips
+
+## Overview
+
+The Guardian Chips page helps you track which chips are unlocked, which chips are currently active, how far each upgrade parameter has progressed, and how often each chip appears in your imported Battle Reports.
+
+## When to Use This
+
+- You want to confirm which Guardian Chips are unlocked in your tracker.
+- You want to keep only two Guardian Chips active at a time.
+- You want to record upgrade progress for a chip’s parameters.
+- You want to compare total Bits invested across different Guardian Chips.
+- You want to review whether a chip appears in your imported runs.
+
+## How to Use
+
+1. Select **Guardians** in the navigation.
+2. Select **Show** to filter to **Unlocked only** or **Locked only**.
+3. Review a chip’s **Status** to confirm whether it is unlocked.
+4. Select **Unlock** on a locked chip to mark it as unlocked in the app.
+5. Select the **Active** toggle to activate or deactivate a chip.
+6. Select **Details** on an unlocked chip to view its upgrade parameters.
+7. Select **Level Up** on a parameter to increase its level by 1.
+
+## How to Read the Results
+
+- **Active** shows whether a chip is currently selected as active.
+- **Total Bits invested** is the sum of the shown upgrade costs up to your current levels.
+- **Runs used** counts how many of your imported Battle Reports include that Guardian Chip.
+- **Level** is your saved upgrade level for that parameter.
+- **Current** is the current raw value for your saved level.
+- **Next** shows the next-level value, with the change emphasized in parentheses when it can be parsed.
+- **Cost** shows the next-level upgrade cost (informational only).
+- **MAX** indicates the parameter has reached the highest known level and cannot be increased further in the app.
+
+## Notes & Limitations
+
+> **Note**
+> Upgrades currently assume sufficient Bits. Costs are informational only, and the app does not check affordability.
+
+> **Warning**
+> You can have at most two Guardian Chips active at once. When the limit is reached, inactive chips cannot be activated until you deactivate one.
+
+> **Note**
+> Locked chips cannot be activated and do not display parameter rows until they are unlocked in the app.
+
+> **Caution**
+> If no Battle Reports have been imported yet, **Runs used** will show “No battles recorded yet”.
+
+## Advanced Usage
+
+1. Select **Unlocked only** to review only the chips you actively track.
+2. Select **Locked only** to focus on chips you have not unlocked in the app yet.
+

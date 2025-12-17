@@ -13,10 +13,11 @@ from __future__ import annotations
 
 import re
 from dataclasses import dataclass
+from typing import Protocol
 
 from django.db.models import QuerySet
 
-from definitions.models import UltimateWeaponDefinition, Unit
+from definitions.models import ParameterKey, UltimateWeaponDefinition, Unit
 from player_state.economy import parse_cost_amount
 from player_state.models import Player, PlayerUltimateWeapon, PlayerUltimateWeaponParameter
 
@@ -88,15 +89,15 @@ def format_delta(*, current_raw: str | None, next_raw: str | None, unit_kind: st
     return f"{sign}{display}"
 
 
-def total_stones_invested_for_parameter(*, parameter_definition, level: int) -> int:
-    """Return total stones invested for a parameter up to a selected level.
+def _total_cost_invested_for_parameter(*, parameter_definition, level: int) -> int:
+    """Return total parsed cost for a parameter up to a selected level.
 
     Args:
-        parameter_definition: An UltimateWeaponParameterDefinition-like object.
+        parameter_definition: A parameter definition with `.levels` rows exposing `cost_raw`.
         level: Current selected level.
 
     Returns:
-        Total parsed stone cost across level rows up to `level`.
+        Total parsed cost across level rows up to `level`.
     """
 
     if level <= 0:
@@ -109,15 +110,62 @@ def total_stones_invested_for_parameter(*, parameter_definition, level: int) -> 
     return total
 
 
-def build_uw_parameter_view(
+def total_currency_invested_for_parameter(*, parameter_definition, level: int) -> int:
+    """Return total currency invested for a parameter up to a selected level.
+
+    Args:
+        parameter_definition: A parameter definition with `.levels` rows exposing `cost_raw`.
+        level: Current selected level.
+
+    Returns:
+        Total parsed cost across level rows up to `level`.
+    """
+
+    return _total_cost_invested_for_parameter(parameter_definition=parameter_definition, level=level)
+
+
+def total_stones_invested_for_parameter(*, parameter_definition, level: int) -> int:
+    """Return total stones invested for a parameter up to a selected level.
+
+    Args:
+        parameter_definition: A parameter definition with `.levels` rows exposing `cost_raw`.
+        level: Current selected level.
+
+    Returns:
+        Total parsed stone cost across level rows up to `level`.
+    """
+
+    return _total_cost_invested_for_parameter(parameter_definition=parameter_definition, level=level)
+
+
+class _ParameterDefinitionLike(Protocol):
+    display_name: str
+
+
+class _PlayerParameterLike(Protocol):
+    id: int
+    level: int
+    parameter_definition: _ParameterDefinitionLike
+
+
+def build_upgradeable_parameter_view(
     *,
-    player_param: PlayerUltimateWeaponParameter,
+    player_param: _PlayerParameterLike,
     levels: list[ParameterLevelRow],
     unit_kind: str,
 ) -> dict[str, object]:
-    """Build a template-ready parameter payload for the UW dashboard."""
+    """Build a template-ready parameter payload for upgradeable dashboards.
 
-    current_level = int(player_param.level or 0)
+    Args:
+        player_param: Player-selected parameter instance.
+        levels: Ordered level-table rows for optimistic client rendering.
+        unit_kind: A `definitions.Unit.Kind` choice value.
+
+    Returns:
+        Dictionary of values expected by the upgradeable dashboard template.
+    """
+
+    current_level = int(getattr(player_param, "level", 0) or 0)
     max_level = max((row.level for row in levels), default=0)
 
     current_row = next((row for row in levels if row.level == current_level), None)
@@ -151,6 +199,17 @@ def build_uw_parameter_view(
     }
 
 
+def build_uw_parameter_view(
+    *,
+    player_param: PlayerUltimateWeaponParameter,
+    levels: list[ParameterLevelRow],
+    unit_kind: str,
+) -> dict[str, object]:
+    """Build a template-ready parameter payload for the UW dashboard."""
+
+    return build_upgradeable_parameter_view(player_param=player_param, levels=levels, unit_kind=unit_kind)
+
+
 def validate_uw_parameter_definitions(*, uw_definition: UltimateWeaponDefinition) -> None:
     """Enforce that a UW has exactly three upgrade parameters.
 
@@ -165,6 +224,39 @@ def validate_uw_parameter_definitions(*, uw_definition: UltimateWeaponDefinition
     if count != 3:
         raise ValueError(
             f"Ultimate weapon {uw_definition.slug!r} has {count} parameters; expected exactly 3."
+        )
+
+
+def validate_parameter_definitions(
+    *,
+    parameter_definitions,
+    expected_count: int,
+    entity_kind: str,
+    entity_slug: str,
+) -> None:
+    """Enforce that an entity has exactly N known ParameterKey parameter definitions.
+
+    Args:
+        parameter_definitions: QuerySet-like collection of parameter definitions.
+        expected_count: Required number of parameters for the entity.
+        entity_kind: Display kind used in error messages (e.g. "guardian chip").
+        entity_slug: Entity identifier used in error messages.
+
+    Raises:
+        ValueError: When the entity does not have exactly `expected_count` parameter definitions
+            or contains keys not present in the ParameterKey registry.
+    """
+
+    allowed = {key.value for key in ParameterKey}
+    keys = [getattr(param, "key", None) for param in parameter_definitions.all()]
+    unknown = [key for key in keys if key not in allowed]
+    if unknown:
+        raise ValueError(f"{entity_kind.title()} {entity_slug!r} has unknown parameter keys: {unknown}.")
+
+    count = len(keys)
+    if count != expected_count:
+        raise ValueError(
+            f"{entity_kind.title()} {entity_slug!r} has {count} parameters; expected exactly {expected_count}."
         )
 
 

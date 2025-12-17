@@ -137,18 +137,29 @@ class ChartContextForm(forms.Form):
         return cleaned
 
 
-class UltimateWeaponProgressFilterForm(forms.Form):
-    """Validate filters for the Ultimate Weapons Progress dashboard."""
+class UpgradeableEntityProgressFilterForm(forms.Form):
+    """Validate unlocked/locked filters for upgradeable-entity dashboards."""
 
-    status = forms.ChoiceField(
-        required=False,
-        choices=(
-            ("", "All ultimate weapons"),
+    status = forms.ChoiceField(required=False, choices=(), label="Show")
+
+    def __init__(self, *args, entity_label_plural: str, **kwargs) -> None:
+        """Initialize the filter form with an entity-scoped 'All …' label."""
+
+        super().__init__(*args, **kwargs)
+        self.fields["status"].choices = (
+            ("", f"All {entity_label_plural}"),
             ("unlocked", "Unlocked only"),
             ("locked", "Locked only"),
-        ),
-        label="Show",
-    )
+        )
+
+
+class UltimateWeaponProgressFilterForm(UpgradeableEntityProgressFilterForm):
+    """Validate filters for the Ultimate Weapons Progress dashboard."""
+
+    def __init__(self, *args, **kwargs) -> None:
+        """Initialize the form with Ultimate Weapon labels."""
+
+        super().__init__(*args, entity_label_plural="ultimate weapons", **kwargs)
 
 
 class BattleHistoryFilterForm(forms.Form):

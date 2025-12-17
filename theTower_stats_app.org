@@ -759,7 +759,7 @@ Testing
  - At least:
    - [X] 1 golden test for a parameterized effect
    - [X] 1 test validating revision behavior
-*** Phase 5 Dashboard UX [22%]
+*** Phase 5 Dashboard UX [33%]
 Goal:
 - Turn the analysis engine outputs into clear, usable, player-facing dashboards.
 - No new math. No new scraping logic. No new domain models.
@@ -889,7 +889,9 @@ CLOSED: [2025-12-17 Wed 14:11]
 CLOSED: [2025-12-17 Wed 14:58]
 - State "DONE"       from "TODO"       [2025-12-17 Wed 14:58]
 Shows count of unlocked card slots and Gems cost of next slot
-**** TODO UW Progress
+**** DONE UW Progress
+CLOSED: [2025-12-17 Wed 15:53]
+- State "DONE"       from "TODO"       [2025-12-17 Wed 15:53]
     - Clean up source of 'Unknown' Parameters. There should only be 3 for each UW
       - Exactly 3 parameters per UW
         ParameterKey registry validation
@@ -1480,5 +1482,5 @@ Mostly a visual tweak, but adds context and history for the player to interpert 
 - [X] prompt 18
 - [X] prompt 19 cards improvements
 - [X] prompt 20 Battle History ↔ Preset Tagging
-- [ ] prompt 21 UW Dashboard
-- [ ] Bots/Guardian Chips Dashboards 
+- [X] prompt 21 UW Dashboard
+- [ ] prompt 22 Bots/Guardian Chips Dashboards 

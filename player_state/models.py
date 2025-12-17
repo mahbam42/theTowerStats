@@ -260,6 +260,7 @@ class PlayerGuardianChip(models.Model):
     )
     guardian_chip_slug = models.CharField(max_length=200, db_index=True)
     unlocked = models.BooleanField(default=False)
+    active = models.BooleanField(default=False)
     updated_at = models.DateTimeField(auto_now=True)
     notes = models.TextField(blank=True)
 
@@ -281,6 +282,16 @@ class PlayerGuardianChip(models.Model):
             raise ValidationError(
                 "guardian_chip_slug must match guardian_chip_definition.slug when definition is set."
             )
+        if self.active and not self.unlocked:
+            raise ValidationError("Cannot activate a locked guardian chip.")
+        if self.active and self.player_id:
+            other_active = (
+                PlayerGuardianChip.objects.filter(player_id=self.player_id, active=True)
+                .exclude(pk=self.pk)
+                .count()
+            )
+            if other_active > 1:
+                raise ValidationError("At most 2 guardian chips may be active at once.")
 
     def save(self, *args, **kwargs) -> None:
         """Save while enforcing invariants."""

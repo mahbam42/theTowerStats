@@ -2,7 +2,7 @@
 
 ## Overview
 
-Welcome to **theTowerStats** — a read-only dashboard that turns imported Battle Reports into clear history, charts, and collection summaries. This guide focuses on how to view data that already exists in your account.
+Welcome to **theTowerStats** — a dashboard that turns imported Battle Reports into clear history, charts, and collection summaries. This guide focuses on how to review your imports and track progress you want to save in the app.
 
 > **Note**
 > This guide avoids strategy advice. Everything shown is factual, computed from your imports and saved progress.
@@ -44,20 +44,20 @@ Welcome to **theTowerStats** — a read-only dashboard that turns imported Battl
 ### Ultimate Weapons
 
 - Visit **Ultimate Weapons** to review unlocked status and parameter levels per weapon.
-- Each card lists parameters with the stored level and raw value pulled from wiki-derived tables.
-- Equipped state is display-only; no changes are saved from this page.
+- Select **Unlock** and **Level Up** to save your Ultimate Weapon progress in the app.
+- Costs are informational only; the app does not check affordability.
 
 ### Guardian Chips
 
-- Open **Guardians** to view chip unlocks and parameter values.
-- Equipped status is informational only; parameter values reflect the saved level rows.
-- Use this page to answer “What do I have, and how strong is it?” without editing anything.
+- Open **Guardians** to track chip unlocks, active selection, and upgrade progress.
+- You can have up to two active Guardian Chips at a time.
+- Costs are informational only; the app does not check affordability.
 
 ### Bots
 
-- Visit **Bots** for a read-only list of unlocked bots and their parameters.
-- Parameter tables show the level and stored raw value so you can compare bots side by side.
-- Equipped status is informational only.
+- Visit **Bots** to track bot unlocks and upgrade progress.
+- Bots do not have an active or inactive toggle in the app.
+- Costs are informational only; the app does not check affordability.
 
 ## Advanced
 
