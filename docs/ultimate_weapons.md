@@ -42,6 +42,9 @@ The Ultimate Weapons page helps you track which Ultimate Weapons you have unlock
 > **Caution**
 > If no Battle Reports have been imported yet, **Runs used** will show “No battles recorded yet”.
 
+> **Caution**
+> If an Ultimate Weapon’s upgrade parameters are incomplete or not recognized, it may not appear on this page until the underlying data is available.
+
 ## Advanced Usage
 
 1. Select **Unlocked only** to review only the weapons you actively track.

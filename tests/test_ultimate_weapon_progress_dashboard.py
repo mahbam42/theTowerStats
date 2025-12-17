@@ -189,6 +189,47 @@ def test_uw_dashboard_omits_invalid_uw_in_production(client, settings) -> None:
 
 
 @pytest.mark.django_db
+def test_uw_dashboard_omits_unknown_parameter_keys_in_production(client, settings) -> None:
+    """Production mode omits UWs whose parameters are not in the ParameterKey registry."""
+
+    settings.DEBUG = False
+    wiki = _wiki()
+    uw = UltimateWeaponDefinition.objects.create(name="Weird UW", slug="weird_uw", source_wikidata=wiki)
+    params = (
+        (ParameterKey.DAMAGE, "Damage"),
+        ("not_a_real_key", "Not a real key"),
+        (ParameterKey.COOLDOWN, "Cooldown"),
+    )
+    for key, display in params:
+        param_def = UltimateWeaponParameterDefinition.objects.create(
+            ultimate_weapon_definition=uw,
+            key=key,
+            display_name=display,
+        )
+        UltimateWeaponParameterLevel.objects.create(
+            parameter_definition=param_def,
+            level=1,
+            value_raw="10",
+            cost_raw="5",
+            currency=Currency.STONES,
+            source_wikidata=wiki,
+        )
+
+    player = Player.objects.create(name="default")
+    PlayerUltimateWeapon.objects.create(
+        player=player,
+        ultimate_weapon_definition=uw,
+        ultimate_weapon_slug=uw.slug,
+        unlocked=True,
+    )
+
+    url = reverse("core:ultimate_weapon_progress")
+    response = client.get(url)
+    assert response.status_code == 200
+    assert all(tile["slug"] != "weird_uw" for tile in response.context["ultimate_weapons"])
+
+
+@pytest.mark.django_db
 def test_uw_unlock_form_posts_to_page_path(client) -> None:
     """Unlock form includes an explicit action attribute to avoid DOM shadowing issues."""
 

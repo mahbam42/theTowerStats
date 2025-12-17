@@ -1114,11 +1114,13 @@ What’s done is minimal by design. Expand it to feel “real”:
 
 **Foundations:**
 - [ ] Add 2–3 more canonical rate metrics
-  - Damage per wave
-  - Coins per wave
+
 - [ ] Normalize time handling everywhere (game time vs real time vs accelerated)
+  
 - [ ] Lock down Unit Model correctness
+  
   - Explicit tests for %, x, time units, magnitudes
+    
 - **Why this matters:**
   : Every chart, comparison, and recommendation later assumes these rates are correct and consistent.
 
@@ -1148,7 +1150,9 @@ What’s done is minimal by design. Expand it to feel “real”:
   GameData → Derived Metrics → What actually happens in a run.
 
   just a tooltip or expandable row that says “+X% from Cards” is enough.
+  
 **Documentation**
+
 - [ ]  Add Github Action to publish Docs to Github Pages
 *** Phase 7 Power Tools
 

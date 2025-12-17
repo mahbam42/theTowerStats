@@ -211,20 +211,22 @@ def build_uw_parameter_view(
 
 
 def validate_uw_parameter_definitions(*, uw_definition: UltimateWeaponDefinition) -> None:
-    """Enforce that a UW has exactly three upgrade parameters.
+    """Enforce that a UW has exactly three known upgrade parameters.
 
     Args:
         uw_definition: UltimateWeaponDefinition to validate.
 
     Raises:
-        ValueError: When the UW does not have exactly three parameter definitions.
+        ValueError: When the UW does not have exactly three parameter definitions or
+            contains keys not present in the ParameterKey registry.
     """
 
-    count = uw_definition.parameter_definitions.count()
-    if count != 3:
-        raise ValueError(
-            f"Ultimate weapon {uw_definition.slug!r} has {count} parameters; expected exactly 3."
-        )
+    validate_parameter_definitions(
+        parameter_definitions=uw_definition.parameter_definitions,
+        expected_count=3,
+        entity_kind="ultimate weapon",
+        entity_slug=uw_definition.slug,
+    )
 
 
 def validate_parameter_definitions(
