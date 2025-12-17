@@ -15,17 +15,19 @@ Cards help you track your card slot progression and keep an organized view of yo
 
 1. Select **Cards** in the navigation.
 2. View **Card slots** to review your unlocked slot count.
-3. Select **Unlock Next Slot** to increase your unlocked slot count.
-4. View the **Cards table** to review all cards.
-5. Select a card’s **Inventory** value to enter your current progress.
-6. Review the **Inventory** display to confirm the shown threshold for that card level.
-7. Select a card’s **Presets** section to add or remove preset tags.
-8. Select **Preset filter** to show only cards tagged with specific presets.
-9. Select **Reset Filters** to return to the full list.
+3. Review **Next slot cost** when it is shown.
+4. Select **Unlock Next Slot** to increase your unlocked slot count.
+5. View the **Cards table** to review all cards.
+6. Select a card’s **Inventory** value to enter your current progress.
+7. Review the **Inventory** display to confirm the shown threshold for that card level.
+8. Select a card’s **Presets** section to add or remove preset tags.
+9. Select **Preset filter** to show only cards tagged with specific presets.
+10. Select **Reset Filters** to return to the full list.
 
 ## How to Read the Results
 
 - **Slots unlocked** shows your current slot count, and the maximum when it is available.
+- **Next slot cost** shows the cost for the next slot when the app has that data available.
 - **Level** increases automatically when your inventory progress rolls over into the next tier.
 - **Parameters** show the card description text for quick reference.
 - **Inventory** is shown as current / threshold. When you exceed a threshold, the remainder carries into the next tier.
@@ -36,6 +38,9 @@ Cards help you track your card slot progression and keep an organized view of yo
 
 > **Note**
 > Slot costs are shown only when the app has card slot data available.
+
+> **Caution**
+> If the maximum slot count is not available, the app will not allow unlocking slots until that data is available.
 
 > **Note**
 > Preset tags are shown as colored badges for readability. Colors are assigned automatically and remain consistent.

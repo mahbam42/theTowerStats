@@ -143,6 +143,12 @@ class BattleHistoryFilterForm(forms.Form):
     tier = forms.IntegerField(required=False, min_value=1, label="Tier")
     killed_by = forms.CharField(required=False, label="Killed by")
     goal = forms.CharField(required=False, label="Goal")
+    preset = forms.ModelChoiceField(
+        required=False,
+        queryset=Preset.objects.none(),
+        label="Preset",
+        empty_label="All presets",
+    )
     sort = forms.ChoiceField(
         required=False,
         choices=(
@@ -172,6 +178,37 @@ class BattleHistoryFilterForm(forms.Form):
         ),
         label="Sort",
     )
+
+    def __init__(self, *args, **kwargs) -> None:
+        """Initialize the filter form with a preset queryset."""
+
+        player: Player | None = kwargs.pop("player", None)
+        super().__init__(*args, **kwargs)
+        if player is None:
+            self.fields["preset"].queryset = Preset.objects.order_by("name")
+        else:
+            self.fields["preset"].queryset = Preset.objects.filter(player=player).order_by("name")
+
+
+class BattleHistoryPresetUpdateForm(forms.Form):
+    """Validate preset updates for a single Battle Report row."""
+
+    action = forms.CharField(widget=forms.HiddenInput())
+    next = forms.CharField(required=False, widget=forms.HiddenInput())
+    progress_id = forms.IntegerField(widget=forms.HiddenInput())
+    preset = forms.ModelChoiceField(
+        required=False,
+        queryset=Preset.objects.none(),
+        label="Preset",
+        empty_label="No preset",
+    )
+
+    def __init__(self, *args, **kwargs) -> None:
+        """Initialize the form with a player-scoped preset queryset."""
+
+        player: Player = kwargs.pop("player")
+        super().__init__(*args, **kwargs)
+        self.fields["preset"].queryset = Preset.objects.filter(player=player).order_by("name")
 
 
 class CardsFilterForm(forms.Form):

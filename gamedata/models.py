@@ -44,6 +44,18 @@ class BattleReportProgress(models.Model):
         blank=True,
         related_name="battle_reports",
     )
+    preset_name_snapshot = models.CharField(
+        max_length=80,
+        blank=True,
+        default="",
+        help_text="Preset label captured at assignment time for historical display.",
+    )
+    preset_color_snapshot = models.CharField(
+        max_length=20,
+        blank=True,
+        default="",
+        help_text="Preset color key captured at assignment time for historical badge rendering.",
+    )
     wave = models.PositiveIntegerField(null=True, blank=True)
     real_time_seconds = models.PositiveIntegerField(null=True, blank=True)
     killed_by = models.CharField(max_length=255, null=True, blank=True)

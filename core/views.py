@@ -10,6 +10,7 @@ from django.db.models import Case, ExpressionWrapper, F, FloatField, QuerySet, V
 from django.http import HttpRequest, HttpResponse, QueryDict
 from django.shortcuts import redirect, render
 from django.core.paginator import Paginator
+from django.urls import reverse
 
 from analysis.aggregations import summarize_window
 from analysis.deltas import delta
@@ -24,6 +25,7 @@ from core.charting.configs import (
 from core.charting.render import render_charts
 from core.forms import (
     BattleHistoryFilterForm,
+    BattleHistoryPresetUpdateForm,
     BattleReportImportForm,
     CardInventoryUpdateForm,
     CardPresetUpdateForm,
@@ -33,7 +35,7 @@ from core.forms import (
 )
 from definitions.models import CardDefinition
 from definitions.models import WikiData
-from gamedata.models import BattleReport
+from gamedata.models import BattleReport, BattleReportProgress
 from player_state.cards import apply_inventory_rollover, derive_card_progress
 from player_state.models import (
     Player,
@@ -148,7 +150,43 @@ def dashboard(request: HttpRequest) -> HttpResponse:
 def battle_history(request: HttpRequest) -> HttpResponse:
     """Render the Battle History dashboard with filters and pagination."""
 
+    player, _ = Player.objects.get_or_create(name="default")
+
     if request.method == "POST":
+        action = (request.POST.get("action") or "").strip()
+        if action == "update_run_preset":
+            update_form = BattleHistoryPresetUpdateForm(request.POST, player=player)
+            if not update_form.is_valid():
+                messages.error(request, "Could not update preset for that run.")
+                return redirect("core:battle_history")
+
+            progress_id = update_form.cleaned_data["progress_id"]
+            if not BattleReportProgress.objects.filter(id=progress_id).exists():
+                messages.error(request, "Run row not found.")
+                return redirect("core:battle_history")
+
+            preset = update_form.cleaned_data.get("preset")
+            if preset is None:
+                updated = BattleReportProgress.objects.filter(id=progress_id).update(
+                    preset=None,
+                    preset_name_snapshot="",
+                    preset_color_snapshot="",
+                )
+            else:
+                updated = BattleReportProgress.objects.filter(id=progress_id).update(
+                    preset=preset,
+                    preset_name_snapshot=preset.name,
+                    preset_color_snapshot=preset.badge_color(),
+                )
+
+            if updated:
+                messages.success(request, "Saved preset for run.")
+            else:
+                messages.error(request, "Could not update preset for that run.")
+
+            redirect_to = update_form.cleaned_data.get("next") or reverse("core:battle_history")
+            return redirect(redirect_to)
+
         import_form = BattleReportImportForm(request.POST)
         if import_form.is_valid():
             raw_text = import_form.cleaned_data["raw_text"]
@@ -162,7 +200,7 @@ def battle_history(request: HttpRequest) -> HttpResponse:
     else:
         import_form = BattleReportImportForm()
 
-    filter_form = BattleHistoryFilterForm(request.GET)
+    filter_form = BattleHistoryFilterForm(request.GET, player=player)
     filter_form.is_valid()
 
     sort_key = filter_form.cleaned_data.get("sort") or "-run_progress__battle_date"
@@ -198,6 +236,10 @@ def battle_history(request: HttpRequest) -> HttpResponse:
     goal = filter_form.cleaned_data.get("goal") if filter_form.is_valid() else None
     if goal:
         runs = runs.filter(run_progress__preset__name__icontains=goal)
+
+    preset = filter_form.cleaned_data.get("preset") if filter_form.is_valid() else None
+    if preset:
+        runs = runs.filter(run_progress__preset=preset)
 
     paginator = Paginator(runs, 12)
     page_number = request.GET.get("page")
@@ -241,6 +283,7 @@ def battle_history(request: HttpRequest) -> HttpResponse:
         {
             "import_form": import_form,
             "filter_form": filter_form,
+            "player_presets": Preset.objects.filter(player=player).order_by("name"),
             "page_obj": page_obj,
             "page_rows": page_rows,
             "base_querystring": base_querystring,
@@ -305,11 +348,17 @@ def cards(request: HttpRequest) -> HttpResponse:
         redirect_to = request.POST.get("next") or request.path
 
         if action == "unlock_slot":
-            max_slots, _ = _card_slot_limits(unlocked=player.card_slots_unlocked)
-            if max_slots is not None and player.card_slots_unlocked < max_slots:
+            max_slots, next_cost = _card_slot_limits(unlocked=player.card_slots_unlocked)
+            if max_slots is None:
+                messages.warning(request, "Card slot limits are not available yet.")
+                return redirect(redirect_to)
+            if player.card_slots_unlocked < max_slots:
                 player.card_slots_unlocked += 1
                 player.save(update_fields=["card_slots_unlocked"])
-                messages.success(request, "Unlocked the next card slot.")
+                if next_cost:
+                    messages.success(request, f"Unlocked the next card slot (cost: {next_cost}).")
+                else:
+                    messages.success(request, "Unlocked the next card slot.")
             else:
                 messages.warning(request, "No additional card slots are available.")
             return redirect(redirect_to)

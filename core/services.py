@@ -29,6 +29,7 @@ def ingest_battle_report(
 
     parsed = parse_battle_report(raw_text)
     preset = _resolve_preset(preset_name)
+    preset_snapshot = _preset_snapshot(preset)
     try:
         with transaction.atomic():
             battle_report = BattleReport.objects.create(
@@ -42,6 +43,8 @@ def ingest_battle_report(
                 wave=parsed.wave,
                 real_time_seconds=parsed.real_time_seconds,
                 preset=preset,
+                preset_name_snapshot=preset_snapshot["name"],
+                preset_color_snapshot=preset_snapshot["color"],
                 killed_by=parsed.killed_by,
                 coins_earned=parsed.coins_earned,
                 coins_earned_raw=parsed.coins_earned_raw,
@@ -57,7 +60,11 @@ def ingest_battle_report(
     except IntegrityError:
         battle_report = BattleReport.objects.get(checksum=parsed.checksum)
         if preset is not None:
-            BattleReportProgress.objects.filter(battle_report=battle_report).update(preset=preset)
+            BattleReportProgress.objects.filter(battle_report=battle_report).update(
+                preset=preset,
+                preset_name_snapshot=preset_snapshot["name"],
+                preset_color_snapshot=preset_snapshot["color"],
+            )
         return battle_report, False
 
 
@@ -79,3 +86,20 @@ def _resolve_preset(preset_name: str | None) -> Preset | None:
     player, _ = Player.objects.get_or_create(name="default")
     preset, _ = Preset.objects.get_or_create(player=player, name=cleaned)
     return preset
+
+
+def _preset_snapshot(preset: Preset | None) -> dict[str, str]:
+    """Return a snapshot dict for optional preset display.
+
+    Args:
+        preset: Preset row when a preset label was applied; otherwise None.
+
+    Returns:
+        Dict with keys:
+        - `name`: Stable display label captured at assignment time.
+        - `color`: Stable palette key captured at assignment time.
+    """
+
+    if preset is None:
+        return {"name": "", "color": ""}
+    return {"name": preset.name, "color": preset.badge_color()}

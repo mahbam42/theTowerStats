@@ -11,6 +11,11 @@
     .battle-history-import textarea {
       min-height: 6rem;
     }
+
+    .preset-select {
+      min-width: 9rem;
+      margin: 0;
+    }
   </style>
 {% endblock %}
 
@@ -69,6 +74,9 @@
           <label>Goal
             {{ filter_form.goal }}
           </label>
+          <label>Preset
+            {{ filter_form.preset }}
+          </label>
           <label>Sort
             {{ filter_form.sort }}
           </label>
@@ -119,7 +127,35 @@
                     <td>{{ run.run_progress.gem_blocks_tapped|default:"—" }}</td>
                     <td>{{ run.run_progress.cells_earned|default:"—" }}</td>
                     <td>{{ run.run_progress.reroll_shards_earned|default:"—" }}</td>
-                    <td>{{ run.run_progress.preset.name|default:"—" }}</td>
+                    <td>
+                      {% if run.run_progress.preset %}
+                        <a
+                          class="badge preset-badge preset-color-{{ run.run_progress.preset.badge_color }}"
+                          href="?preset={{ run.run_progress.preset.id }}"
+                        >
+                          {{ run.run_progress.preset.name }}
+                        </a>
+                      {% elif run.run_progress.preset_name_snapshot %}
+                        <span class="badge secondary preset-badge">{{ run.run_progress.preset_name_snapshot }}</span>
+                      {% else %}
+                        <span class="muted">—</span>
+                      {% endif %}
+
+                      <form method="post" class="margin-top-1">
+                        {% csrf_token %}
+                        <input type="hidden" name="action" value="update_run_preset">
+                        <input type="hidden" name="progress_id" value="{{ run.run_progress.id }}">
+                        <input type="hidden" name="next" value="{{ request.get_full_path }}">
+                        <select name="preset" class="preset-select" aria-label="Run preset selector" onchange="this.form.submit()">
+                          <option value="" {% if not run.run_progress.preset %}selected{% endif %}>No preset</option>
+                          {% for preset in player_presets %}
+                            <option value="{{ preset.id }}" {% if run.run_progress.preset and preset.id == run.run_progress.preset.id %}selected{% endif %}>
+                              {{ preset.name }}
+                            </option>
+                          {% endfor %}
+                        </select>
+                      </form>
+                    </td>
                   </tr>
                 {% endfor %}
               </tbody>

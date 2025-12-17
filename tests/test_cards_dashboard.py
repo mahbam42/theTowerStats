@@ -46,6 +46,23 @@ def test_cards_dashboard_unlocks_next_slot_until_max(client) -> None:
 
 
 @pytest.mark.django_db
+def test_cards_dashboard_handles_missing_slot_wikidata(client) -> None:
+    """Cards dashboard stays usable when card slot wiki data is missing."""
+
+    player = Player.objects.create(name="default", card_slots_unlocked=0)
+
+    url = reverse("core:cards")
+    response = client.get(url)
+    assert response.status_code == 200
+    content = response.content.decode("utf-8")
+    assert "Not tracked yet" in content
+
+    client.post(url, data={"action": "unlock_slot"})
+    player.refresh_from_db()
+    assert player.card_slots_unlocked == 0
+
+
+@pytest.mark.django_db
 def test_cards_dashboard_updates_inventory_and_presets(client) -> None:
     """Inventory edits persist and presets can be assigned and filtered."""
 
