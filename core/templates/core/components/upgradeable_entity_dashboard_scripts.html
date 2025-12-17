@@ -36,13 +36,14 @@
   }
 
   function postForm(form) {
-    const token = getCookie('csrftoken');
     const data = new FormData(form);
+    const token = data.get('csrfmiddlewaretoken') || getCookie('csrftoken');
     const target = form.getAttribute('action') || window.location.href;
     return fetch(target, {
       method: 'POST',
+      credentials: 'same-origin',
       headers: {
-        'X-CSRFToken': token,
+        'X-CSRFToken': token || '',
         'X-Requested-With': 'XMLHttpRequest',
       },
       body: data,
@@ -61,12 +62,13 @@
   document.addEventListener('submit', async function (event) {
     const form = event.target;
     if (!form.classList.contains('entity-action-form')) return;
+    const action = form.dataset.action;
+    if (action === 'toggle_active') return;
     event.preventDefault();
 
     const tile = form.closest('.entity-tile');
     if (!tile) return;
 
-    const action = form.dataset.action;
     if (action === 'unlock') {
       const button = form.querySelector('button');
       if (button) button.disabled = true;
@@ -82,20 +84,6 @@
         const resp = await postForm(form);
         const payload = await resp.json();
         if (!resp.ok || !payload.ok) throw new Error(payload.error || 'Unlock failed.');
-        window.location.reload();
-      } catch (err) {
-        window.location.reload();
-      }
-      return;
-    }
-
-    if (action === 'toggle_active') {
-      const toggle = form.querySelector('.entity-active-toggle');
-      if (toggle) toggle.disabled = true;
-      try {
-        const resp = await postForm(form);
-        const payload = await resp.json();
-        if (!resp.ok || !payload.ok) throw new Error(payload.error || 'Update failed.');
         window.location.reload();
       } catch (err) {
         window.location.reload();

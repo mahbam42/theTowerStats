@@ -1505,4 +1505,6 @@ Mostly a visual tweak, but adds context and history for the player to interpert 
 - [X] prompt 19 cards improvements
 - [X] prompt 20 Battle History ↔ Preset Tagging
 - [X] prompt 21 UW Dashboard
-- [X] prompt 22 Bots/Guardian Chips Dashboards 
+- [X] prompt 22 Bots/Guardian Chips Dashboards
+- [ ] prompt 24 Cards Dashboard Enhancements
+- [ ] prompt 23 phase 5 exit criteria validation
