@@ -9,6 +9,8 @@ from __future__ import annotations
 from dataclasses import dataclass
 from typing import Final
 
+from .battle_report_extract import extract_numeric_value
+from .categories import MetricCategory
 from .context import ParameterInput, PlayerContextInput
 from .derived import MonteCarloConfig
 from .effects import activations_per_minute_from_parameters
@@ -16,7 +18,9 @@ from .effects import effective_cooldown_seconds_from_parameters
 from .effects import uptime_percent_from_parameters
 from .dto import MetricDefinition
 from .dto import UsedParameter
+from .quantity import UnitType
 from .rates import coins_per_hour
+from .series_registry import DEFAULT_REGISTRY
 
 
 @dataclass(frozen=True, slots=True)
@@ -35,99 +39,285 @@ METRICS: Final[dict[str, MetricDefinition]] = {
         key="coins_earned",
         label="Coins earned",
         unit="coins",
+        category="economy",
         kind="observed",
     ),
     "cash_earned": MetricDefinition(
         key="cash_earned",
         label="Cash earned",
         unit="cash",
+        category="economy",
         kind="observed",
     ),
     "cells_earned": MetricDefinition(
         key="cells_earned",
         label="Cells earned",
         unit="cells",
+        category="economy",
         kind="observed",
     ),
     "reroll_shards_earned": MetricDefinition(
         key="reroll_shards_earned",
         label="Reroll shards earned",
         unit="shards",
+        category="economy",
         kind="observed",
     ),
     "reroll_dice_earned": MetricDefinition(
         key="reroll_dice_earned",
         label="Reroll dice earned",
         unit="shards",
+        category="economy",
         kind="observed",
     ),
     "waves_reached": MetricDefinition(
         key="waves_reached",
         label="Waves reached",
         unit="waves",
+        category="utility",
         kind="observed",
     ),
     "coins_per_wave": MetricDefinition(
         key="coins_per_wave",
         label="Coins per wave",
         unit="coins/wave",
+        category="economy",
         kind="derived",
     ),
     "uw_runs_count": MetricDefinition(
         key="uw_runs_count",
         label="Runs using selected ultimate weapon",
         unit="runs",
+        category="utility",
         kind="observed",
     ),
     "guardian_runs_count": MetricDefinition(
         key="guardian_runs_count",
         label="Runs using selected guardian chip",
         unit="runs",
+        category="utility",
         kind="observed",
     ),
     "bot_runs_count": MetricDefinition(
         key="bot_runs_count",
         label="Runs using selected bot",
         unit="runs",
+        category="utility",
         kind="observed",
     ),
     "coins_per_hour": MetricDefinition(
         key="coins_per_hour",
         label="Coins/hour",
         unit="coins/hour",
+        category="economy",
+        kind="observed",
+    ),
+    "coins_from_death_wave": MetricDefinition(
+        key="coins_from_death_wave",
+        label="Coins From Death Wave",
+        unit="coins",
+        category="economy",
+        kind="observed",
+    ),
+    "coins_from_golden_tower": MetricDefinition(
+        key="coins_from_golden_tower",
+        label="Coins From Golden Tower",
+        unit="coins",
+        category="economy",
+        kind="observed",
+    ),
+    "cash_from_golden_tower": MetricDefinition(
+        key="cash_from_golden_tower",
+        label="Cash From Golden Tower",
+        unit="cash",
+        category="economy",
+        kind="observed",
+    ),
+    "coins_from_black_hole": MetricDefinition(
+        key="coins_from_black_hole",
+        label="Coins From Black Hole",
+        unit="coins",
+        category="economy",
+        kind="observed",
+    ),
+    "coins_from_spotlight": MetricDefinition(
+        key="coins_from_spotlight",
+        label="Coins From Spotlight",
+        unit="coins",
+        category="economy",
+        kind="observed",
+    ),
+    "coins_from_orb": MetricDefinition(
+        key="coins_from_orb",
+        label="Coins From Orb",
+        unit="coins",
+        category="economy",
+        kind="observed",
+    ),
+    "coins_from_coin_upgrade": MetricDefinition(
+        key="coins_from_coin_upgrade",
+        label="Coins from Coin Upgrade",
+        unit="coins",
+        category="economy",
+        kind="observed",
+    ),
+    "coins_from_coin_bonuses": MetricDefinition(
+        key="coins_from_coin_bonuses",
+        label="Coins from Coin Bonuses",
+        unit="coins",
+        category="economy",
+        kind="observed",
+    ),
+    "guardian_damage": MetricDefinition(
+        key="guardian_damage",
+        label="Guardian Damage",
+        unit="damage",
+        category="combat",
+        kind="observed",
+    ),
+    "guardian_summoned_enemies": MetricDefinition(
+        key="guardian_summoned_enemies",
+        label="Guardian Summoned Enemies",
+        unit="count",
+        category="combat",
+        kind="observed",
+    ),
+    "guardian_coins_stolen": MetricDefinition(
+        key="guardian_coins_stolen",
+        label="Guardian coins stolen",
+        unit="coins",
+        category="economy",
+        kind="observed",
+    ),
+    "guardian_coins_fetched": MetricDefinition(
+        key="guardian_coins_fetched",
+        label="Coins Fetched",
+        unit="coins",
+        category="economy",
+        kind="observed",
+    ),
+    "guardian_gems_fetched": MetricDefinition(
+        key="guardian_gems_fetched",
+        label="Guardian gems fetched",
+        unit="count",
+        category="fetch",
+        kind="observed",
+    ),
+    "guardian_medals_fetched": MetricDefinition(
+        key="guardian_medals_fetched",
+        label="Guardian medals fetched",
+        unit="count",
+        category="fetch",
+        kind="observed",
+    ),
+    "guardian_reroll_shards_fetched": MetricDefinition(
+        key="guardian_reroll_shards_fetched",
+        label="Guardian reroll shards fetched",
+        unit="count",
+        category="fetch",
+        kind="observed",
+    ),
+    "guardian_cannon_shards_fetched": MetricDefinition(
+        key="guardian_cannon_shards_fetched",
+        label="Guardian cannon shards fetched",
+        unit="count",
+        category="fetch",
+        kind="observed",
+    ),
+    "guardian_armor_shards_fetched": MetricDefinition(
+        key="guardian_armor_shards_fetched",
+        label="Guardian armor shards fetched",
+        unit="count",
+        category="fetch",
+        kind="observed",
+    ),
+    "guardian_generator_shards_fetched": MetricDefinition(
+        key="guardian_generator_shards_fetched",
+        label="Guardian generator shards fetched",
+        unit="count",
+        category="fetch",
+        kind="observed",
+    ),
+    "guardian_core_shards_fetched": MetricDefinition(
+        key="guardian_core_shards_fetched",
+        label="Guardian core shards fetched",
+        unit="count",
+        category="fetch",
+        kind="observed",
+    ),
+    "guardian_common_modules_fetched": MetricDefinition(
+        key="guardian_common_modules_fetched",
+        label="Guardian common modules fetched",
+        unit="count",
+        category="fetch",
+        kind="observed",
+    ),
+    "guardian_rare_modules_fetched": MetricDefinition(
+        key="guardian_rare_modules_fetched",
+        label="Guardian rare modules fetched",
+        unit="count",
+        category="fetch",
         kind="observed",
     ),
     "uw_uptime_percent": MetricDefinition(
         key="uw_uptime_percent",
         label="Ultimate Weapon uptime",
         unit="percent",
+        category="utility",
         kind="derived",
     ),
     "guardian_activations_per_minute": MetricDefinition(
         key="guardian_activations_per_minute",
         label="Guardian activations/minute",
         unit="activations/min",
+        category="utility",
         kind="derived",
     ),
     "uw_effective_cooldown_seconds": MetricDefinition(
         key="uw_effective_cooldown_seconds",
         label="Ultimate Weapon effective cooldown",
         unit="seconds",
+        category="utility",
         kind="derived",
     ),
     "cooldown_reduction_effective": MetricDefinition(
         key="cooldown_reduction_effective",
         label="Effective cooldown",
         unit="seconds",
+        category="utility",
         kind="derived",
     ),
     "bot_uptime_percent": MetricDefinition(
         key="bot_uptime_percent",
         label="Bot uptime",
         unit="percent",
+        category="utility",
         kind="derived",
     ),
 }
+
+
+def validate_metric_registry() -> None:
+    """Validate that MetricDefinition keys and series registry keys match.
+
+    Raises:
+        ValueError: When registered metric keys drift between METRICS and the
+            DEFAULT_REGISTRY.
+    """
+
+    registry_keys = {spec.key for spec in DEFAULT_REGISTRY.list()}
+    metric_keys = set(METRICS.keys())
+    missing_in_registry = sorted(metric_keys - registry_keys)
+    missing_in_metrics = sorted(registry_keys - metric_keys)
+    if missing_in_registry or missing_in_metrics:
+        raise ValueError(
+            "Metric registry mismatch.\n"
+            f"- Present in METRICS, missing in DEFAULT_REGISTRY: {missing_in_registry}\n"
+            f"- Present in DEFAULT_REGISTRY, missing in METRICS: {missing_in_metrics}\n"
+        )
+
+
+validate_metric_registry()
 
 
 def list_metric_definitions() -> tuple[MetricDefinition, ...]:
@@ -250,6 +440,12 @@ def compute_metric_value(
             (),
         )
 
+    battle_text = getattr(record, "raw_text", None)
+    if isinstance(battle_text, str):
+        observed = _compute_observed_from_raw_text(metric_key, battle_text=battle_text)
+        if observed is not None:
+            return observed, (), ()
+
     if context is None:
         return None, (), ("Missing player context; derived metric not computed.",)
 
@@ -331,6 +527,59 @@ def compute_metric_value(
         return effect.value, effect.used_parameters, assumptions
 
     return None, (), ("Unknown metric key; no value computed.",)
+
+
+def _compute_observed_from_raw_text(metric_key: str, *, battle_text: str) -> float | None:
+    """Compute Phase 6 observed metrics from raw Battle Report text.
+
+    Args:
+        metric_key: Metric key to compute.
+        battle_text: Raw Battle Report text.
+
+    Returns:
+        Parsed float when available; otherwise None.
+    """
+
+    mapping: dict[str, tuple[str, UnitType]] = {
+        "coins_from_death_wave": ("Coins From Death Wave", UnitType.coins),
+        "cash_from_golden_tower": ("Cash From Golden Tower", UnitType.cash),
+        "coins_from_golden_tower": ("Coins From Golden Tower", UnitType.coins),
+        "coins_from_black_hole": ("Coins From Black Hole", UnitType.coins),
+        "coins_from_spotlight": ("Coins From Spotlight", UnitType.coins),
+        "coins_from_orb": ("Coins From Orb", UnitType.coins),
+        "coins_from_coin_upgrade": ("Coins from Coin Upgrade", UnitType.coins),
+        "coins_from_coin_bonuses": ("Coins from Coin Bonuses", UnitType.coins),
+        "guardian_damage": ("Damage", UnitType.damage),
+        "guardian_summoned_enemies": ("Summoned enemies", UnitType.count),
+        "guardian_coins_stolen": ("Guardian coins stolen", UnitType.coins),
+        "guardian_coins_fetched": ("Coins Fetched", UnitType.coins),
+        "guardian_gems_fetched": ("Gems", UnitType.count),
+        "guardian_medals_fetched": ("Medals", UnitType.count),
+        "guardian_reroll_shards_fetched": ("Reroll Shards", UnitType.count),
+        "guardian_cannon_shards_fetched": ("Cannon Shards", UnitType.count),
+        "guardian_armor_shards_fetched": ("Armor Shards", UnitType.count),
+        "guardian_generator_shards_fetched": ("Generator Shards", UnitType.count),
+        "guardian_core_shards_fetched": ("Core Shards", UnitType.count),
+        "guardian_common_modules_fetched": ("Common Modules", UnitType.count),
+        "guardian_rare_modules_fetched": ("Rare Modules", UnitType.count),
+    }
+
+    spec = mapping.get(metric_key)
+    if spec is None:
+        return None
+
+    label, unit_type = spec
+    extracted = extract_numeric_value(battle_text, label=label, unit_type=unit_type)
+    if extracted is None:
+        return 0.0
+    return extracted.value
+
+
+def category_for_metric(metric_key: str) -> MetricCategory | None:
+    """Return the MetricCategory for a metric key, when registered."""
+
+    metric = METRICS.get(metric_key)
+    return metric.category if metric is not None else None
 
 
 def _entity_parameters(

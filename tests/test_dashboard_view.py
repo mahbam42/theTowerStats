@@ -542,3 +542,83 @@ def test_dashboard_view_window_delta_respects_preset_filter(client) -> None:
     assert result["comparison_value"] == 14400.0
     assert result["delta"].absolute == 7200.0
     assert result["percent_display"] == 100.0
+
+
+@pytest.mark.django_db
+def test_dashboard_view_renders_coins_by_source_donut(client) -> None:
+    """Render the Coins Earned by Source donut chart from Battle Report values."""
+
+    raw_text = "\n".join(
+        [
+            "Battle Report",
+            "Battle Date\tDec 14, 2025 01:39",
+            "Real Time\t17m 35s",
+            "Tier\t11",
+            "Wave\t121",
+            "Coins earned\t1.24M",
+            "Utility",
+            "Coins From Death Wave\t2.35K",
+            "Coins From Golden Tower\t62.30K",
+            "Coins From Black Hole\t0",
+            "Coins From Spotlight\t1.76K",
+            "Coins From Orb\t0",
+            "Coins from Coin Upgrade\t832.21K",
+            "Coins from Coin Bonuses\t335.53K",
+            "Guardian",
+            "Guardian coins stolen\t0",
+            "Coins Fetched\t805",
+            "",
+        ]
+    )
+    report = BattleReport.objects.create(raw_text=raw_text, checksum="donut".ljust(64, "x"))
+    BattleReportProgress.objects.create(
+        battle_report=report,
+        battle_date=datetime(2025, 12, 14, 1, 39, tzinfo=timezone.utc),
+        tier=11,
+        wave=121,
+        real_time_seconds=1055,
+    )
+
+    response = client.get("/", {"charts": ["coins_by_source"], "start_date": date(2025, 12, 9)})
+    assert response.status_code == 200
+
+    panels = {p["id"]: p for p in json.loads(response.context["chart_panels_json"])}
+    panel = panels["coins_by_source"]
+    assert panel["chart_type"] == "donut"
+    assert len(panel["datasets"]) == 1
+    labels = panel["labels"]
+    values = panel["datasets"][0]["data"]
+    assert values[labels.index("Coins From Death Wave")] == 2350.0
+
+
+@pytest.mark.django_db
+def test_dashboard_view_applies_rolling_window_last_runs(client) -> None:
+    """Apply the rolling window after date filtering."""
+
+    for idx, day in enumerate([1, 2, 3], start=1):
+        report = BattleReport.objects.create(
+            raw_text=f"Battle Report\nCoins earned    {idx * 100}\n",
+            checksum=f"roll{idx}".ljust(64, "r"),
+        )
+        BattleReportProgress.objects.create(
+            battle_report=report,
+            battle_date=datetime(2025, 12, day, tzinfo=timezone.utc),
+            tier=1,
+            wave=10,
+            real_time_seconds=10,
+        )
+
+    response = client.get(
+        "/",
+        {
+            "charts": ["coins_earned"],
+            "start_date": FILTER_START,
+            "window_kind": "last_runs",
+            "window_n": 2,
+        },
+    )
+    assert response.status_code == 200
+
+    panels = {p["id"]: p for p in json.loads(response.context["chart_panels_json"])}
+    panel = panels["coins_earned"]
+    assert panel["labels"] == ["2025-12-02", "2025-12-03"]

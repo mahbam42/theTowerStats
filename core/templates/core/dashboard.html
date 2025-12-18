@@ -69,6 +69,12 @@
           <label>Moving average window
             {{ chart_form.moving_average_window }}
           </label>
+          <label>Rolling window
+            {{ chart_form.window_kind }}
+          </label>
+          <label>Rolling window size
+            {{ chart_form.window_n }}
+          </label>
           <div class="button-group expanded stack-for-small margin-top-1">
             <button class="button" type="submit">Apply</button>
             <a class="button secondary" href="{% url 'core:dashboard' %}">Clear</a>
@@ -207,6 +213,8 @@
           tier: getValue("tier"),
           preset: presetLabel && presetLabel !== "All presets" ? presetLabel : null,
           moving_average_window: getValue("moving_average_window"),
+          window_kind: getValue("window_kind"),
+          window_n: getValue("window_n"),
         };
       }
 
@@ -217,7 +225,10 @@
         const tier = context.tier ? `Tier ${context.tier}` : "All tiers";
         const preset = context.preset ? `Preset: ${context.preset}` : "All presets";
         const ma = context.moving_average_window ? `MA window: ${context.moving_average_window}` : "MA window: default";
-        return `${charts} • ${tier} • ${preset} • ${start} → ${end} • ${ma}`;
+        const window = context.window_kind
+          ? `${context.window_kind.replace("_", " ")}: ${context.window_n || "?"}`
+          : "Rolling window: none";
+        return `${charts} • ${tier} • ${preset} • ${start} → ${end} • ${ma} • ${window}`;
       }
 
       function updateContextSummary() {
@@ -279,6 +290,9 @@
                     if (context.moving_average_window) {
                       lines.push(`Moving average window: ${context.moving_average_window}`);
                     }
+                    if (context.window_kind) {
+                      lines.push(`Rolling window: ${context.window_kind} (${context.window_n || "?"})`);
+                    }
                     return lines;
                   },
                 },
@@ -301,9 +315,44 @@
         });
       }
 
+      function renderDonutChart(canvasId, labels, datasets) {
+        const canvas = document.getElementById(canvasId);
+        const ctx = canvas ? canvas.getContext("2d") : null;
+        if (!ctx || labels.length === 0 || datasets.length === 0) return;
+
+        const unit = datasets[0]?.unit || "";
+        new Chart(ctx, {
+          type: "doughnut",
+          data: {
+            labels,
+            datasets,
+          },
+          options: {
+            responsive: true,
+            plugins: {
+              legend: { display: true, position: "right" },
+              tooltip: {
+                callbacks: {
+                  title: (items) => (items && items[0] ? items[0].label : ""),
+                  label: (context) => {
+                    const value = context.parsed;
+                    const unitLabel = unit ? ` ${unit}` : "";
+                    return `${formatExactNumber(value)}${unitLabel}`;
+                  },
+                },
+              },
+            },
+          },
+        });
+      }
+
       // Empty state is rendered server-side.
       for (const panel of chartPanels) {
-        renderLineChart(`chart-${panel.id}`, panel.labels, panel.datasets);
+        if (panel.chart_type === "donut") {
+          renderDonutChart(`chart-${panel.id}`, panel.labels, panel.datasets);
+        } else {
+          renderLineChart(`chart-${panel.id}`, panel.labels, panel.datasets);
+        }
       }
     </script>
 {% endblock %}

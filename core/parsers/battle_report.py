@@ -15,7 +15,8 @@ import re
 from dataclasses import dataclass
 from datetime import datetime, timezone
 
-from analysis.quantity import UnitType, parse_quantity
+from analysis.quantity import UnitType
+from analysis.units import UnitContract, UnitValidationError, parse_validated_quantity
 
 
 @dataclass(frozen=True)
@@ -151,9 +152,9 @@ def parse_battle_report(raw_text: str) -> ParsedBattleReport:
     coins_earned_raw = _parse_text(raw_fields.coins_earned)
     coins_earned = _parse_compact_int(coins_earned_raw, unit_type=UnitType.coins)
     cash_earned_raw = _parse_text(raw_fields.cash_earned)
-    cash_earned = _parse_compact_int(cash_earned_raw, unit_type=UnitType.count)
+    cash_earned = _parse_compact_int(cash_earned_raw, unit_type=UnitType.cash)
     interest_earned_raw = _parse_text(raw_fields.interest_earned)
-    interest_earned = _parse_compact_int(interest_earned_raw, unit_type=UnitType.count)
+    interest_earned = _parse_compact_int(interest_earned_raw, unit_type=UnitType.cash)
     gem_blocks_tapped = _parse_int(raw_fields.gem_blocks_tapped)
     cells_earned = _parse_int(raw_fields.cells_earned)
     reroll_shards_earned = _parse_int(raw_fields.reroll_shards_earned)
@@ -270,11 +271,14 @@ def _parse_compact_int(value: str | None, *, unit_type: UnitType) -> int | None:
 
     if value is None:
         return None
-    parsed = parse_quantity(value, unit_type=unit_type)
-    if parsed.normalized_value is None or parsed.normalized_value <= 0:
+    try:
+        validated = parse_validated_quantity(value, contract=UnitContract(unit_type=unit_type))
+    except (UnitValidationError, ValueError):
+        return None
+    if validated.normalized_value <= 0:
         return None
     try:
-        return int(parsed.normalized_value)
+        return int(validated.normalized_value)
     except (OverflowError, ValueError):
         return None
 

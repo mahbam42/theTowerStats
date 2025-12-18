@@ -11,6 +11,8 @@ from dataclasses import field
 from datetime import date
 from datetime import datetime
 
+from .categories import MetricCategory
+
 
 @dataclass(frozen=True)
 class AnalysisResult:
@@ -67,12 +69,14 @@ class MetricDefinition:
         key: Stable metric key used by UI selection and charting.
         label: Human-friendly label.
         unit: Display unit string (e.g. "coins/hour", "seconds").
+        category: Semantic category used for filtering and validation.
         kind: Either "observed" or "derived".
     """
 
     key: str
     label: str
     unit: str
+    category: MetricCategory
     kind: str
 
 

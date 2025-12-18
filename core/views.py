@@ -3,14 +3,14 @@
 from __future__ import annotations
 
 import json
-from datetime import date
+from datetime import date, timedelta
 from typing import Any
 
 from django.contrib import messages
 from django.conf import settings
 from django.core.exceptions import ValidationError
 from django.db import transaction
-from django.db.models import Case, ExpressionWrapper, F, FloatField, QuerySet, Value, When
+from django.db.models import Case, ExpressionWrapper, F, FloatField, Max, QuerySet, Value, When
 from django.http import HttpRequest, HttpResponse, JsonResponse, QueryDict
 from django.shortcuts import redirect, render
 from django.core.paginator import Paginator
@@ -127,6 +127,7 @@ def dashboard(request: HttpRequest) -> HttpResponse:
             "title": entry.config.title,
             "description": entry.config.description,
             "unit": entry.unit,
+            "chart_type": entry.config.chart_type,
         }
         for entry in rendered
     ]
@@ -134,6 +135,7 @@ def dashboard(request: HttpRequest) -> HttpResponse:
         [
             {
                 "id": entry.config.id,
+                "chart_type": entry.config.chart_type,
                 "labels": entry.data["labels"],
                 "datasets": entry.data["datasets"],
             }
@@ -1714,6 +1716,8 @@ def _filtered_runs(filter_form: ChartContextForm) -> QuerySet[BattleReport]:
     end_date = filter_form.cleaned_data.get("end_date")
     tier = filter_form.cleaned_data.get("tier")
     preset = filter_form.cleaned_data.get("preset")
+    window_kind = filter_form.cleaned_data.get("window_kind")
+    window_n = filter_form.cleaned_data.get("window_n")
     if start_date:
         runs = runs.filter(run_progress__battle_date__date__gte=start_date)
     if end_date:
@@ -1722,6 +1726,54 @@ def _filtered_runs(filter_form: ChartContextForm) -> QuerySet[BattleReport]:
         runs = runs.filter(run_progress__tier=tier)
     if preset:
         runs = runs.filter(run_progress__preset=preset)
+    if window_kind and window_n:
+        runs = _apply_rolling_window(runs, kind=str(window_kind), n=int(window_n), end_date=end_date)
+    return runs
+
+
+def _apply_rolling_window(
+    runs: QuerySet[BattleReport],
+    *,
+    kind: str,
+    n: int,
+    end_date: date | None,
+) -> QuerySet[BattleReport]:
+    """Apply a rolling window to an already context-filtered queryset.
+
+    Args:
+        runs: BattleReport queryset already scoped by date/preset/tier.
+        kind: Either "last_runs" or "last_days".
+        n: Window size.
+        end_date: Optional explicit end date (inclusive) from the context filter.
+
+    Returns:
+        QuerySet additionally filtered to the requested rolling window.
+    """
+
+    if n <= 0:
+        return runs
+
+    dated = runs.exclude(run_progress__battle_date__isnull=True)
+    if kind == "last_runs":
+        ids = list(
+            dated.order_by("-run_progress__battle_date")
+            .values_list("id", flat=True)[:n]
+        )
+        if not ids:
+            return runs.none()
+        return runs.filter(id__in=ids).order_by("run_progress__battle_date")
+
+    if kind == "last_days":
+        if end_date is not None:
+            window_end = end_date
+        else:
+            latest = dated.aggregate(latest=Max("run_progress__battle_date"))["latest"]
+            if latest is None:
+                return runs.none()
+            window_end = latest.date()
+        window_start = window_end - timedelta(days=max(n - 1, 0))
+        return runs.filter(run_progress__battle_date__date__gte=window_start)
+
     return runs
 
 

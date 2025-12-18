@@ -15,7 +15,8 @@ from .context import PlayerContextInput
 from .derived import MonteCarloConfig
 from .dto import AnalysisResult, MetricPoint, MetricSeriesResult, RunAnalysis, UsedParameter
 from .metrics import MetricComputeConfig, compute_metric_value, get_metric_definition
-from .quantity import UnitType, parse_quantity
+from .quantity import UnitType
+from .units import UnitContract, UnitValidationError, parse_validated_quantity
 from .rates import coins_per_hour
 
 
@@ -248,11 +249,14 @@ def _coins_from_raw_text(raw_text: object) -> int | None:
         return None
 
     token = match.group(1)
-    parsed = parse_quantity(token, unit_type=UnitType.coins)
-    if parsed.normalized_value is None or parsed.normalized_value <= 0:
+    try:
+        validated = parse_validated_quantity(token, contract=UnitContract(unit_type=UnitType.coins))
+    except (UnitValidationError, ValueError):
+        return None
+    if validated.normalized_value <= 0:
         return None
 
     try:
-        return int(parsed.normalized_value.to_integral_value())
+        return int(validated.normalized_value.to_integral_value())
     except (ValueError, OverflowError):
         return None

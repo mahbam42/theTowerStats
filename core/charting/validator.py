@@ -61,9 +61,15 @@ def validate_chart_config(config: ChartConfig, *, registry: MetricSeriesRegistry
     if config.category not in allowed_categories:
         errors.append(f"ChartConfig[{config.id}].category is not a supported value: {config.category!r}.")
 
-    allowed_chart_types = {"line", "bar", "area", "scatter"}
+    allowed_chart_types = {"line", "bar", "area", "scatter", "donut"}
     if config.chart_type not in allowed_chart_types:
         errors.append(f"ChartConfig[{config.id}].chart_type is not a supported value: {config.chart_type!r}.")
+
+    if config.chart_type == "donut":
+        if config.derived is not None:
+            errors.append(f"ChartConfig[{config.id}] donut charts cannot declare derived formulas.")
+        if config.comparison is not None and config.comparison.mode != "none":
+            errors.append(f"ChartConfig[{config.id}] donut charts cannot use comparison modes.")
 
     for idx, series in enumerate(config.metric_series):
         spec = registry.get(series.metric_key)

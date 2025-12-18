@@ -21,6 +21,7 @@ class UnitType(Enum):
     """Supported unit categories for Phase 1.5."""
 
     coins = "coins"
+    cash = "cash"
     damage = "damage"
     count = "count"
     time = "time"

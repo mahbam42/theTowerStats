@@ -759,7 +759,9 @@ Testing
  - At least:
    - [X] 1 golden test for a parameterized effect
    - [X] 1 test validating revision behavior
-*** Phase 5 Dashboard UX [87%]
+*** DONE Phase 5 Dashboard UX [100%]
+CLOSED: [2025-12-18 Thu 10:46]
+- State "DONE"       from              [2025-12-18 Thu 10:46]
 Goal:
 - Turn the analysis engine outputs into clear, usable, player-facing dashboards.
 - No new math. No new scraping logic. No new domain models.
@@ -805,7 +807,9 @@ Killed By, Coins Earned, Interest, Gem Blocks, Cells Earned, Reroll all empty. N
 CLOSED: [2025-12-16 Tue 16:01]
 - State "DONE"       from              [2025-12-16 Tue 16:01]
 Click on header to sort table
-**** IN PROGRESS Charts
+**** DONE Charts
+CLOSED: [2025-12-18 Thu 10:46]
+- State "DONE"       from "IN PROGRESS" [2025-12-18 Thu 10:46]
 - State "IN PROGRESS" from "TODO"       [2025-12-16 Tue 16:55] \\
   vastly improved but need to build out support for Bots/UWs/Guardian Chips before they show properly on Charts.
 Pretty dashboard of metrics over time (filterable by date range and tier)
@@ -1116,13 +1120,99 @@ A new user can:
 3. Inspect progress
 4. Understand trends …without explanation.
 *** Phase 6 Expansion of Foundation and Context [11%]
-What’s done is minimal by design. Expand it to feel “real”:
+What’s done has been minimal by design. Now we can expand it to feel “real”. Make foundational rates, units, and context provably correct, visibly coherent, and ready to support higher-order comparisons.
+
+**Foundation First**
+
+Nothing else should proceed until this is locked.
+
+A. Canonical Rate Metrics
+
+- Coins Earned by Source → ✅ good candidate for donut
+
+- Guardian Chip Performance → split into:
+
+  - Contribution metrics (damage, coins, summons)
+
+  - Fetch metrics (gems, shards, modules)
+
+**Refinements**
+
+- Explicitly define:
+
+  - Which metrics roll up into Coins Earned by Source
+
+  - Which are excluded but cross-referenced
+
+- Add a schema note:
+
+  - `MetricCategory = {economy, combat, fetch, utility}`
+
+**Exit Criteria**
+
+Each rate metric:
+
+- Is derived from Battle Reports only
+
+- Appears in exactly one category
+
+- Has a deterministic total (sum of sources = total coins)
+
+
+**Units Class**
+
+This is a value wrapper and  a validation layer
+
+- Start as validation + formatting only
+
+- No runtime math yet beyond normalization
+
+Tests
+
+- Explicit unit tests for:
+
+  - % vs x vs time
+
+  - Magnitude safety (K / M / B / T)
+
+  - Mixed-unit rejection (fail fast)
+
+**Exit Criteria**
+
+- Any metric with ambiguous units fails validation
+
+- No dashboard renders a value without a unit contract
 
 **Foundations:**
-- [ ] Add 2–3 more canonical rate metrics
+Revisit the work from phase 1 and expand it
+- [ ] Add 2–3 more canonical rate metrics. Both of these would be best displayed as a donut chart. 
+  - Coins Earned by Source:
+    The following values are available in Battle Reports. We should track them and show the breakdown of Coin sources. 
+    - Coins From Death Wave	119.49K
+    - Cash From Golden Tower	$45.27M
+    - Coins From Golden Tower	3.72M
+    - Coins From Black Hole	0
+    - Coins From Spotlight	41.37K
+    - Coins From Orb	0
+    - Coins from Coin Upgrade	7.23M
+    - Coins from Coin Bonuses	9.61M
+  - Guardian Chip Performance:
+    Also already in Battle History. metrics should be split by unit type.
 
-- [ ] Normalize time handling everywhere (game time vs real time vs accelerated)
-  
+    - Damage	2.49T
+    - Summoned enemies	0 quantity
+    - Guardian coins stolen	0 quantity (and should be included in 'Coins Earned by Source'
+    - Coins Fetched	16.62K quantity (and should be included in 'Coins Earned by Source'
+    - Gems	1 this and the remaining metrics can all be combined as 'Fetch metrics'
+    - Medals	1
+    - Reroll Shards
+    - Cannon Shards	3
+    - Armor Shards	0
+    - Generator Shards	3
+    - Core Shards	0
+    - Common Modules	0
+    - Rare Modules	0
+
 - [ ] Lock down Unit Model correctness
   
   - Explicit tests for %, x, time units, magnitudes
@@ -1132,10 +1222,32 @@ What’s done is minimal by design. Expand it to feel “real”:
 
 
 **Context:**
+Revisit and build on phase 2 work
 - [ ] Preset filtering edge cases
   - No preset selected
   - Preset selected but no matching runs
 - [ ] Tier + Preset + Date range combinations
+    Explicit Precedence:
+  1. Date Range
+  2. Preset
+  3. Tier
+  4. Empty states must:
+     - Render UI
+     - Return typed but empty MetricSeries
+
+
+  Golden Test
+    - Your “context matrix” test is excellent. Make it mandatory.
+
+  **Exit Criteria:**
+
+    - Same metric + same raw data + different contexts:
+
+      - Same schema
+
+      - Predictable empty/non-empty behavior
+
+      - No silent fallbacks
 - [ ] Rolling windows (last N runs, last N days)
 - [ ] Add:
   - One “context matrix” golden test
@@ -1156,10 +1268,71 @@ What’s done is minimal by design. Expand it to feel “real”:
   GameData → Derived Metrics → What actually happens in a run.
 
   just a tooltip or expandable row that says “+X% from Cards” is enough.
+
+  Guidance:
+
+  - Keep this read-only
+
+  - Tooltip / expandable row only
+
+  - No recommendations yet
+
+  **Exit Criteria:**
+
+    - Every parameter row can explain:
+
+    - Base value
+
+     - Effective value
+
+     - At least one contributing modifier
+
+
+**Efficiency Metrics**
+  Examples:
+  - Stones per % improvement
+  - Stones per second saved
+  - Relative efficiency compared to other UWs
+
+  This is powerful, but it opens balance and interpretation questions. Best added once the core dashboards are stable.
+
+  Keep this as a Phase 6 appendix only:
+
+    - Spec definitions
+
+    - Sample calculations
+
+    - No UI beyond maybe one static comparison table
+
+    This prevents balance arguments from stalling Phase 6.
   
 **Documentation**
 
-- [X]  Add Github Action to publish Docs to Github Pages
+- [X] Add Github Action to publish Docs to Github Pages
+- [ ] Phase 6 Concepts” doc:
+  - Units
+  - Effective vs Base
+  - Context
+  - Why donut charts are used
+
+
+**Phase 6 Exit Criteria:**
+
+- All displayed rates:
+
+  - Have validated units
+
+  - Are derived from canonical sources
+
+- Context changes:
+
+  - Never change metric meaning, only scope
+
+- Effective values:
+
+  - Are visible and explainable everywhere parameters appear
+
+- No efficiency or recommendation logic depends on undocumented assumptions
 *** Phase 7 Power Tools
 
 **** TODO [#A] Add Chart Builder Modal to Charts Dashboard
@@ -1404,22 +1577,15 @@ def create_player(sender, instance, created, **kwargs):
 - PNG export of charts
 
 This dramatically increases perceived value with very little backend work.
-** Backlog [0/3]
+** Backlog [0/4]
 “Out of Scope”:
 - Cloud sync
 - Real-time scraping
   
-*** TODO [#A] Efficiency Metrics
-Examples:
-- Stones per % improvement
-- Stones per second saved
-- Relative efficiency compared to other UWs
+*** TODO [#A]
 
-This is powerful, but it opens balance and interpretation questions. Best added once the core dashboards are stable.
-*** TODO [#B] What to do with Units Class
-
-We planned it out but have yet to implement it
-
+*** TODO [#C] Normalize time handling everywhere (game time vs real time vs accelerated)
+Game Time can be accelerated and the rate can be changed during a run. Either via Lab Research (max of 5x) or via perks that increase it further to a variable factor (increased by additional researchs). The hard maximum is 6.25x (according to the Wiki). However the Wiki also notes "Game speed is not accurate. x5.0 speed behaves closer to x4.0 while 6.25 is closer to x5." So our handling of it is not strictly necessary. 
 *** TODO [#C] Required Doc Type Header (Must Prepend to All Docs)
 Every document authored or modified by Codex must begin with exactly one of the following headers, placed at the very top of the file.
 
@@ -1526,4 +1692,5 @@ Mostly a visual tweak, but adds context and history for the player to interpert 
 - [X] prompt 21 UW Dashboard
 - [X] prompt 22 Bots/Guardian Chips Dashboards
 - [X] prompt 24 Cards Dashboard Enhancements
-- [ ] prompt 23 phase 5 exit criteria validation
+- [X] prompt 23 phase 5 exit criteria validation
+- [ ] prompt 25 phase 6 work

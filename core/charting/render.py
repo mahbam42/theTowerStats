@@ -26,7 +26,7 @@ class ChartDataset(TypedDict, total=False):
     seriesKind: str
     data: list[float | None]
     borderColor: str
-    backgroundColor: str
+    backgroundColor: str | list[str]
     spanGaps: bool
     borderDash: list[int]
     borderWidth: int
@@ -107,6 +107,14 @@ def render_chart(
         RenderedChart containing chart labels and datasets.
     """
 
+    if config.chart_type == "donut":
+        return _render_donut_chart(
+            config=config,
+            records=records,
+            registry=registry,
+            entity_selections=entity_selections,
+        )
+
     if config.derived is not None:
         derived_points = _compute_derived_points(
             config=config,
@@ -178,6 +186,84 @@ def render_chart(
 
     panel_unit = datasets[0]["unit"] if datasets else ""
     return RenderedChart(config=config, data={"labels": labels, "datasets": datasets}, unit=panel_unit)
+
+
+def _render_donut_chart(
+    *,
+    config: ChartConfig,
+    records: Iterable[object],
+    registry: MetricSeriesRegistry,
+    entity_selections: dict[str, str | None],
+) -> RenderedChart:
+    """Render a donut chart by aggregating selected metrics across filtered runs.
+
+    Args:
+        config: ChartConfig with `chart_type="donut"`.
+        records: Iterable/QuerySet of run records (already filtered by context).
+        registry: MetricSeriesRegistry for labels/units.
+        entity_selections: Mapping for entity filters ("uw", "guardian", "bot") to selected names.
+
+    Returns:
+        RenderedChart with labels representing slices and a single dataset.
+    """
+
+    slice_labels: list[str] = []
+    slice_values: list[float | None] = []
+    slice_units: list[str] = []
+    slice_colors: list[str] = []
+
+    palette = [
+        "#3366CC",
+        "#DC3912",
+        "#FF9900",
+        "#109618",
+        "#990099",
+        "#0099C6",
+        "#DD4477",
+        "#66AA00",
+        "#B82E2E",
+        "#316395",
+        "#994499",
+        "#22AA99",
+    ]
+
+    for idx, series_config in enumerate(config.metric_series):
+        spec = registry.get(series_config.metric_key)
+        if spec is None:
+            continue
+        entity_type, entity_name = _entity_scope_for_series(config, entity_selections)
+        series_result = analyze_metric_series(
+            records,
+            metric_key=series_config.metric_key,
+            transform=_engine_transform(series_config),
+            context=None,
+            entity_type=entity_type,
+            entity_name=entity_name,
+        )
+        total = 0.0
+        for point in series_result.points:
+            if point.value is None:
+                continue
+            total += float(point.value)
+
+        slice_label = series_config.label or spec.label
+        slice_labels.append(slice_label)
+        slice_units.append(_unit_for_series(spec.unit, series_config))
+        slice_values.append(round(total, 2))
+        slice_colors.append(palette[idx % len(palette)])
+
+    unit = slice_units[0] if slice_units and all(u == slice_units[0] for u in slice_units) else ""
+    dataset: ChartDataset = {
+        "label": config.title,
+        "metricKey": config.id,
+        "metricKind": "observed",
+        "unit": unit,
+        "seriesKind": "donut",
+        "data": slice_values,
+        "borderColor": "#ffffff",
+        "backgroundColor": slice_colors,
+    }
+    return RenderedChart(config=config, data={"labels": slice_labels, "datasets": [dataset]}, unit=unit)
 
 
 def _engine_transform(series: ChartSeriesConfig) -> str:

@@ -98,6 +98,23 @@ class ChartContextForm(forms.Form):
         label="Moving average window",
         help_text="Optional simple moving average window size.",
     )
+    window_kind = forms.ChoiceField(
+        required=False,
+        choices=(
+            ("", "No rolling window"),
+            ("last_runs", "Last N runs"),
+            ("last_days", "Last N days"),
+        ),
+        label="Rolling window",
+        help_text="Optional window applied after date/preset/tier filtering.",
+    )
+    window_n = forms.IntegerField(
+        required=False,
+        min_value=1,
+        max_value=365,
+        label="Rolling window size",
+        help_text="N for the selected rolling window.",
+    )
     ev_trials = forms.IntegerField(
         required=False,
         min_value=10,
@@ -134,6 +151,10 @@ class ChartContextForm(forms.Form):
             cleaned["start_date"] = date(2025, 12, 9)
         if not cleaned.get("charts"):
             cleaned["charts"] = list(default_selected_chart_ids())
+        window_kind = (cleaned.get("window_kind") or "").strip()
+        window_n = cleaned.get("window_n")
+        if window_kind and not window_n:
+            self.add_error("window_n", "Provide a size for the selected rolling window.")
         return cleaned
 
 

@@ -21,7 +21,7 @@ ChartCategory = Literal[
     "derived",
 ]
 
-ChartType = Literal["line", "bar", "area", "scatter"]
+ChartType = Literal["line", "bar", "area", "scatter", "donut"]
 
 MetricTransform = Literal["none", "moving_average", "cumulative", "rate_per_hour"]
 
@@ -129,4 +129,3 @@ class ChartConfig:
     comparison: ChartComparison | None = None
     derived: ChartDerived | None = None
     ui: ChartUI = ChartUI(show_by_default=False, selectable=True, order=999)
-
