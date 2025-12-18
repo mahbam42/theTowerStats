@@ -39,7 +39,7 @@ class PresetAdmin(admin.ModelAdmin):
 class ChartSnapshotAdmin(admin.ModelAdmin):
     """Admin configuration for ChartSnapshot."""
 
-    list_display = ("player", "name", "created_at")
+    list_display = ("player", "name", "target", "created_at")
     list_filter = ("player",)
     search_fields = ("name",)
 

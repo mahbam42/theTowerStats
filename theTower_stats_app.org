@@ -1765,13 +1765,28 @@ This dramatically increases perceived value with very little backend work.
 
 **** TODO [#C] Wireup Github Actions to Run Tests
 Run checks or Ruff Check, mypy ., pytest -q
-** Backlog [0/4]
+** Backlog [0/9]
 “Out of Scope”:
 - Cloud sync
 - Real-time scraping
   
 *** TODO [#C] Normalize time handling everywhere (game time vs real time vs accelerated)
 Game Time can be accelerated and the rate can be changed during a run. Either via Lab Research (max of 5x) or via perks that increase it further to a variable factor (increased by additional researchs). The hard maximum is 6.25x (according to the Wiki). However the Wiki also notes "Game speed is not accurate. x5.0 speed behaves closer to x4.0 while 6.25 is closer to x5." So our handling of it is not strictly necessary. 
+
+*** TODO [#A] On the UW Dashboard Runs Used is not updating appropriately
+Based on Battle Reports the 'runs used' should be >0. 
+
+*** TODO [#B] User Guide Operation                                   :docs:
+"Note Battle History surfaces only what exists in your imported text. If a label never appeared in the report, it will not be synthesized here."
+
+This note doesn't make sense. The Battle History is a read-only summary provided by the Game. So assume a player is pasting the full summary into our app every time. 
+
+*** TODO [#A] Cite Sources from the Wiki                             :docs:
+The docs should credit the Wiki early and often.
+*** TODO [#A] Name property links to wiki page as well
+Cards, UWs, Bots, Guardian Chips names should all link to the respective Wiki pages for additional information. They should be appropriately marked as external links. 
+*** TODO [#C] Phase 5 Summary was written as a user facing doc       :docs:
+Should be written as Developer / Progress Documentation. And appropriately filed under 'Development
 *** TODO [#C] Required Doc Type Header (Must Prepend to All Docs)
 Every document authored or modified by Codex must begin with exactly one of the following headers, placed at the very top of the file.
 
@@ -1927,5 +1942,8 @@ Mostly a visual tweak, but adds context and history for the player to interpert 
 - [X] prompt 26 Phase 6 Addendum: Base vs Effective Value + Modifier Explanations
 - [X] prompt 27 Phase 6 Validation Checklist
 - [X] prompt 28 Phase 7 Power Tools
+- [ ] prompt 28 Validation Checklist
 - [ ] prompt 29 Phase 8, Pillar 1: Multiple Player Support
 - [ ] prompt 29 Multiple Player Support Checklist
+- [ ] prompt 30 Phase 8, Pillar 2: Trustable, Explainable, Goal-Aware Advice
+- [ ] prompt 30 Trustable, Explainable, Goal-Aware Advice Validation

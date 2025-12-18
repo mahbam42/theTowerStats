@@ -23,6 +23,7 @@ The Ultimate Weapons page helps you track which Ultimate Weapons you have unlock
 6. Select **Level Up** on a parameter to increase its level by 1.
 7. Review **Total Stones invested** to compare overall investment between weapons.
 8. (Optional) View the **Sync graph** to see when Golden Tower, Black Hole, and Death Wave are active at the same time.
+9. (Optional) Select a saved snapshot in **Ultimate Weapons snapshot** to render a chart above the table.
 
 ## How to Read the Results
 
@@ -36,6 +37,7 @@ The Ultimate Weapons page helps you track which Ultimate Weapons you have unlock
 - In the **Sync graph**, an **Active (0/1)** line indicates whether each Ultimate Weapon is active at a given time.
 - **All overlap** is 1 when all listed lines are active at the same time.
 - **Cumulative overlap (%)** shows the running percent of time where all overlap within the displayed horizon.
+- The **Ultimate Weapons snapshot** chart shows the metric(s) saved in the selected snapshot, using the snapshot’s saved filters.
 
 ## Notes & Limitations
 
@@ -56,6 +58,9 @@ The Ultimate Weapons page helps you track which Ultimate Weapons you have unlock
 
 > **Note**
 > The Sync graph is descriptive. It uses your saved cooldown and duration values and does not include run-by-run timing or recommendations. When Golden Bot timing is available, the graph includes Golden Bot and updates overlap accordingly.
+
+> **Note**
+> Ultimate Weapons snapshots are created from the **Charts** page by saving a snapshot and selecting **Ultimate Weapons** as the snapshot target.
 
 ## Advanced Usage
 

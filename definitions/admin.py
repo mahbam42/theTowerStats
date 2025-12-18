@@ -12,6 +12,7 @@ from definitions.models import (
     GuardianChipDefinition,
     GuardianChipParameterDefinition,
     GuardianChipParameterLevel,
+    PatchBoundary,
     UltimateWeaponDefinition,
     UltimateWeaponParameterDefinition,
     UltimateWeaponParameterLevel,
@@ -117,3 +118,10 @@ class GuardianChipParameterLevelAdmin(admin.ModelAdmin):
     list_display = ("parameter_definition", "level", "value_raw", "cost_raw", "currency")
     list_filter = ("currency",)
 
+
+@admin.register(PatchBoundary)
+class PatchBoundaryAdmin(admin.ModelAdmin):
+    """Admin configuration for PatchBoundary."""
+
+    list_display = ("boundary_date", "label", "created_at")
+    search_fields = ("label",)

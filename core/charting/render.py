@@ -18,7 +18,7 @@ from collections.abc import Iterable
 from analysis.series_registry import MetricSeriesRegistry
 
 from .schema import ChartConfig, ChartSeriesConfig
-from .flags import INCOMPLETE_RUN, PATCH_BOUNDARY, ROLLING_MEDIAN_DEVIATION, apply_patch_boundaries, rolling_median_flags
+from .flagging import flag_reasons, incomplete_run_labels
 
 
 class ChartDataset(TypedDict, total=False):
@@ -166,7 +166,7 @@ def render_chart(
     datasets: list[ChartDataset] = []
     labels: list[str] = []
     warnings: list[str] = []
-    incomplete_labels = _incomplete_run_labels(records)
+    incomplete_labels = incomplete_run_labels(records)
     for series_config in config.metric_series:
         spec = registry.get(series_config.metric_key)
         if spec is None:
@@ -213,12 +213,7 @@ def render_chart(
                 series_kind=series_config.transform,
             )
             if series_config.transform in ("none", "rate_per_hour"):
-                reasons = _flag_reasons(
-                    labels,
-                    data=data,
-                    incomplete_labels=incomplete_labels,
-                    patch_boundaries=patch_boundaries,
-                )
+                reasons = flag_reasons(labels, values=data, incomplete_labels=incomplete_labels, patch_boundaries=patch_boundaries)
                 if any(reasons):
                     dataset["flagReasons"] = reasons
                     dataset["pointRadius"] = [6 if r else 2 for r in reasons]
@@ -411,65 +406,6 @@ def _apply_series_transform(
         return out
 
     return [round(v, 2) if v is not None else None for v in data]
-
-
-def _incomplete_run_labels(records: Iterable[object]) -> set[str]:
-    """Return ISO date labels that contain at least one incomplete run.
-
-    Args:
-        records: Typically a BattleReport QuerySet filtered to the current context.
-
-    Returns:
-        Set of ISO date strings ("YYYY-MM-DD") where a run is missing key metadata.
-    """
-
-    labels: set[str] = set()
-    for record in records:
-        progress = getattr(record, "run_progress", None)
-        battle_date = getattr(progress, "battle_date", None)
-        if battle_date is None:
-            continue
-        wave = getattr(progress, "wave", None)
-        real_time = getattr(progress, "real_time_seconds", None)
-        if wave is None or real_time is None:
-            labels.add(battle_date.date().isoformat())
-    return labels
-
-
-def _flag_reasons(
-    labels: list[str],
-    *,
-    data: list[float | None],
-    incomplete_labels: set[str],
-    patch_boundaries: tuple[date, ...],
-) -> list[str | None]:
-    """Compute per-point flag reasons aligned to labels.
-
-    Args:
-        labels: ISO date labels for the series.
-        data: Series values aligned to labels.
-        incomplete_labels: Set of labels containing incomplete run metadata.
-        patch_boundaries: Known boundary dates (best-effort, optional).
-
-    Returns:
-        List of optional reason strings aligned to `labels`.
-    """
-
-    reasons: list[list[str]] = [[] for _ in labels]
-
-    for idx, label in enumerate(labels):
-        if label in incomplete_labels:
-            reasons[idx].append(INCOMPLETE_RUN.description)
-
-    for idx, flagged in enumerate(rolling_median_flags(data, window=7)):
-        if flagged:
-            reasons[idx].append(ROLLING_MEDIAN_DEVIATION.description)
-
-    for idx, flagged in enumerate(apply_patch_boundaries(labels, boundary_dates=patch_boundaries)):
-        if flagged:
-            reasons[idx].append(PATCH_BOUNDARY.description)
-
-    return ["; ".join(items) if items else None for items in reasons]
 
 def _aggregate_points(points: list[MetricPoint], labels: list[str], *, aggregation: str) -> list[float | None]:
     """Aggregate run points into daily series aligned to label dates."""

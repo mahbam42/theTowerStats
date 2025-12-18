@@ -124,6 +124,31 @@
           <label>Rolling window size
             {{ chart_form.window_n }}
           </label>
+          <hr>
+          <h5 class="margin-bottom-0">Advice</h5>
+          <p class="muted">Advice is descriptive and based on the selected snapshots and current filters.</p>
+          <label>Snapshot A
+            <select name="advice_snapshot_a" id="advice-snapshot-a">
+              <option value="">(select)</option>
+              {% for snapshot in chart_snapshots %}
+                <option value="{{ snapshot.id }}"{% if advice_snapshot_a|default:"" == snapshot.id|stringformat:"s" %} selected{% endif %}>{{ snapshot.name }}</option>
+              {% endfor %}
+            </select>
+          </label>
+          <label>Compare
+            <select name="advice_mode" id="advice-mode">
+              <option value="snapshot_vs_current"{% if advice_mode == "snapshot_vs_current" %} selected{% endif %}>Snapshot vs current filters</option>
+              <option value="snapshot_vs_snapshot"{% if advice_mode == "snapshot_vs_snapshot" %} selected{% endif %}>Snapshot vs snapshot</option>
+            </select>
+          </label>
+          <label>Snapshot B
+            <select name="advice_snapshot_b" id="advice-snapshot-b">
+              <option value="">(select)</option>
+              {% for snapshot in chart_snapshots %}
+                <option value="{{ snapshot.id }}"{% if advice_snapshot_b|default:"" == snapshot.id|stringformat:"s" %} selected{% endif %}>{{ snapshot.name }}</option>
+              {% endfor %}
+            </select>
+          </label>
           <div class="button-group expanded stack-for-small margin-top-1">
             <button class="button" type="submit">Apply</button>
             <a class="button secondary" href="{% url 'core:dashboard' %}">Clear</a>
@@ -245,6 +270,7 @@
     <script>
       const chartPanels = {{ chart_panels_json|safe }};
       const initialContext = {{ chart_context_json|safe }};
+      const chartBuilderMetricMeta = {{ chart_builder_metric_meta_json|safe }};
 
       function formatCompactNumber(value) {
         const absValue = Math.abs(Number(value));
@@ -397,6 +423,38 @@
         });
       }
 
+      function renderBarChart(canvasId, labels, datasets) {
+        const canvas = document.getElementById(canvasId);
+        const ctx = canvas ? canvas.getContext("2d") : null;
+        if (!ctx || labels.length === 0 || datasets.length === 0) return;
+        new Chart(ctx, {
+          type: "bar",
+          data: {
+            labels,
+            datasets,
+          },
+          options: {
+            responsive: true,
+            plugins: {
+              legend: { display: true },
+              tooltip: {
+                callbacks: {
+                  title: (items) => (items && items[0] ? `Date: ${items[0].label}` : ""),
+                },
+              },
+            },
+            scales: {
+              x: { title: { display: true, text: "Date" }, ticks: { maxRotation: 0, autoSkip: true } },
+              y: {
+                beginAtZero: true,
+                title: { display: true, text: datasets[0]?.unit || "Value" },
+                ticks: { callback: (value) => formatCompactNumber(value) },
+              },
+            },
+          },
+        });
+      }
+
       function renderDonutChart(canvasId, labels, datasets) {
         const canvas = document.getElementById(canvasId);
         const ctx = canvas ? canvas.getContext("2d") : null;
@@ -432,6 +490,8 @@
       for (const panel of chartPanels) {
         if (panel.chart_type === "donut") {
           renderDonutChart(`chart-${panel.id}`, panel.labels, panel.datasets);
+        } else if (panel.chart_type === "bar") {
+          renderBarChart(`chart-${panel.id}`, panel.labels, panel.datasets);
         } else {
           renderLineChart(`chart-${panel.id}`, panel.labels, panel.datasets);
         }
@@ -462,6 +522,11 @@
         {% endif %}
 
         <div class="margin-top-1">
+          <div class="callout warning" id="builder-constraints" hidden>
+            <p class="margin-0"><strong>Selection constraints</strong></p>
+            <p class="margin-0" id="builder-constraints-text"></p>
+          </div>
+
           <label>{{ chart_builder_form.metric_keys.label }}
             {{ chart_builder_form.metric_keys }}
           </label>
@@ -546,6 +611,12 @@
             <input type="hidden" name="action" value="create_chart_snapshot">
             <label>Snapshot name
               <input type="text" name="snapshot_name" maxlength="120" placeholder="e.g. Before unlocking X">
+            </label>
+            <label>Snapshot target
+              <select name="snapshot_target">
+                <option value="charts">Charts</option>
+                <option value="ultimate_weapons">Ultimate Weapons</option>
+              </select>
             </label>
             <input type="hidden" name="chart_type" id="snapshot-chart-type-hidden" value="">
             <input type="hidden" name="group_by" id="snapshot-group-by-hidden" value="">
@@ -714,7 +785,11 @@
 
         const metricsSelect = document.querySelector("#chart-builder-modal [name='metric_keys']");
         const chartTypeSelect = document.querySelector("#chart-builder-modal [name='chart_type']");
+        const groupBySelect = document.querySelector("#chart-builder-modal [name='group_by']");
         const comparisonSelect = document.querySelector("#chart-builder-modal [name='comparison']");
+        const smoothingSelect = document.querySelector("#chart-builder-modal [name='smoothing']");
+        const constraintsBox = document.getElementById("builder-constraints");
+        const constraintsText = document.getElementById("builder-constraints-text");
         const runASelect = document.querySelector("#chart-builder-modal [name='run_a']");
         const runBSelect = document.querySelector("#chart-builder-modal [name='run_b']");
         const windowInputs = [
@@ -741,6 +816,106 @@
           }
         }
 
+        function enforceSchemaConstraints() {
+          const chartType = chartTypeSelect ? chartTypeSelect.value : "line";
+          const comparison = comparisonSelect ? comparisonSelect.value : "none";
+          const donutSelected = chartType === "donut";
+          const comparisonActive = comparison !== "none";
+
+          if (comparisonActive && chartTypeSelect) {
+            const donutOption = Array.from(chartTypeSelect.options || []).find((o) => o.value === "donut");
+            if (donutOption) donutOption.disabled = true;
+            if (chartTypeSelect.value === "donut") chartTypeSelect.value = "line";
+          }
+
+          if (donutSelected) {
+            if (groupBySelect) {
+              groupBySelect.value = "time";
+              groupBySelect.disabled = true;
+            }
+            if (comparisonSelect) {
+              comparisonSelect.value = "none";
+              comparisonSelect.disabled = true;
+            }
+            if (smoothingSelect) {
+              smoothingSelect.value = "none";
+              smoothingSelect.disabled = true;
+            }
+            return;
+          }
+
+          if (comparisonActive) {
+            if (groupBySelect) {
+              groupBySelect.value = "time";
+              groupBySelect.disabled = true;
+            }
+          } else if (groupBySelect) {
+            groupBySelect.disabled = false;
+          }
+
+          if (comparisonSelect) comparisonSelect.disabled = false;
+          if (smoothingSelect) smoothingSelect.disabled = false;
+        }
+
+        function setConstraintMessage(message) {
+          if (!constraintsBox || !constraintsText) return;
+          if (!message) {
+            constraintsBox.hidden = true;
+            constraintsText.textContent = "";
+            return;
+          }
+          constraintsBox.hidden = false;
+          constraintsText.textContent = message;
+        }
+
+        function updateMetricCompatibility() {
+          const apply = document.getElementById("apply-chart-builder");
+          if (!apply) return;
+          enforceSchemaConstraints();
+          const keys = [];
+          if (metricsSelect && metricsSelect.options) {
+            for (const option of metricsSelect.options) if (option.selected) keys.push(option.value);
+          }
+          if (!keys.length) {
+            apply.disabled = true;
+            setConstraintMessage("Select at least one metric.");
+            return;
+          }
+          if (chartTypeSelect && chartTypeSelect.value === "donut" && keys.length < 2) {
+            apply.disabled = true;
+            setConstraintMessage("Donut charts require at least two metrics.");
+            return;
+          }
+          let unit = null;
+          let category = null;
+          for (const key of keys) {
+            const meta = chartBuilderMetricMeta[key];
+            if (!meta) continue;
+            unit = unit || meta.unit;
+            category = category || meta.category;
+            if (meta.unit !== unit) {
+              apply.disabled = true;
+              setConstraintMessage("Selected metrics must share the same unit.");
+              return;
+            }
+            if (meta.category !== category) {
+              apply.disabled = true;
+              setConstraintMessage("Selected metrics must share the same category.");
+              return;
+            }
+          }
+          if (smoothingSelect && smoothingSelect.value === "rolling_avg") {
+            const unsupported = keys.filter((k) => chartBuilderMetricMeta[k] && !chartBuilderMetricMeta[k].supports_rolling_avg);
+            if (unsupported.length) {
+              apply.disabled = true;
+              setConstraintMessage(`Rolling average is not supported for: ${unsupported.join(", ")}`);
+              return;
+            }
+          }
+          apply.disabled = false;
+          setConstraintMessage("");
+        }
+
         function updateComparisonControls() {
           const mode = comparisonSelect ? comparisonSelect.value : "none";
           const enableRuns = mode === "run_vs_run";
@@ -752,13 +927,30 @@
           }
         }
 
-        if (metricsSelect) metricsSelect.addEventListener("change", updateChartTypeConstraints);
-        if (comparisonSelect) comparisonSelect.addEventListener("change", updateComparisonControls);
+        if (metricsSelect) metricsSelect.addEventListener("change", () => { updateChartTypeConstraints(); updateMetricCompatibility(); });
+        if (chartTypeSelect) chartTypeSelect.addEventListener("change", updateMetricCompatibility);
+        if (groupBySelect) groupBySelect.addEventListener("change", updateMetricCompatibility);
+        if (comparisonSelect) comparisonSelect.addEventListener("change", () => { updateComparisonControls(); updateMetricCompatibility(); });
+        if (smoothingSelect) smoothingSelect.addEventListener("change", updateMetricCompatibility);
         updateChartTypeConstraints();
         updateComparisonControls();
+        updateMetricCompatibility();
         {% if chart_builder_errors %}
           openModal();
         {% endif %}
+      })();
+    </script>
+
+    <script>
+      (function() {
+        const mode = document.getElementById("advice-mode");
+        const b = document.getElementById("advice-snapshot-b");
+        function updateAdviceControls() {
+          if (!mode || !b) return;
+          b.disabled = mode.value !== "snapshot_vs_snapshot";
+        }
+        if (mode) mode.addEventListener("change", updateAdviceControls);
+        updateAdviceControls();
       })();
     </script>
 {% endblock %}

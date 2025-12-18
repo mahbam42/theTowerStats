@@ -18,6 +18,39 @@
     </div>
   {% endif %}
 
+  {% if uw_snapshots %}
+    <div class="card-shell margin-top-1">
+      <p class="muted margin-0">Snapshot chart</p>
+      <h3 class="margin-0">Ultimate Weapons snapshot</h3>
+      <form method="get" class="grid-x grid-margin-x align-middle margin-top-1">
+        <div class="cell medium-8">
+          <label class="margin-bottom-0">Select snapshot
+            <select name="uw_snapshot_id">
+              <option value="">(select)</option>
+              {% for snapshot in uw_snapshots %}
+                <option value="{{ snapshot.id }}"{% if uw_snapshot_id|default:"" == snapshot.id|stringformat:"s" %} selected{% endif %}>{{ snapshot.name }}</option>
+              {% endfor %}
+            </select>
+          </label>
+        </div>
+        <div class="cell medium-4">
+          <button class="button expanded margin-bottom-0" type="submit">View snapshot</button>
+        </div>
+      </form>
+
+      {% if uw_snapshot_chart_json %}
+        <p class="muted margin-top-1 margin-bottom-0">Showing: {{ uw_snapshot_name }}</p>
+        <canvas id="uw-snapshot-chart" width="900" height="320"></canvas>
+      {% else %}
+        {% if uw_snapshot_id %}
+          <div class="callout warning margin-top-1">
+            <p class="margin-0"><strong>Snapshot unavailable</strong> — The selected snapshot could not be rendered for the current data.</p>
+          </div>
+        {% endif %}
+      {% endif %}
+    </div>
+  {% endif %}
+
   {% include "core/components/upgradeable_entity_dashboard.html" with dashboard_kicker="Progress" dashboard_title="Ultimate Weapons" dashboard_note="Upgrades currently assume sufficient Stones. Costs are informational only. Runs used is observed from imported runs and may include temporary unlocks from Perks." filter_form=filter_form entities=ultimate_weapons entity_badge="UW" total_invested_label="Total Stones invested" unlock_cost_currency_label="Stones" unlock_action_value="unlock_uw" level_up_action_value="level_up_uw_param" show_activation=False %}
 {% endblock %}
 
@@ -88,6 +121,48 @@
             },
           },
         });
+      })();
+    </script>
+  {% endif %}
+  {% if uw_snapshot_chart_json %}
+    <script>
+      (function() {
+        const payload = {{ uw_snapshot_chart_json|safe }};
+        const canvas = document.getElementById("uw-snapshot-chart");
+        const ctx = canvas ? canvas.getContext("2d") : null;
+        if (!ctx) return;
+
+        const chartType = payload.chart_type || "line";
+        const config = {
+          type: chartType === "donut" ? "doughnut" : chartType,
+          data: {
+            labels: payload.labels || [],
+            datasets: payload.datasets || [],
+          },
+          options: {
+            responsive: true,
+            interaction: { mode: "nearest", intersect: false },
+            plugins: {
+              legend: { display: true },
+              tooltip: {
+                callbacks: {
+                  label: (item) => {
+                    const dataset = item.dataset || {};
+                    const unit = dataset.unit ? ` ${dataset.unit}` : "";
+                    const value = item.parsed && typeof item.parsed.y === "number" ? item.parsed.y : item.parsed;
+                    if (value === null || value === undefined) return `${dataset.label || ""}: n/a`;
+                    return `${dataset.label || ""}: ${value}${unit}`;
+                  },
+                },
+              },
+            },
+            scales: chartType === "donut" ? {} : {
+              x: { ticks: { maxRotation: 0, autoSkip: true } },
+            },
+          },
+        };
+
+        new Chart(ctx, config);
       })();
     </script>
   {% endif %}

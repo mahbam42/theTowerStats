@@ -13,6 +13,7 @@ import re
 
 from django import forms
 
+from analysis.chart_config_dto import ChartScopeDTO
 from analysis.series_registry import DEFAULT_REGISTRY
 from core.charting.configs import default_selected_chart_ids, list_selectable_chart_configs
 from core.charting.builder import (
@@ -573,4 +574,34 @@ class ChartBuilderForm(forms.Form):
             smoothing=smoothing,  # type: ignore[arg-type]
             scope_a=scope_a,
             scope_b=scope_b,
+        )
+
+    def scopes(self) -> tuple[ChartScopeDTO, ChartScopeDTO] | None:
+        """Return two-scope DTOs for before/after and run-vs-run comparisons.
+
+        Returns:
+            A tuple of (scope_a, scope_b) when comparison is enabled, otherwise None.
+
+        Raises:
+            ValueError: When the form is invalid.
+        """
+
+        selection = self.selection()
+        if selection.comparison == "none":
+            return None
+        if selection.scope_a is None or selection.scope_b is None:
+            return None
+        return (
+            ChartScopeDTO(
+                label=selection.scope_a.label,
+                run_id=selection.scope_a.run_id,
+                start_date=selection.scope_a.start_date,
+                end_date=selection.scope_a.end_date,
+            ),
+            ChartScopeDTO(
+                label=selection.scope_b.label,
+                run_id=selection.scope_b.run_id,
+                start_date=selection.scope_b.start_date,
+                end_date=selection.scope_b.end_date,
+            ),
         )

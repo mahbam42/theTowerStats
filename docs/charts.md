@@ -21,12 +21,17 @@ Charts help you review how your run results change over time using the same valu
 4. Select a **Tier** to focus on a single tier.
 5. Select a **Preset** to focus on runs tagged with that preset label.
 6. (Optional) Select a **Moving average window** to smooth the displayed line.
-7. Select **Apply** to refresh the dashboard.
-8. (Optional) Select **Chart Builder** to create a custom chart.
-9. In **Chart Builder**, select **Metrics**, then select a **Chart type** and **Group by** option.
-10. (Optional) In **Chart Builder**, select a **Comparison** mode to compare two runs or two date windows.
-11. Select **Apply to dashboard** to add the custom chart to the dashboard.
-12. (Optional) In **Chart Builder**, enter a **Snapshot name**, then select **Save snapshot**.
+7. (Optional) Select **Snapshot A** in the **Advice** section to compare a saved snapshot with your current filters.
+8. (Optional) Select **Compare** in the **Advice** section to choose **Snapshot vs current filters** or **Snapshot vs snapshot**.
+9. (Optional) If you selected **Snapshot vs snapshot**, select **Snapshot B**.
+10. Select **Apply** to refresh the dashboard.
+11. (Optional) Select **Chart Builder** to create a custom chart.
+12. In **Chart Builder**, select **Metrics**, then select a **Chart type** and **Group by** option.
+13. (Optional) In **Chart Builder**, select a **Comparison** mode to compare two runs or two date windows.
+14. Select **Apply to dashboard** to add the custom chart to the dashboard.
+15. (Optional) In **Chart Builder**, enter a **Snapshot name**.
+16. (Optional) In **Chart Builder**, select a **Snapshot target** to choose where you plan to use the snapshot.
+17. (Optional) Select **Save snapshot**.
 
 ## How to Read the Results
 
@@ -36,7 +41,7 @@ Charts help you review how your run results change over time using the same valu
 - If a value is missing in the underlying Battle Report, the chart may show a gap for that date.
 - For donut charts, each slice represents the total for that value within your current filters. A slice named “Other coins” groups any remaining coins that are not listed as a named source.
 - If a point is flagged, the tooltip includes a short reason that explains the signal.
-- The Advice section summarizes an observed comparison when you use the Compare controls. It describes the basis and limitations and does not recommend actions.
+- The Advice section summarizes observed coins/hour differences using the snapshots you selected and the current filters you applied. It describes the basis and limitations and does not recommend actions.
 
 ## Notes & Limitations
 
@@ -51,6 +56,9 @@ Charts help you review how your run results change over time using the same valu
 
 > **Note**
 > Snapshots are saved as named references and are not editable after creation.
+
+> **Caution**
+> Advice summaries require at least 3 runs in each scope. If either scope is thin or empty, the Advice section will show “Insufficient data”.
 
 > **Caution**
 > Data quality flags are advisory signals. They do not change values, and they do not block chart rendering.

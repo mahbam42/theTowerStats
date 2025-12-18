@@ -381,6 +381,28 @@ class GuardianChipParameterDefinition(models.Model):
         return f"{self.guardian_chip_definition.slug}:{self.key}"
 
 
+class PatchBoundary(models.Model):
+    """A known game patch boundary used for chart interpretation.
+
+    Patch boundaries are advisory signals. They do not change values and should
+    not be used for recommendations.
+    """
+
+    boundary_date = models.DateField(unique=True)
+    label = models.CharField(max_length=120, blank=True, default="")
+    created_at = models.DateTimeField(auto_now_add=True)
+
+    class Meta:
+        verbose_name = "Patch boundary"
+        verbose_name_plural = "Patch boundaries"
+
+    def __str__(self) -> str:
+        """Return a concise display string."""
+
+        suffix = f" ({self.label})" if self.label else ""
+        return f"{self.boundary_date.isoformat()}{suffix}"
+
+
 class GuardianChipParameterLevel(models.Model):
     """Wiki-derived level row for a guardian chip parameter."""
 

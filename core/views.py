@@ -17,19 +17,23 @@ from django.core.paginator import Paginator
 from django.urls import reverse
 
 from analysis.aggregations import summarize_window
+from analysis.chart_config_dto import ChartContextDTO
+from analysis.chart_config_engine import analyze_chart_config_dto
+from analysis.chart_config_validator import validate_chart_config_dto
 from analysis.deltas import delta
 from analysis.engine import analyze_runs
 from analysis.dto import RunAnalysis
 from analysis.series_registry import DEFAULT_REGISTRY
-from core.advice import generate_optimization_advice
+from core.advice import AdviceItem, SnapshotDeltaInput, generate_optimization_advice, generate_snapshot_delta_advice
 from core.charting.configs import (
     CHART_CONFIG_BY_ID,
     default_selected_chart_ids,
     list_selectable_chart_configs,
 )
-from core.charting.builder import build_runtime_chart_config
+from core.charting.dto_builder import build_chart_config_dto
+from core.charting.flagging import flag_reasons, incomplete_run_labels
 from core.charting.render import render_charts
-from core.charting.validator import validate_chart_config
+from core.charting.snapshot_codec import decode_chart_config_dto, encode_chart_config_dto
 from core.forms import (
     BattleHistoryFilterForm,
     BattleHistoryPresetUpdateForm,
@@ -52,7 +56,13 @@ from core.upgradeables import (
     validate_parameter_definitions,
     validate_uw_parameter_definitions,
 )
-from definitions.models import BotDefinition, CardDefinition, GuardianChipDefinition, UltimateWeaponDefinition
+from definitions.models import (
+    BotDefinition,
+    CardDefinition,
+    GuardianChipDefinition,
+    PatchBoundary,
+    UltimateWeaponDefinition,
+)
 from gamedata.models import BattleReport, BattleReportProgress
 from player_state.card_slots import card_slot_max_slots, next_card_slot_unlock_cost_raw
 from player_state.cards import apply_inventory_rollover, derive_card_progress
@@ -85,18 +95,37 @@ def dashboard(request: HttpRequest) -> HttpResponse:
         snapshot = ChartSnapshot.objects.filter(player=player, id=int(snapshot_id)).first()
         if snapshot is not None:
             merged = request.GET.copy()
-            builder_payload = dict(snapshot.chart_builder or {})
-            context_payload = dict(snapshot.chart_context or {})
-
-            merged["builder"] = "1"
-            for key, value in builder_payload.items():
-                if key == "metric_keys" and isinstance(value, list):
-                    merged.setlist("metric_keys", [str(v) for v in value])
-                else:
+            stored = dict(snapshot.config or {})
+            if stored:
+                config_dto = decode_chart_config_dto(stored)
+                merged["builder"] = "1"
+                merged.setlist("metric_keys", list(config_dto.metrics))
+                merged["chart_type"] = config_dto.chart_type
+                merged["group_by"] = config_dto.group_by
+                merged["comparison"] = config_dto.comparison
+                merged["smoothing"] = config_dto.smoothing
+                if config_dto.scopes is not None:
+                    merged["run_a"] = str(config_dto.scopes[0].run_id or "")
+                    merged["run_b"] = str(config_dto.scopes[1].run_id or "")
+                    merged["window_a_start"] = (config_dto.scopes[0].start_date.isoformat() if config_dto.scopes[0].start_date else "")
+                    merged["window_a_end"] = (config_dto.scopes[0].end_date.isoformat() if config_dto.scopes[0].end_date else "")
+                    merged["window_b_start"] = (config_dto.scopes[1].start_date.isoformat() if config_dto.scopes[1].start_date else "")
+                    merged["window_b_end"] = (config_dto.scopes[1].end_date.isoformat() if config_dto.scopes[1].end_date else "")
+                merged["start_date"] = config_dto.context.start_date.isoformat() if config_dto.context.start_date else ""
+                merged["end_date"] = config_dto.context.end_date.isoformat() if config_dto.context.end_date else ""
+                merged["tier"] = str(config_dto.context.tier or "")
+                merged["preset"] = str(config_dto.context.preset_id or "")
+            else:
+                builder_payload = dict(snapshot.chart_builder or {})
+                context_payload = dict(snapshot.chart_context or {})
+                merged["builder"] = "1"
+                for key, value in builder_payload.items():
+                    if key == "metric_keys" and isinstance(value, list):
+                        merged.setlist("metric_keys", [str(v) for v in value])
+                    else:
+                        merged[key] = str(value) if value is not None else ""
+                for key, value in context_payload.items():
                     merged[key] = str(value) if value is not None else ""
-
-            for key, value in context_payload.items():
-                merged[key] = str(value) if value is not None else ""
 
             effective_get = merged
 
@@ -107,6 +136,7 @@ def dashboard(request: HttpRequest) -> HttpResponse:
             if not name:
                 messages.error(request, "Snapshot name is required.")
                 return redirect("core:dashboard")
+            target = (request.POST.get("snapshot_target") or "charts").strip() or "charts"
 
             chart_form = ChartContextForm(effective_get)  # type: ignore[arg-type]
             chart_form.is_valid()
@@ -116,53 +146,18 @@ def dashboard(request: HttpRequest) -> HttpResponse:
                 messages.error(request, "Could not save snapshot: invalid Chart Builder inputs.")
                 return redirect("core:dashboard")
 
-            selection = builder_form.selection()
-            candidate = build_runtime_chart_config(selection)
-            validation = validate_chart_config(candidate, registry=DEFAULT_REGISTRY)
+            config_dto = build_chart_config_dto(context_form=chart_form, builder_form=builder_form)
+            validation = validate_chart_config_dto(config_dto, registry=DEFAULT_REGISTRY)
             if not validation.is_valid:
-                messages.error(request, "Could not save snapshot: ChartConfig validation failed.")
+                messages.error(request, "Could not save snapshot: ChartConfigDTO validation failed.")
                 return redirect("core:dashboard")
-
-            chart_context = {
-                "start_date": (
-                    chart_form.cleaned_data["start_date"].isoformat()
-                    if chart_form.cleaned_data.get("start_date")
-                    else None
-                ),
-                "end_date": (
-                    chart_form.cleaned_data["end_date"].isoformat()
-                    if chart_form.cleaned_data.get("end_date")
-                    else None
-                ),
-                "tier": int(chart_form.cleaned_data["tier"]) if chart_form.cleaned_data.get("tier") else None,
-                "preset": getattr(chart_form.cleaned_data.get("preset"), "id", None),
-                "moving_average_window": chart_form.cleaned_data.get("moving_average_window"),
-                "window_kind": chart_form.cleaned_data.get("window_kind"),
-                "window_n": chart_form.cleaned_data.get("window_n"),
-                "ultimate_weapon": getattr(chart_form.cleaned_data.get("ultimate_weapon"), "id", None),
-                "guardian_chip": getattr(chart_form.cleaned_data.get("guardian_chip"), "id", None),
-                "bot": getattr(chart_form.cleaned_data.get("bot"), "id", None),
-            }
-            snapshot_payload = {
-                "metric_keys": list(selection.metric_keys),
-                "chart_type": selection.chart_type,
-                "group_by": selection.group_by,
-                "comparison": selection.comparison,
-                "smoothing": selection.smoothing,
-                "run_a": selection.scope_a.run_id if selection.scope_a else None,
-                "run_b": selection.scope_b.run_id if selection.scope_b else None,
-                "window_a_start": selection.scope_a.start_date.isoformat() if selection.scope_a and selection.scope_a.start_date else None,
-                "window_a_end": selection.scope_a.end_date.isoformat() if selection.scope_a and selection.scope_a.end_date else None,
-                "window_b_start": selection.scope_b.start_date.isoformat() if selection.scope_b and selection.scope_b.start_date else None,
-                "window_b_end": selection.scope_b.end_date.isoformat() if selection.scope_b and selection.scope_b.end_date else None,
-            }
 
             try:
                 ChartSnapshot.objects.create(
                     player=player,
                     name=name,
-                    chart_builder=snapshot_payload,
-                    chart_context=chart_context,
+                    target=target,
+                    config=encode_chart_config_dto(config_dto),
                 )
             except Exception as exc:
                 if settings.DEBUG:
@@ -207,17 +202,110 @@ def dashboard(request: HttpRequest) -> HttpResponse:
     )
     advice_items = generate_optimization_advice(comparison_result)
 
+    advice_snapshot_a = getattr(effective_get, "get", lambda _k: None)("advice_snapshot_a")
+    advice_snapshot_b = getattr(effective_get, "get", lambda _k: None)("advice_snapshot_b")
+    advice_mode = getattr(effective_get, "get", lambda _k: None)("advice_mode") or "snapshot_vs_current"
+    snapshot_advice_items: tuple[AdviceItem, ...] = ()
+    if advice_snapshot_a:
+        snapshot_advice_items = _build_snapshot_delta_advice(
+            player=player,
+            runs_current=runs,
+            snapshot_a_id=str(advice_snapshot_a),
+            snapshot_b_id=(str(advice_snapshot_b) if advice_snapshot_b else None),
+            mode=str(advice_mode),
+        )
+    advice_items = tuple(advice_items) + tuple(snapshot_advice_items)
+
     builder_data = effective_get if getattr(effective_get, "get", lambda _k: None)("builder") == "1" else None
     chart_builder_form = ChartBuilderForm(builder_data, runs_queryset=context_runs)
-    builder_config = None
     builder_errors: tuple[str, ...] = ()
+    builder_panel: dict[str, Any] | None = None
     if chart_builder_form.is_bound:
         if chart_builder_form.is_valid():
-            selection = chart_builder_form.selection()
-            candidate = build_runtime_chart_config(selection)
-            validation = validate_chart_config(candidate, registry=DEFAULT_REGISTRY)
+            config_dto = build_chart_config_dto(context_form=chart_form, builder_form=chart_builder_form)
+            validation = validate_chart_config_dto(config_dto, registry=DEFAULT_REGISTRY)
             if validation.is_valid:
-                builder_config = candidate
+                analyzed = analyze_chart_config_dto(
+                    runs,
+                    config=config_dto,
+                    registry=DEFAULT_REGISTRY,
+                    moving_average_window=chart_form.cleaned_data.get("moving_average_window"),
+                    entity_selections={},
+                )
+                palette = [
+                    "#3366CC",
+                    "#DC3912",
+                    "#FF9900",
+                    "#109618",
+                    "#990099",
+                    "#0099C6",
+                    "#DD4477",
+                    "#66AA00",
+                ]
+                patch_boundaries = tuple(PatchBoundary.objects.values_list("boundary_date", flat=True))
+                incomplete_labels = incomplete_run_labels(runs)
+                datasets: list[dict[str, Any]] = []
+                if analyzed.chart_type == "donut":
+                    slice_colors = [palette[idx % len(palette)] for idx in range(len(analyzed.labels))]
+                    unit = analyzed.datasets[0].unit if analyzed.datasets else ""
+                    datasets = [
+                        {
+                            "label": "Chart Builder",
+                            "metricKey": "chart_builder_custom",
+                            "metricKind": "observed",
+                            "unit": unit,
+                            "seriesKind": "donut",
+                            "data": analyzed.datasets[0].values if analyzed.datasets else [],
+                            "borderColor": "#ffffff",
+                            "backgroundColor": slice_colors,
+                        }
+                    ]
+                    builder_panel = {
+                        "id": "chart_builder_custom",
+                        "title": "Chart Builder",
+                        "description": "Runtime chart (not persisted).",
+                        "unit": unit,
+                        "chart_type": "donut",
+                        "labels": analyzed.labels,
+                        "datasets": datasets,
+                    }
+                else:
+                    for idx, ds in enumerate(analyzed.datasets):
+                        color = palette[idx % len(palette)]
+                        reasons = flag_reasons(
+                            analyzed.labels,
+                            values=ds.values,
+                            incomplete_labels=incomplete_labels,
+                            patch_boundaries=patch_boundaries,
+                        )
+                        dataset = {
+                            "label": ds.label,
+                            "metricKey": ds.metric_key,
+                            "metricKind": "observed",
+                            "unit": ds.unit,
+                            "seriesKind": "raw",
+                            "data": ds.values,
+                            "borderColor": color,
+                            "backgroundColor": color,
+                            "spanGaps": False,
+                            "borderWidth": 2,
+                            "pointRadius": [6 if r else 2 for r in reasons],
+                            "pointHoverRadius": [8 if r else 5 for r in reasons],
+                            "pointBackgroundColor": ["#DC3912" if r else color for r in reasons],
+                            "tension": 0.15,
+                            "flagReasons": reasons,
+                        }
+                        datasets.append(dataset)
+                    unit = analyzed.datasets[0].unit if analyzed.datasets else ""
+                    builder_panel = {
+                        "id": "chart_builder_custom",
+                        "title": "Chart Builder",
+                        "description": "Runtime chart (not persisted).",
+                        "unit": unit,
+                        "chart_type": analyzed.chart_type,
+                        "labels": analyzed.labels,
+                        "datasets": datasets,
+                    }
             else:
                 builder_errors = validation.errors
         else:
@@ -229,7 +317,7 @@ def dashboard(request: HttpRequest) -> HttpResponse:
     selected_configs = tuple(
         CHART_CONFIG_BY_ID[chart_id] for chart_id in selected_chart_ids if chart_id in CHART_CONFIG_BY_ID
     )
-    configs_to_render = (builder_config,) + selected_configs if builder_config is not None else selected_configs
+    configs_to_render = selected_configs
     rendered = render_charts(
         configs=configs_to_render,
         records=runs,
@@ -240,9 +328,10 @@ def dashboard(request: HttpRequest) -> HttpResponse:
             "guardian": getattr(chart_form.cleaned_data.get("guardian_chip"), "name", None),
             "bot": getattr(chart_form.cleaned_data.get("bot"), "name", None),
         },
+        patch_boundaries=tuple(PatchBoundary.objects.values_list("boundary_date", flat=True)),
     )
 
-    chart_panels = [
+    chart_panels: list[dict[str, Any]] = [
         {
             "id": entry.config.id,
             "title": entry.config.title,
@@ -265,6 +354,29 @@ def dashboard(request: HttpRequest) -> HttpResponse:
             for entry in rendered
         ]
     )
+    if builder_panel is not None:
+        chart_panels.insert(
+            0,
+            {
+                "id": builder_panel["id"],
+                "title": builder_panel["title"],
+                "description": builder_panel["description"],
+                "unit": builder_panel["unit"],
+                "chart_type": builder_panel["chart_type"],
+                "error": None,
+                "warnings": (),
+            },
+        )
+        builder_json = json.dumps(
+            {
+                "id": builder_panel["id"],
+                "chart_type": builder_panel["chart_type"],
+                "labels": builder_panel["labels"],
+                "datasets": builder_panel["datasets"],
+            }
+        )
+        combined = [json.loads(builder_json)] + json.loads(chart_panels_json)
+        chart_panels_json = json.dumps(combined)
 
     chart_context = _chart_context_summary(chart_form, selectable_configs=list_selectable_chart_configs())
     chart_empty_state = _chart_empty_state_message(
@@ -285,15 +397,139 @@ def dashboard(request: HttpRequest) -> HttpResponse:
         "comparison_form": comparison_form,
         "comparison_result": comparison_result,
         "advice_items": advice_items,
+        "advice_snapshot_a": advice_snapshot_a,
+        "advice_snapshot_b": advice_snapshot_b,
+        "advice_mode": advice_mode,
         "chart_builder_form": chart_builder_form,
         "chart_builder_errors": builder_errors,
-        "chart_snapshots": ChartSnapshot.objects.filter(player=player).order_by("-created_at"),
+        "chart_snapshots": ChartSnapshot.objects.filter(player=player, target="charts").order_by("-created_at"),
+        "chart_builder_metric_meta_json": json.dumps(
+            {
+                spec.key: {
+                    "unit": spec.unit,
+                    "category": str(spec.category),
+                    "supports_rolling_avg": ("moving_average" in spec.allowed_transforms),
+                }
+                for spec in DEFAULT_REGISTRY.list()
+            }
+        ),
         "chart_panels": chart_panels,
         "chart_panels_json": chart_panels_json,
         "chart_context_json": json.dumps(chart_context),
         "chart_empty_state": chart_empty_state,
     }
     return render(request, "core/dashboard.html", context)
+
+
+def _build_snapshot_delta_advice(
+    *,
+    player: Player,
+    runs_current: QuerySet[BattleReport],
+    snapshot_a_id: str,
+    snapshot_b_id: str | None,
+    mode: str,
+) -> tuple[AdviceItem, ...]:
+    """Build snapshot-based advice items for the dashboard.
+
+    Args:
+        player: Active Player owning the snapshots.
+        runs_current: QuerySet already filtered by the current dashboard filters.
+        snapshot_a_id: Snapshot id used as the baseline scope.
+        snapshot_b_id: Optional snapshot id used as the comparison scope.
+        mode: Either "snapshot_vs_current" or "snapshot_vs_snapshot".
+
+    Returns:
+        A tuple of AdviceItem values (0–1 for Phase 7).
+    """
+
+    try:
+        snapshot_a = ChartSnapshot.objects.filter(player=player, id=int(snapshot_a_id)).first()
+    except (TypeError, ValueError):
+        snapshot_a = None
+    if snapshot_a is None or not snapshot_a.config:
+        return ()
+
+    dto_a = decode_chart_config_dto(dict(snapshot_a.config))
+    validation_a = validate_chart_config_dto(dto_a, registry=DEFAULT_REGISTRY)
+    if not validation_a.is_valid:
+        return ()
+
+    baseline_runs = _runs_for_chart_context_dto(dto_a.context)
+    baseline_count, baseline_value = _coins_per_hour_sample(baseline_runs)
+
+    comparison_label = "Current filters"
+    comparison_count = 0
+    comparison_value: float | None = None
+    if mode == "snapshot_vs_snapshot":
+        if snapshot_b_id is None:
+            return ()
+        try:
+            snapshot_b = ChartSnapshot.objects.filter(player=player, id=int(snapshot_b_id)).first()
+        except (TypeError, ValueError):
+            snapshot_b = None
+        if snapshot_b is None or not snapshot_b.config:
+            return ()
+        dto_b = decode_chart_config_dto(dict(snapshot_b.config))
+        validation_b = validate_chart_config_dto(dto_b, registry=DEFAULT_REGISTRY)
+        if not validation_b.is_valid:
+            return ()
+        comparison_label = snapshot_b.name
+        comparison_runs = _runs_for_chart_context_dto(dto_b.context)
+        comparison_count, comparison_value = _coins_per_hour_sample(comparison_runs)
+    else:
+        comparison_count, comparison_value = _coins_per_hour_sample(runs_current)
+
+    return generate_snapshot_delta_advice(
+        SnapshotDeltaInput(
+            metric_key="coins_per_hour",
+            baseline_label=snapshot_a.name,
+            baseline_runs=baseline_count,
+            baseline_value=baseline_value,
+            comparison_label=comparison_label,
+            comparison_runs=comparison_count,
+            comparison_value=comparison_value,
+        )
+    )
+
+
+def _runs_for_chart_context_dto(context: ChartContextDTO) -> QuerySet[BattleReport]:
+    """Build a BattleReport queryset filtered by a ChartContextDTO.
+
+    Args:
+        context: ChartContextDTO containing the filter values.
+
+    Returns:
+        QuerySet of BattleReport rows matching the context.
+    """
+
+    runs = BattleReport.objects.select_related("run_progress", "run_progress__preset").order_by("run_progress__battle_date")
+    if context.start_date:
+        runs = runs.filter(run_progress__battle_date__date__gte=context.start_date)
+    if context.end_date:
+        runs = runs.filter(run_progress__battle_date__date__lte=context.end_date)
+    if context.tier:
+        runs = runs.filter(run_progress__tier=context.tier)
+    if context.preset_id:
+        runs = runs.filter(run_progress__preset_id=context.preset_id)
+    return runs
+
+
+def _coins_per_hour_sample(runs: QuerySet[BattleReport]) -> tuple[int, float | None]:
+    """Return run count and average coins/hour for a filtered queryset.
+
+    Args:
+        runs: Filtered BattleReport queryset.
+
+    Returns:
+        Tuple of (count, average_coins_per_hour), where count includes only runs
+        that have a non-null coins/hour value.
+    """
+
+    analyzed = analyze_runs(runs).runs
+    values = [run.coins_per_hour for run in analyzed if run.coins_per_hour is not None]
+    if not values:
+        return 0, None
+    return len(values), sum(values) / len(values)
 
 
 def battle_history(request: HttpRequest) -> HttpResponse:
@@ -1119,6 +1355,71 @@ def ultimate_weapon_progress(request: HttpRequest) -> HttpResponse:
         )
 
     uw_sync = build_uw_sync_payload(player=player)
+    uw_snapshots = ChartSnapshot.objects.filter(player=player, target="ultimate_weapons").order_by("-created_at")
+    uw_snapshot_id = request.GET.get("uw_snapshot_id")
+    uw_snapshot_chart_json = None
+    uw_snapshot_name = None
+    if uw_snapshot_id:
+        try:
+            snapshot = uw_snapshots.filter(id=int(uw_snapshot_id)).first()
+        except (TypeError, ValueError):
+            snapshot = None
+        if snapshot is not None and snapshot.config:
+            dto = decode_chart_config_dto(dict(snapshot.config))
+            validation = validate_chart_config_dto(dto, registry=DEFAULT_REGISTRY)
+            if validation.is_valid:
+                runs_qs = BattleReport.objects.select_related("run_progress", "run_progress__preset").order_by(
+                    "run_progress__battle_date"
+                )
+                if dto.context.start_date:
+                    runs_qs = runs_qs.filter(run_progress__battle_date__date__gte=dto.context.start_date)
+                if dto.context.end_date:
+                    runs_qs = runs_qs.filter(run_progress__battle_date__date__lte=dto.context.end_date)
+                if dto.context.tier:
+                    runs_qs = runs_qs.filter(run_progress__tier=dto.context.tier)
+                if dto.context.preset_id:
+                    runs_qs = runs_qs.filter(run_progress__preset_id=dto.context.preset_id)
+
+                analyzed = analyze_chart_config_dto(
+                    runs_qs,
+                    config=dto,
+                    registry=DEFAULT_REGISTRY,
+                    moving_average_window=None,
+                    entity_selections={},
+                )
+                palette = ["#3366CC", "#DC3912", "#FF9900", "#109618", "#990099", "#0099C6"]
+                if analyzed.chart_type == "donut":
+                    slice_colors = [palette[idx % len(palette)] for idx in range(len(analyzed.labels))]
+                    unit = analyzed.datasets[0].unit if analyzed.datasets else ""
+                    datasets = [
+                        {
+                            "label": snapshot.name,
+                            "unit": unit,
+                            "data": analyzed.datasets[0].values if analyzed.datasets else [],
+                            "borderColor": "#ffffff",
+                            "backgroundColor": slice_colors,
+                        }
+                    ]
+                    payload = {"labels": analyzed.labels, "datasets": datasets, "chart_type": "donut"}
+                else:
+                    datasets = []
+                    for idx, ds in enumerate(analyzed.datasets):
+                        color = palette[idx % len(palette)]
+                        datasets.append(
+                            {
+                                "label": ds.label,
+                                "unit": ds.unit,
+                                "data": ds.values,
+                                "borderColor": color,
+                                "backgroundColor": color,
+                                "borderWidth": 2,
+                                "pointRadius": 0,
+                                "tension": 0.15,
+                            }
+                        )
+                    payload = {"labels": analyzed.labels, "datasets": datasets, "chart_type": analyzed.chart_type}
+                uw_snapshot_chart_json = json.dumps(payload)
+                uw_snapshot_name = snapshot.name
     return render(
         request,
         "core/ultimate_weapon_progress.html",
@@ -1128,6 +1429,10 @@ def ultimate_weapon_progress(request: HttpRequest) -> HttpResponse:
             "has_battles": any_battles,
             "uw_sync_chart_json": json.dumps(uw_sync.chart_data) if uw_sync else None,
             "uw_sync_summary": uw_sync.summary if uw_sync else None,
+            "uw_snapshots": uw_snapshots,
+            "uw_snapshot_id": uw_snapshot_id,
+            "uw_snapshot_chart_json": uw_snapshot_chart_json,
+            "uw_snapshot_name": uw_snapshot_name,
         },
     )
 

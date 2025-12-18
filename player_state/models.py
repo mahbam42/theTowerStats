@@ -110,6 +110,15 @@ class ChartSnapshot(models.Model):
 
     player = models.ForeignKey(Player, on_delete=models.CASCADE, related_name="chart_snapshots")
     name = models.CharField(max_length=120)
+    target = models.CharField(
+        max_length=40,
+        default="charts",
+        help_text="Dashboard target for applying this snapshot (e.g. charts, ultimate_weapons).",
+    )
+    config = models.JSONField(
+        default=dict,
+        help_text="Versioned ChartConfigDTO payload used for deterministic chart execution.",
+    )
     chart_builder = models.JSONField(default=dict)
     chart_context = models.JSONField(default=dict)
     created_at = models.DateTimeField(auto_now_add=True)
