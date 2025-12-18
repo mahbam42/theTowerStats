@@ -129,7 +129,8 @@
                       <tr>
                         <th scope="col">Parameter</th>
                         <th scope="col">Level</th>
-                        <th scope="col">Current</th>
+                        <th scope="col">Base</th>
+                        <th scope="col">Effective</th>
                         <th scope="col">Next</th>
                         <th scope="col">Cost</th>
                         <th scope="col"></th>
@@ -145,7 +146,23 @@
                         <tr class="entity-param-row" data-param-id="{{ param.id }}" data-unit-kind="{{ param.unit_kind }}" data-level="{{ param.level }}" data-max-level="{{ param.max_level }}">
                           <td>{{ param.name }}</td>
                           <td class="entity-param-level">{{ param.level }}</td>
-                          <td class="entity-param-current">{{ param.current_value_raw }}</td>
+                          <td class="entity-param-current">{{ param.base_value_raw }}</td>
+                          <td class="entity-param-effective">
+                            <span class="entity-param-effective-value">{{ param.effective_value_raw }}</span>
+                            {% if param.modifier_explanations %}
+                              <details class="entity-effective-details">
+                                <summary class="entity-effective-summary" aria-label="Effective Value Breakdown">ⓘ</summary>
+                                <div class="callout secondary margin-top-0">
+                                  <p class="margin-0"><strong>Effective Value Breakdown</strong></p>
+                                  <ul class="margin-top-0 margin-bottom-0">
+                                    {% for explanation in param.modifier_explanations %}
+                                      <li>{{ explanation.description }}</li>
+                                    {% endfor %}
+                                  </ul>
+                                </div>
+                              </details>
+                            {% endif %}
+                          </td>
                           <td class="entity-param-next">
                             {% if param.next_value_raw %}
                               {{ param.next_value_raw }}

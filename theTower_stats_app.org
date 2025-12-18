@@ -1366,6 +1366,8 @@ Named snapshots:
 
 These become reusable comparison anchors in charts
 
+**** TODO [#B] Add a 'Killed By' Donut Chart
+
 **** TODO [#B] Data Quality & Confidence Signals
 
 Players will ask:
@@ -1398,6 +1400,17 @@ For Example:
 - Bot properties to improve
 - Guardian Chip properties to improve
 - Weighted Preset Rankings
+
+**** TODO [#B] UX Pass
+
+***** Battle History
+- [ ] Sort by 'Killed By' isn't sorting properly. It should filter alphabetically
+- [ ] Add a tip that the input can only accept 1 battle report at a time. You can add validation that makes sure 'Battle Report' and 'Battle Date' appear exactly once. 
+
+***** Charts
+Functionality has expanded quite a bit and usability hasn't kept up.
+
+- [ ] Move Filters to the right column. The wider area will make the controls easier to work with. 
 *** Phase 8 Multiple Player Support
 **** TODO [#A] Wireup Github Actions to Run Tests
 Run checks or Ruff Check, mypy ., pytest -q
@@ -1693,4 +1706,6 @@ Mostly a visual tweak, but adds context and history for the player to interpert 
 - [X] prompt 22 Bots/Guardian Chips Dashboards
 - [X] prompt 24 Cards Dashboard Enhancements
 - [X] prompt 23 phase 5 exit criteria validation
-- [ ] prompt 25 phase 6 work
+- [X] prompt 25 phase 6 work
+- [X] prompt 26 Phase 6 Addendum: Base vs Effective Value + Modifier Explanations
+- [ ] prompt 27 

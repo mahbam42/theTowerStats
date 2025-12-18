@@ -81,6 +81,8 @@ Many player-facing parameters have both:
 - **Base value**: the raw value from the selected parameter level.
 - **Effective value**: the value after applying modifiers (cards, labs, relics, etc.).
 
+Effective values reflect what actually occurs in a run. Modifier explanations are provided for clarity and may not list every contributing effect.
+
 Phase 6’s intent is that every parameter row can explain:
 
 - Base value
@@ -88,4 +90,3 @@ Phase 6’s intent is that every parameter row can explain:
 - At least one modifier contribution (e.g., “+X% from Cards”)
 
 This work is tracked as a Phase 6 deliverable to ensure later comparisons and higher-order analysis remain explainable.
-

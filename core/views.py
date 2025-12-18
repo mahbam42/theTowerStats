@@ -682,6 +682,9 @@ def cards(request: HttpRequest) -> HttpResponse:
 def ultimate_weapon_progress(request: HttpRequest) -> HttpResponse:
     """Render the Ultimate Weapon progress page."""
     player, _ = Player.objects.get_or_create(name="default")
+    player_cards = tuple(
+        PlayerCard.objects.filter(player=player, stars_unlocked__gt=0).select_related("card_definition")
+    )
 
     uw_definitions = list(UltimateWeaponDefinition.objects.order_by("name"))
     for uw_def in uw_definitions:
@@ -759,9 +762,11 @@ def ultimate_weapon_progress(request: HttpRequest) -> HttpResponse:
                         for row in param_def.levels.order_by("level")
                     ]
                     param_view = build_uw_parameter_view(
+                        player=player,
                         player_param=player_param,
                         levels=levels,
                         unit_kind=param_def.unit_kind,
+                        player_cards=player_cards,
                     )
                     total_stones += total_stones_invested_for_parameter(
                         parameter_definition=param_def,
@@ -830,9 +835,11 @@ def ultimate_weapon_progress(request: HttpRequest) -> HttpResponse:
                     for row in levels_qs
                 ]
                 param_view = build_uw_parameter_view(
+                    player=player,
                     player_param=player_param,
                     levels=levels,
                     unit_kind=param_def.unit_kind,
+                    player_cards=player_cards,
                 )
                 total_stones = total_stones_invested_for_parameter(
                     parameter_definition=param_def,
@@ -857,6 +864,7 @@ def ultimate_weapon_progress(request: HttpRequest) -> HttpResponse:
     filter_form = UltimateWeaponProgressFilterForm(request.GET)
     filter_form.is_valid()
     status = (filter_form.cleaned_data.get("status") or "").strip()
+
 
     unlocked_rows = (
         PlayerUltimateWeapon.objects.filter(player=player, unlocked=True)
@@ -934,9 +942,11 @@ def ultimate_weapon_progress(request: HttpRequest) -> HttpResponse:
                 for row in param_def.levels.order_by("level")
             ]
             view = build_uw_parameter_view(
+                player=player,
                 player_param=player_param,
                 levels=levels,
                 unit_kind=param_def.unit_kind,
+                player_cards=player_cards,
             )
             total_stones_invested += total_stones_invested_for_parameter(
                 parameter_definition=param_def,
@@ -996,6 +1006,9 @@ def guardian_progress(request: HttpRequest) -> HttpResponse:
     """Render the Guardian Chips progress dashboard."""
 
     player, _ = Player.objects.get_or_create(name="default")
+    player_cards = tuple(
+        PlayerCard.objects.filter(player=player, stars_unlocked__gt=0).select_related("card_definition")
+    )
 
     orphaned_guardian_params_deleted, _ = PlayerGuardianChipParameter.objects.filter(
         player_guardian_chip__player=player,
@@ -1089,9 +1102,12 @@ def guardian_progress(request: HttpRequest) -> HttpResponse:
                         for row in param_def.levels.order_by("level")
                     ]
                     param_view = build_upgradeable_parameter_view(
+                        player=player,
+                        entity_kind="guardian_chip",
                         player_param=player_param,
                         levels=levels,
                         unit_kind=param_def.unit_kind,
+                        player_cards=player_cards,
                     )
                     total_bits += total_currency_invested_for_parameter(
                         parameter_definition=param_def,
@@ -1161,9 +1177,12 @@ def guardian_progress(request: HttpRequest) -> HttpResponse:
                     for row in levels_qs
                 ]
                 param_view = build_upgradeable_parameter_view(
+                    player=player,
+                    entity_kind="guardian_chip",
                     player_param=player_param,
                     levels=levels,
                     unit_kind=param_def.unit_kind,
+                    player_cards=player_cards,
                 )
                 total_bits = total_currency_invested_for_parameter(
                     parameter_definition=param_def,
@@ -1322,9 +1341,12 @@ def guardian_progress(request: HttpRequest) -> HttpResponse:
                 for row in param_def.levels.order_by("level")
             ]
             view = build_upgradeable_parameter_view(
+                player=player,
+                entity_kind="guardian_chip",
                 player_param=player_param,
                 levels=levels,
                 unit_kind=param_def.unit_kind,
+                player_cards=player_cards,
             )
             total_bits_invested += total_currency_invested_for_parameter(
                 parameter_definition=param_def,
@@ -1379,6 +1401,9 @@ def bots_progress(request: HttpRequest) -> HttpResponse:
     """Render the Bots progress dashboard."""
 
     player, _ = Player.objects.get_or_create(name="default")
+    player_cards = tuple(
+        PlayerCard.objects.filter(player=player, stars_unlocked__gt=0).select_related("card_definition")
+    )
 
     orphaned_bot_params_deleted, _ = PlayerBotParameter.objects.filter(
         player_bot__player=player,
@@ -1468,9 +1493,12 @@ def bots_progress(request: HttpRequest) -> HttpResponse:
                         for row in param_def.levels.order_by("level")
                     ]
                     param_view = build_upgradeable_parameter_view(
+                        player=player,
+                        entity_kind="bot",
                         player_param=player_param,
                         levels=levels,
                         unit_kind=param_def.unit_kind,
+                        player_cards=player_cards,
                     )
                     total_medals += total_currency_invested_for_parameter(
                         parameter_definition=param_def,
@@ -1534,9 +1562,12 @@ def bots_progress(request: HttpRequest) -> HttpResponse:
                     for row in levels_qs
                 ]
                 param_view = build_upgradeable_parameter_view(
+                    player=player,
+                    entity_kind="bot",
                     player_param=player_param,
                     levels=levels,
                     unit_kind=param_def.unit_kind,
+                    player_cards=player_cards,
                 )
                 total_medals = total_currency_invested_for_parameter(
                     parameter_definition=param_def,
@@ -1654,9 +1685,12 @@ def bots_progress(request: HttpRequest) -> HttpResponse:
                 for row in param_def.levels.order_by("level")
             ]
             view = build_upgradeable_parameter_view(
+                player=player,
+                entity_kind="bot",
                 player_param=player_param,
                 levels=levels,
                 unit_kind=param_def.unit_kind,
+                player_cards=player_cards,
             )
             total_medals_invested += total_currency_invested_for_parameter(
                 parameter_definition=param_def,

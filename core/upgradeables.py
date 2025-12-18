@@ -13,13 +13,15 @@ from __future__ import annotations
 
 import re
 from dataclasses import dataclass
-from typing import Protocol
+from typing import Protocol, Sequence
 
 from django.db.models import QuerySet
 
 from definitions.models import ParameterKey, UltimateWeaponDefinition, Unit
 from player_state.economy import parse_cost_amount
-from player_state.models import Player, PlayerUltimateWeapon, PlayerUltimateWeaponParameter
+from player_state.models import Player, PlayerCard, PlayerUltimateWeapon, PlayerUltimateWeaponParameter
+
+from core.modifier_explanations import collect_modifier_explanations
 
 
 @dataclass(frozen=True, slots=True)
@@ -146,20 +148,28 @@ class _PlayerParameterLike(Protocol):
     id: int
     level: int
     parameter_definition: _ParameterDefinitionLike
+    effective_value_raw: str
+    effective_notes: str
 
 
 def build_upgradeable_parameter_view(
     *,
+    player: Player,
+    entity_kind: str,
     player_param: _PlayerParameterLike,
     levels: list[ParameterLevelRow],
     unit_kind: str,
+    player_cards: Sequence[PlayerCard] = (),
 ) -> dict[str, object]:
     """Build a template-ready parameter payload for upgradeable dashboards.
 
     Args:
+        player: Player owning the parameter.
+        entity_kind: Entity kind used to scope the parameter key (e.g. "ultimate_weapon").
         player_param: Player-selected parameter instance.
         levels: Ordered level-table rows for optimistic client rendering.
         unit_kind: A `definitions.Unit.Kind` choice value.
+        player_cards: Optional pre-fetched player cards (for best-effort explanations).
 
     Returns:
         Dictionary of values expected by the upgradeable dashboard template.
@@ -176,9 +186,23 @@ def build_upgradeable_parameter_view(
     next_row = next((row for row in levels if row.level == current_level + 1), None)
     is_maxed = current_level >= max_level and max_level > 0
 
-    current_value_raw = current_row.value_raw if current_row else ""
+    base_value_raw = current_row.value_raw if current_row else ""
     next_value_raw = next_row.value_raw if next_row else ""
     next_cost_raw = current_row.cost_raw if (current_row and next_row) else ""
+
+    raw_effective_override = (getattr(player_param, "effective_value_raw", "") or "").strip()
+    effective_value_raw = raw_effective_override or base_value_raw
+
+    scoped_key = getattr(getattr(player_param, "parameter_definition", None), "key", None)
+    parameter_key = f"{entity_kind}.{scoped_key}" if scoped_key else f"{entity_kind}.unknown"
+    explanations = collect_modifier_explanations(
+        player=player,
+        parameter_key=parameter_key,
+        base_value_raw=base_value_raw,
+        effective_value_raw=effective_value_raw,
+        player_param=player_param,
+        player_cards=player_cards,
+    )
 
     return {
         "id": player_param.id,
@@ -186,11 +210,22 @@ def build_upgradeable_parameter_view(
         "unit_kind": unit_kind,
         "level": current_level,
         "max_level": max_level,
-        "current_value_raw": current_value_raw,
+        "base_value_raw": base_value_raw,
+        "effective_value_raw": effective_value_raw,
+        "modifier_explanations": [
+            {
+                "parameter_key": e.parameter_key,
+                "source_type": e.source_type,
+                "effect_type": e.effect_type,
+                "description": e.description,
+            }
+            for e in explanations
+        ],
+        "current_value_raw": base_value_raw,
         "next_value_raw": next_value_raw,
         "next_cost_raw": next_cost_raw,
         "delta": format_delta(
-            current_raw=current_value_raw,
+            current_raw=base_value_raw,
             next_raw=next_value_raw,
             unit_kind=unit_kind,
         ),
@@ -201,13 +236,22 @@ def build_upgradeable_parameter_view(
 
 def build_uw_parameter_view(
     *,
+    player: Player,
     player_param: PlayerUltimateWeaponParameter,
     levels: list[ParameterLevelRow],
     unit_kind: str,
+    player_cards: Sequence[PlayerCard] = (),
 ) -> dict[str, object]:
     """Build a template-ready parameter payload for the UW dashboard."""
 
-    return build_upgradeable_parameter_view(player_param=player_param, levels=levels, unit_kind=unit_kind)
+    return build_upgradeable_parameter_view(
+        player=player,
+        entity_kind="ultimate_weapon",
+        player_param=player_param,
+        levels=levels,
+        unit_kind=unit_kind,
+        player_cards=player_cards,
+    )
 
 
 def validate_uw_parameter_definitions(*, uw_definition: UltimateWeaponDefinition) -> None:

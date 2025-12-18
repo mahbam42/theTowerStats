@@ -319,6 +319,17 @@ class PlayerBotParameter(models.Model):
         related_name="player_levels",
     )
     level = models.PositiveSmallIntegerField(default=0)
+    effective_value_raw = models.CharField(
+        max_length=64,
+        blank=True,
+        default="",
+        help_text="Optional authoritative effective value (do not compute; explanatory only).",
+    )
+    effective_notes = models.TextField(
+        blank=True,
+        default="",
+        help_text="Optional explanation lines for effective value (no calculations).",
+    )
     updated_at = models.DateTimeField(auto_now=True)
 
     class Meta:
@@ -362,6 +373,17 @@ class PlayerUltimateWeaponParameter(models.Model):
         related_name="player_levels",
     )
     level = models.PositiveSmallIntegerField(default=0)
+    effective_value_raw = models.CharField(
+        max_length=64,
+        blank=True,
+        default="",
+        help_text="Optional authoritative effective value (do not compute; explanatory only).",
+    )
+    effective_notes = models.TextField(
+        blank=True,
+        default="",
+        help_text="Optional explanation lines for effective value (no calculations).",
+    )
     updated_at = models.DateTimeField(auto_now=True)
 
     class Meta:
@@ -408,6 +430,17 @@ class PlayerGuardianChipParameter(models.Model):
         related_name="player_levels",
     )
     level = models.PositiveSmallIntegerField(default=0)
+    effective_value_raw = models.CharField(
+        max_length=64,
+        blank=True,
+        default="",
+        help_text="Optional authoritative effective value (do not compute; explanatory only).",
+    )
+    effective_notes = models.TextField(
+        blank=True,
+        default="",
+        help_text="Optional explanation lines for effective value (no calculations).",
+    )
     updated_at = models.DateTimeField(auto_now=True)
 
     class Meta:
