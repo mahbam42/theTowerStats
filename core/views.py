@@ -21,18 +21,22 @@ from analysis.deltas import delta
 from analysis.engine import analyze_runs
 from analysis.dto import RunAnalysis
 from analysis.series_registry import DEFAULT_REGISTRY
+from core.advice import generate_optimization_advice
 from core.charting.configs import (
     CHART_CONFIG_BY_ID,
     default_selected_chart_ids,
     list_selectable_chart_configs,
 )
+from core.charting.builder import build_runtime_chart_config
 from core.charting.render import render_charts
+from core.charting.validator import validate_chart_config
 from core.forms import (
     BattleHistoryFilterForm,
     BattleHistoryPresetUpdateForm,
     BattleReportImportForm,
     CardInventoryUpdateForm,
     CardPresetUpdateForm,
+    ChartBuilderForm,
     ChartContextForm,
     CardsFilterForm,
     ComparisonForm,
@@ -54,6 +58,7 @@ from player_state.card_slots import card_slot_max_slots, next_card_slot_unlock_c
 from player_state.cards import apply_inventory_rollover, derive_card_progress
 from player_state.economy import enforce_and_deduct_gems_if_tracked
 from player_state.models import (
+    ChartSnapshot,
     MAX_ACTIVE_GUARDIAN_CHIPS,
     Player,
     PlayerBot,
@@ -66,12 +71,108 @@ from player_state.models import (
     Preset,
 )
 from core.services import ingest_battle_report
+from core.uw_sync import build_uw_sync_payload
 
 
 def dashboard(request: HttpRequest) -> HttpResponse:
     """Render the Charts dashboard driven by ChartConfig definitions."""
 
+    player, _ = Player.objects.get_or_create(name="default")
+
+    effective_get: QueryDict | dict[str, object] = request.GET
+    snapshot_id = request.GET.get("snapshot_id")
+    if snapshot_id:
+        snapshot = ChartSnapshot.objects.filter(player=player, id=int(snapshot_id)).first()
+        if snapshot is not None:
+            merged = request.GET.copy()
+            builder_payload = dict(snapshot.chart_builder or {})
+            context_payload = dict(snapshot.chart_context or {})
+
+            merged["builder"] = "1"
+            for key, value in builder_payload.items():
+                if key == "metric_keys" and isinstance(value, list):
+                    merged.setlist("metric_keys", [str(v) for v in value])
+                else:
+                    merged[key] = str(value) if value is not None else ""
+
+            for key, value in context_payload.items():
+                merged[key] = str(value) if value is not None else ""
+
+            effective_get = merged
+
     if request.method == "POST":
+        action = (request.POST.get("action") or "").strip()
+        if action == "create_chart_snapshot":
+            name = (request.POST.get("snapshot_name") or "").strip()
+            if not name:
+                messages.error(request, "Snapshot name is required.")
+                return redirect("core:dashboard")
+
+            chart_form = ChartContextForm(effective_get)  # type: ignore[arg-type]
+            chart_form.is_valid()
+            context_runs = _context_filtered_runs(chart_form)
+            builder_form = ChartBuilderForm(request.POST, runs_queryset=context_runs)
+            if not builder_form.is_valid():
+                messages.error(request, "Could not save snapshot: invalid Chart Builder inputs.")
+                return redirect("core:dashboard")
+
+            selection = builder_form.selection()
+            candidate = build_runtime_chart_config(selection)
+            validation = validate_chart_config(candidate, registry=DEFAULT_REGISTRY)
+            if not validation.is_valid:
+                messages.error(request, "Could not save snapshot: ChartConfig validation failed.")
+                return redirect("core:dashboard")
+
+            chart_context = {
+                "start_date": (
+                    chart_form.cleaned_data["start_date"].isoformat()
+                    if chart_form.cleaned_data.get("start_date")
+                    else None
+                ),
+                "end_date": (
+                    chart_form.cleaned_data["end_date"].isoformat()
+                    if chart_form.cleaned_data.get("end_date")
+                    else None
+                ),
+                "tier": int(chart_form.cleaned_data["tier"]) if chart_form.cleaned_data.get("tier") else None,
+                "preset": getattr(chart_form.cleaned_data.get("preset"), "id", None),
+                "moving_average_window": chart_form.cleaned_data.get("moving_average_window"),
+                "window_kind": chart_form.cleaned_data.get("window_kind"),
+                "window_n": chart_form.cleaned_data.get("window_n"),
+                "ultimate_weapon": getattr(chart_form.cleaned_data.get("ultimate_weapon"), "id", None),
+                "guardian_chip": getattr(chart_form.cleaned_data.get("guardian_chip"), "id", None),
+                "bot": getattr(chart_form.cleaned_data.get("bot"), "id", None),
+            }
+            snapshot_payload = {
+                "metric_keys": list(selection.metric_keys),
+                "chart_type": selection.chart_type,
+                "group_by": selection.group_by,
+                "comparison": selection.comparison,
+                "smoothing": selection.smoothing,
+                "run_a": selection.scope_a.run_id if selection.scope_a else None,
+                "run_b": selection.scope_b.run_id if selection.scope_b else None,
+                "window_a_start": selection.scope_a.start_date.isoformat() if selection.scope_a and selection.scope_a.start_date else None,
+                "window_a_end": selection.scope_a.end_date.isoformat() if selection.scope_a and selection.scope_a.end_date else None,
+                "window_b_start": selection.scope_b.start_date.isoformat() if selection.scope_b and selection.scope_b.start_date else None,
+                "window_b_end": selection.scope_b.end_date.isoformat() if selection.scope_b and selection.scope_b.end_date else None,
+            }
+
+            try:
+                ChartSnapshot.objects.create(
+                    player=player,
+                    name=name,
+                    chart_builder=snapshot_payload,
+                    chart_context=chart_context,
+                )
+            except Exception as exc:
+                if settings.DEBUG:
+                    raise
+                messages.error(request, f"Could not save snapshot: {exc}")
+                return redirect("core:dashboard")
+
+            messages.success(request, "Snapshot saved.")
+            return redirect("core:dashboard")
+
         import_form = BattleReportImportForm(request.POST)
         if import_form.is_valid():
             raw_text = import_form.cleaned_data["raw_text"]
@@ -90,7 +191,7 @@ def dashboard(request: HttpRequest) -> HttpResponse:
         default_chart_data = default_chart_data.copy()
         default_chart_data["start_date"] = date(2025, 12, 9).isoformat()
 
-    chart_form = ChartContextForm(default_chart_data)
+    chart_form = ChartContextForm(effective_get or default_chart_data)  # type: ignore[arg-type]
     chart_form.is_valid()
 
     runs = _filtered_runs(chart_form)
@@ -98,19 +199,39 @@ def dashboard(request: HttpRequest) -> HttpResponse:
     context_runs = _context_filtered_runs(chart_form)
     base_analysis = analyze_runs(context_runs)
 
-    comparison_form = ComparisonForm(request.GET, runs_queryset=context_runs)
+    comparison_form = ComparisonForm(effective_get, runs_queryset=context_runs)  # type: ignore[arg-type]
     comparison_form.is_valid()
     comparison_result = _build_comparison_result(
         comparison_form,
         base_analysis=base_analysis.runs,
     )
+    advice_items = generate_optimization_advice(comparison_result)
+
+    builder_data = effective_get if getattr(effective_get, "get", lambda _k: None)("builder") == "1" else None
+    chart_builder_form = ChartBuilderForm(builder_data, runs_queryset=context_runs)
+    builder_config = None
+    builder_errors: tuple[str, ...] = ()
+    if chart_builder_form.is_bound:
+        if chart_builder_form.is_valid():
+            selection = chart_builder_form.selection()
+            candidate = build_runtime_chart_config(selection)
+            validation = validate_chart_config(candidate, registry=DEFAULT_REGISTRY)
+            if validation.is_valid:
+                builder_config = candidate
+            else:
+                builder_errors = validation.errors
+        else:
+            builder_errors = tuple(
+                f"{field}: {', '.join(errors)}" for field, errors in chart_builder_form.errors.items()
+            )
 
     selected_chart_ids = tuple(chart_form.cleaned_data.get("charts") or ())
     selected_configs = tuple(
         CHART_CONFIG_BY_ID[chart_id] for chart_id in selected_chart_ids if chart_id in CHART_CONFIG_BY_ID
     )
+    configs_to_render = (builder_config,) + selected_configs if builder_config is not None else selected_configs
     rendered = render_charts(
-        configs=selected_configs,
+        configs=configs_to_render,
         records=runs,
         registry=DEFAULT_REGISTRY,
         moving_average_window=chart_form.cleaned_data.get("moving_average_window"),
@@ -128,6 +249,8 @@ def dashboard(request: HttpRequest) -> HttpResponse:
             "description": entry.config.description,
             "unit": entry.unit,
             "chart_type": entry.config.chart_type,
+            "error": entry.error,
+            "warnings": entry.warnings,
         }
         for entry in rendered
     ]
@@ -161,6 +284,10 @@ def dashboard(request: HttpRequest) -> HttpResponse:
         "chart_form": chart_form,
         "comparison_form": comparison_form,
         "comparison_result": comparison_result,
+        "advice_items": advice_items,
+        "chart_builder_form": chart_builder_form,
+        "chart_builder_errors": builder_errors,
+        "chart_snapshots": ChartSnapshot.objects.filter(player=player).order_by("-created_at"),
         "chart_panels": chart_panels,
         "chart_panels_json": chart_panels_json,
         "chart_context_json": json.dumps(chart_context),
@@ -991,6 +1118,7 @@ def ultimate_weapon_progress(request: HttpRequest) -> HttpResponse:
             }
         )
 
+    uw_sync = build_uw_sync_payload(player=player)
     return render(
         request,
         "core/ultimate_weapon_progress.html",
@@ -998,6 +1126,8 @@ def ultimate_weapon_progress(request: HttpRequest) -> HttpResponse:
             "filter_form": filter_form,
             "ultimate_weapons": tiles,
             "has_battles": any_battles,
+            "uw_sync_chart_json": json.dumps(uw_sync.chart_data) if uw_sync else None,
+            "uw_sync_summary": uw_sync.summary if uw_sync else None,
         },
     )
 

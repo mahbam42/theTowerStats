@@ -9,9 +9,17 @@ from __future__ import annotations
 
 from datetime import date
 
+import re
+
 from django import forms
 
+from analysis.series_registry import DEFAULT_REGISTRY
 from core.charting.configs import default_selected_chart_ids, list_selectable_chart_configs
+from core.charting.builder import (
+    ChartBuilderSelection,
+    build_before_after_scopes,
+    build_run_vs_run_scopes,
+)
 from definitions.models import BotDefinition, GuardianChipDefinition, UltimateWeaponDefinition
 from gamedata.models import BattleReport
 from player_state.models import Player, Preset
@@ -23,13 +31,35 @@ class BattleReportImportForm(forms.Form):
     raw_text = forms.CharField(
         label="Battle Report",
         widget=forms.Textarea(attrs={"rows": 12, "cols": 80}),
-        help_text="Paste the Battle Report text from The Tower.",
+        help_text="Paste exactly one Battle Report from The Tower.",
     )
     preset_name = forms.CharField(
         required=False,
         label="Preset label (optional)",
         help_text="Optional context tag applied to this run (e.g. 'Farming build').",
     )
+
+    def clean_raw_text(self) -> str:
+        """Validate that the input contains exactly one Battle Report.
+
+        Returns:
+            The raw Battle Report text as entered by the user.
+        """
+
+        raw_text = self.cleaned_data.get("raw_text") or ""
+        patterns = {
+            "Battle Date": r"(?im)^\s*Battle Date\s*[:\t]",
+            "Tier": r"(?im)^\s*Tier\s*[:\t]",
+            "Wave": r"(?im)^\s*Wave\s*[:\t]",
+            "Real Time": r"(?im)^\s*Real Time\s*[:\t]",
+        }
+        counts = {label: len(re.findall(pattern, raw_text)) for label, pattern in patterns.items()}
+        if counts["Battle Date"] != 1:
+            raise forms.ValidationError("Paste exactly one Battle Report (Battle Date must appear once).")
+        duplicates = [label for label, count in counts.items() if count > 1]
+        if duplicates:
+            raise forms.ValidationError(f"Duplicate headers detected: {', '.join(duplicates)}.")
+        return raw_text
 
 
 class ChartContextForm(forms.Form):
@@ -204,6 +234,8 @@ class BattleHistoryFilterForm(forms.Form):
             ("run_progress__tier", "Tier (low → high)"),
             ("-run_progress__wave", "Wave (high → low)"),
             ("run_progress__wave", "Wave (low → high)"),
+            ("run_progress__killed_by", "Killed by (A → Z)"),
+            ("-run_progress__killed_by", "Killed by (Z → A)"),
             ("-run_progress__coins_earned", "Coins earned (high → low)"),
             ("run_progress__coins_earned", "Coins earned (low → high)"),
             ("-run_progress__cash_earned", "Cash earned (high → low)"),
@@ -382,3 +414,163 @@ class ComparisonForm(forms.Form):
 
         self.fields["run_a"].queryset = runs_queryset
         self.fields["run_b"].queryset = runs_queryset
+
+
+class ChartBuilderForm(forms.Form):
+    """Validate constrained Chart Builder selections.
+
+    The Chart Builder produces a runtime ChartConfig (not persisted) that is
+    validated and rendered using the same pipeline as built-in charts.
+    """
+
+    metric_keys = forms.MultipleChoiceField(
+        required=True,
+        choices=(),
+        label="Metrics",
+        widget=forms.SelectMultiple(attrs={"size": 10}),
+        help_text="Select one or more metrics. Metrics must share units and category.",
+    )
+    chart_type = forms.ChoiceField(
+        required=True,
+        choices=(("line", "Line"), ("bar", "Bar"), ("donut", "Donut")),
+        label="Chart type",
+    )
+    group_by = forms.ChoiceField(
+        required=True,
+        choices=(("time", "Time"), ("tier", "Tier"), ("preset", "Preset")),
+        label="Group by",
+    )
+    comparison = forms.ChoiceField(
+        required=True,
+        choices=(("none", "None"), ("before_after", "Before/After (two windows)"), ("run_vs_run", "Run vs Run")),
+        label="Comparison",
+    )
+    smoothing = forms.ChoiceField(
+        required=True,
+        choices=(("none", "None"), ("rolling_avg", "Rolling average")),
+        label="Smoothing",
+    )
+
+    run_a = GameDataChoiceField(required=False, queryset=BattleReport.objects.none(), label="Run A")
+    run_b = GameDataChoiceField(required=False, queryset=BattleReport.objects.none(), label="Run B")
+
+    window_a_start = forms.DateField(required=False, widget=forms.DateInput(attrs={"type": "date"}), label="Window A start")
+    window_a_end = forms.DateField(required=False, widget=forms.DateInput(attrs={"type": "date"}), label="Window A end")
+    window_b_start = forms.DateField(required=False, widget=forms.DateInput(attrs={"type": "date"}), label="Window B start")
+    window_b_end = forms.DateField(required=False, widget=forms.DateInput(attrs={"type": "date"}), label="Window B end")
+
+    def __init__(self, *args, **kwargs) -> None:
+        """Initialize choices from the MetricSeries registry and run queryset."""
+
+        runs_queryset = kwargs.pop("runs_queryset", None)
+        super().__init__(*args, **kwargs)
+
+        self.fields["metric_keys"].choices = [
+            (spec.key, f"{spec.label} ({spec.unit})") for spec in DEFAULT_REGISTRY.list()
+        ]
+
+        if runs_queryset is None:
+            runs_queryset = BattleReport.objects.select_related("run_progress").order_by(
+                "-run_progress__battle_date", "-parsed_at"
+            )
+        self.fields["run_a"].queryset = runs_queryset
+        self.fields["run_b"].queryset = runs_queryset
+
+    def clean(self) -> dict[str, object]:
+        """Enforce the constrained Chart Builder contract."""
+
+        cleaned = super().clean()
+
+        metric_keys = tuple(cleaned.get("metric_keys") or ())
+        chart_type = str(cleaned.get("chart_type") or "line")
+        group_by = str(cleaned.get("group_by") or "time")
+        comparison = str(cleaned.get("comparison") or "none")
+        smoothing = str(cleaned.get("smoothing") or "none")
+
+        if chart_type == "donut" and len(metric_keys) < 2:
+            self.add_error("metric_keys", "Donut charts require at least two metrics.")
+
+        if chart_type == "donut" and group_by != "time":
+            self.add_error("group_by", "Donut charts do not support grouping.")
+
+        if chart_type == "donut" and comparison != "none":
+            self.add_error("comparison", "Donut charts do not support comparisons.")
+
+        if comparison != "none" and group_by != "time":
+            self.add_error("group_by", "Two-scope comparisons require group_by=Time.")
+
+        if smoothing == "rolling_avg":
+            unsupported = []
+            for key in metric_keys:
+                spec = DEFAULT_REGISTRY.get(key)
+                if spec is None:
+                    continue
+                if "moving_average" not in spec.allowed_transforms:
+                    unsupported.append(key)
+            if unsupported:
+                self.add_error(
+                    "smoothing",
+                    f"Rolling average is not supported for: {', '.join(sorted(unsupported))}.",
+                )
+
+        if comparison == "run_vs_run":
+            if cleaned.get("run_a") is None or cleaned.get("run_b") is None:
+                self.add_error("run_a", "Select two runs for run vs run.")
+                self.add_error("run_b", "Select two runs for run vs run.")
+
+        if comparison == "before_after":
+            required = ("window_a_start", "window_a_end", "window_b_start", "window_b_end")
+            missing = [key for key in required if not cleaned.get(key)]
+            if missing:
+                for key in missing:
+                    self.add_error(key, "Required for before/after comparisons.")
+
+        return cleaned
+
+    def selection(self) -> ChartBuilderSelection:
+        """Return a typed selection for building a runtime ChartConfig.
+
+        Returns:
+            ChartBuilderSelection derived from validated form values.
+
+        Raises:
+            ValueError: If the form is invalid.
+        """
+
+        if not self.is_valid():
+            raise ValueError("ChartBuilderForm must be valid before building selections.")
+
+        metric_keys = tuple(self.cleaned_data.get("metric_keys") or ())
+        chart_type = str(self.cleaned_data.get("chart_type") or "line")
+        group_by = str(self.cleaned_data.get("group_by") or "time")
+        comparison = str(self.cleaned_data.get("comparison") or "none")
+        smoothing = str(self.cleaned_data.get("smoothing") or "none")
+        scope_a = None
+        scope_b = None
+        if comparison == "run_vs_run":
+            run_a = self.cleaned_data.get("run_a")
+            run_b = self.cleaned_data.get("run_b")
+            if run_a is not None and run_b is not None:
+                scope_a, scope_b = build_run_vs_run_scopes(run_a_id=int(run_a.id), run_b_id=int(run_b.id))
+        if comparison == "before_after":
+            a_start = self.cleaned_data.get("window_a_start")
+            a_end = self.cleaned_data.get("window_a_end")
+            b_start = self.cleaned_data.get("window_b_start")
+            b_end = self.cleaned_data.get("window_b_end")
+            if a_start and a_end and b_start and b_end:
+                scope_a, scope_b = build_before_after_scopes(
+                    window_a_start=a_start,
+                    window_a_end=a_end,
+                    window_b_start=b_start,
+                    window_b_end=b_end,
+                )
+
+        return ChartBuilderSelection(
+            metric_keys=metric_keys,
+            chart_type=chart_type,  # type: ignore[arg-type]
+            group_by=group_by,  # type: ignore[arg-type]
+            comparison=comparison,  # type: ignore[arg-type]
+            smoothing=smoothing,  # type: ignore[arg-type]
+            scope_a=scope_a,
+            scope_b=scope_b,
+        )

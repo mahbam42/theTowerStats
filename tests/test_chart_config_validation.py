@@ -17,6 +17,7 @@ from core.charting.schema import (
     ChartFilters,
     ChartSeriesConfig,
     ChartUI,
+    ComparisonScope,
     DateRangeFilterConfig,
     SimpleFilterConfig,
 )
@@ -171,6 +172,144 @@ def test_chart_config_validation_rejects_derived_axis_mismatch() -> None:
     result = validate_chart_config(config, registry=registry)
     assert result.is_valid is False
     assert any("incompatible" in error for error in result.errors)
+
+
+def test_chart_config_validation_rejects_mixed_units_in_multi_series_chart() -> None:
+    """Reject multi-series charts that mix incompatible units."""
+
+    config = ChartConfig(
+        id="mixed_units",
+        title="Mixed units",
+        description=None,
+        category="top_level",
+        chart_type="line",
+        metric_series=(
+            ChartSeriesConfig(metric_key="coins_earned"),
+            ChartSeriesConfig(metric_key="waves_reached"),
+        ),
+        filters=ChartFilters(
+            date_range=DateRangeFilterConfig(enabled=True, default_start=datetime(2025, 12, 9, tzinfo=UTC)),
+        ),
+        ui=ChartUI(show_by_default=False, selectable=True, order=999),
+    )
+    result = validate_chart_config(config, registry=DEFAULT_REGISTRY)
+    assert result.is_valid is False
+    assert any("mixes incompatible units" in error for error in result.errors)
+
+
+def test_chart_config_validation_rejects_cross_category_metric_mix() -> None:
+    """Reject charts that mix MetricCategory values in a single config."""
+
+    config = ChartConfig(
+        id="cross_category",
+        title="Cross category",
+        description=None,
+        category="top_level",
+        chart_type="line",
+        metric_series=(
+            ChartSeriesConfig(metric_key="coins_earned"),
+            ChartSeriesConfig(metric_key="waves_reached"),
+        ),
+        filters=ChartFilters(
+            date_range=DateRangeFilterConfig(enabled=True, default_start=datetime(2025, 12, 9, tzinfo=UTC)),
+        ),
+        ui=ChartUI(show_by_default=False, selectable=True, order=999),
+    )
+    result = validate_chart_config(config, registry=DEFAULT_REGISTRY)
+    assert result.is_valid is False
+    assert any("mixes metric categories" in error for error in result.errors)
+
+
+def test_chart_config_validation_requires_donut_to_have_multiple_metrics() -> None:
+    """Reject donut charts that declare fewer than two metrics."""
+
+    config = ChartConfig(
+        id="donut_one",
+        title="Donut one metric",
+        description=None,
+        category="top_level",
+        chart_type="donut",
+        metric_series=(ChartSeriesConfig(metric_key="coins_earned"),),
+        filters=ChartFilters(
+            date_range=DateRangeFilterConfig(enabled=True, default_start=datetime(2025, 12, 9, tzinfo=UTC)),
+        ),
+        ui=ChartUI(show_by_default=False, selectable=True, order=999),
+    )
+    result = validate_chart_config(config, registry=DEFAULT_REGISTRY)
+    assert result.is_valid is False
+    assert any("donut charts must contain at least two" in error for error in result.errors)
+
+
+def test_chart_config_validation_rejects_derived_on_derived_formulas() -> None:
+    """Reject chart-level derived formulas that reference derived metric series."""
+
+    config = ChartConfig(
+        id="derived_on_derived",
+        title="Derived on derived",
+        description=None,
+        category="derived",
+        chart_type="line",
+        metric_series=(
+            ChartSeriesConfig(metric_key="coins_per_wave"),
+            ChartSeriesConfig(metric_key="coins_earned"),
+        ),
+        filters=ChartFilters(
+            date_range=DateRangeFilterConfig(enabled=True, default_start=datetime(2025, 12, 9, tzinfo=UTC)),
+        ),
+        derived=ChartDerived(formula="coins_per_wave / coins_earned", x_axis="time"),
+        ui=ChartUI(show_by_default=False, selectable=True, order=999),
+    )
+    result = validate_chart_config(config, registry=DEFAULT_REGISTRY)
+    assert result.is_valid is False
+    assert any("cannot reference derived metrics" in error for error in result.errors)
+
+
+def test_chart_config_validation_requires_exactly_two_scopes_for_run_vs_run() -> None:
+    """Reject run-vs-run configs missing the two required scopes."""
+
+    config = ChartConfig(
+        id="run_vs_run",
+        title="Run vs run",
+        description=None,
+        category="comparison",
+        chart_type="line",
+        metric_series=(ChartSeriesConfig(metric_key="coins_earned"),),
+        filters=ChartFilters(
+            date_range=DateRangeFilterConfig(enabled=True, default_start=datetime(2025, 12, 9, tzinfo=UTC)),
+        ),
+        comparison=ChartComparison(mode="run_vs_run"),
+        ui=ChartUI(show_by_default=False, selectable=True, order=999),
+    )
+    result = validate_chart_config(config, registry=DEFAULT_REGISTRY)
+    assert result.is_valid is False
+    assert any("require exactly two scopes" in error for error in result.errors)
+
+
+def test_chart_config_validation_requires_run_ids_for_run_vs_run_scopes() -> None:
+    """Reject run-vs-run configs when scope run ids are missing."""
+
+    config = ChartConfig(
+        id="run_vs_run_scopes",
+        title="Run vs run",
+        description=None,
+        category="comparison",
+        chart_type="line",
+        metric_series=(ChartSeriesConfig(metric_key="coins_earned"),),
+        filters=ChartFilters(
+            date_range=DateRangeFilterConfig(enabled=True, default_start=datetime(2025, 12, 9, tzinfo=UTC)),
+        ),
+        comparison=ChartComparison(
+            mode="run_vs_run",
+            scopes=(
+                ComparisonScope(label="Run A", run_id=None),
+                ComparisonScope(label="Run B", run_id=None),
+            ),
+        ),
+        ui=ChartUI(show_by_default=False, selectable=True, order=999),
+    )
+    result = validate_chart_config(config, registry=DEFAULT_REGISTRY)
+    assert result.is_valid is False
+    assert any("requires run_id" in error for error in result.errors)
 
 
 @pytest.mark.django_db

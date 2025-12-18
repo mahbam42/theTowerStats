@@ -7,12 +7,13 @@ Chart Builder), so validation is strict and fails fast.
 from __future__ import annotations
 
 from dataclasses import dataclass
+from datetime import date
 from datetime import datetime
 from typing import Iterable
 
-from analysis.series_registry import MetricSeriesRegistry
+from analysis.series_registry import MetricSeriesRegistry, MetricSeriesSpec
 
-from .schema import ChartConfig
+from .schema import ChartConfig, ComparisonScope
 
 
 @dataclass(frozen=True, slots=True)
@@ -70,7 +71,10 @@ def validate_chart_config(config: ChartConfig, *, registry: MetricSeriesRegistry
             errors.append(f"ChartConfig[{config.id}] donut charts cannot declare derived formulas.")
         if config.comparison is not None and config.comparison.mode != "none":
             errors.append(f"ChartConfig[{config.id}] donut charts cannot use comparison modes.")
+        if len(config.metric_series) < 2:
+            errors.append(f"ChartConfig[{config.id}] donut charts must contain at least two metric series.")
 
+    resolved_specs = []
     for idx, series in enumerate(config.metric_series):
         spec = registry.get(series.metric_key)
         if spec is None:
@@ -78,6 +82,7 @@ def validate_chart_config(config: ChartConfig, *, registry: MetricSeriesRegistry
                 f"ChartConfig[{config.id}].metric_series[{idx}] references unknown metric_key={series.metric_key!r}."
             )
             continue
+        resolved_specs.append((idx, series.metric_key, spec))
 
         if series.transform not in spec.allowed_transforms:
             errors.append(
@@ -98,6 +103,12 @@ def validate_chart_config(config: ChartConfig, *, registry: MetricSeriesRegistry
                 f"ChartConfig[{config.id}] uses moving_average without date_range filtering enabled."
             )
 
+    _validate_units_and_categories(
+        config,
+        resolved_specs=resolved_specs,
+        errors=errors,
+    )
+
     if config.comparison is not None:
         mode = config.comparison.mode
         if config.category != "comparison" and mode != "none":
@@ -110,6 +121,8 @@ def validate_chart_config(config: ChartConfig, *, registry: MetricSeriesRegistry
             warnings.append(f"ChartConfig[{config.id}].comparison.entities is ignored for mode={mode}.")
         if mode == "by_entity" and not config.comparison.entities:
             errors.append(f"ChartConfig[{config.id}] comparison mode 'by_entity' requires entities.")
+        if mode in ("before_after", "run_vs_run"):
+            _validate_two_scope_comparison(config, errors=errors)
         if mode == "by_tier":
             _validate_comparison_dimension(config, registry=registry, dimension="tier", errors=errors)
         if mode == "by_preset":
@@ -150,6 +163,15 @@ def validate_chart_config(config: ChartConfig, *, registry: MetricSeriesRegistry
                 f"ChartConfig[{config.id}].derived.formula references metrics not present in metric_series: "
                 f"{sorted(missing)}."
             )
+        if referenced:
+            derived_inputs = [
+                key for key in referenced if (spec := registry.get(key)) is not None and spec.kind == "derived"
+            ]
+            if derived_inputs:
+                errors.append(
+                    f"ChartConfig[{config.id}].derived.formula cannot reference derived metrics: "
+                    f"{sorted(derived_inputs)}."
+                )
         _validate_derived_axes(
             config,
             registry=registry,
@@ -209,6 +231,77 @@ def _enabled_filter_keys(config: ChartConfig) -> set[str]:
         enabled.add("date_range")
     return enabled
 
+
+def _validate_units_and_categories(
+    config: ChartConfig,
+    *,
+    resolved_specs: list[tuple[int, str, MetricSeriesSpec]],
+    errors: list[str],
+) -> None:
+    """Enforce unit/category compatibility across metric series.
+
+    Notes:
+        The Charts dashboard renders a single shared y-axis per chart. For
+        multi-series non-derived charts, unit and category mixing is not
+        supported.
+    """
+
+    if config.derived is not None:
+        return
+
+    specs = [(idx, key, spec) for (idx, key, spec) in resolved_specs]
+    if len(specs) < 2:
+        return
+
+    units = {spec.unit for _, _, spec in specs}
+    if len(units) > 1:
+        errors.append(
+            f"ChartConfig[{config.id}] mixes incompatible units across metric_series: {sorted(units)}."
+        )
+
+    categories = {str(spec.category) for _, _, spec in specs}
+    if len(categories) > 1:
+        errors.append(
+            f"ChartConfig[{config.id}] mixes metric categories across metric_series: {sorted(c for c in categories if c)}."
+        )
+
+
+def _validate_two_scope_comparison(config: ChartConfig, *, errors: list[str]) -> None:
+    """Validate before/after and run-vs-run comparisons.
+
+    Args:
+        config: ChartConfig with a two-scope comparison mode.
+        errors: Mutable list of validation error strings.
+    """
+
+    if config.comparison is None:
+        errors.append(f"ChartConfig[{config.id}] comparison configuration is missing.")
+        return
+
+    scopes = config.comparison.scopes
+    if not scopes or len(scopes) != 2:
+        errors.append(f"ChartConfig[{config.id}] two-scope comparisons require exactly two scopes.")
+        return
+
+    mode = config.comparison.mode
+    for idx, scope in enumerate(scopes):
+        if not isinstance(scope, ComparisonScope):
+            errors.append(f"ChartConfig[{config.id}] comparison scope {idx} is invalid.")
+            continue
+        if not scope.label.strip():
+            errors.append(f"ChartConfig[{config.id}] comparison scope {idx} label must be non-empty.")
+        if mode == "run_vs_run":
+            if scope.run_id is None:
+                errors.append(f"ChartConfig[{config.id}] run_vs_run scope {idx} requires run_id.")
+        if mode == "before_after":
+            if scope.start_date is None or scope.end_date is None:
+                errors.append(f"ChartConfig[{config.id}] before_after scope {idx} requires start_date and end_date.")
+            if scope.start_date is not None and not isinstance(scope.start_date, date):
+                errors.append(f"ChartConfig[{config.id}] before_after scope {idx} start_date must be a date.")
+            if scope.end_date is not None and not isinstance(scope.end_date, date):
+                errors.append(f"ChartConfig[{config.id}] before_after scope {idx} end_date must be a date.")
+            if scope.start_date is not None and scope.end_date is not None and scope.start_date > scope.end_date:
+                errors.append(f"ChartConfig[{config.id}] before_after scope {idx} start_date must be <= end_date.")
 
 def _validate_comparison_dimension(
     config: ChartConfig,

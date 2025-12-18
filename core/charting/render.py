@@ -2,7 +2,11 @@
 
 from __future__ import annotations
 
+import json
 from dataclasses import dataclass
+from dataclasses import asdict
+from datetime import date
+from hashlib import sha256
 from typing import TypedDict
 
 from analysis.aggregations import simple_moving_average
@@ -14,6 +18,7 @@ from collections.abc import Iterable
 from analysis.series_registry import MetricSeriesRegistry
 
 from .schema import ChartConfig, ChartSeriesConfig
+from .flags import INCOMPLETE_RUN, PATCH_BOUNDARY, ROLLING_MEDIAN_DEVIATION, apply_patch_boundaries, rolling_median_flags
 
 
 class ChartDataset(TypedDict, total=False):
@@ -30,9 +35,11 @@ class ChartDataset(TypedDict, total=False):
     spanGaps: bool
     borderDash: list[int]
     borderWidth: int
-    pointRadius: int
-    pointHoverRadius: int
+    pointRadius: int | list[int]
+    pointHoverRadius: int | list[int]
+    pointBackgroundColor: str | list[str]
     tension: float
+    flagReasons: list[str | None]
 
 
 class ChartData(TypedDict):
@@ -49,6 +56,11 @@ class RenderedChart:
     config: ChartConfig
     data: ChartData
     unit: str
+    error: str | None = None
+    warnings: tuple[str, ...] = ()
+
+
+MAX_CHART_LABELS = 400
 
 
 def render_charts(
@@ -58,6 +70,7 @@ def render_charts(
     registry: MetricSeriesRegistry,
     moving_average_window: int | None,
     entity_selections: dict[str, str | None],
+    patch_boundaries: tuple[date, ...] = (),
 ) -> tuple[RenderedChart, ...]:
     """Render a set of charts from configs and already-filtered records.
 
@@ -73,16 +86,24 @@ def render_charts(
     """
 
     rendered: list[RenderedChart] = []
+    cache: dict[str, RenderedChart] = {}
     for config in configs:
-        rendered.append(
-            render_chart(
+        cache_key = _chart_cache_key(
+            config=config,
+            entity_selections=entity_selections,
+            moving_average_window=moving_average_window,
+            patch_boundaries=patch_boundaries,
+        )
+        if cache_key not in cache:
+            cache[cache_key] = render_chart(
                 config=config,
                 records=records,
                 registry=registry,
                 moving_average_window=moving_average_window,
                 entity_selections=entity_selections,
+                patch_boundaries=patch_boundaries,
             )
-        )
+        rendered.append(cache[cache_key])
     return tuple(rendered)
 
 
@@ -93,6 +114,7 @@ def render_chart(
     registry: MetricSeriesRegistry,
     moving_average_window: int | None,
     entity_selections: dict[str, str | None],
+    patch_boundaries: tuple[date, ...] = (),
 ) -> RenderedChart:
     """Render a single chart panel from a ChartConfig.
 
@@ -143,6 +165,8 @@ def render_chart(
 
     datasets: list[ChartDataset] = []
     labels: list[str] = []
+    warnings: list[str] = []
+    incomplete_labels = _incomplete_run_labels(records)
     for series_config in config.metric_series:
         spec = registry.get(series_config.metric_key)
         if spec is None:
@@ -159,6 +183,13 @@ def render_chart(
         )
         groups = _group_points(series_result.points, config=config)
         labels = _merge_labels(labels, [p.battle_date.date().isoformat() for p in series_result.points])
+        if len(labels) > MAX_CHART_LABELS:
+            return RenderedChart(
+                config=config,
+                data={"labels": [], "datasets": []},
+                unit="",
+                error=f"Too many data points to render safely (>{MAX_CHART_LABELS}). Narrow the date range or rolling window.",
+            )
 
         unit = _unit_for_series(spec.unit, series_config)
         for group_key, points in groups.items():
@@ -172,20 +203,79 @@ def render_chart(
                 moving_average_window=moving_average_window,
             )
             label = _series_label(config=config, series=series_config, group_label=group_label, spec_label=spec.label)
-            datasets.append(
-                _dataset(
-                    label=label,
-                    metric_key=series_config.metric_key,
-                    metric_kind=spec.kind,
-                    unit=unit,
-                    data=data,
-                    color=color,
-                    series_kind=series_config.transform,
-                )
+            dataset = _dataset(
+                label=label,
+                metric_key=series_config.metric_key,
+                metric_kind=spec.kind,
+                unit=unit,
+                data=data,
+                color=color,
+                series_kind=series_config.transform,
             )
+            if series_config.transform in ("none", "rate_per_hour"):
+                reasons = _flag_reasons(
+                    labels,
+                    data=data,
+                    incomplete_labels=incomplete_labels,
+                    patch_boundaries=patch_boundaries,
+                )
+                if any(reasons):
+                    dataset["flagReasons"] = reasons
+                    dataset["pointRadius"] = [6 if r else 2 for r in reasons]
+                    dataset["pointHoverRadius"] = [8 if r else 5 for r in reasons]
+                    dataset["pointBackgroundColor"] = ["#DC3912" if r else color for r in reasons]
+            datasets.append(dataset)
+
+        if config.comparison is not None and config.comparison.mode in ("before_after", "run_vs_run"):
+            sizes = {k: len(v) for k, v in groups.items() if k != "all"}
+            if sizes and any(count < 3 for count in sizes.values()):
+                warnings.append("Comparison scope contains fewer than 3 runs; interpret deltas cautiously.")
 
     panel_unit = datasets[0]["unit"] if datasets else ""
-    return RenderedChart(config=config, data={"labels": labels, "datasets": datasets}, unit=panel_unit)
+    return RenderedChart(
+        config=config,
+        data={"labels": labels, "datasets": datasets},
+        unit=panel_unit,
+        warnings=tuple(warnings),
+    )
+
+
+def _chart_cache_key(
+    *,
+    config: ChartConfig,
+    entity_selections: dict[str, str | None],
+    moving_average_window: int | None,
+    patch_boundaries: tuple[date, ...],
+) -> str:
+    """Return a content-based cache key for chart rendering.
+
+    Notes:
+        This cache is request-local and is intended as a small guardrail against
+        redundant work when the same config is rendered multiple times.
+    """
+
+    payload = {
+        "config": _jsonable_config(config),
+        "entity_selections": entity_selections,
+        "moving_average_window": moving_average_window,
+        "patch_boundaries": [d.isoformat() for d in patch_boundaries],
+    }
+    dumped = json.dumps(payload, sort_keys=True, default=str)
+    return sha256(dumped.encode("utf-8")).hexdigest()
+
+
+def _jsonable_config(config: ChartConfig) -> dict[str, object]:
+    """Convert a ChartConfig dataclass into a JSON-serializable dictionary."""
+
+    raw = asdict(config)
+    raw_filters = raw.get("filters") or {}
+    date_range = raw_filters.get("date_range") or {}
+    default_start = date_range.get("default_start")
+    if default_start is not None:
+        date_range["default_start"] = str(default_start)
+        raw_filters["date_range"] = date_range
+        raw["filters"] = raw_filters
+    return raw
 
 
 def _render_donut_chart(
@@ -323,6 +413,64 @@ def _apply_series_transform(
     return [round(v, 2) if v is not None else None for v in data]
 
 
+def _incomplete_run_labels(records: Iterable[object]) -> set[str]:
+    """Return ISO date labels that contain at least one incomplete run.
+
+    Args:
+        records: Typically a BattleReport QuerySet filtered to the current context.
+
+    Returns:
+        Set of ISO date strings ("YYYY-MM-DD") where a run is missing key metadata.
+    """
+
+    labels: set[str] = set()
+    for record in records:
+        progress = getattr(record, "run_progress", None)
+        battle_date = getattr(progress, "battle_date", None)
+        if battle_date is None:
+            continue
+        wave = getattr(progress, "wave", None)
+        real_time = getattr(progress, "real_time_seconds", None)
+        if wave is None or real_time is None:
+            labels.add(battle_date.date().isoformat())
+    return labels
+
+
+def _flag_reasons(
+    labels: list[str],
+    *,
+    data: list[float | None],
+    incomplete_labels: set[str],
+    patch_boundaries: tuple[date, ...],
+) -> list[str | None]:
+    """Compute per-point flag reasons aligned to labels.
+
+    Args:
+        labels: ISO date labels for the series.
+        data: Series values aligned to labels.
+        incomplete_labels: Set of labels containing incomplete run metadata.
+        patch_boundaries: Known boundary dates (best-effort, optional).
+
+    Returns:
+        List of optional reason strings aligned to `labels`.
+    """
+
+    reasons: list[list[str]] = [[] for _ in labels]
+
+    for idx, label in enumerate(labels):
+        if label in incomplete_labels:
+            reasons[idx].append(INCOMPLETE_RUN.description)
+
+    for idx, flagged in enumerate(rolling_median_flags(data, window=7)):
+        if flagged:
+            reasons[idx].append(ROLLING_MEDIAN_DEVIATION.description)
+
+    for idx, flagged in enumerate(apply_patch_boundaries(labels, boundary_dates=patch_boundaries)):
+        if flagged:
+            reasons[idx].append(PATCH_BOUNDARY.description)
+
+    return ["; ".join(items) if items else None for items in reasons]
+
 def _aggregate_points(points: list[MetricPoint], labels: list[str], *, aggregation: str) -> list[float | None]:
     """Aggregate run points into daily series aligned to label dates."""
 
@@ -350,6 +498,31 @@ def _group_points(points: tuple[MetricPoint, ...], *, config: ChartConfig) -> di
         return {"all": list(points)}
 
     mode = config.comparison.mode
+    if mode in ("before_after", "run_vs_run"):
+        scopes = config.comparison.scopes or ()
+        if len(scopes) != 2:
+            return {"all": list(points)}
+        grouped: dict[object, list[MetricPoint]] = {scopes[0].label: [], scopes[1].label: []}
+        for point in points:
+            if mode == "run_vs_run":
+                if point.run_id == scopes[0].run_id:
+                    grouped[scopes[0].label].append(point)
+                elif point.run_id == scopes[1].run_id:
+                    grouped[scopes[1].label].append(point)
+                continue
+
+            point_date = point.battle_date.date()
+            a = scopes[0]
+            b = scopes[1]
+            if a.start_date and a.end_date and a.start_date <= point_date <= a.end_date:
+                grouped[a.label].append(point)
+            elif b.start_date and b.end_date and b.start_date <= point_date <= b.end_date:
+                grouped[b.label].append(point)
+
+        if any(grouped.values()):
+            return grouped
+        return {"all": list(points)}
+
     if mode == "by_tier":
         groups: dict[object, list[MetricPoint]] = {}
         for point in points:
@@ -456,6 +629,11 @@ def _color_for_group(key: object, *, config: ChartConfig) -> str:
         return _color_for_tier(key)
     if config.comparison.mode == "by_preset":
         return _color_for_preset(key)
+    if config.comparison.mode in ("before_after", "run_vs_run"):
+        scopes = config.comparison.scopes or ()
+        if len(scopes) == 2 and str(key) == scopes[0].label:
+            return "#3366CC"
+        return "#FF9900"
     return "#777777"
 
 

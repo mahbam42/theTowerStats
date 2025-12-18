@@ -1119,7 +1119,9 @@ A new user can:
 2. View history
 3. Inspect progress
 4. Understand trends …without explanation.
-*** Phase 6 Expansion of Foundation and Context [11%]
+*** DONE Phase 6 Expansion of Foundation and Context [11%]
+CLOSED: [2025-12-18 Thu 14:53]
+- State "DONE"       from              [2025-12-18 Thu 14:53]
 What’s done has been minimal by design. Now we can expand it to feel “real”. Make foundational rates, units, and context provably correct, visibly coherent, and ready to support higher-order comparisons.
 
 **Foundation First**
@@ -1412,9 +1414,39 @@ For Example:
 - Weighted Preset Rankings
 
 *** Phase 8 Multiple Player Support
-**** TODO [#A] Wireup Github Actions to Run Tests
-Run checks or Ruff Check, mypy ., pytest -q
-**** TODO [#A] Allow Multiple Players to Store Data
+Phase 8 is the point where the app stops being “your stats tracker” and becomes a shared system.
+Everything else (advice, exports, demos) hangs off that fact.
+
+## At a high level, Phase 8 has three pillars:
+
+1. Multi-player data isolation (core)
+
+2. Trustable, explainable advice (behavioral layer)
+
+3. Light sharing and demo affordances (polish & adoption)
+
+Only #1 is truly non-negotiable. The others are value multipliers.
+
+Execution order matters: Pillar 1 must be complete and validated before Pillars 2 or 3 begin.
+
+## What Phase 8 Is Not
+
+To keep it clean, Phase 8 should not try to:
+
+- Introduce simulations or RNG modeling
+
+- Add cloud sync or real-time features
+
+- Solve balance questions
+
+- Become a recommendation engine that “knows best”
+
+
+## The real success criterion for Phase 8 is simple:
+
+Thirty guild members can use this daily without seeing, affecting, or confusing each other’s data—and they trust what the app tells them.
+
+**** TODO [#A] Pillar 1: Multiple Player Support (Foundational, Blocking)
 ***** Core Principle: Everything Belongs to a Player
 **Analysis Engine is always player-scoped, even if there’s only one player.**
 Every player-specific model must be bound to a Player.
@@ -1479,6 +1511,8 @@ This applies to:
 - Sim endpoints
 
 If you forget this once, players see each other’s data.
+
+**Any view that forgets to filter by player is considered a bug, not a feature gap.**
 
 ***** Django Admin: Lock It Down Properly
 ModelAdmin example
@@ -1581,21 +1615,136 @@ def create_player(sender, instance, created, **kwargs):
     if created:
         Player.objects.create(user=instance)
 
-**** TODO [#B] Default User
-Take some of my data and make plausible changes to store as the Default User. Allow any player to also view the default user data. 
-**** TODO [#A] Update readme.md
+
+- [ ] Existing single-player data is migrated into a Player record named 'mahbam42'
+**** TODO [#A] Precondition: Advice Language Enforcement Pass
+
+Goal:
+Ensure all advice output is non-imperative, non-authoritative, and explainable.
+
+Scan all Advice for Optimization outputs and related copy.
+
+Replace any imperative, prescriptive, or superlative language
+(“should”, “best”, “optimal”, “recommended”, etc.) with descriptive, comparative phrasing.
+
+Do not change underlying logic, metrics, or thresholds.
+
+If advice cannot be rewritten without becoming imperative, degrade it to
+“Insufficient data to draw a conclusion.”
+
+Validate that all advice remains scoped, explainable, and traceable to charts or snapshots.
+
+Enforcement Rule (Canonical)
+
+Advice outputs must never use imperative or superlative language
+(e.g. “should”, “best”, “optimal”, “recommended”, “must”).
+
+Allowed Language Patterns
+
+- “Shows higher/lower performance…”
+
+- “Appears more efficient under these conditions…”
+
+- “Based on the following comparison…”
+
+- “Data suggests…”
+
+- “Insufficient data to conclude…”
+
+Disallowed Patterns
+
+- “You should…”
+
+- “Best upgrade…”
+
+- “Optimal path…”
+
+- “Always / Never”
+
+- “Clearly better” (without scope)
+
+**** TODO [#A] Pillar 2: Advice Becomes Safe, Scoped, and Goal-Aware
+
+## Advice Becomes Goal-Aware
+
+Introduce explicit player intent.
+
+Example intents:
+
+- Economy / farming
+
+- Progression / wave push
+
+- Hybrid
+
+Key rule:
+
+- Intent is declared, never inferred.
+
+This avoids creepy ML and keeps trust.
+
+Advice now becomes:
+
+- “For your selected goal: Farming…”
+
+- Same advice engine
+
+- Different filters + weights
+
+- Advice remains comparative and descriptive; ranked or prescriptive recommendations remain out of scope.
+
+## Weighted Efficiency Models
+
+Phase 7 already computes:
+
+- Stones per %
+
+- Seconds per cooldown
+
+- Coins per wave deltas
+
+Phase 8 adds:
+
+- Weighting based on intent
+
+- Transparent formulas
+
+Example:
+
+Efficiency Score =
+(coin_delta * economy_weight)
++ (wave_delta * progression_weight)
+- (upgrade_cost * penalty)
+
+
+### Requirements:
+
+- Weights are visible
+
+- Editable
+
+- Default presets provided
+
+- No hidden math.
+
+**** TODO [#A] Pillar 3: Demo, Export, and Adoption Features (Non-Blocking)
+***** TODO [#A] Update readme.md
 
 - Make sure it's still aligned with App Behavior and Features
 - Project Status reflects docs/ revisions 
-**** TODO [#C] Export / Share (Lightweight)
+***** TODO [#B] Demo User
+Take some of my data and make plausible changes to store as the Default User. Allow any player to also view the default user data as a preview/demo of the app. 
+***** TODO [#C] Export / Share (Lightweight)
 
 - CSV export of derived metrics
 - PNG export of charts
 
 This dramatically increases perceived value with very little backend work.
 
-**** TODO [#B] Expand on Advice for Optimization
-** Backlog [0/2]
+
+**** TODO [#C] Wireup Github Actions to Run Tests
+Run checks or Ruff Check, mypy ., pytest -q
+** Backlog [0/4]
 “Out of Scope”:
 - Cloud sync
 - Real-time scraping
@@ -1677,6 +1826,50 @@ Before writing any documentation, select and prepend the appropriate Doc Type He
 Follow the documentation standards defined in agents.md.
 If writing a User Guide, prioritize clarity for non-technical users, avoid internal details, and follow the required task-based structure.
 Validate the final document against the Documentation Self-Check Checklist before completing the task.
+*** TODO [#B] Ranked Recommendations
+
+Only now do you allow:
+
+“Top 3 upgrades for your goal”
+
+“Best next unlock based on your data”
+
+Guardrails:
+
+Always link back to:
+
+Charts
+
+Comparisons
+
+Assumptions
+
+Always show:
+
+Why
+
+Based on how much data
+
+What would change the recommendation
+
+This keeps it defensible.
+*** TODO [#B] What-If Scenarios
+
+This is where simulations might enter — but cautiously.
+
+Examples:
+
+“If Golden Tower cooldown were reduced by 1 level…”
+
+“Projected coin gain range if X upgraded next”
+
+Still deterministic:
+
+Based on historical deltas
+
+No RNG modeling
+
+No balance speculation
 
 *** Complete
 **** DONE [#A] Fix pytest warnings
@@ -1711,5 +1904,5 @@ Mostly a visual tweak, but adds context and history for the player to interpert 
 - [X] prompt 23 phase 5 exit criteria validation
 - [X] prompt 25 phase 6 work
 - [X] prompt 26 Phase 6 Addendum: Base vs Effective Value + Modifier Explanations
-- [ ] prompt 27 Phase 6 Validation Checklist
+- [X] prompt 27 Phase 6 Validation Checklist
 - [ ] prompt 28 Phase 7 Power Tools

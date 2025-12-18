@@ -15,6 +15,32 @@
       padding: 1rem;
       box-shadow: 0 1px 4px rgba(0, 0, 0, 0.04);
     }
+
+    .modal-backdrop {
+      position: fixed;
+      inset: 0;
+      background: rgba(0, 0, 0, 0.55);
+      display: none;
+      align-items: center;
+      justify-content: center;
+      z-index: 9999;
+      padding: 1rem;
+    }
+
+    .modal-backdrop.is-open {
+      display: flex;
+    }
+
+    .modal-shell {
+      width: min(760px, 100%);
+      max-height: 90vh;
+      overflow: auto;
+      background: #fff;
+      border-radius: 10px;
+      border: 1px solid #e5e5e5;
+      box-shadow: 0 10px 40px rgba(0, 0, 0, 0.25);
+      padding: 1rem;
+    }
   </style>
 {% endblock %}
 
@@ -38,10 +64,33 @@
   </div>
 
   <div class="grid-x grid-margin-x">
-    <div class="cell large-3 medium-4">
+    <div class="cell large-3 medium-4 large-order-2 medium-order-2">
       <div class="card-shell">
         <h4 class="margin-bottom-1">Filters</h4>
         <form method="get" id="chart-context-form">
+          <div class="button-group expanded stack-for-small margin-bottom-1">
+            <button class="button secondary" type="button" id="open-chart-builder">Chart Builder</button>
+          </div>
+
+          <input type="hidden" name="builder" id="builder-flag" value="{% if chart_builder_form.is_bound %}1{% endif %}">
+          <input type="hidden" name="chart_type" id="builder-chart-type-hidden" value="{{ chart_builder_form.chart_type.value|default_if_none:'' }}">
+          <input type="hidden" name="group_by" id="builder-group-by-hidden" value="{{ chart_builder_form.group_by.value|default_if_none:'' }}">
+          <input type="hidden" name="comparison" id="builder-comparison-hidden" value="{{ chart_builder_form.comparison.value|default_if_none:'' }}">
+          <input type="hidden" name="smoothing" id="builder-smoothing-hidden" value="{{ chart_builder_form.smoothing.value|default_if_none:'' }}">
+          <input type="hidden" name="run_a" id="builder-run-a-hidden" value="{{ chart_builder_form.run_a.value|default_if_none:'' }}">
+          <input type="hidden" name="run_b" id="builder-run-b-hidden" value="{{ chart_builder_form.run_b.value|default_if_none:'' }}">
+          <input type="hidden" name="window_a_start" id="builder-window-a-start-hidden" value="{{ chart_builder_form.window_a_start.value|default_if_none:'' }}">
+          <input type="hidden" name="window_a_end" id="builder-window-a-end-hidden" value="{{ chart_builder_form.window_a_end.value|default_if_none:'' }}">
+          <input type="hidden" name="window_b_start" id="builder-window-b-start-hidden" value="{{ chart_builder_form.window_b_start.value|default_if_none:'' }}">
+          <input type="hidden" name="window_b_end" id="builder-window-b-end-hidden" value="{{ chart_builder_form.window_b_end.value|default_if_none:'' }}">
+          <div id="builder-metric-keys-hidden">
+            {% if chart_builder_form.is_bound %}
+              {% for key in chart_builder_form.metric_keys.value %}
+                <input type="hidden" name="metric_keys" value="{{ key }}">
+              {% endfor %}
+            {% endif %}
+          </div>
+
           <label>Charts
             {{ chart_form.charts }}
           </label>
@@ -105,7 +154,7 @@
       </div>
     </div>
 
-    <div class="cell large-9 medium-8">
+    <div class="cell large-9 medium-8 large-order-1 medium-order-1">
       <div class="callout primary context-bar" aria-live="polite">
         <strong>Active context</strong>
         <div id="active-context" class="muted"></div>
@@ -137,6 +186,20 @@
         </div>
       {% endif %}
 
+      {% if advice_items %}
+        <div class="callout">
+          <p class="margin-0"><strong>Advice (read-only)</strong></p>
+          <ul class="margin-bottom-0">
+            {% for item in advice_items %}
+              <li>{{ item.title }}</li>
+              <li>{{ item.basis }}</li>
+              <li>{{ item.context }}</li>
+              <li>{{ item.limitations }}</li>
+            {% endfor %}
+          </ul>
+        </div>
+      {% endif %}
+
       {% if chart_empty_state %}
         <div class="empty-state" role="status">{{ chart_empty_state }}</div>
       {% endif %}
@@ -150,6 +213,21 @@
                   <h4 class="margin-0">{{ panel.title }}{% if panel.unit %} <span class="muted">({{ panel.unit }})</span>{% endif %}</h4>
                   {% if panel.description %}
                     <p class="muted margin-0">{{ panel.description }}</p>
+                  {% endif %}
+                  {% if panel.error %}
+                    <div class="callout alert margin-top-1">
+                      <p class="margin-0"><strong>Chart unavailable</strong> — {{ panel.error }}</p>
+                    </div>
+                  {% endif %}
+                  {% if panel.warnings %}
+                    <div class="callout warning margin-top-1">
+                      <p class="margin-0"><strong>Notes</strong></p>
+                      <ul class="margin-bottom-0">
+                        {% for warning in panel.warnings %}
+                          <li>{{ warning }}</li>
+                        {% endfor %}
+                      </ul>
+                    </div>
                   {% endif %}
                 </div>
               </div>
@@ -277,7 +355,11 @@
                     const datasetLabel = context.dataset?.label || "Series";
                     const unit = context.dataset?.unit || "";
                     const unitLabel = unit ? ` ${unit}` : "";
-                    return `${datasetLabel}: ${formatExactNumber(context.parsed.y)}${unitLabel}`;
+                    const base = `${datasetLabel}: ${formatExactNumber(context.parsed.y)}${unitLabel}`;
+                    const reasons = context.dataset?.flagReasons || null;
+                    const reason =
+                      reasons && Number.isInteger(context.dataIndex) ? reasons[context.dataIndex] : null;
+                    return reason ? `${base} • ${reason}` : base;
                   },
                   afterBody: () => {
                     const context = readChartContextFromDOM();
@@ -354,5 +436,329 @@
           renderLineChart(`chart-${panel.id}`, panel.labels, panel.datasets);
         }
       }
+    </script>
+
+    <div class="modal-backdrop" id="chart-builder-modal" aria-hidden="true">
+      <div class="modal-shell" role="dialog" aria-modal="true" aria-label="Chart Builder">
+        <div class="grid-x grid-margin-x align-middle">
+          <div class="cell auto">
+            <h4 class="margin-0">Chart Builder</h4>
+            <p class="muted margin-0">Build a constrained chart from registered metrics.</p>
+          </div>
+          <div class="cell shrink">
+            <button class="button hollow" type="button" id="close-chart-builder">Close</button>
+          </div>
+        </div>
+
+        {% if chart_builder_errors %}
+          <div class="callout alert margin-top-1">
+            <p class="margin-0"><strong>Chart Builder validation</strong></p>
+            <ul class="margin-bottom-0">
+              {% for err in chart_builder_errors %}
+                <li>{{ err }}</li>
+              {% endfor %}
+            </ul>
+          </div>
+        {% endif %}
+
+        <div class="margin-top-1">
+          <label>{{ chart_builder_form.metric_keys.label }}
+            {{ chart_builder_form.metric_keys }}
+          </label>
+          <div class="grid-x grid-margin-x">
+            <div class="cell medium-4">
+              <label>{{ chart_builder_form.chart_type.label }}
+                {{ chart_builder_form.chart_type }}
+              </label>
+            </div>
+            <div class="cell medium-4">
+              <label>{{ chart_builder_form.group_by.label }}
+                {{ chart_builder_form.group_by }}
+              </label>
+            </div>
+            <div class="cell medium-4">
+              <label>{{ chart_builder_form.smoothing.label }}
+                {{ chart_builder_form.smoothing }}
+              </label>
+            </div>
+          </div>
+
+          <label>{{ chart_builder_form.comparison.label }}
+            {{ chart_builder_form.comparison }}
+          </label>
+
+          <div class="grid-x grid-margin-x">
+            <div class="cell medium-6">
+              <label>{{ chart_builder_form.run_a.label }}
+                {{ chart_builder_form.run_a }}
+              </label>
+            </div>
+            <div class="cell medium-6">
+              <label>{{ chart_builder_form.run_b.label }}
+                {{ chart_builder_form.run_b }}
+              </label>
+            </div>
+          </div>
+
+          <div class="grid-x grid-margin-x">
+            <div class="cell medium-6">
+              <label>{{ chart_builder_form.window_a_start.label }}
+                {{ chart_builder_form.window_a_start }}
+              </label>
+              <label>{{ chart_builder_form.window_a_end.label }}
+                {{ chart_builder_form.window_a_end }}
+              </label>
+            </div>
+            <div class="cell medium-6">
+              <label>{{ chart_builder_form.window_b_start.label }}
+                {{ chart_builder_form.window_b_start }}
+              </label>
+              <label>{{ chart_builder_form.window_b_end.label }}
+                {{ chart_builder_form.window_b_end }}
+              </label>
+            </div>
+          </div>
+
+          <div class="button-group expanded stack-for-small margin-top-1">
+            <button class="button" type="button" id="apply-chart-builder">Apply to dashboard</button>
+            <a class="button secondary" href="{% url 'core:dashboard' %}">Clear builder</a>
+          </div>
+
+          <hr>
+
+          <h5 class="margin-bottom-0">Snapshots</h5>
+          <p class="muted">Snapshots save a Chart Builder configuration and the context filters used at the time of saving.</p>
+
+          <label>Load snapshot
+            <select id="snapshot-select">
+              <option value="">(select)</option>
+              {% for snapshot in chart_snapshots %}
+                <option value="{{ snapshot.id }}">{{ snapshot.name }}</option>
+              {% endfor %}
+            </select>
+          </label>
+          <div class="button-group expanded stack-for-small">
+            <button class="button hollow" type="button" id="load-snapshot">Load snapshot</button>
+          </div>
+
+          <form method="post" id="snapshot-save-form" class="margin-top-1">
+            {% csrf_token %}
+            <input type="hidden" name="action" value="create_chart_snapshot">
+            <label>Snapshot name
+              <input type="text" name="snapshot_name" maxlength="120" placeholder="e.g. Before unlocking X">
+            </label>
+            <input type="hidden" name="chart_type" id="snapshot-chart-type-hidden" value="">
+            <input type="hidden" name="group_by" id="snapshot-group-by-hidden" value="">
+            <input type="hidden" name="comparison" id="snapshot-comparison-hidden" value="">
+            <input type="hidden" name="smoothing" id="snapshot-smoothing-hidden" value="">
+            <input type="hidden" name="run_a" id="snapshot-run-a-hidden" value="">
+            <input type="hidden" name="run_b" id="snapshot-run-b-hidden" value="">
+            <input type="hidden" name="window_a_start" id="snapshot-window-a-start-hidden" value="">
+            <input type="hidden" name="window_a_end" id="snapshot-window-a-end-hidden" value="">
+            <input type="hidden" name="window_b_start" id="snapshot-window-b-start-hidden" value="">
+            <input type="hidden" name="window_b_end" id="snapshot-window-b-end-hidden" value="">
+            <div id="snapshot-metric-keys-hidden"></div>
+            <button class="button expanded" type="submit">Save snapshot</button>
+          </form>
+        </div>
+      </div>
+    </div>
+
+    <script>
+      (function() {
+        const modal = document.getElementById("chart-builder-modal");
+        const openBtn = document.getElementById("open-chart-builder");
+        const closeBtn = document.getElementById("close-chart-builder");
+        const applyBtn = document.getElementById("apply-chart-builder");
+        const contextForm = document.getElementById("chart-context-form");
+
+        function openModal() {
+          if (!modal) return;
+          modal.classList.add("is-open");
+          modal.setAttribute("aria-hidden", "false");
+        }
+
+        function closeModal() {
+          if (!modal) return;
+          modal.classList.remove("is-open");
+          modal.setAttribute("aria-hidden", "true");
+        }
+
+        if (openBtn) openBtn.addEventListener("click", openModal);
+        if (closeBtn) closeBtn.addEventListener("click", closeModal);
+        if (modal) {
+          modal.addEventListener("click", function(ev) {
+            if (ev.target === modal) closeModal();
+          });
+        }
+
+        function setHidden(id, value) {
+          const el = document.getElementById(id);
+          if (!el) return;
+          el.value = value == null ? "" : String(value);
+        }
+
+        function syncMetricHidden(selected) {
+          const container = document.getElementById("builder-metric-keys-hidden");
+          if (!container) return;
+          container.innerHTML = "";
+          for (const key of selected) {
+            const input = document.createElement("input");
+            input.type = "hidden";
+            input.name = "metric_keys";
+            input.value = key;
+            container.appendChild(input);
+          }
+        }
+
+        function syncMetricHiddenTo(containerId, selected) {
+          const container = document.getElementById(containerId);
+          if (!container) return;
+          container.innerHTML = "";
+          for (const key of selected) {
+            const input = document.createElement("input");
+            input.type = "hidden";
+            input.name = "metric_keys";
+            input.value = key;
+            container.appendChild(input);
+          }
+        }
+
+        function applyBuilder() {
+          if (!contextForm) return;
+
+          const chartType = document.querySelector("#chart-builder-modal [name='chart_type']");
+          const groupBy = document.querySelector("#chart-builder-modal [name='group_by']");
+          const comparison = document.querySelector("#chart-builder-modal [name='comparison']");
+          const smoothing = document.querySelector("#chart-builder-modal [name='smoothing']");
+          const runA = document.querySelector("#chart-builder-modal [name='run_a']");
+          const runB = document.querySelector("#chart-builder-modal [name='run_b']");
+          const aStart = document.querySelector("#chart-builder-modal [name='window_a_start']");
+          const aEnd = document.querySelector("#chart-builder-modal [name='window_a_end']");
+          const bStart = document.querySelector("#chart-builder-modal [name='window_b_start']");
+          const bEnd = document.querySelector("#chart-builder-modal [name='window_b_end']");
+          const metrics = document.querySelector("#chart-builder-modal [name='metric_keys']");
+
+          const selectedMetricKeys = [];
+          if (metrics && metrics.options) {
+            for (const option of metrics.options) {
+              if (option.selected) selectedMetricKeys.push(option.value);
+            }
+          }
+
+          setHidden("builder-flag", "1");
+          setHidden("builder-chart-type-hidden", chartType ? chartType.value : "");
+          setHidden("builder-group-by-hidden", groupBy ? groupBy.value : "");
+          setHidden("builder-comparison-hidden", comparison ? comparison.value : "");
+          setHidden("builder-smoothing-hidden", smoothing ? smoothing.value : "");
+          setHidden("builder-run-a-hidden", runA ? runA.value : "");
+          setHidden("builder-run-b-hidden", runB ? runB.value : "");
+          setHidden("builder-window-a-start-hidden", aStart ? aStart.value : "");
+          setHidden("builder-window-a-end-hidden", aEnd ? aEnd.value : "");
+          setHidden("builder-window-b-start-hidden", bStart ? bStart.value : "");
+          setHidden("builder-window-b-end-hidden", bEnd ? bEnd.value : "");
+          syncMetricHidden(selectedMetricKeys);
+
+          contextForm.submit();
+        }
+
+        if (applyBtn) applyBtn.addEventListener("click", applyBuilder);
+
+        const loadSnapshotBtn = document.getElementById("load-snapshot");
+        const snapshotSelect = document.getElementById("snapshot-select");
+        if (loadSnapshotBtn && snapshotSelect) {
+          loadSnapshotBtn.addEventListener("click", function() {
+            const selected = snapshotSelect.value;
+            if (!selected) return;
+            const url = new URL(window.location.href);
+            url.searchParams.set("snapshot_id", selected);
+            window.location.href = url.toString();
+          });
+        }
+
+        const snapshotForm = document.getElementById("snapshot-save-form");
+        if (snapshotForm) {
+          snapshotForm.addEventListener("submit", function() {
+            const chartType = document.querySelector("#chart-builder-modal [name='chart_type']");
+            const groupBy = document.querySelector("#chart-builder-modal [name='group_by']");
+            const comparison = document.querySelector("#chart-builder-modal [name='comparison']");
+            const smoothing = document.querySelector("#chart-builder-modal [name='smoothing']");
+            const runA = document.querySelector("#chart-builder-modal [name='run_a']");
+            const runB = document.querySelector("#chart-builder-modal [name='run_b']");
+            const aStart = document.querySelector("#chart-builder-modal [name='window_a_start']");
+            const aEnd = document.querySelector("#chart-builder-modal [name='window_a_end']");
+            const bStart = document.querySelector("#chart-builder-modal [name='window_b_start']");
+            const bEnd = document.querySelector("#chart-builder-modal [name='window_b_end']");
+            const metrics = document.querySelector("#chart-builder-modal [name='metric_keys']");
+
+            const selectedMetricKeys = [];
+            if (metrics && metrics.options) {
+              for (const option of metrics.options) {
+                if (option.selected) selectedMetricKeys.push(option.value);
+              }
+            }
+
+            setHidden("snapshot-chart-type-hidden", chartType ? chartType.value : "");
+            setHidden("snapshot-group-by-hidden", groupBy ? groupBy.value : "");
+            setHidden("snapshot-comparison-hidden", comparison ? comparison.value : "");
+            setHidden("snapshot-smoothing-hidden", smoothing ? smoothing.value : "");
+            setHidden("snapshot-run-a-hidden", runA ? runA.value : "");
+            setHidden("snapshot-run-b-hidden", runB ? runB.value : "");
+            setHidden("snapshot-window-a-start-hidden", aStart ? aStart.value : "");
+            setHidden("snapshot-window-a-end-hidden", aEnd ? aEnd.value : "");
+            setHidden("snapshot-window-b-start-hidden", bStart ? bStart.value : "");
+            setHidden("snapshot-window-b-end-hidden", bEnd ? bEnd.value : "");
+            syncMetricHiddenTo("snapshot-metric-keys-hidden", selectedMetricKeys);
+          });
+        }
+
+        const metricsSelect = document.querySelector("#chart-builder-modal [name='metric_keys']");
+        const chartTypeSelect = document.querySelector("#chart-builder-modal [name='chart_type']");
+        const comparisonSelect = document.querySelector("#chart-builder-modal [name='comparison']");
+        const runASelect = document.querySelector("#chart-builder-modal [name='run_a']");
+        const runBSelect = document.querySelector("#chart-builder-modal [name='run_b']");
+        const windowInputs = [
+          document.querySelector("#chart-builder-modal [name='window_a_start']"),
+          document.querySelector("#chart-builder-modal [name='window_a_end']"),
+          document.querySelector("#chart-builder-modal [name='window_b_start']"),
+          document.querySelector("#chart-builder-modal [name='window_b_end']"),
+        ];
+
+        function selectedMetricCount() {
+          let count = 0;
+          if (!metricsSelect || !metricsSelect.options) return 0;
+          for (const option of metricsSelect.options) if (option.selected) count += 1;
+          return count;
+        }
+
+        function updateChartTypeConstraints() {
+          if (!chartTypeSelect) return;
+          const donutOption = Array.from(chartTypeSelect.options || []).find((o) => o.value === "donut");
+          if (!donutOption) return;
+          donutOption.disabled = selectedMetricCount() < 2;
+          if (donutOption.disabled && chartTypeSelect.value === "donut") {
+            chartTypeSelect.value = "line";
+          }
+        }
+
+        function updateComparisonControls() {
+          const mode = comparisonSelect ? comparisonSelect.value : "none";
+          const enableRuns = mode === "run_vs_run";
+          const enableWindows = mode === "before_after";
+          if (runASelect) runASelect.disabled = !enableRuns;
+          if (runBSelect) runBSelect.disabled = !enableRuns;
+          for (const input of windowInputs) {
+            if (input) input.disabled = !enableWindows;
+          }
+        }
+
+        if (metricsSelect) metricsSelect.addEventListener("change", updateChartTypeConstraints);
+        if (comparisonSelect) comparisonSelect.addEventListener("change", updateComparisonControls);
+        updateChartTypeConstraints();
+        updateComparisonControls();
+        {% if chart_builder_errors %}
+          openModal();
+        {% endif %}
+      })();
     </script>
 {% endblock %}

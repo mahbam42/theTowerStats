@@ -10,6 +10,7 @@ The Ultimate Weapons page helps you track which Ultimate Weapons you have unlock
 - You want to record upgrade progress for a weapon’s three parameters.
 - You want to compare total Stones invested across different Ultimate Weapons.
 - You want to review whether a weapon appears in your imported runs.
+- You want to view a descriptive sync graph for Golden Tower, Black Hole, and Death Wave based on your saved cooldown and duration values.
 
 ## How to Use
 
@@ -20,6 +21,7 @@ The Ultimate Weapons page helps you track which Ultimate Weapons you have unlock
 5. Select **Details** on an unlocked weapon to view its three upgrade parameters.
 6. Select **Level Up** on a parameter to increase its level by 1.
 7. Review **Total Stones invested** to compare overall investment between weapons.
+8. (Optional) View the **Sync graph** to see when Golden Tower, Black Hole, and Death Wave are active at the same time.
 
 ## How to Read the Results
 
@@ -30,6 +32,9 @@ The Ultimate Weapons page helps you track which Ultimate Weapons you have unlock
 - **Next** shows the next-level value, with the change emphasized in parentheses when it can be parsed.
 - **Cost** shows the next-level upgrade cost (informational only).
 - **MAX** indicates the parameter has reached the highest known level and cannot be increased further in the app.
+- In the **Sync graph**, an **Active (0/1)** line indicates whether each Ultimate Weapon is active at a given time.
+- **All three overlap** is 1 when Golden Tower, Black Hole, and Death Wave are active at the same time.
+- **Cumulative overlap (%)** shows the running percent of time where all three overlap within the displayed horizon.
 
 ## Notes & Limitations
 
@@ -47,6 +52,9 @@ The Ultimate Weapons page helps you track which Ultimate Weapons you have unlock
 
 > **Caution**
 > If an Ultimate Weapon’s upgrade parameters are incomplete or not recognized, it may not appear on this page until the underlying data is available.
+
+> **Note**
+> The Sync graph is descriptive. It uses your saved cooldown and duration values and does not include run-by-run timing or recommendations.
 
 ## Advanced Usage
 

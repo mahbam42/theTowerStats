@@ -98,6 +98,44 @@ class Preset(models.Model):
         return preset_color_for_id(preset_id=self.pk)
 
 
+class ChartSnapshot(models.Model):
+    """An immutable snapshot used as a reusable comparison anchor.
+
+    A snapshot stores:
+    - a constrained Chart Builder configuration (schema-driven),
+    - the context filters used when it was created.
+
+    Snapshots are labels over existing metrics and are not a source of new math.
+    """
+
+    player = models.ForeignKey(Player, on_delete=models.CASCADE, related_name="chart_snapshots")
+    name = models.CharField(max_length=120)
+    chart_builder = models.JSONField(default=dict)
+    chart_context = models.JSONField(default=dict)
+    created_at = models.DateTimeField(auto_now_add=True)
+
+    class Meta:
+        constraints = [
+            models.UniqueConstraint(fields=["player", "name"], name="uniq_player_chart_snapshot_name")
+        ]
+
+    def __str__(self) -> str:
+        """Return a concise display string."""
+
+        return f"ChartSnapshot({self.name})"
+
+    def save(self, *args, **kwargs) -> None:
+        """Save a snapshot, enforcing immutability after creation.
+
+        Raises:
+            ValidationError: When attempting to update an existing snapshot.
+        """
+
+        if self.pk is not None and not kwargs.get("force_insert", False):
+            raise ValidationError("Chart snapshots are immutable once created.")
+        super().save(*args, **kwargs)
+
+
 class PlayerCard(models.Model):
     """Player card unlock state.
 

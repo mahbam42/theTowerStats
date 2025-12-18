@@ -8,6 +8,7 @@ possible to add charts without touching view code.
 from __future__ import annotations
 
 from dataclasses import dataclass
+from datetime import date
 from datetime import datetime
 from typing import Literal
 
@@ -25,7 +26,14 @@ ChartType = Literal["line", "bar", "area", "scatter", "donut"]
 
 MetricTransform = Literal["none", "moving_average", "cumulative", "rate_per_hour"]
 
-ComparisonMode = Literal["none", "by_tier", "by_preset", "by_entity"]
+ComparisonMode = Literal[
+    "none",
+    "by_tier",
+    "by_preset",
+    "by_entity",
+    "before_after",
+    "run_vs_run",
+]
 
 XAxis = Literal["time", "wave_number"]
 
@@ -79,10 +87,36 @@ class ChartSeriesConfig:
 
 @dataclass(frozen=True, slots=True)
 class ChartComparison:
-    """Optional comparison behavior for a chart configuration."""
+    """Optional comparison behavior for a chart configuration.
+
+    The comparison layer supports two styles:
+
+    - Grouping comparisons (by tier/preset) that split a single scope into
+      multiple datasets.
+    - Two-scope comparisons (before/after, run vs run) that split the same
+      config into exactly two datasets.
+    """
 
     mode: ComparisonMode
     entities: tuple[str, ...] | None = None
+    scopes: tuple["ComparisonScope", "ComparisonScope"] | None = None
+
+
+@dataclass(frozen=True, slots=True)
+class ComparisonScope:
+    """A concrete scope used by two-scope chart comparisons.
+
+    Args:
+        label: Display label for the scope (shown in chart legends).
+        run_id: Optional BattleReport id for run-vs-run comparisons.
+        start_date: Optional inclusive window start (used by before/after).
+        end_date: Optional inclusive window end (used by before/after).
+    """
+
+    label: str
+    run_id: int | None = None
+    start_date: date | None = None
+    end_date: date | None = None
 
 
 @dataclass(frozen=True, slots=True)

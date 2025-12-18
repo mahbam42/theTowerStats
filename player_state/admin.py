@@ -5,6 +5,7 @@ from __future__ import annotations
 from django.contrib import admin
 
 from player_state.models import (
+    ChartSnapshot,
     Player,
     PlayerBot,
     PlayerBotParameter,
@@ -32,6 +33,15 @@ class PresetAdmin(admin.ModelAdmin):
     list_display = ("player", "name", "color", "created_at")
     search_fields = ("name",)
     list_filter = ("player",)
+
+
+@admin.register(ChartSnapshot)
+class ChartSnapshotAdmin(admin.ModelAdmin):
+    """Admin configuration for ChartSnapshot."""
+
+    list_display = ("player", "name", "created_at")
+    list_filter = ("player",)
+    search_fields = ("name",)
 
 
 @admin.register(PlayerCard)

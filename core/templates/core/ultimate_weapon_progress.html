@@ -3,9 +3,63 @@
 {% block title %}Ultimate Weapon Progress • theTowerStats{% endblock %}
 
 {% block content %}
+  {% if uw_sync_chart_json %}
+    <div class="card-shell">
+      <p class="muted margin-0">Sync graph</p>
+      <h3 class="margin-0">Golden Tower • Black Hole • Death Wave</h3>
+      {% if uw_sync_summary %}
+        <p class="muted margin-0">Horizon: {{ uw_sync_summary.horizon_seconds }}s • Cumulative overlap: {{ uw_sync_summary.overlap_percent }}%</p>
+      {% endif %}
+      <canvas id="uw-sync-chart" width="900" height="280"></canvas>
+    </div>
+  {% endif %}
+
   {% include "core/components/upgradeable_entity_dashboard.html" with dashboard_kicker="Progress" dashboard_title="Ultimate Weapons" dashboard_note="Upgrades currently assume sufficient Stones. Costs are informational only. Runs used is observed from imported runs and may include temporary unlocks from Perks." filter_form=filter_form entities=ultimate_weapons entity_badge="UW" total_invested_label="Total Stones invested" unlock_cost_currency_label="Stones" unlock_action_value="unlock_uw" level_up_action_value="level_up_uw_param" show_activation=False %}
 {% endblock %}
 
 {% block extra_scripts %}
+  <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
   {% include "core/components/upgradeable_entity_dashboard_scripts.html" %}
+  {% if uw_sync_chart_json %}
+    <script>
+      (function() {
+        const payload = {{ uw_sync_chart_json|safe }};
+        const canvas = document.getElementById("uw-sync-chart");
+        const ctx = canvas ? canvas.getContext("2d") : null;
+        if (!ctx) return;
+        new Chart(ctx, {
+          type: "line",
+          data: payload,
+          options: {
+            responsive: true,
+            interaction: { mode: "nearest", intersect: false },
+            plugins: {
+              legend: { display: true },
+              tooltip: {
+                callbacks: {
+                  title: (items) => (items && items[0] ? `t=${items[0].label}` : ""),
+                },
+              },
+            },
+            scales: {
+              x: { title: { display: true, text: "Time (seconds)" }, ticks: { maxRotation: 0, autoSkip: true } },
+              y: {
+                title: { display: true, text: "Active (0/1)" },
+                min: 0,
+                max: 1,
+                ticks: { stepSize: 1 },
+              },
+              y2: {
+                position: "right",
+                title: { display: true, text: "Cumulative overlap (%)" },
+                min: 0,
+                max: 100,
+                grid: { drawOnChartArea: false },
+              },
+            },
+          },
+        });
+      })();
+    </script>
+  {% endif %}
 {% endblock %}
