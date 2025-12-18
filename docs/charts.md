@@ -27,6 +27,7 @@ Charts help you review how your run results change over time using the same valu
 - The y-axis shows the value for the selected chart, using the unit shown in the chart title.
 - When a chart includes multiple lines, each line label tells you what group it represents (for example, a tier or a preset label).
 - If a value is missing in the underlying Battle Report, the chart may show a gap for that date.
+- For donut charts, each slice represents the total for that value within your current filters. A slice named “Other coins” groups any remaining coins that are not listed as a named source.
 
 ## Notes & Limitations
 
@@ -44,4 +45,3 @@ Charts help you review how your run results change over time using the same valu
 1. Select a comparison chart (for example, “Coins Earned (Compare Tiers)”).
 2. Select **Tier** or **Preset** filters only when you want to narrow the comparison set.
 3. Review the legend to confirm which lines correspond to which groups.
-

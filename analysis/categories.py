@@ -6,7 +6,16 @@ new metrics are registered consistently and scoped predictably.
 
 from __future__ import annotations
 
-from typing import Literal
+from enum import StrEnum
 
-MetricCategory = Literal["economy", "combat", "fetch", "utility"]
 
+class MetricCategory(StrEnum):
+    """Semantic category for a metric.
+
+    Values are stable identifiers used across the analysis registry and UI.
+    """
+
+    economy = "economy"
+    combat = "combat"
+    fetch = "fetch"
+    utility = "utility"

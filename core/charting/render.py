@@ -207,6 +207,8 @@ def _render_donut_chart(
         RenderedChart with labels representing slices and a single dataset.
     """
 
+    has_any_records = _iterable_has_any(records)
+
     slice_labels: list[str] = []
     slice_values: list[float | None] = []
     slice_units: list[str] = []
@@ -231,25 +233,28 @@ def _render_donut_chart(
         spec = registry.get(series_config.metric_key)
         if spec is None:
             continue
-        entity_type, entity_name = _entity_scope_for_series(config, entity_selections)
-        series_result = analyze_metric_series(
-            records,
-            metric_key=series_config.metric_key,
-            transform=_engine_transform(series_config),
-            context=None,
-            entity_type=entity_type,
-            entity_name=entity_name,
-        )
-        total = 0.0
-        for point in series_result.points:
-            if point.value is None:
-                continue
-            total += float(point.value)
 
         slice_label = series_config.label or spec.label
         slice_labels.append(slice_label)
         slice_units.append(_unit_for_series(spec.unit, series_config))
-        slice_values.append(round(total, 2))
+        if not has_any_records:
+            slice_values.append(None)
+        else:
+            entity_type, entity_name = _entity_scope_for_series(config, entity_selections)
+            series_result = analyze_metric_series(
+                records,
+                metric_key=series_config.metric_key,
+                transform=_engine_transform(series_config),
+                context=None,
+                entity_type=entity_type,
+                entity_name=entity_name,
+            )
+            total = 0.0
+            for point in series_result.points:
+                if point.value is None:
+                    continue
+                total += float(point.value)
+            slice_values.append(round(total, 2))
         slice_colors.append(palette[idx % len(palette)])
 
     unit = slice_units[0] if slice_units and all(u == slice_units[0] for u in slice_units) else ""
@@ -264,6 +269,26 @@ def _render_donut_chart(
         "backgroundColor": slice_colors,
     }
     return RenderedChart(config=config, data={"labels": slice_labels, "datasets": [dataset]}, unit=unit)
+
+
+def _iterable_has_any(records: Iterable[object]) -> bool:
+    """Return True when an iterable contains at least one record.
+
+    Args:
+        records: Records iterable, typically a Django QuerySet.
+
+    Returns:
+        True when at least one record is present; otherwise False.
+    """
+
+    exists = getattr(records, "exists", None)
+    if callable(exists):
+        return bool(exists())
+
+    try:
+        return len(records) > 0  # type: ignore[arg-type]
+    except TypeError:
+        return any(True for _ in records)
 
 
 def _engine_transform(series: ChartSeriesConfig) -> str:

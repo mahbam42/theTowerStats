@@ -38,6 +38,7 @@ nav:
   - Home: index.md
   - User Guide:
       - Overview: user_guide.md
+      - Phase 5 Summary: phase5.md
       - Battle History: battle_history.md
       - Charts: charts.md
       - Cards: cards.md

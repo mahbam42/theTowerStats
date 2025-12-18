@@ -589,6 +589,25 @@ def test_dashboard_view_renders_coins_by_source_donut(client) -> None:
     labels = panel["labels"]
     values = panel["datasets"][0]["data"]
     assert values[labels.index("Coins From Death Wave")] == 2350.0
+    assert "Other coins" in labels
+    assert values[labels.index("Other coins")] == 5045.0
+    assert sum(v for v in values if v is not None) == 1_240_000.0
+
+
+@pytest.mark.django_db
+def test_dashboard_view_renders_empty_donut_with_typed_none_values(client) -> None:
+    """Render donut charts with no runs as typed-but-empty (None-valued) slices."""
+
+    response = client.get("/", {"charts": ["coins_by_source"], "start_date": date(2025, 12, 9)})
+    assert response.status_code == 200
+    assert response.context["chart_empty_state"] == "No runs match the current filters."
+
+    panels = {p["id"]: p for p in json.loads(response.context["chart_panels_json"])}
+    panel = panels["coins_by_source"]
+    assert panel["chart_type"] == "donut"
+    assert len(panel["datasets"]) == 1
+    values = panel["datasets"][0]["data"]
+    assert values and all(value is None for value in values)
 
 
 @pytest.mark.django_db
@@ -614,6 +633,39 @@ def test_dashboard_view_applies_rolling_window_last_runs(client) -> None:
             "charts": ["coins_earned"],
             "start_date": FILTER_START,
             "window_kind": "last_runs",
+            "window_n": 2,
+        },
+    )
+    assert response.status_code == 200
+
+    panels = {p["id"]: p for p in json.loads(response.context["chart_panels_json"])}
+    panel = panels["coins_earned"]
+    assert panel["labels"] == ["2025-12-02", "2025-12-03"]
+
+
+@pytest.mark.django_db
+def test_dashboard_view_applies_rolling_window_last_days(client) -> None:
+    """Apply a last-N-days rolling window after base context filtering."""
+
+    for idx, day in enumerate([1, 2, 3], start=1):
+        report = BattleReport.objects.create(
+            raw_text=f"Battle Report\nCoins earned    {idx * 100}\n",
+            checksum=f"days{idx}".ljust(64, "d"),
+        )
+        BattleReportProgress.objects.create(
+            battle_report=report,
+            battle_date=datetime(2025, 12, day, tzinfo=timezone.utc),
+            tier=1,
+            wave=10,
+            real_time_seconds=10,
+        )
+
+    response = client.get(
+        "/",
+        {
+            "charts": ["coins_earned"],
+            "start_date": FILTER_START,
+            "window_kind": "last_days",
             "window_n": 2,
         },
     )

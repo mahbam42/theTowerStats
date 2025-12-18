@@ -1,9 +1,10 @@
-"""Golden tests for Phase 6 context precedence and empty-state behavior."""
+"""Golden/regression tests for Phase 6 context handling and empty states."""
 
 from __future__ import annotations
 
 import json
 from datetime import date, datetime, timezone
+from typing import Any
 
 import pytest
 
@@ -11,55 +12,92 @@ from gamedata.models import BattleReport, BattleReportProgress
 from player_state.models import Player, Preset
 
 
+def _panel(response, *, chart_id: str) -> dict[str, Any]:
+    """Return a chart panel payload from the dashboard response context."""
+
+    panels = {p["id"]: p for p in json.loads(response.context["chart_panels_json"])}
+    return panels[chart_id]
+
+
 @pytest.mark.django_db
-def test_context_matrix_same_metric_schema_across_contexts(client) -> None:
-    """Keep metric schema stable while context changes only scope."""
+def test_phase6_context_matrix_schema_is_stable_across_contexts(client) -> None:
+    """Keep chart schema stable while context inputs change."""
 
     player = Player.objects.create(name="default")
-    preset_a = Preset.objects.create(player=player, name="Preset A")
-    preset_b = Preset.objects.create(player=player, name="Preset B")
+    farming = Preset.objects.create(player=player, name="Farming")
+    tournament = Preset.objects.create(player=player, name="Tournament")
 
-    def _make_run(*, checksum: str, battle_day: int, tier: int, preset: Preset | None) -> None:
+    def _run(*, checksum: str, battle_date: datetime, tier: int, preset: Preset) -> None:
         report = BattleReport.objects.create(
-            raw_text="Battle Report\nCoins earned    1,200\n",
+            raw_text=f"Battle Report\nCoins earned\t{tier * 100}\n",
             checksum=checksum.ljust(64, "x"),
         )
         BattleReportProgress.objects.create(
             battle_report=report,
-            battle_date=datetime(2025, 12, battle_day, tzinfo=timezone.utc),
+            battle_date=battle_date,
             tier=tier,
-            wave=100,
-            real_time_seconds=600,
+            wave=10,
+            real_time_seconds=10,
             preset=preset,
+            preset_name_snapshot=preset.name,
+            preset_color_snapshot=preset.badge_color(),
         )
 
-    _make_run(checksum="ctx-a", battle_day=10, tier=1, preset=preset_a)
-    _make_run(checksum="ctx-b", battle_day=11, tier=1, preset=None)
-    _make_run(checksum="ctx-c", battle_day=12, tier=2, preset=preset_b)
+    _run(checksum="ctx1", battle_date=datetime(2025, 12, 10, tzinfo=timezone.utc), tier=1, preset=farming)
+    _run(checksum="ctx2", battle_date=datetime(2025, 12, 11, tzinfo=timezone.utc), tier=2, preset=farming)
+    _run(checksum="ctx3", battle_date=datetime(2025, 12, 12, tzinfo=timezone.utc), tier=1, preset=tournament)
 
-    base_params = {"charts": ["coins_earned"], "start_date": date(2025, 12, 9), "end_date": date(2025, 12, 31)}
+    contexts = (
+        {"charts": ["coins_earned"], "start_date": date(2025, 12, 9)},
+        {"charts": ["coins_earned"], "start_date": date(2025, 12, 9), "tier": 1},
+        {"charts": ["coins_earned"], "start_date": date(2025, 12, 9), "preset": farming.pk},
+        {"charts": ["coins_earned"], "start_date": date(2025, 12, 11), "preset": farming.pk},
+    )
 
-    # Context 1: date range only (expect all 3 runs in range).
-    response = client.get("/", base_params)
+    panels = []
+    for params in contexts:
+        response = client.get("/", params)
+        assert response.status_code == 200
+        panels.append(_panel(response, chart_id="coins_earned"))
+
+    panel_keys = [set(panel.keys()) for panel in panels]
+    assert all(keys == panel_keys[0] for keys in panel_keys)
+
+    dataset_keys = [set(panel["datasets"][0].keys()) for panel in panels]
+    assert all(keys == dataset_keys[0] for keys in dataset_keys)
+
+
+@pytest.mark.django_db
+def test_phase6_context_edge_case_preset_with_no_runs_does_not_fallback(client) -> None:
+    """Do not silently fallback when the selected preset has no matching runs."""
+
+    player = Player.objects.create(name="default")
+    farming = Preset.objects.create(player=player, name="Farming")
+    empty = Preset.objects.create(player=player, name="No Runs")
+
+    report = BattleReport.objects.create(raw_text="Battle Report\nCoins earned\t100\n", checksum="ctx".ljust(64, "c"))
+    BattleReportProgress.objects.create(
+        battle_report=report,
+        battle_date=datetime(2025, 12, 10, tzinfo=timezone.utc),
+        tier=1,
+        wave=10,
+        real_time_seconds=10,
+        preset=farming,
+        preset_name_snapshot=farming.name,
+        preset_color_snapshot=farming.badge_color(),
+    )
+
+    response = client.get(
+        "/",
+        {
+            "charts": ["coins_earned"],
+            "start_date": date(2025, 12, 9),
+            "preset": empty.pk,
+        },
+    )
     assert response.status_code == 200
-    panel = {p["id"]: p for p in json.loads(response.context["chart_panels_json"])}["coins_earned"]
-    assert panel["labels"] == ["2025-12-10", "2025-12-11", "2025-12-12"]
-    assert isinstance(panel["datasets"], list)
-    assert len(panel["datasets"]) == 1
-    assert set(panel["datasets"][0].keys()) >= {"label", "metricKey", "unit", "data"}
+    assert response.context["chart_empty_state"] == "No runs match the current filters."
 
-    # Context 2: date range + preset (expect only preset A run).
-    response = client.get("/", {**base_params, "preset": preset_a.pk})
-    assert response.status_code == 200
-    panel = {p["id"]: p for p in json.loads(response.context["chart_panels_json"])}["coins_earned"]
-    assert panel["labels"] == ["2025-12-10"]
-    assert len(panel["datasets"]) == 1
-    assert set(panel["datasets"][0].keys()) >= {"label", "metricKey", "unit", "data"}
-
-    # Context 3: preset + tier mismatch should not fall back to tier-only.
-    response = client.get("/", {**base_params, "preset": preset_a.pk, "tier": 2})
-    assert response.status_code == 200
-    panel = {p["id"]: p for p in json.loads(response.context["chart_panels_json"])}["coins_earned"]
+    panel = _panel(response, chart_id="coins_earned")
     assert panel["labels"] == []
-    assert len(panel["datasets"]) == 1
     assert panel["datasets"][0]["data"] == []

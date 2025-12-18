@@ -68,6 +68,7 @@ CHART_CONFIGS: Final[tuple[ChartConfig, ...]] = (
             ChartSeriesConfig(metric_key="coins_from_coin_bonuses"),
             ChartSeriesConfig(metric_key="guardian_coins_stolen"),
             ChartSeriesConfig(metric_key="guardian_coins_fetched"),
+            ChartSeriesConfig(metric_key="coins_from_other_sources"),
         ),
         filters=ChartFilters(
             date_range=DateRangeFilterConfig(enabled=True, default_start=DEFAULT_START),

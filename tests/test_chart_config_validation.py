@@ -7,6 +7,7 @@ from datetime import UTC, datetime
 
 import pytest
 
+from analysis.categories import MetricCategory
 from analysis.series_registry import DEFAULT_REGISTRY
 from analysis.series_registry import MetricSeriesRegistry, MetricSeriesSpec
 from core.charting.schema import (
@@ -78,7 +79,7 @@ def test_chart_config_validation_requires_comparison_dimension_support() -> None
                 label="Metric",
                 description=None,
                 unit="count",
-                category="utility",
+                category=MetricCategory.utility,
                 kind="observed",
                 source_model="BattleReport",
                 aggregation="sum",
@@ -141,7 +142,7 @@ def test_chart_config_validation_rejects_derived_axis_mismatch() -> None:
                 label="Per wave series",
                 description=None,
                 unit="count",
-                category="utility",
+                category=MetricCategory.utility,
                 kind="observed",
                 source_model="BattleReport",
                 aggregation="avg",

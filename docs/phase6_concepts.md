@@ -48,6 +48,8 @@ Examples:
 - Coins earned by source (Battle Report utility + Guardian rollups).
 - Guardian fetch outputs (gems/shards/modules) within the selected context.
 
+For coin breakdowns, a residual “Other coins” slice may be included to ensure the donut total matches the run’s total coins earned.
+
 ## Context and Precedence
 
 Context inputs are used to scope which runs are included in analysis output. Context changes must **never** change metric meaning—only which runs are included.
