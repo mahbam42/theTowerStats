@@ -1,37 +1,48 @@
-# Phase 5 Summary
+# Phase 5 — Developer / Progress Summary
 
-## Overview
+## Scope
 
-This page summarizes the main features available in the app at this stage and helps you choose which view to use for the question you want to answer.
+Phase 5 is the point where the app becomes usable as a day-to-day tracker with stable dashboards, navigation, and baseline UX.
 
-## When to Use This
+This page documents the implementation-level outcomes and boundaries of Phase 5 for maintainers.
 
-- You are new to the app and want to know where to start.
-- You want to decide whether to use Battle History or Charts for a review.
-- You want to understand which pages support filtering and comparisons.
-- You want a quick checklist of what the app can show from imported runs.
+## Delivered Capabilities
 
-## How to Use
+### Dashboards and Navigation
 
-1. Select **Battle History** to review individual runs and confirm what was imported.
-2. Select **Charts** to view trends and breakdowns across runs.
-3. Select **Cards**, **Ultimate Weapons**, **Guardian Chips**, or **Bots** to review your saved progress and upgrade tables.
-4. Select filters such as **Start date**, **End date**, **Tier**, and **Preset** to narrow the scope of what you see.
-5. Review the page content and repeat with a different view when you want a different perspective (table vs chart vs progress).
+- Established the primary dashboard routes and navigation structure.
+- Consolidated the “Charts” dashboard as the central analytics surface for imported runs.
+- Added progress dashboards for upgradeable entities where applicable.
 
-## How to Read the Results
+### Ingestion and Persistence
 
-- Battle History shows one run per row, which is useful for spotting outliers and verifying totals.
-- Charts summarize values across many runs, which is useful for trends and comparisons.
-- Progress pages show base values, effective values, and costs so you can review how your saved upgrades relate to what the app displays.
+- Supported ingesting battle history as raw text while preserving raw values.
+- Maintained a separation between parsed raw storage and derived/normalized display usage.
 
-## Notes & Limitations
+### Filtering and Context
 
-> **Note**
-> The app can only display information that you have imported or entered. If you have no runs in the selected date range, charts cannot display values for that period.
+- Implemented deterministic context filtering patterns (date range, tier, preset) used consistently across dashboards.
+- Ensured dashboards remain display-only (no inline math outside of the analysis layer).
 
-> **Caution**
-> Some charts require additional selections (for example, a specific ultimate weapon or guardian chip) before they can display values.
+### UX and Stability
 
-> **Note**
-> This stage focuses on recording and presenting your data. It does not provide recommendations, strategy guidance, or balance conclusions.
+- Hardened core flows so the UI remains readable and predictable across empty states and partial data.
+- Focused on correctness and traceability over strategy guidance.
+
+## Guardrails and Non-Goals
+
+- No prescriptive recommendations or “optimal” guidance.
+- No free-form user-defined expressions.
+- No destructive normalization of imported values.
+
+## Implementation Notes
+
+- Views are responsible for orchestration and data selection, not calculation.
+- The analysis layer is responsible for deterministic, testable computation.
+- Charts consume analysis outputs; rendering remains value-preserving.
+
+## Known Follow-ups (Post-Phase 5)
+
+- Phase 6 expands metric coverage and context guarantees.
+- Phase 7 introduces schema-driven Chart Builder tooling, snapshots, and deterministic confidence signals.
+
