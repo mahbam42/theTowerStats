@@ -1412,6 +1412,27 @@ For Example:
 - Bot properties to improve
 - Guardian Chip properties to improve
 - Weighted Preset Rankings
+**** TODO [#A] Validation Gatekeepers
+- DTO used end to end
+  Introduce a single persisted/serializable DTO (and version it), use it for snapshot storage, and have the UI submit that DTO (or a strict field set) that round-trips without lossy transforms; add tests that snapshot round-trip reproduces identical DTO.
+- analysis accepts ChartConfig and returns DTOs only
+  Create an analysis-layer entrypoint like analysis/chart_builder.py that takes a validated ChartConfig (or builder DTO) and returns DTOs (series + metadata + comparison datasets) without any template/render knowledge; refactor core/charting/render.py to become pure formatting; add tests that renderer doesn’t compute business logic.
+- UI shows only valid combinations
+  Add dynamic option filtering based on registry + current selections (hide/disable + explain), not just post-validate. Likely a small endpoint that returns allowed combinations, or richer JS rules that consult metric metadata embedded in the page. Add UI tests that invalid combinations cannot be selected.
+- snapshots reusable across dashboards
+  What’s missing: Snapshots can be saved/loaded in the Charts modal, but they’re not a reusable “anchor” across other dashboards/pages.
+  What I need: Decide what “reusable across dashboards” means in this app (e.g., global context selector applied to Charts + Battle History + Progress pages), then implement a shared snapshot picker (base template or shared component), and update multiple views to consume it consistently. Add integration tests for at least two pages.
+
+  **You got it. In the future charts/snapshots on the progress dashboards is exactly what this app needs**
+- known patch boundaries
+  Add a deterministic source of patch boundary dates (settings constant, config file, or small model if you want admin-managed), pass them into render_charts(..., patch_boundaries=...), and add tests + a user-facing note describing what the boundary marker means.
+- overlap windows displayed
+  Compute overlap intervals (e.g., list of [start, end] windows) and display them (table under chart and/or **visual band annotations**). Add tests for interval extraction.    
+  **Just the visual band will suffice, no need for the table. We should also add Golden Bot to this chart.**
+- advice consumes chart comparisons + snapshot deltas
+  Define an Advice input contract that takes (a) a validated chart comparison config and/or (b) two snapshot references, then computes deltas strictly from existing metric series outputs; add trace links (“based on chart X, scopes A/B”) and tests proving it’s derived from those DTOs.
+- “Insufficient data” degradation
+   Implement explicit insufficiency detection (e.g., <N runs per scope, missing values, empty windows) and return a structured advice item that says “Insufficient data” + why; add tests for empty and thin scopes.  
 
 *** Phase 8 Multiple Player Support
 Phase 8 is the point where the app stops being “your stats tracker” and becomes a shared system.
@@ -1905,4 +1926,6 @@ Mostly a visual tweak, but adds context and history for the player to interpert 
 - [X] prompt 25 phase 6 work
 - [X] prompt 26 Phase 6 Addendum: Base vs Effective Value + Modifier Explanations
 - [X] prompt 27 Phase 6 Validation Checklist
-- [ ] prompt 28 Phase 7 Power Tools
+- [X] prompt 28 Phase 7 Power Tools
+- [ ] prompt 29 Phase 8, Pillar 1: Multiple Player Support
+- [ ] prompt 29 Multiple Player Support Checklist

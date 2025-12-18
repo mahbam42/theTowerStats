@@ -33,14 +33,14 @@ class UWSyncTimeline:
     Args:
         labels: Timeline labels ("t=0s", ...).
         active_by_uw: Mapping of UW name to 0/1 activity list aligned to labels.
-        overlap_all_three: 0/1 list aligned to labels where all UWs are active.
+        overlap_all: 0/1 list aligned to labels where all entries are active.
         overlap_percent_cumulative: Cumulative overlap percent (0–100) aligned to labels.
         horizon_seconds: Total modeled horizon in seconds.
     """
 
     labels: list[str]
     active_by_uw: dict[str, list[int]]
-    overlap_all_three: list[int]
+    overlap_all: list[int]
     overlap_percent_cumulative: list[float]
     horizon_seconds: int
 
@@ -113,8 +113,7 @@ def compute_uw_sync_timeline(
     return UWSyncTimeline(
         labels=labels,
         active_by_uw=active_by_uw,
-        overlap_all_three=overlap_all_three,
+        overlap_all=overlap_all_three,
         overlap_percent_cumulative=overlap_percent_cumulative,
         horizon_seconds=horizon,
     )
-

@@ -6,7 +6,11 @@
   {% if uw_sync_chart_json %}
     <div class="card-shell">
       <p class="muted margin-0">Sync graph</p>
-      <h3 class="margin-0">Golden Tower • Black Hole • Death Wave</h3>
+      {% if uw_sync_summary.includes_golden_bot %}
+        <h3 class="margin-0">Golden Tower • Black Hole • Death Wave • Golden Bot</h3>
+      {% else %}
+        <h3 class="margin-0">Golden Tower • Black Hole • Death Wave</h3>
+      {% endif %}
       {% if uw_sync_summary %}
         <p class="muted margin-0">Horizon: {{ uw_sync_summary.horizon_seconds }}s • Cumulative overlap: {{ uw_sync_summary.overlap_percent }}%</p>
       {% endif %}
@@ -27,9 +31,34 @@
         const canvas = document.getElementById("uw-sync-chart");
         const ctx = canvas ? canvas.getContext("2d") : null;
         if (!ctx) return;
+        const overlapWindows = payload.overlap_windows || [];
+        const overlapBands = {
+          id: "overlapBands",
+          beforeDatasetsDraw(chart) {
+            const { ctx, chartArea } = chart;
+            const x = chart.scales.x;
+            if (!x || !chartArea) return;
+            if (!overlapWindows || !overlapWindows.length) return;
+            ctx.save();
+            ctx.fillStyle = "rgba(153, 0, 153, 0.12)";
+            for (const win of overlapWindows) {
+              const startLabel = win.start;
+              const endLabel = win.end;
+              if (!startLabel || !endLabel) continue;
+              const startX = x.getPixelForValue(startLabel);
+              const endX = x.getPixelForValue(endLabel);
+              const left = Math.min(startX, endX);
+              const right = Math.max(startX, endX);
+              const width = Math.max(1, right - left);
+              ctx.fillRect(left, chartArea.top, width, chartArea.bottom - chartArea.top);
+            }
+            ctx.restore();
+          },
+        };
         new Chart(ctx, {
           type: "line",
           data: payload,
+          plugins: [overlapBands],
           options: {
             responsive: true,
             interaction: { mode: "nearest", intersect: false },

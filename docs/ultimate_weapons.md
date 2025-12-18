@@ -11,6 +11,7 @@ The Ultimate Weapons page helps you track which Ultimate Weapons you have unlock
 - You want to compare total Stones invested across different Ultimate Weapons.
 - You want to review whether a weapon appears in your imported runs.
 - You want to view a descriptive sync graph for Golden Tower, Black Hole, and Death Wave based on your saved cooldown and duration values.
+- You want to include Golden Bot timing in the same sync graph when you track Golden Bot cooldown and duration.
 
 ## How to Use
 
@@ -33,8 +34,8 @@ The Ultimate Weapons page helps you track which Ultimate Weapons you have unlock
 - **Cost** shows the next-level upgrade cost (informational only).
 - **MAX** indicates the parameter has reached the highest known level and cannot be increased further in the app.
 - In the **Sync graph**, an **Active (0/1)** line indicates whether each Ultimate Weapon is active at a given time.
-- **All three overlap** is 1 when Golden Tower, Black Hole, and Death Wave are active at the same time.
-- **Cumulative overlap (%)** shows the running percent of time where all three overlap within the displayed horizon.
+- **All overlap** is 1 when all listed lines are active at the same time.
+- **Cumulative overlap (%)** shows the running percent of time where all overlap within the displayed horizon.
 
 ## Notes & Limitations
 
@@ -54,7 +55,7 @@ The Ultimate Weapons page helps you track which Ultimate Weapons you have unlock
 > If an Ultimate Weapon’s upgrade parameters are incomplete or not recognized, it may not appear on this page until the underlying data is available.
 
 > **Note**
-> The Sync graph is descriptive. It uses your saved cooldown and duration values and does not include run-by-run timing or recommendations.
+> The Sync graph is descriptive. It uses your saved cooldown and duration values and does not include run-by-run timing or recommendations. When Golden Bot timing is available, the graph includes Golden Bot and updates overlap accordingly.
 
 ## Advanced Usage
 
