@@ -14,6 +14,15 @@ If you want `checks` available in your virtualenv's `PATH`, create a symlink:
 ln -sf ../../scripts/checks .venv/bin/checks
 ```
 
+## Migrations
+
+If Django reports conflicting migrations (multiple leaf nodes in an app), create a merge migration and commit it.
+
+```bash
+python manage.py makemigrations --merge
+python manage.py migrate
+```
+
 ## Chart configuration
 
 The Charts dashboard is driven by declarative `ChartConfig` entries and a central `MetricSeries` registry.

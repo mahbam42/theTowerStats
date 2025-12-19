@@ -9,7 +9,7 @@ import pytest
 
 
 @pytest.mark.django_db
-def test_patch_boundary_dates_are_flagged_in_charts(client) -> None:
+def test_patch_boundary_dates_are_flagged_in_charts(auth_client, player) -> None:
     """Flag known patch boundaries deterministically without changing values."""
 
     from definitions.models import PatchBoundary
@@ -18,11 +18,13 @@ def test_patch_boundary_dates_are_flagged_in_charts(client) -> None:
     PatchBoundary.objects.create(boundary_date=datetime(2025, 12, 10, tzinfo=timezone.utc).date(), label="vX.Y")
 
     report = BattleReport.objects.create(
+        player=player,
         raw_text="Battle Report\nCoins earned\t1,200\n",
         checksum="patchflag".ljust(64, "x"),
     )
     BattleReportProgress.objects.create(
         battle_report=report,
+        player=player,
         battle_date=datetime(2025, 12, 10, tzinfo=timezone.utc),
         tier=1,
         wave=100,
@@ -30,7 +32,7 @@ def test_patch_boundary_dates_are_flagged_in_charts(client) -> None:
         coins_earned=1200,
     )
 
-    response = client.get("/", {"charts": ["coins_earned"], "start_date": "2025-12-09"})
+    response = auth_client.get("/", {"charts": ["coins_earned"], "start_date": "2025-12-09"})
     assert response.status_code == 200
 
     panels = {p["id"]: p for p in json.loads(response.context["chart_panels_json"])}
@@ -38,4 +40,3 @@ def test_patch_boundary_dates_are_flagged_in_charts(client) -> None:
     reasons = dataset.get("flagReasons")
     assert reasons
     assert "Marked boundary date" in (reasons[0] or "")
-

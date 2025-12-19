@@ -7,14 +7,12 @@ from typing import cast
 
 
 @pytest.mark.django_db
-def test_uw_sync_payload_includes_golden_bot_and_overlap_windows() -> None:
+def test_uw_sync_payload_includes_golden_bot_and_overlap_windows(player) -> None:
     """Include Golden Bot timing when available and emit overlap windows for band rendering."""
 
     from core.uw_sync import build_uw_sync_payload
     from definitions.models import BotDefinition, BotParameterDefinition, ParameterKey, UltimateWeaponDefinition, UltimateWeaponParameterDefinition, Unit
-    from player_state.models import Player, PlayerBot, PlayerBotParameter, PlayerUltimateWeapon, PlayerUltimateWeaponParameter
-
-    player, _ = Player.objects.get_or_create(name="default")
+    from player_state.models import PlayerBot, PlayerBotParameter, PlayerUltimateWeapon, PlayerUltimateWeaponParameter
 
     golden_bot = BotDefinition.objects.create(name="Golden Bot", slug="golden_bot")
     bot_cd = BotParameterDefinition.objects.create(
@@ -30,8 +28,20 @@ def test_uw_sync_payload_includes_golden_bot_and_overlap_windows() -> None:
         unit_kind=Unit.Kind.SECONDS,
     )
     player_bot = PlayerBot.objects.create(player=player, bot_definition=golden_bot, bot_slug="golden_bot", unlocked=True)
-    PlayerBotParameter.objects.create(player_bot=player_bot, parameter_definition=bot_cd, level=1, effective_value_raw="10")
-    PlayerBotParameter.objects.create(player_bot=player_bot, parameter_definition=bot_dur, level=1, effective_value_raw="5")
+    PlayerBotParameter.objects.create(
+        player=player,
+        player_bot=player_bot,
+        parameter_definition=bot_cd,
+        level=1,
+        effective_value_raw="10",
+    )
+    PlayerBotParameter.objects.create(
+        player=player,
+        player_bot=player_bot,
+        parameter_definition=bot_dur,
+        level=1,
+        effective_value_raw="5",
+    )
 
     for slug, name in (("golden_tower", "Golden Tower"), ("black_hole", "Black Hole"), ("death_wave", "Death Wave")):
         uw_def = UltimateWeaponDefinition.objects.create(name=name, slug=slug)
@@ -54,12 +64,14 @@ def test_uw_sync_payload_includes_golden_bot_and_overlap_windows() -> None:
             unlocked=True,
         )
         PlayerUltimateWeaponParameter.objects.create(
+            player=player,
             player_ultimate_weapon=player_uw,
             parameter_definition=uw_cd,
             level=1,
             effective_value_raw="10",
         )
         PlayerUltimateWeaponParameter.objects.create(
+            player=player,
             player_ultimate_weapon=player_uw,
             parameter_definition=uw_dur,
             level=1,

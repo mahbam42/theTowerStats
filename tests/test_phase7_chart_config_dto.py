@@ -29,7 +29,7 @@ def test_chart_config_dto_validation_rejects_mixed_units() -> None:
 
 
 @pytest.mark.django_db
-def test_chart_config_dto_analysis_returns_dtos_only() -> None:
+def test_chart_config_dto_analysis_returns_dtos_only(player) -> None:
     """Analysis executes ChartConfigDTO and returns chart DTO outputs."""
 
     from analysis.chart_config_dto import ChartConfigDTO, ChartContextDTO
@@ -38,11 +38,13 @@ def test_chart_config_dto_analysis_returns_dtos_only() -> None:
     from gamedata.models import BattleReport, BattleReportProgress
 
     report = BattleReport.objects.create(
+        player=player,
         raw_text="Battle Report\nCoins earned\t1,200\n",
         checksum="dtocontract".ljust(64, "x"),
     )
     BattleReportProgress.objects.create(
         battle_report=report,
+        player=player,
         battle_date=datetime(2025, 12, 10, tzinfo=timezone.utc),
         tier=1,
         wave=100,
@@ -60,7 +62,9 @@ def test_chart_config_dto_analysis_returns_dtos_only() -> None:
     )
 
     chart = analyze_chart_config_dto(
-        BattleReport.objects.select_related("run_progress").order_by("run_progress__battle_date"),
+        BattleReport.objects.filter(player=player)
+        .select_related("run_progress")
+        .order_by("run_progress__battle_date"),
         config=dto,
         registry=DEFAULT_REGISTRY,
         moving_average_window=None,
@@ -70,4 +74,3 @@ def test_chart_config_dto_analysis_returns_dtos_only() -> None:
     assert chart.labels == ["2025-12-10"]
     assert chart.datasets
     assert chart.datasets[0].values == [1200.0]
-
