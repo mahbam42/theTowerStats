@@ -14,12 +14,13 @@ from core.parsers.battle_report import parse_battle_report
 
 
 def ingest_battle_report(
-    raw_text: str, *, preset_name: str | None = None
+    raw_text: str, *, player: Player, preset_name: str | None = None
 ) -> tuple[BattleReport, bool]:
     """Ingest a Battle Report, rejecting duplicates by checksum.
 
     Args:
         raw_text: Raw Battle Report text as pasted by the user.
+        player: Owning player derived from the authenticated user.
         preset_name: Optional preset label to associate with the run.
 
     Returns:
@@ -28,16 +29,18 @@ def ingest_battle_report(
     """
 
     parsed = parse_battle_report(raw_text)
-    preset = _resolve_preset(preset_name)
+    preset = _resolve_preset(preset_name, player=player)
     preset_snapshot = _preset_snapshot(preset)
     try:
         with transaction.atomic():
             battle_report = BattleReport.objects.create(
+                player=player,
                 raw_text=raw_text,
                 checksum=parsed.checksum,
             )
             BattleReportProgress.objects.create(
                 battle_report=battle_report,
+                player=player,
                 battle_date=parsed.battle_date,
                 tier=parsed.tier,
                 wave=parsed.wave,
@@ -58,9 +61,9 @@ def ingest_battle_report(
             )
             return battle_report, True
     except IntegrityError:
-        battle_report = BattleReport.objects.get(checksum=parsed.checksum)
+        battle_report = BattleReport.objects.get(player=player, checksum=parsed.checksum)
         if preset is not None:
-            BattleReportProgress.objects.filter(battle_report=battle_report).update(
+            BattleReportProgress.objects.filter(battle_report=battle_report, player=player).update(
                 preset=preset,
                 preset_name_snapshot=preset_snapshot["name"],
                 preset_color_snapshot=preset_snapshot["color"],
@@ -68,11 +71,12 @@ def ingest_battle_report(
         return battle_report, False
 
 
-def _resolve_preset(preset_name: str | None) -> Preset | None:
+def _resolve_preset(preset_name: str | None, *, player: Player) -> Preset | None:
     """Resolve an optional preset name into a Preset.
 
     Args:
         preset_name: Raw user input.
+        player: Owning player derived from the authenticated user.
 
     Returns:
         A Preset instance when `preset_name` is non-empty; otherwise None.
@@ -83,7 +87,6 @@ def _resolve_preset(preset_name: str | None) -> Preset | None:
     cleaned = preset_name.strip()
     if not cleaned:
         return None
-    player, _ = Player.objects.get_or_create(name="default")
     preset, _ = Preset.objects.get_or_create(player=player, name=cleaned)
     return preset
 

@@ -27,7 +27,6 @@ from definitions.models import (
 )
 from gamedata.models import BattleReport, BattleReportProgress
 from player_state.models import (
-    Player,
     PlayerBot,
     PlayerBotParameter,
     PlayerGuardianChip,
@@ -67,12 +66,17 @@ def _create_wikidata_level_row(
     )
 
 
-def _create_run(*, checksum: str = "r" * 64) -> BattleReport:
+def _create_run(*, player, checksum: str = "r" * 64) -> BattleReport:
     """Create a minimal BattleReport + progress row for chartable analysis."""
 
-    report = BattleReport.objects.create(raw_text="Battle Report\nCoins earned    1,200\n", checksum=checksum)
+    report = BattleReport.objects.create(
+        player=player,
+        raw_text="Battle Report\nCoins earned    1,200\n",
+        checksum=checksum,
+    )
     BattleReportProgress.objects.create(
         battle_report=report,
+        player=player,
         battle_date=datetime(2025, 12, 1, tzinfo=timezone.utc),
         tier=1,
         wave=100,
@@ -82,7 +86,7 @@ def _create_run(*, checksum: str = "r" * 64) -> BattleReport:
 
 
 @pytest.mark.django_db
-def test_golden_uw_uptime_percent_effect() -> None:
+def test_golden_uw_uptime_percent_effect(player) -> None:
     """UW uptime% uses wiki Duration/Cooldown for the selected UW."""
 
     _create_wikidata_level_row(
@@ -109,18 +113,27 @@ def test_golden_uw_uptime_percent_effect() -> None:
         unit_kind="seconds",
     )
 
-    player = Player.objects.create(name="default")
     player_uw = PlayerUltimateWeapon.objects.create(
         player=player,
         ultimate_weapon_definition=uw,
         ultimate_weapon_slug=uw.slug,
         unlocked=True,
     )
-    PlayerUltimateWeaponParameter.objects.create(player_ultimate_weapon=player_uw, parameter_definition=duration, level=1)
-    PlayerUltimateWeaponParameter.objects.create(player_ultimate_weapon=player_uw, parameter_definition=cooldown, level=1)
+    PlayerUltimateWeaponParameter.objects.create(
+        player=player,
+        player_ultimate_weapon=player_uw,
+        parameter_definition=duration,
+        level=1,
+    )
+    PlayerUltimateWeaponParameter.objects.create(
+        player=player,
+        player_ultimate_weapon=player_uw,
+        parameter_definition=cooldown,
+        level=1,
+    )
 
-    report = _create_run(checksum="u" * 64)
-    context = build_player_context(revision_policy=RevisionPolicy(mode="latest"))
+    report = _create_run(player=player, checksum="u" * 64)
+    context = build_player_context(player=player, revision_policy=RevisionPolicy(mode="latest"))
     series = analyze_metric_series(
         [report],
         metric_key="uw_uptime_percent",
@@ -134,7 +147,7 @@ def test_golden_uw_uptime_percent_effect() -> None:
 
 
 @pytest.mark.django_db
-def test_golden_uw_effective_cooldown_seconds_effect() -> None:
+def test_golden_uw_effective_cooldown_seconds_effect(player) -> None:
     """UW effective cooldown uses wiki Cooldown for the selected UW."""
 
     _create_wikidata_level_row(
@@ -155,17 +168,21 @@ def test_golden_uw_effective_cooldown_seconds_effect() -> None:
         unit_kind="seconds",
     )
 
-    player = Player.objects.create(name="default")
     player_uw = PlayerUltimateWeapon.objects.create(
         player=player,
         ultimate_weapon_definition=uw,
         ultimate_weapon_slug=uw.slug,
         unlocked=True,
     )
-    PlayerUltimateWeaponParameter.objects.create(player_ultimate_weapon=player_uw, parameter_definition=cooldown, level=1)
+    PlayerUltimateWeaponParameter.objects.create(
+        player=player,
+        player_ultimate_weapon=player_uw,
+        parameter_definition=cooldown,
+        level=1,
+    )
 
-    report = _create_run(checksum="c" * 64)
-    context = build_player_context(revision_policy=RevisionPolicy(mode="latest"))
+    report = _create_run(player=player, checksum="c" * 64)
+    context = build_player_context(player=player, revision_policy=RevisionPolicy(mode="latest"))
     series = analyze_metric_series(
         [report],
         metric_key="uw_effective_cooldown_seconds",
@@ -181,7 +198,7 @@ def test_golden_uw_effective_cooldown_seconds_effect() -> None:
 
 
 @pytest.mark.django_db
-def test_golden_guardian_activations_per_minute_effect() -> None:
+def test_golden_guardian_activations_per_minute_effect(player) -> None:
     """Guardian activations/min uses wiki Cooldown for the selected chip."""
 
     _create_wikidata_level_row(
@@ -202,7 +219,6 @@ def test_golden_guardian_activations_per_minute_effect() -> None:
         unit_kind="seconds",
     )
 
-    player = Player.objects.create(name="default")
     player_chip = PlayerGuardianChip.objects.create(
         player=player,
         guardian_chip_definition=chip,
@@ -210,11 +226,12 @@ def test_golden_guardian_activations_per_minute_effect() -> None:
         unlocked=True,
     )
     PlayerGuardianChipParameter.objects.create(
+        player=player,
         player_guardian_chip=player_chip, parameter_definition=cooldown, level=1
     )
 
-    report = _create_run(checksum="g" * 64)
-    context = build_player_context(revision_policy=RevisionPolicy(mode="latest"))
+    report = _create_run(player=player, checksum="g" * 64)
+    context = build_player_context(player=player, revision_policy=RevisionPolicy(mode="latest"))
     series = analyze_metric_series(
         [report],
         metric_key="guardian_activations_per_minute",
@@ -229,7 +246,7 @@ def test_golden_guardian_activations_per_minute_effect() -> None:
 
 
 @pytest.mark.django_db
-def test_golden_bot_uptime_percent_effect() -> None:
+def test_golden_bot_uptime_percent_effect(player) -> None:
     """Bot uptime% uses wiki Duration/Cooldown for the selected bot."""
 
     _create_wikidata_level_row(
@@ -256,13 +273,12 @@ def test_golden_bot_uptime_percent_effect() -> None:
         unit_kind="seconds",
     )
 
-    player = Player.objects.create(name="default")
     player_bot = PlayerBot.objects.create(player=player, bot_definition=bot, bot_slug=bot.slug, unlocked=True)
-    PlayerBotParameter.objects.create(player_bot=player_bot, parameter_definition=duration, level=1)
-    PlayerBotParameter.objects.create(player_bot=player_bot, parameter_definition=cooldown, level=1)
+    PlayerBotParameter.objects.create(player=player, player_bot=player_bot, parameter_definition=duration, level=1)
+    PlayerBotParameter.objects.create(player=player, player_bot=player_bot, parameter_definition=cooldown, level=1)
 
-    report = _create_run(checksum="b" * 64)
-    context = build_player_context(revision_policy=RevisionPolicy(mode="latest"))
+    report = _create_run(player=player, checksum="b" * 64)
+    context = build_player_context(player=player, revision_policy=RevisionPolicy(mode="latest"))
     series = analyze_metric_series(
         [report],
         metric_key="bot_uptime_percent",
@@ -276,7 +292,7 @@ def test_golden_bot_uptime_percent_effect() -> None:
 
 
 @pytest.mark.django_db
-def test_revision_diff_changes_derived_output_without_mutating_runs() -> None:
+def test_revision_diff_changes_derived_output_without_mutating_runs(player) -> None:
     """Same run + different wiki revision produces different derived output."""
 
     _create_wikidata_level_row(
@@ -312,24 +328,35 @@ def test_revision_diff_changes_derived_output_without_mutating_runs() -> None:
         unit_kind="seconds",
     )
 
-    player = Player.objects.create(name="default")
     player_uw = PlayerUltimateWeapon.objects.create(
         player=player,
         ultimate_weapon_definition=uw,
         ultimate_weapon_slug=uw.slug,
         unlocked=True,
     )
-    PlayerUltimateWeaponParameter.objects.create(player_ultimate_weapon=player_uw, parameter_definition=duration, level=1)
-    PlayerUltimateWeaponParameter.objects.create(player_ultimate_weapon=player_uw, parameter_definition=cooldown, level=1)
+    PlayerUltimateWeaponParameter.objects.create(
+        player=player,
+        player_ultimate_weapon=player_uw,
+        parameter_definition=duration,
+        level=1,
+    )
+    PlayerUltimateWeaponParameter.objects.create(
+        player=player,
+        player_ultimate_weapon=player_uw,
+        parameter_definition=cooldown,
+        level=1,
+    )
 
-    report = _create_run(checksum="d" * 64)
-    progress = BattleReportProgress.objects.get(battle_report=report)
+    report = _create_run(player=player, checksum="d" * 64)
+    progress = BattleReportProgress.objects.get(player=player, battle_report=report)
     original_wave = progress.wave
 
     early = build_player_context(
+        player=player,
         revision_policy=RevisionPolicy(mode="as_of", as_of=datetime(2025, 12, 1, 12, tzinfo=timezone.utc))
     )
     late = build_player_context(
+        player=player,
         revision_policy=RevisionPolicy(mode="as_of", as_of=datetime(2025, 12, 3, 12, tzinfo=timezone.utc))
     )
     series_early = analyze_metric_series(
@@ -355,7 +382,7 @@ def test_revision_diff_changes_derived_output_without_mutating_runs() -> None:
 
 
 @pytest.mark.django_db
-def test_revision_diff_changes_effective_cooldown_seconds_across_wiki_revisions() -> None:
+def test_revision_diff_changes_effective_cooldown_seconds_across_wiki_revisions(player) -> None:
     """Same run + different wiki revision produces different effective cooldown output."""
 
     _create_wikidata_level_row(
@@ -385,23 +412,29 @@ def test_revision_diff_changes_effective_cooldown_seconds_across_wiki_revisions(
         unit_kind="seconds",
     )
 
-    player = Player.objects.create(name="default")
     player_uw = PlayerUltimateWeapon.objects.create(
         player=player,
         ultimate_weapon_definition=uw,
         ultimate_weapon_slug=uw.slug,
         unlocked=True,
     )
-    PlayerUltimateWeaponParameter.objects.create(player_ultimate_weapon=player_uw, parameter_definition=cooldown, level=1)
+    PlayerUltimateWeaponParameter.objects.create(
+        player=player,
+        player_ultimate_weapon=player_uw,
+        parameter_definition=cooldown,
+        level=1,
+    )
 
-    report = _create_run(checksum="e" * 64)
-    progress = BattleReportProgress.objects.get(battle_report=report)
+    report = _create_run(player=player, checksum="e" * 64)
+    progress = BattleReportProgress.objects.get(player=player, battle_report=report)
     original_wave = progress.wave
 
     early = build_player_context(
+        player=player,
         revision_policy=RevisionPolicy(mode="as_of", as_of=datetime(2025, 12, 1, 12, tzinfo=timezone.utc))
     )
     late = build_player_context(
+        player=player,
         revision_policy=RevisionPolicy(mode="as_of", as_of=datetime(2025, 12, 3, 12, tzinfo=timezone.utc))
     )
     series_early = analyze_metric_series(

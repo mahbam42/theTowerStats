@@ -27,7 +27,6 @@ from definitions.wiki_rebuild import (
 )
 from gamedata.models import BattleReport, BattleReportProgress, RunBot, RunCombatUltimateWeapon, RunGuardian, RunUtilityUltimateWeapon
 from player_state.models import (
-    Player,
     PlayerBot,
     PlayerBotParameter,
     PlayerCard,
@@ -253,20 +252,35 @@ def test_player_parameter_integrity_unique_and_locked_prevents_upgrade() -> None
         bot_definition=bot_def, key=ParameterKey.COOLDOWN, display_name="Cooldown", unit_kind="seconds"
     )
 
-    player = Player.objects.create(name="default")
-    player_bot = PlayerBot.objects.create(player=player, bot_definition=bot_def, bot_slug=bot_def.slug, unlocked=False)
+    from django.contrib.auth import get_user_model
 
-    locked = PlayerBotParameter(player_bot=player_bot, parameter_definition=param_def, level=1)
+    user = get_user_model().objects.create_user(username="enforcement", password="password")
+    player = user.player
+    player_bot = PlayerBot.objects.get(player=player, bot_slug=bot_def.slug)
+    player_bot.bot_definition = bot_def
+    player_bot.unlocked = False
+    player_bot.save(update_fields=["bot_definition", "unlocked", "updated_at"])
+
+    param_row = PlayerBotParameter.objects.get(player=player, player_bot=player_bot, parameter_definition=param_def)
+
+    locked = PlayerBotParameter(
+        player=player,
+        player_bot=player_bot,
+        parameter_definition=param_def,
+        level=1,
+    )
     with pytest.raises(ValidationError):
         locked.full_clean()
 
     player_bot.unlocked = True
     player_bot.save()
-    ok = PlayerBotParameter.objects.create(player_bot=player_bot, parameter_definition=param_def, level=1)
+    param_row.level = 1
+    param_row.save(update_fields=["level", "updated_at"])
     with pytest.raises((ValidationError, IntegrityError)):
-        PlayerBotParameter.objects.create(player_bot=player_bot, parameter_definition=param_def, level=1)
+        PlayerBotParameter.objects.create(player=player, player_bot=player_bot, parameter_definition=param_def, level=1)
 
-    assert ok.level == 1
+    param_row.refresh_from_db()
+    assert param_row.level == 1
 
 
 @pytest.mark.django_db
@@ -285,12 +299,16 @@ def test_gamedata_models_do_not_reference_player_parameter_tables() -> None:
 def test_preset_delete_does_not_delete_battle_reports() -> None:
     """Deleting a Preset must not delete BattleReport rows."""
 
-    player = Player.objects.create(name="default")
+    from django.contrib.auth import get_user_model
+
+    user = get_user_model().objects.create_user(username="preset_delete", password="password")
+    player = user.player
     preset = Preset.objects.create(player=player, name="Farming")
 
-    report = BattleReport.objects.create(raw_text="Battle Report\n", checksum="x" * 64)
+    report = BattleReport.objects.create(player=player, raw_text="Battle Report\n", checksum="x" * 64)
     progress = BattleReportProgress.objects.create(
         battle_report=report,
+        player=player,
         tier=1,
         wave=1,
         real_time_seconds=1,

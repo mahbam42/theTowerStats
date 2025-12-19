@@ -11,3 +11,7 @@ class PlayerStateConfig(AppConfig):
     default_auto_field = "django.db.models.BigAutoField"
     name = "player_state"
 
+    def ready(self) -> None:
+        """Register Player State signal handlers."""
+
+        from player_state import signals  # noqa: F401

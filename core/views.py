@@ -7,6 +7,7 @@ from datetime import date, timedelta
 from typing import Any
 
 from django.contrib import messages
+from django.contrib.auth.decorators import login_required
 from django.conf import settings
 from django.core.exceptions import ValidationError
 from django.db import transaction
@@ -84,10 +85,21 @@ from core.services import ingest_battle_report
 from core.uw_sync import build_uw_sync_payload
 
 
+def _request_player(request: HttpRequest) -> Player:
+    """Return the Player associated with the authenticated user."""
+
+    player, _ = Player.objects.get_or_create(
+        user=request.user,
+        defaults={"display_name": getattr(request.user, "username", "Player")},
+    )
+    return player
+
+
+@login_required
 def dashboard(request: HttpRequest) -> HttpResponse:
     """Render the Charts dashboard driven by ChartConfig definitions."""
 
-    player, _ = Player.objects.get_or_create(name="default")
+    player = _request_player(request)
 
     effective_get: QueryDict | dict[str, object] = request.GET
     snapshot_id = request.GET.get("snapshot_id")
@@ -128,7 +140,6 @@ def dashboard(request: HttpRequest) -> HttpResponse:
                     merged[key] = str(value) if value is not None else ""
 
             effective_get = merged
-
     if request.method == "POST":
         action = (request.POST.get("action") or "").strip()
         if action == "create_chart_snapshot":
@@ -138,9 +149,9 @@ def dashboard(request: HttpRequest) -> HttpResponse:
                 return redirect("core:dashboard")
             target = (request.POST.get("snapshot_target") or "charts").strip() or "charts"
 
-            chart_form = ChartContextForm(effective_get)  # type: ignore[arg-type]
+            chart_form = ChartContextForm(effective_get, player=player)  # type: ignore[arg-type]
             chart_form.is_valid()
-            context_runs = _context_filtered_runs(chart_form)
+            context_runs = _context_filtered_runs(chart_form, player=player)
             builder_form = ChartBuilderForm(request.POST, runs_queryset=context_runs)
             if not builder_form.is_valid():
                 messages.error(request, "Could not save snapshot: invalid Chart Builder inputs.")
@@ -172,7 +183,7 @@ def dashboard(request: HttpRequest) -> HttpResponse:
         if import_form.is_valid():
             raw_text = import_form.cleaned_data["raw_text"]
             preset_name = import_form.cleaned_data.get("preset_name") or None
-            _, created = ingest_battle_report(raw_text, preset_name=preset_name)
+            _, created = ingest_battle_report(raw_text, player=player, preset_name=preset_name)
             if created:
                 messages.success(request, "Battle Report imported.")
             else:
@@ -186,12 +197,12 @@ def dashboard(request: HttpRequest) -> HttpResponse:
         default_chart_data = default_chart_data.copy()
         default_chart_data["start_date"] = date(2025, 12, 9).isoformat()
 
-    chart_form = ChartContextForm(effective_get or default_chart_data)  # type: ignore[arg-type]
+    chart_form = ChartContextForm(effective_get or default_chart_data, player=player)  # type: ignore[arg-type]
     chart_form.is_valid()
 
-    runs = _filtered_runs(chart_form)
+    runs = _filtered_runs(chart_form, player=player)
     total_filtered_runs = runs.count()
-    context_runs = _context_filtered_runs(chart_form)
+    context_runs = _context_filtered_runs(chart_form, player=player)
     base_analysis = analyze_runs(context_runs)
 
     comparison_form = ComparisonForm(effective_get, runs_queryset=context_runs)  # type: ignore[arg-type]
@@ -420,7 +431,6 @@ def dashboard(request: HttpRequest) -> HttpResponse:
     }
     return render(request, "core/dashboard.html", context)
 
-
 def _build_snapshot_delta_advice(
     *,
     player: Player,
@@ -454,7 +464,7 @@ def _build_snapshot_delta_advice(
     if not validation_a.is_valid:
         return ()
 
-    baseline_runs = _runs_for_chart_context_dto(dto_a.context)
+    baseline_runs = _runs_for_chart_context_dto(player=player, context=dto_a.context)
     baseline_count, baseline_value = _coins_per_hour_sample(baseline_runs)
 
     comparison_label = "Current filters"
@@ -474,7 +484,7 @@ def _build_snapshot_delta_advice(
         if not validation_b.is_valid:
             return ()
         comparison_label = snapshot_b.name
-        comparison_runs = _runs_for_chart_context_dto(dto_b.context)
+        comparison_runs = _runs_for_chart_context_dto(player=player, context=dto_b.context)
         comparison_count, comparison_value = _coins_per_hour_sample(comparison_runs)
     else:
         comparison_count, comparison_value = _coins_per_hour_sample(runs_current)
@@ -492,17 +502,22 @@ def _build_snapshot_delta_advice(
     )
 
 
-def _runs_for_chart_context_dto(context: ChartContextDTO) -> QuerySet[BattleReport]:
+def _runs_for_chart_context_dto(*, player: Player, context: ChartContextDTO) -> QuerySet[BattleReport]:
     """Build a BattleReport queryset filtered by a ChartContextDTO.
 
     Args:
+        player: Active Player owning the runs.
         context: ChartContextDTO containing the filter values.
 
     Returns:
         QuerySet of BattleReport rows matching the context.
     """
 
-    runs = BattleReport.objects.select_related("run_progress", "run_progress__preset").order_by("run_progress__battle_date")
+    runs = (
+        BattleReport.objects.filter(player=player)
+        .select_related("run_progress", "run_progress__preset")
+        .order_by("run_progress__battle_date")
+    )
     if context.start_date:
         runs = runs.filter(run_progress__battle_date__date__gte=context.start_date)
     if context.end_date:
@@ -531,11 +546,11 @@ def _coins_per_hour_sample(runs: QuerySet[BattleReport]) -> tuple[int, float | N
         return 0, None
     return len(values), sum(values) / len(values)
 
-
+@login_required
 def battle_history(request: HttpRequest) -> HttpResponse:
     """Render the Battle History dashboard with filters and pagination."""
 
-    player, _ = Player.objects.get_or_create(name="default")
+    player = _request_player(request)
 
     if request.method == "POST":
         action = (request.POST.get("action") or "").strip()
@@ -546,19 +561,19 @@ def battle_history(request: HttpRequest) -> HttpResponse:
                 return redirect("core:battle_history")
 
             progress_id = update_form.cleaned_data["progress_id"]
-            if not BattleReportProgress.objects.filter(id=progress_id).exists():
+            if not BattleReportProgress.objects.filter(player=player, id=progress_id).exists():
                 messages.error(request, "Run row not found.")
                 return redirect("core:battle_history")
 
             preset = update_form.cleaned_data.get("preset")
             if preset is None:
-                updated = BattleReportProgress.objects.filter(id=progress_id).update(
+                updated = BattleReportProgress.objects.filter(player=player, id=progress_id).update(
                     preset=None,
                     preset_name_snapshot="",
                     preset_color_snapshot="",
                 )
             else:
-                updated = BattleReportProgress.objects.filter(id=progress_id).update(
+                updated = BattleReportProgress.objects.filter(player=player, id=progress_id).update(
                     preset=preset,
                     preset_name_snapshot=preset.name,
                     preset_color_snapshot=preset.badge_color(),
@@ -576,7 +591,7 @@ def battle_history(request: HttpRequest) -> HttpResponse:
         if import_form.is_valid():
             raw_text = import_form.cleaned_data["raw_text"]
             preset_name = import_form.cleaned_data.get("preset_name") or None
-            _, created = ingest_battle_report(raw_text, preset_name=preset_name)
+            _, created = ingest_battle_report(raw_text, player=player, preset_name=preset_name)
             if created:
                 messages.success(request, "Battle Report imported.")
             else:
@@ -589,7 +604,7 @@ def battle_history(request: HttpRequest) -> HttpResponse:
     filter_form.is_valid()
 
     sort_key = filter_form.cleaned_data.get("sort") or "-run_progress__battle_date"
-    runs = BattleReport.objects.select_related("run_progress", "run_progress__preset")
+    runs = BattleReport.objects.filter(player=player).select_related("run_progress", "run_progress__preset")
     if sort_key.lstrip("-") == "coins_per_hour":
         coins_per_hour_expr = Case(
             When(
@@ -844,10 +859,11 @@ def _preset_filter_querystring(query_params: QueryDict, *, preset_id: int) -> st
     return params.urlencode()
 
 
+@login_required
 def cards(request: HttpRequest) -> HttpResponse:
     """Render the Cards dashboard (slots + inventory + preset tagging)."""
 
-    player, _ = Player.objects.get_or_create(name="default")
+    player = _request_player(request)
     definitions = list(CardDefinition.objects.order_by("name"))
 
     for definition in definitions:
@@ -935,7 +951,7 @@ def cards(request: HttpRequest) -> HttpResponse:
             if new_name:
                 preset, _ = Preset.objects.get_or_create(player=player, name=new_name)
                 chosen_presets.append(preset)
-            card.presets.set(chosen_presets)
+            card.presets.set(chosen_presets, through_defaults={"player": player})
             messages.success(request, "Saved card presets.")
             return redirect(redirect_to)
 
@@ -1042,9 +1058,10 @@ def cards(request: HttpRequest) -> HttpResponse:
     )
 
 
+@login_required
 def ultimate_weapon_progress(request: HttpRequest) -> HttpResponse:
     """Render the Ultimate Weapon progress page."""
-    player, _ = Player.objects.get_or_create(name="default")
+    player = _request_player(request)
     player_cards = tuple(
         PlayerCard.objects.filter(player=player, stars_unlocked__gt=0).select_related("card_definition")
     )
@@ -1096,6 +1113,7 @@ def ultimate_weapon_progress(request: HttpRequest) -> HttpResponse:
                         param_def.levels.order_by("level").values_list("level", flat=True).first() or 0
                     )
                     player_param, created_param = PlayerUltimateWeaponParameter.objects.get_or_create(
+                        player=player,
                         player_ultimate_weapon=uw,
                         parameter_definition=param_def,
                         defaults={"level": min_level},
@@ -1245,6 +1263,7 @@ def ultimate_weapon_progress(request: HttpRequest) -> HttpResponse:
         for param_def in uw_def.parameter_definitions.all():
             min_level = param_def.levels.order_by("level").values_list("level", flat=True).first() or 0
             player_param, created_param = PlayerUltimateWeaponParameter.objects.get_or_create(
+                player=player,
                 player_ultimate_weapon=uw,
                 parameter_definition=param_def,
                 defaults={"level": min_level},
@@ -1267,7 +1286,7 @@ def ultimate_weapon_progress(request: HttpRequest) -> HttpResponse:
     elif status == "locked":
         ultimate_weapons_qs = ultimate_weapons_qs.filter(unlocked=False)
 
-    any_battles = BattleReport.objects.exists()
+    any_battles = BattleReport.objects.filter(player=player).exists()
 
     tiles: list[dict[str, object]] = []
     for uw in ultimate_weapons_qs:
@@ -1326,8 +1345,8 @@ def ultimate_weapon_progress(request: HttpRequest) -> HttpResponse:
             continue
 
         runs_using = (
-            BattleReport.objects.filter(run_combat_uws__ultimate_weapon_definition=uw_def)
-            | BattleReport.objects.filter(run_utility_uws__ultimate_weapon_definition=uw_def)
+            BattleReport.objects.filter(player=player, run_combat_uws__ultimate_weapon_definition=uw_def)
+            | BattleReport.objects.filter(player=player, run_utility_uws__ultimate_weapon_definition=uw_def)
         ).distinct()
         runs_count = runs_using.count() if any_battles else 0
 
@@ -1437,10 +1456,11 @@ def ultimate_weapon_progress(request: HttpRequest) -> HttpResponse:
     )
 
 
+@login_required
 def guardian_progress(request: HttpRequest) -> HttpResponse:
     """Render the Guardian Chips progress dashboard."""
 
-    player, _ = Player.objects.get_or_create(name="default")
+    player = _request_player(request)
     player_cards = tuple(
         PlayerCard.objects.filter(player=player, stars_unlocked__gt=0).select_related("card_definition")
     )
@@ -1508,6 +1528,7 @@ def guardian_progress(request: HttpRequest) -> HttpResponse:
                         param_def.levels.order_by("level").values_list("level", flat=True).first() or 0
                     )
                     player_param, created_param = PlayerGuardianChipParameter.objects.get_or_create(
+                        player=player,
                         player_guardian_chip=chip,
                         parameter_definition=param_def,
                         defaults={"level": min_level},
@@ -1695,6 +1716,7 @@ def guardian_progress(request: HttpRequest) -> HttpResponse:
         for param_def in chip_def.parameter_definitions.all():
             min_level = param_def.levels.order_by("level").values_list("level", flat=True).first() or 0
             player_param, created_param = PlayerGuardianChipParameter.objects.get_or_create(
+                player=player,
                 player_guardian_chip=chip,
                 parameter_definition=param_def,
                 defaults={"level": min_level},
@@ -1717,7 +1739,7 @@ def guardian_progress(request: HttpRequest) -> HttpResponse:
     elif status == "locked":
         chips_qs = chips_qs.filter(unlocked=False)
 
-    any_battles = BattleReport.objects.exists()
+    any_battles = BattleReport.objects.filter(player=player).exists()
     active_count = PlayerGuardianChip.objects.filter(player=player, active=True).count()
     activation_limit_reached = active_count >= MAX_ACTIVE_GUARDIAN_CHIPS
 
@@ -1797,7 +1819,10 @@ def guardian_progress(request: HttpRequest) -> HttpResponse:
             messages.warning(request, f"Skipping {chip_def.name}: missing parameter rows.")
             continue
 
-        runs_using = BattleReport.objects.filter(run_guardians__guardian_chip_definition=chip_def).distinct()
+        runs_using = BattleReport.objects.filter(
+            player=player,
+            run_guardians__guardian_chip_definition=chip_def,
+        ).distinct()
         runs_count = runs_using.count() if any_battles else 0
 
         tiles.append(
@@ -1832,10 +1857,11 @@ def guardian_progress(request: HttpRequest) -> HttpResponse:
     )
 
 
+@login_required
 def bots_progress(request: HttpRequest) -> HttpResponse:
     """Render the Bots progress dashboard."""
 
-    player, _ = Player.objects.get_or_create(name="default")
+    player = _request_player(request)
     player_cards = tuple(
         PlayerCard.objects.filter(player=player, stars_unlocked__gt=0).select_related("card_definition")
     )
@@ -1899,6 +1925,7 @@ def bots_progress(request: HttpRequest) -> HttpResponse:
                         param_def.levels.order_by("level").values_list("level", flat=True).first() or 0
                     )
                     player_param, created_param = PlayerBotParameter.objects.get_or_create(
+                        player=player,
                         player_bot=bot,
                         parameter_definition=param_def,
                         defaults={"level": min_level},
@@ -2049,6 +2076,7 @@ def bots_progress(request: HttpRequest) -> HttpResponse:
         for param_def in bot_def.parameter_definitions.all():
             min_level = param_def.levels.order_by("level").values_list("level", flat=True).first() or 0
             player_param, created_param = PlayerBotParameter.objects.get_or_create(
+                player=player,
                 player_bot=bot,
                 parameter_definition=param_def,
                 defaults={"level": min_level},
@@ -2071,7 +2099,7 @@ def bots_progress(request: HttpRequest) -> HttpResponse:
     elif status == "locked":
         bots_qs = bots_qs.filter(unlocked=False)
 
-    any_battles = BattleReport.objects.exists()
+    any_battles = BattleReport.objects.filter(player=player).exists()
 
     tiles: list[dict[str, object]] = []
     for bot in bots_qs:
@@ -2139,7 +2167,7 @@ def bots_progress(request: HttpRequest) -> HttpResponse:
             messages.warning(request, f"Skipping {bot_def.name}: missing parameter rows.")
             continue
 
-        runs_using = BattleReport.objects.filter(run_bots__bot_definition=bot_def).distinct()
+        runs_using = BattleReport.objects.filter(player=player, run_bots__bot_definition=bot_def).distinct()
         runs_count = runs_using.count() if any_battles else 0
 
         tiles.append(
@@ -2167,10 +2195,10 @@ def bots_progress(request: HttpRequest) -> HttpResponse:
     )
 
 
-def _filtered_runs(filter_form: ChartContextForm) -> QuerySet[BattleReport]:
+def _filtered_runs(filter_form: ChartContextForm, *, player: Player) -> QuerySet[BattleReport]:
     """Return a filtered BattleReport queryset based on validated form data."""
 
-    runs = BattleReport.objects.select_related(
+    runs = BattleReport.objects.filter(player=player).select_related(
         "run_progress",
         "run_progress__preset",
     ).prefetch_related(
@@ -2246,14 +2274,14 @@ def _apply_rolling_window(
     return runs
 
 
-def _context_filtered_runs(filter_form: ChartContextForm) -> QuerySet[BattleReport]:
+def _context_filtered_runs(filter_form: ChartContextForm, *, player: Player) -> QuerySet[BattleReport]:
     """Return a queryset filtered only by tier/preset context.
 
     This is used for comparisons where the selected windows should remain
     independent of any chart date filters.
     """
 
-    runs = BattleReport.objects.select_related(
+    runs = BattleReport.objects.filter(player=player).select_related(
         "run_progress",
         "run_progress__preset",
     ).order_by("run_progress__battle_date")

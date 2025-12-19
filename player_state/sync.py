@@ -40,11 +40,11 @@ class SyncSummary:
     created_parameter_rows: int = 0
 
 
-def sync_player_state_from_definitions(*, player_name: str = "default", write: bool) -> SyncSummary:
+def sync_player_state_from_definitions(*, player: Player, write: bool) -> SyncSummary:
     """Ensure Player State rows exist and link to Definitions by slug.
 
     Args:
-        player_name: Player.name to sync (single-player default is "default").
+        player: Player whose progress rows should be synced.
         write: When True, persist changes. When False, compute counts only.
 
     Returns:
@@ -55,7 +55,6 @@ def sync_player_state_from_definitions(*, player_name: str = "default", write: b
         return SyncSummary()
 
     with transaction.atomic():
-        player, _ = Player.objects.get_or_create(name=player_name)
         summary = SyncSummary()
         summary = _sync_cards(player, summary=summary)
         summary = _sync_bots(player, summary=summary)
@@ -116,7 +115,10 @@ def _sync_bots(player: Player, *, summary: SyncSummary) -> SyncSummary:
 
         for param_def in BotParameterDefinition.objects.filter(bot_definition=definition):
             _, created_param = PlayerBotParameter.objects.get_or_create(
-                player_bot=bot, parameter_definition=param_def, defaults={"level": 0}
+                player=player,
+                player_bot=bot,
+                parameter_definition=param_def,
+                defaults={"level": 0},
             )
             if created_param:
                 summary = SyncSummary(
@@ -155,7 +157,10 @@ def _sync_ultimate_weapons(player: Player, *, summary: SyncSummary) -> SyncSumma
             ultimate_weapon_definition=definition
         ):
             _, created_param = PlayerUltimateWeaponParameter.objects.get_or_create(
-                player_ultimate_weapon=uw, parameter_definition=param_def, defaults={"level": 0}
+                player=player,
+                player_ultimate_weapon=uw,
+                parameter_definition=param_def,
+                defaults={"level": 0},
             )
             if created_param:
                 summary = SyncSummary(
@@ -194,7 +199,10 @@ def _sync_guardians(player: Player, *, summary: SyncSummary) -> SyncSummary:
             guardian_chip_definition=definition
         ):
             _, created_param = PlayerGuardianChipParameter.objects.get_or_create(
-                player_guardian_chip=chip, parameter_definition=param_def, defaults={"level": 0}
+                player=player,
+                player_guardian_chip=chip,
+                parameter_definition=param_def,
+                defaults={"level": 0},
             )
             if created_param:
                 summary = SyncSummary(

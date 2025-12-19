@@ -1,0 +1,36 @@
+{% extends "core/base.html" %}
+
+{% block title %}Sign in • theTowerStats{% endblock %}
+
+{% block content %}
+  <div class="grid-x grid-margin-x">
+    <div class="cell medium-6 medium-offset-3">
+      <div class="card-shell">
+        <h2>Sign in</h2>
+
+        {% if form.errors %}
+          <div class="callout alert" role="alert">
+            Your username and password did not match. Please try again.
+          </div>
+        {% endif %}
+
+        <form method="post" action="{% url 'login' %}">
+          {% csrf_token %}
+
+          <label for="{{ form.username.id_for_label }}">Username</label>
+          {{ form.username }}
+
+          <label for="{{ form.password.id_for_label }}">Password</label>
+          {{ form.password }}
+
+          {% if next %}
+            <input type="hidden" name="next" value="{{ next }}" />
+          {% endif %}
+
+          <button type="submit" class="button primary">Sign in</button>
+        </form>
+      </div>
+    </div>
+  </div>
+{% endblock %}
+

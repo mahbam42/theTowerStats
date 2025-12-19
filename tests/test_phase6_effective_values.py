@@ -16,7 +16,7 @@ from definitions.models import (
     UltimateWeaponParameterLevel,
     WikiData,
 )
-from player_state.models import Player, PlayerCard, PlayerUltimateWeapon, PlayerUltimateWeaponParameter
+from player_state.models import PlayerCard, PlayerUltimateWeapon, PlayerUltimateWeaponParameter
 
 
 def _wiki(*, suffix: str | None = None) -> WikiData:
@@ -88,10 +88,9 @@ def _uw_with_cooldown_param(*, slug: str, name: str) -> UltimateWeaponDefinition
 
 
 @pytest.mark.django_db
-def test_effective_value_schema_and_breakdown_when_present(client) -> None:
+def test_effective_value_schema_and_breakdown_when_present(auth_client, player) -> None:
     """Base and effective values are shown; breakdown renders only when present."""
 
-    player = Player.objects.create(name="default")
     uw = _uw_with_cooldown_param(slug="gt", name="Golden Tower")
     player_uw = PlayerUltimateWeapon.objects.create(
         player=player,
@@ -102,6 +101,7 @@ def test_effective_value_schema_and_breakdown_when_present(client) -> None:
 
     cooldown_def = uw.parameter_definitions.get(key=ParameterKey.COOLDOWN)
     param = PlayerUltimateWeaponParameter.objects.create(
+        player=player,
         player_ultimate_weapon=player_uw,
         parameter_definition=cooldown_def,
         level=1,
@@ -119,7 +119,7 @@ def test_effective_value_schema_and_breakdown_when_present(client) -> None:
     PlayerCard.objects.create(player=player, card_definition=card_def, card_slug=card_def.slug, stars_unlocked=1)
 
     url = reverse("core:ultimate_weapon_progress")
-    response = client.get(url)
+    response = auth_client.get(url)
     assert response.status_code == 200
 
     tile = next(entry for entry in response.context["ultimate_weapons"] if entry["slug"] == uw.slug)
@@ -139,10 +139,9 @@ def test_effective_value_schema_and_breakdown_when_present(client) -> None:
 
 
 @pytest.mark.django_db
-def test_effective_value_breakdown_not_rendered_when_empty(client) -> None:
+def test_effective_value_breakdown_not_rendered_when_empty(auth_client, player) -> None:
     """UI does not render an empty breakdown container."""
 
-    player = Player.objects.create(name="default")
     uw = _uw_with_cooldown_param(slug="bh", name="Black Hole")
     player_uw = PlayerUltimateWeapon.objects.create(
         player=player,
@@ -154,13 +153,13 @@ def test_effective_value_breakdown_not_rendered_when_empty(client) -> None:
     # Create parameter rows without effective overrides/notes.
     for param_def in uw.parameter_definitions.all():
         PlayerUltimateWeaponParameter.objects.create(
+            player=player,
             player_ultimate_weapon=player_uw,
             parameter_definition=param_def,
             level=1,
         )
 
     url = reverse("core:ultimate_weapon_progress")
-    response = client.get(url)
+    response = auth_client.get(url)
     assert response.status_code == 200
     assert b"Effective Value Breakdown" not in response.content
-

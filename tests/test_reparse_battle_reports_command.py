@@ -12,7 +12,7 @@ from gamedata.models import BattleReport, BattleReportProgress
 
 
 @pytest.mark.django_db
-def test_reparse_battle_reports_backfills_progress_fields() -> None:
+def test_reparse_battle_reports_backfills_progress_fields(player) -> None:
     """Reparsing populates progress fields for existing Battle Reports."""
 
     raw_text = "\n".join(
@@ -34,11 +34,13 @@ def test_reparse_battle_reports_backfills_progress_fields() -> None:
     )
 
     report = BattleReport.objects.create(
+        player=player,
         raw_text=raw_text,
         checksum=compute_battle_report_checksum(raw_text),
     )
     BattleReportProgress.objects.create(
         battle_report=report,
+        player=player,
         battle_date=datetime(2025, 12, 7, 21, 59, tzinfo=timezone.utc),
         tier=7,
         wave=1301,
@@ -61,7 +63,7 @@ def test_reparse_battle_reports_backfills_progress_fields() -> None:
 
 
 @pytest.mark.django_db
-def test_reparse_battle_reports_check_does_not_write() -> None:
+def test_reparse_battle_reports_check_does_not_write(player) -> None:
     """Check mode reports changes without updating stored progress rows."""
 
     raw_text = "\n".join(
@@ -78,13 +80,13 @@ def test_reparse_battle_reports_check_does_not_write() -> None:
     )
 
     report = BattleReport.objects.create(
+        player=player,
         raw_text=raw_text,
         checksum=compute_battle_report_checksum(raw_text),
     )
-    BattleReportProgress.objects.create(battle_report=report)
+    BattleReportProgress.objects.create(battle_report=report, player=player)
 
     call_command("reparse_battle_reports", "--check")
 
     progress = BattleReportProgress.objects.get(battle_report=report)
     assert progress.coins_earned is None
-

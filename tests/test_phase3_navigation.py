@@ -35,9 +35,9 @@ def _assert_nav_links(response) -> None:
         "core:bots_progress",
     ],
 )
-def test_phase3_views_load_and_include_nav(client, url_name: str) -> None:
+def test_phase3_views_load_and_include_nav(auth_client, url_name: str) -> None:
     """Verify each Phase 3 page loads successfully and includes global navigation."""
 
-    response = client.get(reverse(url_name))
+    response = auth_client.get(reverse(url_name))
     assert response.status_code == 200
     _assert_nav_links(response)

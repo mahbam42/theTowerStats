@@ -15,7 +15,7 @@ from definitions.models import (
     ParameterKey,
     WikiData,
 )
-from player_state.models import Player, PlayerBot, PlayerBotParameter
+from player_state.models import PlayerBot, PlayerBotParameter
 
 
 def _wiki(*, suffix: str | None = None) -> WikiData:
@@ -71,11 +71,10 @@ def _bot_with_four_parameters(*, slug: str, name: str) -> BotDefinition:
 
 
 @pytest.mark.django_db
-def test_bot_unlock_creates_four_parameter_rows(client) -> None:
+def test_bot_unlock_creates_four_parameter_rows(auth_client, player) -> None:
     """Unlocking a bot creates 4 parameter rows at the minimum level."""
 
     bot_def = _bot_with_four_parameters(slug="golden_bot", name="Golden Bot")
-    player = Player.objects.create(name="default")
     bot = PlayerBot.objects.create(
         player=player,
         bot_definition=bot_def,
@@ -84,7 +83,7 @@ def test_bot_unlock_creates_four_parameter_rows(client) -> None:
     )
 
     url = reverse("core:bots_progress")
-    response = client.post(url, data={"action": "unlock_bot", "entity_id": bot.id})
+    response = auth_client.post(url, data={"action": "unlock_bot", "entity_id": bot.id})
     assert response.status_code == 302
 
     bot.refresh_from_db()
@@ -93,7 +92,7 @@ def test_bot_unlock_creates_four_parameter_rows(client) -> None:
     assert len(params) == 4
     assert all(p.level == 1 for p in params)
 
-    response = client.get(url)
+    response = auth_client.get(url)
     assert response.status_code == 200
     tiles = response.context["bots"]
     tile = next(entry for entry in tiles if entry["slug"] == bot_def.slug)
@@ -101,11 +100,10 @@ def test_bot_unlock_creates_four_parameter_rows(client) -> None:
 
 
 @pytest.mark.django_db
-def test_bot_level_up_increments_until_max(client) -> None:
+def test_bot_level_up_increments_until_max(auth_client, player) -> None:
     """Level-up increments by 1 and stops at max level."""
 
     bot_def = _bot_with_four_parameters(slug="flame_bot", name="Flame Bot")
-    player = Player.objects.create(name="default")
     bot = PlayerBot.objects.create(
         player=player,
         bot_definition=bot_def,
@@ -115,25 +113,26 @@ def test_bot_level_up_increments_until_max(client) -> None:
     param_def = bot_def.parameter_definitions.order_by("id").first()
     assert param_def is not None
     player_param = PlayerBotParameter.objects.create(
+        player=player,
         player_bot=bot,
         parameter_definition=param_def,
         level=1,
     )
 
     url = reverse("core:bots_progress")
-    response = client.post(url, data={"action": "level_up_bot_param", "param_id": player_param.id})
+    response = auth_client.post(url, data={"action": "level_up_bot_param", "param_id": player_param.id})
     assert response.status_code == 302
     player_param.refresh_from_db()
     assert player_param.level == 2
 
-    response = client.post(url, data={"action": "level_up_bot_param", "param_id": player_param.id})
+    response = auth_client.post(url, data={"action": "level_up_bot_param", "param_id": player_param.id})
     assert response.status_code == 302
     player_param.refresh_from_db()
     assert player_param.level == 2
 
 
 @pytest.mark.django_db
-def test_bot_dashboard_omits_invalid_bot_in_production(client, settings) -> None:
+def test_bot_dashboard_omits_invalid_bot_in_production(auth_client, player, settings) -> None:
     """Production mode omits bots that do not have exactly 4 parameters."""
 
     settings.DEBUG = False
@@ -153,7 +152,6 @@ def test_bot_dashboard_omits_invalid_bot_in_production(client, settings) -> None
         source_wikidata=wiki,
     )
 
-    player = Player.objects.create(name="default")
     PlayerBot.objects.create(
         player=player,
         bot_definition=bad,
@@ -162,17 +160,16 @@ def test_bot_dashboard_omits_invalid_bot_in_production(client, settings) -> None
     )
 
     url = reverse("core:bots_progress")
-    response = client.get(url)
+    response = auth_client.get(url)
     assert response.status_code == 200
     assert all(tile["slug"] != "bad_bot" for tile in response.context["bots"])
 
 
 @pytest.mark.django_db
-def test_bot_dashboard_deletes_orphaned_parameter_rows(client) -> None:
+def test_bot_dashboard_deletes_orphaned_parameter_rows(auth_client, player) -> None:
     """Orphaned parameter rows are deleted so the page can render in debug mode."""
 
     bot_def = _bot_with_four_parameters(slug="thunder_bot", name="Thunder Bot")
-    player = Player.objects.create(name="default")
     bot = PlayerBot.objects.create(
         player=player,
         bot_definition=bot_def,
@@ -182,6 +179,7 @@ def test_bot_dashboard_deletes_orphaned_parameter_rows(client) -> None:
     param_def = bot_def.parameter_definitions.order_by("id").first()
     assert param_def is not None
     orphan = PlayerBotParameter.objects.create(
+        player=player,
         player_bot=bot,
         parameter_definition=param_def,
         level=1,
@@ -191,6 +189,6 @@ def test_bot_dashboard_deletes_orphaned_parameter_rows(client) -> None:
     assert orphan.parameter_definition is None
 
     url = reverse("core:bots_progress")
-    response = client.get(url)
+    response = auth_client.get(url)
     assert response.status_code == 200
     assert PlayerBotParameter.objects.filter(player_bot=bot).count() == 0

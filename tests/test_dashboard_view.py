@@ -9,49 +9,54 @@ import pytest
 
 from analysis.engine import analyze_runs
 from gamedata.models import BattleReport, BattleReportProgress
-from player_state.models import Player, Preset
+from player_state.models import Preset
 
 FILTER_START = date(2025, 12, 1)
 
 
 @pytest.mark.django_db
-def test_dashboard_view_renders(client) -> None:
+def test_dashboard_view_renders(auth_client, player) -> None:
     """Create minimal records and verify the dashboard view returns HTTP 200."""
 
     report = BattleReport.objects.create(
-        raw_text="Battle Report\nCoins: 12345\n", checksum="x" * 64
+        player=player,
+        raw_text="Battle Report\nCoins: 12345\n",
+        checksum="x" * 64,
     )
     BattleReportProgress.objects.create(
         battle_report=report,
+        player=player,
         battle_date=datetime(2025, 12, 1, tzinfo=timezone.utc),
         tier=1,
         wave=100,
         real_time_seconds=600,
     )
 
-    response = client.get("/", {"start_date": FILTER_START})
+    response = auth_client.get("/", {"start_date": FILTER_START})
     assert response.status_code == 200
 
 
 @pytest.mark.django_db
-def test_dashboard_view_renders_with_no_data(client) -> None:
+def test_dashboard_view_renders_with_no_data(auth_client) -> None:
     """Render the dashboard with no imported runs and show a neutral empty state."""
 
-    response = client.get("/", {"start_date": FILTER_START})
+    response = auth_client.get("/", {"start_date": FILTER_START})
     assert response.status_code == 200
     assert response.context["chart_empty_state"] == "No runs match the current filters."
 
 
 @pytest.mark.django_db
-def test_dashboard_view_filters_and_plots_from_analysis_engine(client) -> None:
+def test_dashboard_view_filters_and_plots_from_analysis_engine(auth_client, player) -> None:
     """Filter runs by date and ensure the chart derives from Analysis Engine output."""
 
     first = BattleReport.objects.create(
+        player=player,
         raw_text="Battle Report\nCoins earned    1,200\n",
         checksum="a" * 64,
     )
     BattleReportProgress.objects.create(
         battle_report=first,
+        player=player,
         battle_date=datetime(2025, 12, 1, tzinfo=timezone.utc),
         tier=1,
         wave=100,
@@ -59,18 +64,20 @@ def test_dashboard_view_filters_and_plots_from_analysis_engine(client) -> None:
     )
 
     second = BattleReport.objects.create(
+        player=player,
         raw_text="Battle Report\nCoins earned    2,400\n",
         checksum="b" * 64,
     )
     BattleReportProgress.objects.create(
         battle_report=second,
+        player=player,
         battle_date=datetime(2025, 12, 2, tzinfo=timezone.utc),
         tier=1,
         wave=100,
         real_time_seconds=1200,
     )
 
-    response = client.get("/", {"start_date": date(2025, 12, 2)})
+    response = auth_client.get("/", {"start_date": date(2025, 12, 2)})
     assert response.status_code == 200
 
     panels = {p["id"]: p for p in json.loads(response.context["chart_panels_json"])}
@@ -83,6 +90,7 @@ def test_dashboard_view_filters_and_plots_from_analysis_engine(client) -> None:
 
     expected = analyze_runs(
         BattleReport.objects.select_related("run_progress").filter(
+            player=player,
             run_progress__battle_date__date__gte=date(2025, 12, 2)
         )
     )
@@ -92,15 +100,17 @@ def test_dashboard_view_filters_and_plots_from_analysis_engine(client) -> None:
 
 
 @pytest.mark.django_db
-def test_dashboard_view_filters_by_tier(client) -> None:
+def test_dashboard_view_filters_by_tier(auth_client, player) -> None:
     """Filter runs by tier and ensure chart data reflects the filtered inputs."""
 
     tier_one = BattleReport.objects.create(
+        player=player,
         raw_text="Battle Report\nCoins earned    1,200\n",
         checksum="c" * 64,
     )
     BattleReportProgress.objects.create(
         battle_report=tier_one,
+        player=player,
         battle_date=datetime(2025, 12, 1, tzinfo=timezone.utc),
         tier=1,
         wave=100,
@@ -108,18 +118,20 @@ def test_dashboard_view_filters_by_tier(client) -> None:
     )
 
     tier_two = BattleReport.objects.create(
+        player=player,
         raw_text="Battle Report\nCoins earned    2,400\n",
         checksum="d" * 64,
     )
     BattleReportProgress.objects.create(
         battle_report=tier_two,
+        player=player,
         battle_date=datetime(2025, 12, 2, tzinfo=timezone.utc),
         tier=2,
         wave=100,
         real_time_seconds=600,
     )
 
-    response = client.get("/", {"tier": 2, "start_date": FILTER_START})
+    response = auth_client.get("/", {"tier": 2, "start_date": FILTER_START})
     assert response.status_code == 200
 
     panels = {p["id"]: p for p in json.loads(response.context["chart_panels_json"])}
@@ -131,18 +143,19 @@ def test_dashboard_view_filters_by_tier(client) -> None:
 
 
 @pytest.mark.django_db
-def test_dashboard_view_filters_by_preset(client) -> None:
+def test_dashboard_view_filters_by_preset(auth_client, player) -> None:
     """Filter runs by preset label and ensure chart data reflects the filtered inputs."""
 
-    player = Player.objects.create(name="default")
     preset = Preset.objects.create(player=player, name="Farming")
 
     tagged = BattleReport.objects.create(
+        player=player,
         raw_text="Battle Report\nCoins earned    1,200\n",
         checksum="e" * 64,
     )
     BattleReportProgress.objects.create(
         battle_report=tagged,
+        player=player,
         battle_date=datetime(2025, 12, 1, tzinfo=timezone.utc),
         tier=1,
         wave=100,
@@ -151,18 +164,20 @@ def test_dashboard_view_filters_by_preset(client) -> None:
     )
 
     untagged = BattleReport.objects.create(
+        player=player,
         raw_text="Battle Report\nCoins earned    2,400\n",
         checksum="f" * 64,
     )
     BattleReportProgress.objects.create(
         battle_report=untagged,
+        player=player,
         battle_date=datetime(2025, 12, 2, tzinfo=timezone.utc),
         tier=1,
         wave=100,
         real_time_seconds=600,
     )
 
-    response = client.get("/", {"preset": preset.pk, "start_date": FILTER_START})
+    response = auth_client.get("/", {"preset": preset.pk, "start_date": FILTER_START})
     assert response.status_code == 200
 
     panels = {p["id"]: p for p in json.loads(response.context["chart_panels_json"])}
@@ -174,15 +189,17 @@ def test_dashboard_view_filters_by_preset(client) -> None:
 
 
 @pytest.mark.django_db
-def test_dashboard_view_comparison_chart_by_tier(client) -> None:
+def test_dashboard_view_comparison_chart_by_tier(auth_client, player) -> None:
     """Render a tier comparison chart with multiple datasets."""
 
     first = BattleReport.objects.create(
+        player=player,
         raw_text="Battle Report\nCoins earned    1,200\n",
         checksum="g" * 64,
     )
     BattleReportProgress.objects.create(
         battle_report=first,
+        player=player,
         battle_date=datetime(2025, 12, 1, tzinfo=timezone.utc),
         tier=1,
         wave=100,
@@ -190,18 +207,20 @@ def test_dashboard_view_comparison_chart_by_tier(client) -> None:
     )
 
     second = BattleReport.objects.create(
+        player=player,
         raw_text="Battle Report\nCoins earned    2,400\n",
         checksum="h" * 64,
     )
     BattleReportProgress.objects.create(
         battle_report=second,
+        player=player,
         battle_date=datetime(2025, 12, 2, tzinfo=timezone.utc),
         tier=2,
         wave=100,
         real_time_seconds=600,
     )
 
-    response = client.get("/", {"charts": ["coins_earned_by_tier"], "start_date": FILTER_START})
+    response = auth_client.get("/", {"charts": ["coins_earned_by_tier"], "start_date": FILTER_START})
     assert response.status_code == 200
 
     panels = {p["id"]: p for p in json.loads(response.context["chart_panels_json"])}
@@ -211,15 +230,17 @@ def test_dashboard_view_comparison_chart_by_tier(client) -> None:
 
 
 @pytest.mark.django_db
-def test_dashboard_view_series_includes_moving_average_transform(client) -> None:
+def test_dashboard_view_series_includes_moving_average_transform(auth_client, player) -> None:
     """Include explicit moving-average series when selected."""
 
     first = BattleReport.objects.create(
+        player=player,
         raw_text="Battle Report\nCoins earned    1,200\n",
         checksum="ma" * 32,
     )
     BattleReportProgress.objects.create(
         battle_report=first,
+        player=player,
         battle_date=datetime(2025, 12, 1, tzinfo=timezone.utc),
         tier=1,
         wave=100,
@@ -227,18 +248,27 @@ def test_dashboard_view_series_includes_moving_average_transform(client) -> None
     )
 
     second = BattleReport.objects.create(
+        player=player,
         raw_text="Battle Report\nCoins earned    2,400\n",
         checksum="mb" * 32,
     )
     BattleReportProgress.objects.create(
         battle_report=second,
+        player=player,
         battle_date=datetime(2025, 12, 2, tzinfo=timezone.utc),
         tier=1,
         wave=100,
         real_time_seconds=600,
     )
 
-    response = client.get("/", {"charts": ["coins_per_hour_moving_average"], "moving_average_window": 2, "start_date": FILTER_START})
+    response = auth_client.get(
+        "/",
+        {
+            "charts": ["coins_per_hour_moving_average"],
+            "moving_average_window": 2,
+            "start_date": FILTER_START,
+        },
+    )
     assert response.status_code == 200
 
     panels = {p["id"]: p for p in json.loads(response.context["chart_panels_json"])}
@@ -248,36 +278,40 @@ def test_dashboard_view_series_includes_moving_average_transform(client) -> None
 
 
 @pytest.mark.django_db
-def test_dashboard_view_includes_legend_toggle_handler(client) -> None:
+def test_dashboard_view_includes_legend_toggle_handler(auth_client, player) -> None:
     """Ensure the dashboard template includes a safe legend toggle handler."""
 
     report = BattleReport.objects.create(
+        player=player,
         raw_text="Battle Report\nCoins: 12345\n",
         checksum="toggle" * 10 + "x" * 4,
     )
     BattleReportProgress.objects.create(
         battle_report=report,
+        player=player,
         battle_date=datetime(2025, 12, 1, tzinfo=timezone.utc),
         tier=1,
         wave=100,
         real_time_seconds=600,
     )
 
-    response = client.get("/", {"start_date": FILTER_START})
+    response = auth_client.get("/", {"start_date": FILTER_START})
     assert response.status_code == 200
     assert b"setDatasetVisibility" in response.content
 
 
 @pytest.mark.django_db
-def test_dashboard_view_run_delta_comparison(client) -> None:
+def test_dashboard_view_run_delta_comparison(auth_client, player) -> None:
     """Compute a run-vs-run delta for coins/hour."""
 
     first = BattleReport.objects.create(
+        player=player,
         raw_text="Battle Report\nCoins earned    1,200\n",
         checksum="i" * 64,
     )
     BattleReportProgress.objects.create(
         battle_report=first,
+        player=player,
         battle_date=datetime(2025, 12, 1, tzinfo=timezone.utc),
         tier=1,
         wave=100,
@@ -285,18 +319,20 @@ def test_dashboard_view_run_delta_comparison(client) -> None:
     )
 
     second = BattleReport.objects.create(
+        player=player,
         raw_text="Battle Report\nCoins earned    2,400\n",
         checksum="j" * 64,
     )
     BattleReportProgress.objects.create(
         battle_report=second,
+        player=player,
         battle_date=datetime(2025, 12, 2, tzinfo=timezone.utc),
         tier=1,
         wave=100,
         real_time_seconds=600,
     )
 
-    response = client.get("/", {"run_a": first.pk, "run_b": second.pk, "start_date": FILTER_START})
+    response = auth_client.get("/", {"run_a": first.pk, "run_b": second.pk, "start_date": FILTER_START})
     assert response.status_code == 200
 
     result = response.context["comparison_result"]
@@ -309,15 +345,17 @@ def test_dashboard_view_run_delta_comparison(client) -> None:
 
 
 @pytest.mark.django_db
-def test_dashboard_view_window_delta_comparison(client) -> None:
+def test_dashboard_view_window_delta_comparison(auth_client, player) -> None:
     """Compute a window-vs-window delta for coins/hour."""
 
     first = BattleReport.objects.create(
+        player=player,
         raw_text="Battle Report\nCoins earned    1,200\n",
         checksum="k" * 64,
     )
     BattleReportProgress.objects.create(
         battle_report=first,
+        player=player,
         battle_date=datetime(2025, 12, 1, tzinfo=timezone.utc),
         tier=1,
         wave=100,
@@ -325,18 +363,20 @@ def test_dashboard_view_window_delta_comparison(client) -> None:
     )
 
     second = BattleReport.objects.create(
+        player=player,
         raw_text="Battle Report\nCoins earned    2,400\n",
         checksum="l" * 64,
     )
     BattleReportProgress.objects.create(
         battle_report=second,
+        player=player,
         battle_date=datetime(2025, 12, 10, tzinfo=timezone.utc),
         tier=1,
         wave=100,
         real_time_seconds=600,
     )
 
-    response = client.get(
+    response = auth_client.get(
         "/",
         {
             "window_a_start": date(2025, 12, 1),
@@ -356,15 +396,17 @@ def test_dashboard_view_window_delta_comparison(client) -> None:
 
 
 @pytest.mark.django_db
-def test_dashboard_view_window_delta_ignores_chart_date_filters(client) -> None:
+def test_dashboard_view_window_delta_ignores_chart_date_filters(auth_client, player) -> None:
     """Keep comparison windows independent from chart start/end filters."""
 
     first = BattleReport.objects.create(
+        player=player,
         raw_text="Battle Report\nCoins earned    1,200\n",
         checksum="chartwin-a".ljust(64, "h"),
     )
     BattleReportProgress.objects.create(
         battle_report=first,
+        player=player,
         battle_date=datetime(2025, 12, 1, tzinfo=timezone.utc),
         tier=1,
         wave=100,
@@ -372,18 +414,20 @@ def test_dashboard_view_window_delta_ignores_chart_date_filters(client) -> None:
     )
 
     second = BattleReport.objects.create(
+        player=player,
         raw_text="Battle Report\nCoins earned    2,400\n",
         checksum="chartwin-b".ljust(64, "i"),
     )
     BattleReportProgress.objects.create(
         battle_report=second,
+        player=player,
         battle_date=datetime(2025, 12, 10, tzinfo=timezone.utc),
         tier=1,
         wave=100,
         real_time_seconds=600,
     )
 
-    response = client.get(
+    response = auth_client.get(
         "/",
         {
             "start_date": date(2025, 12, 9),
@@ -403,16 +447,18 @@ def test_dashboard_view_window_delta_ignores_chart_date_filters(client) -> None:
 
 
 @pytest.mark.django_db
-def test_dashboard_view_window_delta_respects_tier_filter(client) -> None:
+def test_dashboard_view_window_delta_respects_tier_filter(auth_client, player) -> None:
     """Compute window deltas using only runs in the requested tier context."""
 
     # Window A: one run at tier 1 and one at tier 2 (same date window).
     a_tier_one = BattleReport.objects.create(
+        player=player,
         raw_text="Battle Report\nCoins earned    1,200\n",
         checksum="tierwin-a1".ljust(64, "a"),
     )
     BattleReportProgress.objects.create(
         battle_report=a_tier_one,
+        player=player,
         battle_date=datetime(2025, 12, 1, tzinfo=timezone.utc),
         tier=1,
         wave=100,
@@ -420,11 +466,13 @@ def test_dashboard_view_window_delta_respects_tier_filter(client) -> None:
     )
 
     a_tier_two = BattleReport.objects.create(
+        player=player,
         raw_text="Battle Report\nCoins earned    3,600\n",
         checksum="tierwin-a2".ljust(64, "b"),
     )
     BattleReportProgress.objects.create(
         battle_report=a_tier_two,
+        player=player,
         battle_date=datetime(2025, 12, 1, tzinfo=timezone.utc),
         tier=2,
         wave=100,
@@ -433,11 +481,13 @@ def test_dashboard_view_window_delta_respects_tier_filter(client) -> None:
 
     # Window B: again, one run at each tier.
     b_tier_one = BattleReport.objects.create(
+        player=player,
         raw_text="Battle Report\nCoins earned    2,400\n",
         checksum="tierwin-b1".ljust(64, "c"),
     )
     BattleReportProgress.objects.create(
         battle_report=b_tier_one,
+        player=player,
         battle_date=datetime(2025, 12, 10, tzinfo=timezone.utc),
         tier=1,
         wave=100,
@@ -445,11 +495,13 @@ def test_dashboard_view_window_delta_respects_tier_filter(client) -> None:
     )
 
     b_tier_two = BattleReport.objects.create(
+        player=player,
         raw_text="Battle Report\nCoins earned    1,800\n",
         checksum="tierwin-b2".ljust(64, "d"),
     )
     BattleReportProgress.objects.create(
         battle_report=b_tier_two,
+        player=player,
         battle_date=datetime(2025, 12, 10, tzinfo=timezone.utc),
         tier=2,
         wave=100,
@@ -459,7 +511,7 @@ def test_dashboard_view_window_delta_respects_tier_filter(client) -> None:
     # With tier=2, the comparison should use only the tier 2 runs:
     # - Window A avg: 3,600/600*3600 = 21,600
     # - Window B avg: 1,800/600*3600 = 10,800
-    response = client.get(
+    response = auth_client.get(
         "/",
         {
             "tier": 2,
@@ -480,18 +532,19 @@ def test_dashboard_view_window_delta_respects_tier_filter(client) -> None:
 
 
 @pytest.mark.django_db
-def test_dashboard_view_window_delta_respects_preset_filter(client) -> None:
+def test_dashboard_view_window_delta_respects_preset_filter(auth_client, player) -> None:
     """Compute window deltas using only runs in the requested preset context."""
 
-    player = Player.objects.create(name="default")
     farming = Preset.objects.create(player=player, name="Farming")
 
     tagged_a = BattleReport.objects.create(
+        player=player,
         raw_text="Battle Report\nCoins earned    1,200\n",
         checksum="presetwin-a".ljust(64, "e"),
     )
     BattleReportProgress.objects.create(
         battle_report=tagged_a,
+        player=player,
         battle_date=datetime(2025, 12, 1, tzinfo=timezone.utc),
         tier=1,
         wave=100,
@@ -500,11 +553,13 @@ def test_dashboard_view_window_delta_respects_preset_filter(client) -> None:
     )
 
     untagged_a = BattleReport.objects.create(
+        player=player,
         raw_text="Battle Report\nCoins earned    2,400\n",
         checksum="presetwin-a2".ljust(64, "f"),
     )
     BattleReportProgress.objects.create(
         battle_report=untagged_a,
+        player=player,
         battle_date=datetime(2025, 12, 1, tzinfo=timezone.utc),
         tier=1,
         wave=100,
@@ -512,11 +567,13 @@ def test_dashboard_view_window_delta_respects_preset_filter(client) -> None:
     )
 
     tagged_b = BattleReport.objects.create(
+        player=player,
         raw_text="Battle Report\nCoins earned    2,400\n",
         checksum="presetwin-b".ljust(64, "g"),
     )
     BattleReportProgress.objects.create(
         battle_report=tagged_b,
+        player=player,
         battle_date=datetime(2025, 12, 10, tzinfo=timezone.utc),
         tier=1,
         wave=100,
@@ -524,7 +581,7 @@ def test_dashboard_view_window_delta_respects_preset_filter(client) -> None:
         preset=farming,
     )
 
-    response = client.get(
+    response = auth_client.get(
         "/",
         {
             "preset": farming.pk,
@@ -545,7 +602,7 @@ def test_dashboard_view_window_delta_respects_preset_filter(client) -> None:
 
 
 @pytest.mark.django_db
-def test_dashboard_view_renders_coins_by_source_donut(client) -> None:
+def test_dashboard_view_renders_coins_by_source_donut(auth_client, player) -> None:
     """Render the Coins Earned by Source donut chart from Battle Report values."""
 
     raw_text = "\n".join(
@@ -570,16 +627,17 @@ def test_dashboard_view_renders_coins_by_source_donut(client) -> None:
             "",
         ]
     )
-    report = BattleReport.objects.create(raw_text=raw_text, checksum="donut".ljust(64, "x"))
+    report = BattleReport.objects.create(player=player, raw_text=raw_text, checksum="donut".ljust(64, "x"))
     BattleReportProgress.objects.create(
         battle_report=report,
+        player=player,
         battle_date=datetime(2025, 12, 14, 1, 39, tzinfo=timezone.utc),
         tier=11,
         wave=121,
         real_time_seconds=1055,
     )
 
-    response = client.get("/", {"charts": ["coins_by_source"], "start_date": date(2025, 12, 9)})
+    response = auth_client.get("/", {"charts": ["coins_by_source"], "start_date": date(2025, 12, 9)})
     assert response.status_code == 200
 
     panels = {p["id"]: p for p in json.loads(response.context["chart_panels_json"])}
@@ -595,10 +653,10 @@ def test_dashboard_view_renders_coins_by_source_donut(client) -> None:
 
 
 @pytest.mark.django_db
-def test_dashboard_view_renders_empty_donut_with_typed_none_values(client) -> None:
+def test_dashboard_view_renders_empty_donut_with_typed_none_values(auth_client) -> None:
     """Render donut charts with no runs as typed-but-empty (None-valued) slices."""
 
-    response = client.get("/", {"charts": ["coins_by_source"], "start_date": date(2025, 12, 9)})
+    response = auth_client.get("/", {"charts": ["coins_by_source"], "start_date": date(2025, 12, 9)})
     assert response.status_code == 200
     assert response.context["chart_empty_state"] == "No runs match the current filters."
 
@@ -611,23 +669,25 @@ def test_dashboard_view_renders_empty_donut_with_typed_none_values(client) -> No
 
 
 @pytest.mark.django_db
-def test_dashboard_view_applies_rolling_window_last_runs(client) -> None:
+def test_dashboard_view_applies_rolling_window_last_runs(auth_client, player) -> None:
     """Apply the rolling window after date filtering."""
 
     for idx, day in enumerate([1, 2, 3], start=1):
         report = BattleReport.objects.create(
+            player=player,
             raw_text=f"Battle Report\nCoins earned    {idx * 100}\n",
             checksum=f"roll{idx}".ljust(64, "r"),
         )
         BattleReportProgress.objects.create(
             battle_report=report,
+            player=player,
             battle_date=datetime(2025, 12, day, tzinfo=timezone.utc),
             tier=1,
             wave=10,
             real_time_seconds=10,
         )
 
-    response = client.get(
+    response = auth_client.get(
         "/",
         {
             "charts": ["coins_earned"],
@@ -644,23 +704,25 @@ def test_dashboard_view_applies_rolling_window_last_runs(client) -> None:
 
 
 @pytest.mark.django_db
-def test_dashboard_view_applies_rolling_window_last_days(client) -> None:
+def test_dashboard_view_applies_rolling_window_last_days(auth_client, player) -> None:
     """Apply a last-N-days rolling window after base context filtering."""
 
     for idx, day in enumerate([1, 2, 3], start=1):
         report = BattleReport.objects.create(
+            player=player,
             raw_text=f"Battle Report\nCoins earned    {idx * 100}\n",
             checksum=f"days{idx}".ljust(64, "d"),
         )
         BattleReportProgress.objects.create(
             battle_report=report,
+            player=player,
             battle_date=datetime(2025, 12, day, tzinfo=timezone.utc),
             tier=1,
             wave=10,
             real_time_seconds=10,
         )
 
-    response = client.get(
+    response = auth_client.get(
         "/",
         {
             "charts": ["coins_earned"],

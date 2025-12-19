@@ -9,7 +9,7 @@ import pytest
 from core.wiki_ingestion import ingest_wiki_rows, make_entity_id, scrape_leveled_entity_rows
 from definitions.models import BotDefinition, BotParameterDefinition, BotParameterLevel
 from definitions.wiki_rebuild import rebuild_bots_from_wikidata
-from player_state.models import Player, PlayerBot, PlayerBotParameter
+from player_state.models import PlayerBot, PlayerBotParameter
 from player_state.sync import sync_player_state_from_definitions
 
 
@@ -56,16 +56,15 @@ def test_rebuild_bots_is_repeatable_for_same_wikidata() -> None:
 
 
 @pytest.mark.django_db
-def test_sync_player_state_is_idempotent() -> None:
+def test_sync_player_state_is_idempotent(player) -> None:
     """sync_player_state_from_definitions can be run repeatedly."""
 
     BotDefinition.objects.create(name="Amplify Bot", slug="amplify_bot")
-    player = Player.objects.create(name="default")
 
-    sync_player_state_from_definitions(player_name=player.name, write=True)
+    sync_player_state_from_definitions(player=player, write=True)
     assert PlayerBot.objects.filter(player=player, bot_slug="amplify_bot").exists()
 
-    summary2 = sync_player_state_from_definitions(player_name=player.name, write=True)
+    summary2 = sync_player_state_from_definitions(player=player, write=True)
     assert summary2.created_player_rows == 0
     assert summary2.created_parameter_rows == 0
 

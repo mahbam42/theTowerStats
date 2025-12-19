@@ -9,7 +9,7 @@ from core.services import ingest_battle_report
 
 
 @pytest.mark.django_db
-def test_battle_history_renders_import_widget_and_sort_links(client) -> None:
+def test_battle_history_renders_import_widget_and_sort_links(auth_client, player) -> None:
     """Battle History includes quick import and clickable sort headers."""
 
     ingest_battle_report(
@@ -23,10 +23,11 @@ def test_battle_history_renders_import_widget_and_sort_links(client) -> None:
                 "Killed By: Boss",
                 "Coins Earned: 1.00M",
             ]
-        )
+        ),
+        player=player,
     )
 
-    response = client.get(reverse("core:battle_history"))
+    response = auth_client.get(reverse("core:battle_history"))
     assert response.status_code == 200
 
     content = response.content.decode("utf-8")
@@ -42,10 +43,10 @@ def test_battle_history_renders_import_widget_and_sort_links(client) -> None:
 
 
 @pytest.mark.django_db
-def test_battle_history_import_panel_opens_on_form_errors(client) -> None:
+def test_battle_history_import_panel_opens_on_form_errors(auth_client) -> None:
     """Import panel expands when the import form is invalid."""
 
-    response = client.post(reverse("core:battle_history"), data={})
+    response = auth_client.post(reverse("core:battle_history"), data={})
     assert response.status_code == 200
     content = response.content.decode("utf-8")
     assert "<details open" in content

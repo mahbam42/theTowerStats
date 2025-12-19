@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 from django.core.exceptions import ValidationError
+from django.conf import settings
 from django.db import models
 
 from definitions.models import (
@@ -44,16 +45,20 @@ def preset_color_for_id(*, preset_id: int) -> str:
 
 
 class Player(models.Model):
-    """A single-player (by default) root entity for progress ownership."""
+    """Root ownership entity for all player-scoped progress.
 
-    name = models.CharField(max_length=80, unique=True, default="default")
+    A Player is a 1:1 extension of the authenticated Django user account.
+    """
+
+    user = models.OneToOneField(settings.AUTH_USER_MODEL, on_delete=models.CASCADE, related_name="player")
+    display_name = models.CharField(max_length=64)
     card_slots_unlocked = models.PositiveSmallIntegerField(default=0)
     created_at = models.DateTimeField(auto_now_add=True)
 
     def __str__(self) -> str:
-        """Return the player name for display contexts."""
+        """Return the player display name for display contexts."""
 
-        return self.name
+        return self.display_name
 
 
 class Preset(models.Model):
@@ -195,14 +200,32 @@ class PlayerCard(models.Model):
 class PlayerCardPreset(models.Model):
     """Many-to-many join table connecting player cards to preset labels."""
 
+    player = models.ForeignKey(Player, on_delete=models.CASCADE, related_name="card_preset_links")
     player_card = models.ForeignKey(PlayerCard, on_delete=models.CASCADE, related_name="preset_links")
     preset = models.ForeignKey(Preset, on_delete=models.CASCADE, related_name="card_links")
     created_at = models.DateTimeField(auto_now_add=True)
 
     class Meta:
         constraints = [
-            models.UniqueConstraint(fields=["player_card", "preset"], name="uniq_player_card_preset")
+            models.UniqueConstraint(
+                fields=["player", "player_card", "preset"],
+                name="uniq_player_card_preset",
+            )
         ]
+
+    def clean(self) -> None:
+        """Validate that the join references only a single owning player."""
+
+        if self.player_card_id and self.player_card.player_id != self.player_id:
+            raise ValidationError("PlayerCardPreset.player must match player_card.player.")
+        if self.preset_id and self.preset.player_id != self.player_id:
+            raise ValidationError("PlayerCardPreset.player must match preset.player.")
+
+    def save(self, *args, **kwargs) -> None:
+        """Save while enforcing ownership invariants."""
+
+        self.full_clean()
+        super().save(*args, **kwargs)
 
     def __str__(self) -> str:
         """Return a concise display string."""
@@ -357,6 +380,7 @@ class PlayerGuardianChip(models.Model):
 class PlayerBotParameter(models.Model):
     """Player-selected level for a bot parameter definition."""
 
+    player = models.ForeignKey(Player, on_delete=models.CASCADE, related_name="bot_parameters", editable=False)
     player_bot = models.ForeignKey(PlayerBot, on_delete=models.CASCADE, related_name="parameters")
     parameter_definition = models.ForeignKey(
         BotParameterDefinition,
@@ -382,7 +406,7 @@ class PlayerBotParameter(models.Model):
     class Meta:
         constraints = [
             models.UniqueConstraint(
-                fields=["player_bot", "parameter_definition"],
+                fields=["player", "player_bot", "parameter_definition"],
                 name="uniq_player_bot_param",
             )
         ]
@@ -390,6 +414,8 @@ class PlayerBotParameter(models.Model):
     def clean(self) -> None:
         """Validate locked-state and definition alignment."""
 
+        if self.player_bot_id and self.player_bot.player_id != self.player_id:
+            raise ValidationError("PlayerBotParameter.player must match player_bot.player.")
         if self.level and not self.player_bot.unlocked:
             raise ValidationError("Cannot set bot parameter level when the bot is locked.")
         if (
@@ -409,6 +435,7 @@ class PlayerBotParameter(models.Model):
 class PlayerUltimateWeaponParameter(models.Model):
     """Player-selected level for an ultimate weapon parameter definition."""
 
+    player = models.ForeignKey(Player, on_delete=models.CASCADE, related_name="ultimate_weapon_parameters", editable=False)
     player_ultimate_weapon = models.ForeignKey(
         PlayerUltimateWeapon, on_delete=models.CASCADE, related_name="parameters"
     )
@@ -436,7 +463,7 @@ class PlayerUltimateWeaponParameter(models.Model):
     class Meta:
         constraints = [
             models.UniqueConstraint(
-                fields=["player_ultimate_weapon", "parameter_definition"],
+                fields=["player", "player_ultimate_weapon", "parameter_definition"],
                 name="uniq_player_uw_param",
             )
         ]
@@ -444,6 +471,13 @@ class PlayerUltimateWeaponParameter(models.Model):
     def clean(self) -> None:
         """Validate locked-state and definition alignment."""
 
+        if (
+            self.player_ultimate_weapon_id
+            and self.player_ultimate_weapon.player_id != self.player_id
+        ):
+            raise ValidationError(
+                "PlayerUltimateWeaponParameter.player must match player_ultimate_weapon.player."
+            )
         if self.level and not self.player_ultimate_weapon.unlocked:
             raise ValidationError("Cannot set ultimate weapon parameter level when the weapon is locked.")
         if (
@@ -466,6 +500,7 @@ class PlayerUltimateWeaponParameter(models.Model):
 class PlayerGuardianChipParameter(models.Model):
     """Player-selected level for a guardian chip parameter definition."""
 
+    player = models.ForeignKey(Player, on_delete=models.CASCADE, related_name="guardian_chip_parameters", editable=False)
     player_guardian_chip = models.ForeignKey(
         PlayerGuardianChip, on_delete=models.CASCADE, related_name="parameters"
     )
@@ -493,7 +528,7 @@ class PlayerGuardianChipParameter(models.Model):
     class Meta:
         constraints = [
             models.UniqueConstraint(
-                fields=["player_guardian_chip", "parameter_definition"],
+                fields=["player", "player_guardian_chip", "parameter_definition"],
                 name="uniq_player_guardian_param",
             )
         ]
@@ -501,6 +536,13 @@ class PlayerGuardianChipParameter(models.Model):
     def clean(self) -> None:
         """Validate locked-state and definition alignment."""
 
+        if (
+            self.player_guardian_chip_id
+            and self.player_guardian_chip.player_id != self.player_id
+        ):
+            raise ValidationError(
+                "PlayerGuardianChipParameter.player must match player_guardian_chip.player."
+            )
         if self.level and not self.player_guardian_chip.unlocked:
             raise ValidationError("Cannot set guardian chip parameter level when the chip is locked.")
         if (

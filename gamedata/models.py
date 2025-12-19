@@ -3,26 +3,35 @@
 from __future__ import annotations
 
 from django.db import models
+from django.core.exceptions import ValidationError
 
 from definitions.models import BotDefinition, GuardianChipDefinition, UltimateWeaponDefinition
-from player_state.models import Preset
+from player_state.models import Player, Preset
 
 
 class BattleReport(models.Model):
     """Raw, preserved battle report payload imported from the player."""
 
+    player = models.ForeignKey(Player, on_delete=models.CASCADE, related_name="battle_reports")
     raw_text = models.TextField()
     parsed_at = models.DateTimeField(auto_now_add=True)
-    checksum = models.CharField(max_length=64, unique=True)
+    checksum = models.CharField(max_length=64, db_index=True)
 
     class Meta:
         verbose_name = "Battle Report"
         verbose_name_plural = "Battle Reports"
+        constraints = [
+            models.UniqueConstraint(fields=["player", "checksum"], name="uniq_player_battle_report_checksum"),
+        ]
 
     def __str__(self) -> str:
         """Return a concise display string for admin/debug usage."""
 
-        return f"BattleReport({self.checksum[:10]}…, parsed_at={self.parsed_at.isoformat()})"
+        return (
+            "BattleReport("
+            f"player={self.player_id}, checksum={self.checksum[:10]}…, parsed_at={self.parsed_at.isoformat()}"
+            ")"
+        )
 
 
 class BattleReportProgress(models.Model):
@@ -35,6 +44,7 @@ class BattleReportProgress(models.Model):
     battle_report = models.OneToOneField(
         BattleReport, on_delete=models.CASCADE, related_name="run_progress"
     )
+    player = models.ForeignKey(Player, on_delete=models.CASCADE, related_name="battle_report_progress")
     battle_date = models.DateTimeField(null=True, blank=True)
     tier = models.PositiveSmallIntegerField(null=True, blank=True)
     preset = models.ForeignKey(
@@ -78,6 +88,20 @@ class BattleReportProgress(models.Model):
 
         return f"BattleReportProgress(tier={self.tier}, wave={self.wave}, battle_date={self.battle_date})"
 
+    def clean(self) -> None:
+        """Validate that progress metadata stays within a single owning player."""
+
+        if self.battle_report_id and self.battle_report.player_id != self.player_id:
+            raise ValidationError("BattleReportProgress.player must match battle_report.player.")
+        if self.preset_id and self.preset.player_id != self.player_id:
+            raise ValidationError("BattleReportProgress.player must match preset.player.")
+
+    def save(self, *args, **kwargs) -> None:
+        """Save while enforcing ownership invariants."""
+
+        self.full_clean()
+        super().save(*args, **kwargs)
+
     @property
     def coins(self) -> int | None:
         """Return coins earned for analysis-engine compatibility."""
@@ -88,14 +112,28 @@ class BattleReportProgress(models.Model):
 class RunBot(models.Model):
     """Observed bot usage/performance row for a battle report."""
 
+    player = models.ForeignKey(Player, on_delete=models.CASCADE, related_name="run_bots")
     battle_report = models.ForeignKey(BattleReport, on_delete=models.CASCADE, related_name="run_bots")
     bot_definition = models.ForeignKey(BotDefinition, on_delete=models.CASCADE, related_name="run_bots")
     notes = models.TextField(blank=True)
+
+    def clean(self) -> None:
+        """Validate that the run row stays within a single owning player."""
+
+        if self.battle_report_id and self.battle_report.player_id != self.player_id:
+            raise ValidationError("RunBot.player must match battle_report.player.")
+
+    def save(self, *args, **kwargs) -> None:
+        """Save while enforcing ownership invariants."""
+
+        self.full_clean()
+        super().save(*args, **kwargs)
 
 
 class RunGuardian(models.Model):
     """Observed guardian chip usage/performance row for a battle report."""
 
+    player = models.ForeignKey(Player, on_delete=models.CASCADE, related_name="run_guardians")
     battle_report = models.ForeignKey(
         BattleReport, on_delete=models.CASCADE, related_name="run_guardians"
     )
@@ -104,10 +142,23 @@ class RunGuardian(models.Model):
     )
     notes = models.TextField(blank=True)
 
+    def clean(self) -> None:
+        """Validate that the run row stays within a single owning player."""
+
+        if self.battle_report_id and self.battle_report.player_id != self.player_id:
+            raise ValidationError("RunGuardian.player must match battle_report.player.")
+
+    def save(self, *args, **kwargs) -> None:
+        """Save while enforcing ownership invariants."""
+
+        self.full_clean()
+        super().save(*args, **kwargs)
+
 
 class RunCombatUltimateWeapon(models.Model):
     """Observed combat-utility ultimate weapon usage row for a battle report."""
 
+    player = models.ForeignKey(Player, on_delete=models.CASCADE, related_name="run_combat_uws")
     battle_report = models.ForeignKey(
         BattleReport, on_delete=models.CASCADE, related_name="run_combat_uws"
     )
@@ -116,10 +167,23 @@ class RunCombatUltimateWeapon(models.Model):
     )
     notes = models.TextField(blank=True)
 
+    def clean(self) -> None:
+        """Validate that the run row stays within a single owning player."""
+
+        if self.battle_report_id and self.battle_report.player_id != self.player_id:
+            raise ValidationError("RunCombatUltimateWeapon.player must match battle_report.player.")
+
+    def save(self, *args, **kwargs) -> None:
+        """Save while enforcing ownership invariants."""
+
+        self.full_clean()
+        super().save(*args, **kwargs)
+
 
 class RunUtilityUltimateWeapon(models.Model):
     """Observed non-combat ultimate weapon usage row for a battle report."""
 
+    player = models.ForeignKey(Player, on_delete=models.CASCADE, related_name="run_utility_uws")
     battle_report = models.ForeignKey(
         BattleReport, on_delete=models.CASCADE, related_name="run_utility_uws"
     )
@@ -127,3 +191,15 @@ class RunUtilityUltimateWeapon(models.Model):
         UltimateWeaponDefinition, on_delete=models.CASCADE, related_name="run_utility_uws"
     )
     notes = models.TextField(blank=True)
+
+    def clean(self) -> None:
+        """Validate that the run row stays within a single owning player."""
+
+        if self.battle_report_id and self.battle_report.player_id != self.player_id:
+            raise ValidationError("RunUtilityUltimateWeapon.player must match battle_report.player.")
+
+    def save(self, *args, **kwargs) -> None:
+        """Save while enforcing ownership invariants."""
+
+        self.full_clean()
+        super().save(*args, **kwargs)

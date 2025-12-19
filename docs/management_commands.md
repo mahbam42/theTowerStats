@@ -21,6 +21,9 @@
 
 ::: core.management.commands.sync_player_state
 
+> ⚠️ Note
+> `sync_player_state --player` refers to a username (the owning account), not a standalone Player name.
+
 ## Battle report maintenance
 
 ### `reparse_battle_reports`

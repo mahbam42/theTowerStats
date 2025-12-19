@@ -15,7 +15,7 @@ from definitions.models import (
     ParameterKey,
     WikiData,
 )
-from player_state.models import Player, PlayerGuardianChip, PlayerGuardianChipParameter
+from player_state.models import PlayerGuardianChip, PlayerGuardianChipParameter
 
 
 def _wiki(*, suffix: str | None = None) -> WikiData:
@@ -70,11 +70,10 @@ def _guardian_with_three_parameters(*, slug: str, name: str) -> GuardianChipDefi
 
 
 @pytest.mark.django_db
-def test_guardian_unlock_creates_three_parameter_rows(client) -> None:
+def test_guardian_unlock_creates_three_parameter_rows(auth_client, player) -> None:
     """Unlocking a guardian chip creates 3 parameter rows at the minimum level."""
 
     guardian = _guardian_with_three_parameters(slug="recovery", name="Recovery")
-    player = Player.objects.create(name="default")
     chip = PlayerGuardianChip.objects.create(
         player=player,
         guardian_chip_definition=guardian,
@@ -84,7 +83,7 @@ def test_guardian_unlock_creates_three_parameter_rows(client) -> None:
     )
 
     url = reverse("core:guardian_progress")
-    response = client.post(url, data={"action": "unlock_guardian_chip", "entity_id": chip.id})
+    response = auth_client.post(url, data={"action": "unlock_guardian_chip", "entity_id": chip.id})
     assert response.status_code == 302
 
     chip.refresh_from_db()
@@ -93,7 +92,7 @@ def test_guardian_unlock_creates_three_parameter_rows(client) -> None:
     assert len(params) == 3
     assert all(p.level == 1 for p in params)
 
-    response = client.get(url)
+    response = auth_client.get(url)
     assert response.status_code == 200
     tiles = response.context["guardian_chips"]
     tile = next(entry for entry in tiles if entry["slug"] == guardian.slug)
@@ -101,11 +100,10 @@ def test_guardian_unlock_creates_three_parameter_rows(client) -> None:
 
 
 @pytest.mark.django_db
-def test_guardian_level_up_increments_until_max(client) -> None:
+def test_guardian_level_up_increments_until_max(auth_client, player) -> None:
     """Level-up increments by 1 and stops at max level."""
 
     guardian = _guardian_with_three_parameters(slug="stun", name="Stun")
-    player = Player.objects.create(name="default")
     chip = PlayerGuardianChip.objects.create(
         player=player,
         guardian_chip_definition=guardian,
@@ -116,32 +114,32 @@ def test_guardian_level_up_increments_until_max(client) -> None:
     param_def = guardian.parameter_definitions.order_by("id").first()
     assert param_def is not None
     player_param = PlayerGuardianChipParameter.objects.create(
+        player=player,
         player_guardian_chip=chip,
         parameter_definition=param_def,
         level=1,
     )
 
     url = reverse("core:guardian_progress")
-    response = client.post(url, data={"action": "level_up_guardian_param", "param_id": player_param.id})
+    response = auth_client.post(url, data={"action": "level_up_guardian_param", "param_id": player_param.id})
     assert response.status_code == 302
     player_param.refresh_from_db()
     assert player_param.level == 2
 
-    response = client.post(url, data={"action": "level_up_guardian_param", "param_id": player_param.id})
+    response = auth_client.post(url, data={"action": "level_up_guardian_param", "param_id": player_param.id})
     assert response.status_code == 302
     player_param.refresh_from_db()
     assert player_param.level == 2
 
 
 @pytest.mark.django_db
-def test_guardian_active_enforces_max_two(client, settings) -> None:
+def test_guardian_active_enforces_max_two(auth_client, player, settings) -> None:
     """Guardian chips enforce a maximum of 2 active at once."""
 
     settings.DEBUG = False
     g1 = _guardian_with_three_parameters(slug="g1", name="G1")
     g2 = _guardian_with_three_parameters(slug="g2", name="G2")
     g3 = _guardian_with_three_parameters(slug="g3", name="G3")
-    player = Player.objects.create(name="default")
     chip1 = PlayerGuardianChip.objects.create(
         player=player,
         guardian_chip_definition=g1,
@@ -165,7 +163,10 @@ def test_guardian_active_enforces_max_two(client, settings) -> None:
     )
 
     url = reverse("core:guardian_progress")
-    response = client.post(url, data={"action": "set_guardian_active", "entity_id": chip3.id, "active": "1"})
+    response = auth_client.post(
+        url,
+        data={"action": "set_guardian_active", "entity_id": chip3.id, "active": "1"},
+    )
     assert response.status_code == 302
 
     chip1.refresh_from_db()
@@ -177,11 +178,10 @@ def test_guardian_active_enforces_max_two(client, settings) -> None:
 
 
 @pytest.mark.django_db
-def test_guardian_active_checkbox_payload_sets_active(client) -> None:
+def test_guardian_active_checkbox_payload_sets_active(auth_client, player) -> None:
     """Checkbox posts include both hidden and checked values; checked wins."""
 
     guardian = _guardian_with_three_parameters(slug="ally", name="Ally")
-    player = Player.objects.create(name="default")
     chip = PlayerGuardianChip.objects.create(
         player=player,
         guardian_chip_definition=guardian,
@@ -191,7 +191,7 @@ def test_guardian_active_checkbox_payload_sets_active(client) -> None:
     )
 
     url = reverse("core:guardian_progress")
-    response = client.post(
+    response = auth_client.post(
         url,
         data={
             "action": "set_guardian_active",
@@ -203,7 +203,7 @@ def test_guardian_active_checkbox_payload_sets_active(client) -> None:
     chip.refresh_from_db()
     assert chip.active is True
 
-    response = client.post(
+    response = auth_client.post(
         url,
         data={
             "action": "set_guardian_active",
@@ -217,11 +217,10 @@ def test_guardian_active_checkbox_payload_sets_active(client) -> None:
 
 
 @pytest.mark.django_db
-def test_guardian_active_ajax_returns_json(client) -> None:
+def test_guardian_active_ajax_returns_json(auth_client, player) -> None:
     """AJAX toggle returns JSON and updates state."""
 
     guardian = _guardian_with_three_parameters(slug="attack", name="Attack")
-    player = Player.objects.create(name="default")
     chip = PlayerGuardianChip.objects.create(
         player=player,
         guardian_chip_definition=guardian,
@@ -231,7 +230,7 @@ def test_guardian_active_ajax_returns_json(client) -> None:
     )
 
     url = reverse("core:guardian_progress")
-    response = client.post(
+    response = auth_client.post(
         url,
         data={"action": "set_guardian_active", "entity_id": chip.id, "active": ["0", "1"]},
         HTTP_X_REQUESTED_WITH="XMLHttpRequest",
@@ -243,7 +242,7 @@ def test_guardian_active_ajax_returns_json(client) -> None:
 
 
 @pytest.mark.django_db
-def test_guardian_dashboard_omits_invalid_guardian_in_production(client, settings) -> None:
+def test_guardian_dashboard_omits_invalid_guardian_in_production(auth_client, player, settings) -> None:
     """Production mode omits guardian chips that do not have exactly 3 parameters."""
 
     settings.DEBUG = False
@@ -263,7 +262,6 @@ def test_guardian_dashboard_omits_invalid_guardian_in_production(client, setting
         source_wikidata=wiki,
     )
 
-    player = Player.objects.create(name="default")
     PlayerGuardianChip.objects.create(
         player=player,
         guardian_chip_definition=bad,
@@ -273,17 +271,16 @@ def test_guardian_dashboard_omits_invalid_guardian_in_production(client, setting
     )
 
     url = reverse("core:guardian_progress")
-    response = client.get(url)
+    response = auth_client.get(url)
     assert response.status_code == 200
     assert all(tile["slug"] != "bad_guardian" for tile in response.context["guardian_chips"])
 
 
 @pytest.mark.django_db
-def test_guardian_dashboard_deletes_orphaned_parameter_rows(client) -> None:
+def test_guardian_dashboard_deletes_orphaned_parameter_rows(auth_client, player) -> None:
     """Orphaned parameter rows are deleted so the page can render in debug mode."""
 
     guardian = _guardian_with_three_parameters(slug="ally", name="Ally")
-    player = Player.objects.create(name="default")
     chip = PlayerGuardianChip.objects.create(
         player=player,
         guardian_chip_definition=guardian,
@@ -294,6 +291,7 @@ def test_guardian_dashboard_deletes_orphaned_parameter_rows(client) -> None:
     param_def = guardian.parameter_definitions.order_by("id").first()
     assert param_def is not None
     orphan = PlayerGuardianChipParameter.objects.create(
+        player=player,
         player_guardian_chip=chip,
         parameter_definition=param_def,
         level=1,
@@ -303,6 +301,6 @@ def test_guardian_dashboard_deletes_orphaned_parameter_rows(client) -> None:
     assert orphan.parameter_definition is None
 
     url = reverse("core:guardian_progress")
-    response = client.get(url)
+    response = auth_client.get(url)
     assert response.status_code == 200
     assert PlayerGuardianChipParameter.objects.filter(player_guardian_chip=chip).count() == 0

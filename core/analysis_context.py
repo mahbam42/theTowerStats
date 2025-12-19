@@ -59,10 +59,11 @@ _PARSE_VERSION_GUARDIAN_CHIPS = "guardian_chips_v1"
 _PARSE_VERSION_ULTIMATE_WEAPONS = "ultimate_weapons_v1"
 
 
-def build_player_context(*, revision_policy: RevisionPolicy | None = None) -> PlayerContextInput:
+def build_player_context(*, player: Player, revision_policy: RevisionPolicy | None = None) -> PlayerContextInput:
     """Build PlayerContextInput from persisted player state and parameters.
 
     Args:
+        player: Owning player derived from the authenticated user.
         revision_policy: Optional policy controlling definition selection.
 
     Returns:
@@ -70,10 +71,6 @@ def build_player_context(*, revision_policy: RevisionPolicy | None = None) -> Pl
     """
 
     policy = revision_policy or RevisionPolicy()
-    player = Player.objects.filter(name="default").first()
-    if player is None:
-        return PlayerContextInput()
-
     return PlayerContextInput(
         cards=tuple(_build_cards(player)),
         ultimate_weapons=tuple(_build_ultimate_weapons(player, policy=policy)),

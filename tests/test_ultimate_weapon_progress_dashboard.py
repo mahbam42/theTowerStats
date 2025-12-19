@@ -14,7 +14,7 @@ from definitions.models import (
     UltimateWeaponParameterLevel,
     WikiData,
 )
-from player_state.models import Player, PlayerUltimateWeapon, PlayerUltimateWeaponParameter
+from player_state.models import PlayerUltimateWeapon, PlayerUltimateWeaponParameter
 
 
 def _wiki(*, suffix: str | None = None) -> WikiData:
@@ -69,11 +69,10 @@ def _uw_with_three_parameters(*, slug: str, name: str) -> UltimateWeaponDefiniti
 
 
 @pytest.mark.django_db
-def test_uw_unlock_creates_three_parameter_rows(client) -> None:
+def test_uw_unlock_creates_three_parameter_rows(auth_client, player) -> None:
     """Unlocking a UW creates 3 parameter rows at the minimum level."""
 
     uw = _uw_with_three_parameters(slug="golden_tower", name="Golden Tower")
-    player = Player.objects.create(name="default")
     player_uw = PlayerUltimateWeapon.objects.create(
         player=player,
         ultimate_weapon_definition=uw,
@@ -82,7 +81,7 @@ def test_uw_unlock_creates_three_parameter_rows(client) -> None:
     )
 
     url = reverse("core:ultimate_weapon_progress")
-    response = client.post(url, data={"action": "unlock_uw", "uw_id": player_uw.id})
+    response = auth_client.post(url, data={"action": "unlock_uw", "uw_id": player_uw.id})
     assert response.status_code == 302
 
     player_uw.refresh_from_db()
@@ -95,11 +94,10 @@ def test_uw_unlock_creates_three_parameter_rows(client) -> None:
 
 
 @pytest.mark.django_db
-def test_uw_level_up_increments_until_max(client) -> None:
+def test_uw_level_up_increments_until_max(auth_client, player) -> None:
     """Level-up increments by 1 and stops at max level."""
 
     uw = _uw_with_three_parameters(slug="black_hole", name="Black Hole")
-    player = Player.objects.create(name="default")
     player_uw = PlayerUltimateWeapon.objects.create(
         player=player,
         ultimate_weapon_definition=uw,
@@ -109,30 +107,30 @@ def test_uw_level_up_increments_until_max(client) -> None:
     param_def = uw.parameter_definitions.order_by("id").first()
     assert param_def is not None
     player_param = PlayerUltimateWeaponParameter.objects.create(
+        player=player,
         player_ultimate_weapon=player_uw,
         parameter_definition=param_def,
         level=1,
     )
 
     url = reverse("core:ultimate_weapon_progress")
-    response = client.post(url, data={"action": "level_up_uw_param", "param_id": player_param.id})
+    response = auth_client.post(url, data={"action": "level_up_uw_param", "param_id": player_param.id})
     assert response.status_code == 302
     player_param.refresh_from_db()
     assert player_param.level == 2
 
-    response = client.post(url, data={"action": "level_up_uw_param", "param_id": player_param.id})
+    response = auth_client.post(url, data={"action": "level_up_uw_param", "param_id": player_param.id})
     assert response.status_code == 302
     player_param.refresh_from_db()
     assert player_param.level == 2
 
 
 @pytest.mark.django_db
-def test_uw_dashboard_sorts_unlocked_first(client) -> None:
+def test_uw_dashboard_sorts_unlocked_first(auth_client, player) -> None:
     """Unlocked UWs render before locked UWs by default."""
 
     uw1 = _uw_with_three_parameters(slug="spotlight", name="Spotlight")
     uw2 = _uw_with_three_parameters(slug="death_wave", name="Death Wave")
-    player = Player.objects.create(name="default")
     PlayerUltimateWeapon.objects.create(
         player=player,
         ultimate_weapon_definition=uw1,
@@ -147,14 +145,14 @@ def test_uw_dashboard_sorts_unlocked_first(client) -> None:
     )
 
     url = reverse("core:ultimate_weapon_progress")
-    response = client.get(url)
+    response = auth_client.get(url)
     assert response.status_code == 200
     tiles = response.context["ultimate_weapons"]
     assert tiles[0]["unlocked"] is True
 
 
 @pytest.mark.django_db
-def test_uw_dashboard_omits_invalid_uw_in_production(client, settings) -> None:
+def test_uw_dashboard_omits_invalid_uw_in_production(auth_client, player, settings) -> None:
     """Production mode omits UWs that do not have exactly 3 parameters."""
 
     settings.DEBUG = False
@@ -174,7 +172,6 @@ def test_uw_dashboard_omits_invalid_uw_in_production(client, settings) -> None:
         source_wikidata=wiki,
     )
 
-    player = Player.objects.create(name="default")
     PlayerUltimateWeapon.objects.create(
         player=player,
         ultimate_weapon_definition=bad,
@@ -183,13 +180,13 @@ def test_uw_dashboard_omits_invalid_uw_in_production(client, settings) -> None:
     )
 
     url = reverse("core:ultimate_weapon_progress")
-    response = client.get(url)
+    response = auth_client.get(url)
     assert response.status_code == 200
     assert all(tile["slug"] != "bad_uw" for tile in response.context["ultimate_weapons"])
 
 
 @pytest.mark.django_db
-def test_uw_dashboard_omits_unknown_parameter_keys_in_production(client, settings) -> None:
+def test_uw_dashboard_omits_unknown_parameter_keys_in_production(auth_client, player, settings) -> None:
     """Production mode omits UWs whose parameters are not in the ParameterKey registry."""
 
     settings.DEBUG = False
@@ -215,7 +212,6 @@ def test_uw_dashboard_omits_unknown_parameter_keys_in_production(client, setting
             source_wikidata=wiki,
         )
 
-    player = Player.objects.create(name="default")
     PlayerUltimateWeapon.objects.create(
         player=player,
         ultimate_weapon_definition=uw,
@@ -224,17 +220,16 @@ def test_uw_dashboard_omits_unknown_parameter_keys_in_production(client, setting
     )
 
     url = reverse("core:ultimate_weapon_progress")
-    response = client.get(url)
+    response = auth_client.get(url)
     assert response.status_code == 200
     assert all(tile["slug"] != "weird_uw" for tile in response.context["ultimate_weapons"])
 
 
 @pytest.mark.django_db
-def test_uw_unlock_form_posts_to_page_path(client) -> None:
+def test_uw_unlock_form_posts_to_page_path(auth_client, player) -> None:
     """Unlock form includes an explicit action attribute to avoid DOM shadowing issues."""
 
     uw = _uw_with_three_parameters(slug="chain_lightning", name="Chain Lightning")
-    player = Player.objects.create(name="default")
     PlayerUltimateWeapon.objects.create(
         player=player,
         ultimate_weapon_definition=uw,
@@ -243,19 +238,18 @@ def test_uw_unlock_form_posts_to_page_path(client) -> None:
     )
 
     url = reverse("core:ultimate_weapon_progress")
-    response = client.get(url)
+    response = auth_client.get(url)
     assert response.status_code == 200
     content = response.content.decode("utf-8")
     assert 'action="/ultimate-weapons/"' in content
 
 
 @pytest.mark.django_db
-def test_uw_dashboard_labels_observed_usage_for_locked_vs_unlocked(client) -> None:
+def test_uw_dashboard_labels_observed_usage_for_locked_vs_unlocked(auth_client, player) -> None:
     """Locked UWs use a distinct observed-from-runs usage label."""
 
     uw_locked = _uw_with_three_parameters(slug="locked_uw", name="Locked UW")
     uw_unlocked = _uw_with_three_parameters(slug="unlocked_uw", name="Unlocked UW")
-    player = Player.objects.create(name="default")
     PlayerUltimateWeapon.objects.create(
         player=player,
         ultimate_weapon_definition=uw_locked,
@@ -270,7 +264,7 @@ def test_uw_dashboard_labels_observed_usage_for_locked_vs_unlocked(client) -> No
     )
 
     url = reverse("core:ultimate_weapon_progress")
-    response = client.get(url)
+    response = auth_client.get(url)
     assert response.status_code == 200
     tiles = {tile["slug"]: tile for tile in response.context["ultimate_weapons"]}
     assert tiles["locked_uw"]["summary"]["headline_label"] == "Runs used while locked (observed)"

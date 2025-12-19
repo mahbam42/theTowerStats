@@ -164,8 +164,12 @@ class ChartContextForm(forms.Form):
     def __init__(self, *args, **kwargs) -> None:
         """Initialize the form with dynamic preset choices."""
 
+        player: Player | None = kwargs.pop("player", None)
         super().__init__(*args, **kwargs)
-        self.fields["preset"].queryset = Preset.objects.order_by("name")
+        if player is None:
+            self.fields["preset"].queryset = Preset.objects.order_by("name")
+        else:
+            self.fields["preset"].queryset = Preset.objects.filter(player=player).order_by("name")
         self.fields["ultimate_weapon"].queryset = UltimateWeaponDefinition.objects.order_by("name")
         self.fields["guardian_chip"].queryset = GuardianChipDefinition.objects.order_by("name")
         self.fields["bot"].queryset = BotDefinition.objects.order_by("name")

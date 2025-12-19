@@ -63,7 +63,7 @@ class Command(BaseCommand):
             progress = getattr(report, "run_progress", None)
             created = False
             if progress is None:
-                progress = BattleReportProgress(battle_report=report)
+                progress = BattleReportProgress(battle_report=report, player=report.player)
                 created = True
 
             updated_fields = {
@@ -99,4 +99,3 @@ class Command(BaseCommand):
         mode = "CHECK" if check else "WRITE"
         self.stdout.write(f"[{mode}] {totals}")
         return None
-

@@ -11,7 +11,6 @@ from player_state.card_slots import (
     next_card_slot_unlock_cost_raw,
 )
 from player_state.economy import enforce_and_deduct_gems_if_tracked, parse_cost_amount
-from player_state.models import Player
 
 
 def _wikidata_row(*, canonical_name: str, entity_id: str, raw_row: dict[str, str], content_hash: str) -> WikiData:
@@ -71,10 +70,11 @@ def test_parse_cost_amount_extracts_integer() -> None:
 
 
 @pytest.mark.django_db
-def test_enforce_and_deduct_gems_is_noop_when_player_has_no_gem_field() -> None:
+def test_enforce_and_deduct_gems_is_noop_when_player_has_no_gem_field(player) -> None:
     """Gem enforcement does not block when gem balance is not tracked."""
 
-    player = Player.objects.create(name="default", card_slots_unlocked=0)
+    player.card_slots_unlocked = 0
+    player.save(update_fields=["card_slots_unlocked"])
     result, parsed_cost = enforce_and_deduct_gems_if_tracked(player=player, cost_raw="50 Gems")
     assert result is None
     assert parsed_cost == 50

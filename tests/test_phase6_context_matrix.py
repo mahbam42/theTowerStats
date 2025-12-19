@@ -9,7 +9,7 @@ from typing import Any
 import pytest
 
 from gamedata.models import BattleReport, BattleReportProgress
-from player_state.models import Player, Preset
+from player_state.models import Preset
 
 
 def _panel(response, *, chart_id: str) -> dict[str, Any]:
@@ -20,20 +20,21 @@ def _panel(response, *, chart_id: str) -> dict[str, Any]:
 
 
 @pytest.mark.django_db
-def test_phase6_context_matrix_schema_is_stable_across_contexts(client) -> None:
+def test_phase6_context_matrix_schema_is_stable_across_contexts(auth_client, player) -> None:
     """Keep chart schema stable while context inputs change."""
 
-    player = Player.objects.create(name="default")
     farming = Preset.objects.create(player=player, name="Farming")
     tournament = Preset.objects.create(player=player, name="Tournament")
 
     def _run(*, checksum: str, battle_date: datetime, tier: int, preset: Preset) -> None:
         report = BattleReport.objects.create(
+            player=player,
             raw_text=f"Battle Report\nCoins earned\t{tier * 100}\n",
             checksum=checksum.ljust(64, "x"),
         )
         BattleReportProgress.objects.create(
             battle_report=report,
+            player=player,
             battle_date=battle_date,
             tier=tier,
             wave=10,
@@ -56,7 +57,7 @@ def test_phase6_context_matrix_schema_is_stable_across_contexts(client) -> None:
 
     panels = []
     for params in contexts:
-        response = client.get("/", params)
+        response = auth_client.get("/", params)
         assert response.status_code == 200
         panels.append(_panel(response, chart_id="coins_earned"))
 
@@ -68,16 +69,20 @@ def test_phase6_context_matrix_schema_is_stable_across_contexts(client) -> None:
 
 
 @pytest.mark.django_db
-def test_phase6_context_edge_case_preset_with_no_runs_does_not_fallback(client) -> None:
+def test_phase6_context_edge_case_preset_with_no_runs_does_not_fallback(auth_client, player) -> None:
     """Do not silently fallback when the selected preset has no matching runs."""
 
-    player = Player.objects.create(name="default")
     farming = Preset.objects.create(player=player, name="Farming")
     empty = Preset.objects.create(player=player, name="No Runs")
 
-    report = BattleReport.objects.create(raw_text="Battle Report\nCoins earned\t100\n", checksum="ctx".ljust(64, "c"))
+    report = BattleReport.objects.create(
+        player=player,
+        raw_text="Battle Report\nCoins earned\t100\n",
+        checksum="ctx".ljust(64, "c"),
+    )
     BattleReportProgress.objects.create(
         battle_report=report,
+        player=player,
         battle_date=datetime(2025, 12, 10, tzinfo=timezone.utc),
         tier=1,
         wave=10,
@@ -87,7 +92,7 @@ def test_phase6_context_edge_case_preset_with_no_runs_does_not_fallback(client) 
         preset_color_snapshot=farming.badge_color(),
     )
 
-    response = client.get(
+    response = auth_client.get(
         "/",
         {
             "charts": ["coins_earned"],

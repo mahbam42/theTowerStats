@@ -7,7 +7,7 @@ from django.urls import reverse
 
 from core.services import ingest_battle_report
 from gamedata.models import BattleReportProgress
-from player_state.models import Player, Preset
+from player_state.models import Preset
 
 
 def _battle_report_text(*, wave: int) -> str:
@@ -27,10 +27,10 @@ def _battle_report_text(*, wave: int) -> str:
 
 
 @pytest.mark.django_db
-def test_ingest_sets_preset_snapshots_and_survives_preset_delete() -> None:
+def test_ingest_sets_preset_snapshots_and_survives_preset_delete(player) -> None:
     """Preset snapshot fields remain readable after the preset row is deleted."""
 
-    report, _ = ingest_battle_report(_battle_report_text(wave=101), preset_name="Farming")
+    report, _ = ingest_battle_report(_battle_report_text(wave=101), player=player, preset_name="Farming")
     progress = report.run_progress
     assert progress.preset is not None
     assert progress.preset_name_snapshot == "Farming"
@@ -47,16 +47,15 @@ def test_ingest_sets_preset_snapshots_and_survives_preset_delete() -> None:
 
 
 @pytest.mark.django_db
-def test_battle_history_filters_by_preset(client) -> None:
+def test_battle_history_filters_by_preset(auth_client, player) -> None:
     """Preset filter limits the visible run rows."""
 
-    ingest_battle_report(_battle_report_text(wave=111), preset_name="Farm")
-    ingest_battle_report(_battle_report_text(wave=222), preset_name="Push")
+    ingest_battle_report(_battle_report_text(wave=111), player=player, preset_name="Farm")
+    ingest_battle_report(_battle_report_text(wave=222), player=player, preset_name="Push")
 
-    player = Player.objects.get(name="default")
     farm = Preset.objects.get(player=player, name="Farm")
 
-    response = client.get(reverse("core:battle_history"), data={"preset": farm.id})
+    response = auth_client.get(reverse("core:battle_history"), data={"preset": farm.id})
     assert response.status_code == 200
 
     content = response.content.decode("utf-8")
@@ -65,19 +64,18 @@ def test_battle_history_filters_by_preset(client) -> None:
 
 
 @pytest.mark.django_db
-def test_battle_history_allows_manual_preset_update(client) -> None:
+def test_battle_history_allows_manual_preset_update(auth_client, player) -> None:
     """Manual preset assignment updates the FK and snapshot fields."""
 
-    report, _ = ingest_battle_report(_battle_report_text(wave=333), preset_name=None)
+    report, _ = ingest_battle_report(_battle_report_text(wave=333), player=player, preset_name=None)
     progress = report.run_progress
     assert progress.preset is None
     assert progress.preset_name_snapshot == ""
 
-    player, _ = Player.objects.get_or_create(name="default")
     preset = Preset.objects.create(player=player, name="Late Tag")
 
     url = reverse("core:battle_history")
-    response = client.post(
+    response = auth_client.post(
         url,
         data={
             "action": "update_run_preset",
@@ -93,7 +91,7 @@ def test_battle_history_allows_manual_preset_update(client) -> None:
     assert progress.preset_name_snapshot == "Late Tag"
     assert progress.preset_color_snapshot
 
-    response = client.post(
+    response = auth_client.post(
         url,
         data={
             "action": "update_run_preset",
@@ -111,13 +109,12 @@ def test_battle_history_allows_manual_preset_update(client) -> None:
 
 
 @pytest.mark.django_db
-def test_battle_history_rejects_unknown_progress_id(client) -> None:
+def test_battle_history_rejects_unknown_progress_id(auth_client, player) -> None:
     """Unknown progress ids do not crash the update endpoint."""
 
-    player = Player.objects.create(name="default")
     preset = Preset.objects.create(player=player, name="Tag")
 
-    response = client.post(
+    response = auth_client.post(
         reverse("core:battle_history"),
         data={
             "action": "update_run_preset",
