@@ -2,7 +2,7 @@
 
 ## Overview
 
-The Guardian Chips page helps you track which chips are unlocked, which chips are currently active, how far each upgrade parameter has progressed, and how often each chip appears in your imported Battle Reports.
+The Guardian Chips page helps you track which chips are unlocked, which chips are currently active, how far each upgrade parameter has progressed, and how often each chip appears in your imported Battle Reports. Guardian Chip names and descriptions are based on the [Guardian](https://the-tower-idle-tower-defense.fandom.com/wiki/Guardian) page on the The Tower Idle Tower Defense Fandom Wiki (external).
 
 ## When to Use This
 

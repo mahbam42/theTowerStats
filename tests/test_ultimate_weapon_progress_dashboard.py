@@ -6,6 +6,7 @@ import pytest
 from django.urls import reverse
 from uuid import uuid4
 
+from core.services import ingest_battle_report
 from definitions.models import (
     Currency,
     ParameterKey,
@@ -269,3 +270,34 @@ def test_uw_dashboard_labels_observed_usage_for_locked_vs_unlocked(auth_client, 
     tiles = {tile["slug"]: tile for tile in response.context["ultimate_weapons"]}
     assert tiles["locked_uw"]["summary"]["headline_label"] == "Runs used while locked (observed)"
     assert tiles["unlocked_uw"]["summary"]["headline_label"] == "Runs used (observed)"
+
+
+@pytest.mark.django_db
+def test_uw_dashboard_runs_used_reflects_imported_battle_reports(auth_client, player) -> None:
+    """Runs used counts Battle Reports that include the Ultimate Weapon."""
+
+    uw = _uw_with_three_parameters(slug="chain_lightning", name="Chain Lightning")
+    PlayerUltimateWeapon.objects.create(
+        player=player,
+        ultimate_weapon_definition=uw,
+        ultimate_weapon_slug=uw.slug,
+        unlocked=True,
+    )
+
+    ingest_battle_report(
+        "\n".join(
+            [
+                "Battle Report",
+                "Ultimate Weapons: Chain Lightning",
+                "Battle Date: 2025-12-01 13:45:00",
+                "Tier: 6",
+            ]
+        ),
+        player=player,
+    )
+
+    url = reverse("core:ultimate_weapon_progress")
+    response = auth_client.get(url)
+    assert response.status_code == 200
+    tiles = {tile["slug"]: tile for tile in response.context["ultimate_weapons"]}
+    assert tiles["chain_lightning"]["summary"]["headline_value"] == 1

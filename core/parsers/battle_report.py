@@ -393,3 +393,76 @@ def _parse_unit_duration_seconds(value: str) -> int | None:
             total += amount
 
     return total if total > 0 else None
+
+
+def extract_ultimate_weapon_usage(raw_text: str) -> tuple[tuple[str, ...], tuple[str, ...]]:
+    """Extract Ultimate Weapon usage name lists from raw Battle Report text.
+
+    Args:
+        raw_text: Raw Battle Report text as pasted by the user.
+
+    Returns:
+        Tuple of (combat_ultimate_weapons, utility_ultimate_weapons), where each
+        is a tuple of UW display names in best-effort order.
+
+    Notes:
+        This parser is intentionally best-effort:
+        - Unknown labels are ignored.
+        - Unknown or empty list items are ignored.
+        - The raw text is never modified; this only extracts names for run
+          association tables.
+    """
+
+    combat_labels = {
+        "combat ultimate weapons",
+        "combat ultimate weapon",
+        "combat uws",
+    }
+    utility_labels = {
+        "utility ultimate weapons",
+        "utility ultimate weapon",
+        "utility uws",
+    }
+    generic_labels = {
+        "ultimate weapons",
+        "ultimate weapon",
+        "uws",
+    }
+
+    combat: list[str] = []
+    utility: list[str] = []
+    for label, value in _iter_label_value_lines(raw_text):
+        normalized = _normalize_label(label)
+        if normalized in combat_labels:
+            combat.extend(_split_name_list(value))
+        elif normalized in utility_labels:
+            utility.extend(_split_name_list(value))
+        elif normalized in generic_labels:
+            combat.extend(_split_name_list(value))
+
+    return _dedupe_preserve_order(combat), _dedupe_preserve_order(utility)
+
+
+def _split_name_list(raw: str) -> list[str]:
+    """Split a comma-delimited name list into normalized display names."""
+
+    parts: list[str] = []
+    for item in (raw or "").split(","):
+        cleaned = item.strip()
+        if cleaned:
+            parts.append(cleaned)
+    return parts
+
+
+def _dedupe_preserve_order(items: list[str]) -> tuple[str, ...]:
+    """Return a tuple with duplicates removed (stable order)."""
+
+    seen: set[str] = set()
+    ordered: list[str] = []
+    for item in items:
+        key = item.casefold()
+        if key in seen:
+            continue
+        seen.add(key)
+        ordered.append(item)
+    return tuple(ordered)

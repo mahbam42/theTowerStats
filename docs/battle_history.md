@@ -29,6 +29,7 @@ Battle History helps you review your past runs in a table so you can compare res
 - **Battle date** and **Tier** come from the report header and help you locate runs in time.
 - **Highest wave** shows the highest wave reached in that run.
 - **Killed by** shows the cause of death when it exists in the report.
+- **Killed By (diagnostic)** summarizes how often each **Killed by** label appears across the current filters.
 - **Coins earned**, **Cash earned**, and **Interest earned** match the values shown in the report summary.
 - **Gem blocks**, **Cells earned**, and **Reroll shards** show run resources that may be missing in older or incomplete reports.
 - **Preset** is an optional label you can use to group runs for review. It does not change any gameplay results.
@@ -40,7 +41,8 @@ Battle History helps you review your past runs in a table so you can compare res
 > Cells display an em dash (—) when the value does not exist in the imported report.
 
 > **Caution**
-> Sorting can only use values that were present when the report was imported. The app does not invent missing labels.
+> This app does not invent or infer missing values.
+> What you see reflects what the game reported.
 
 > **Note**
 > If you delete a preset later, runs that used it can still show the saved label in the table so your history stays readable.

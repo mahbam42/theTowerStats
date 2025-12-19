@@ -2,7 +2,7 @@
 
 ## Overview
 
-Cards help you track your card slot progression and keep an organized view of your card inventory with optional preset tags.
+Cards help you track your card slot progression and keep an organized view of your card inventory with optional preset tags. Card names and descriptions are based on the [Cards](https://the-tower-idle-tower-defense.fandom.com/wiki/Cards) page on the The Tower Idle Tower Defense Fandom Wiki (external).
 
 ## When to Use This
 

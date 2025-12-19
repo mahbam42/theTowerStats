@@ -2,7 +2,7 @@
 
 ## Overview
 
-The Bots page helps you track which bots are unlocked, how far each upgrade parameter has progressed, and how often each bot appears in your imported Battle Reports.
+The Bots page helps you track which bots are unlocked, how far each upgrade parameter has progressed, and how often each bot appears in your imported Battle Reports. Bot names and descriptions are based on the [Bots](https://the-tower-idle-tower-defense.fandom.com/wiki/Bots) page on the The Tower Idle Tower Defense Fandom Wiki (external).
 
 ## When to Use This
 

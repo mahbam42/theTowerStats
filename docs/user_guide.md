@@ -40,6 +40,9 @@ theTowerStats turns your imported Battle Reports into Battle History tables, Cha
 > This user guide avoids strategy advice. Values shown are factual outputs based on your imports and saved progress.
 
 > ⚠️ Note
+> Reference names and descriptions are based on the The Tower Idle Tower Defense Fandom Wiki (external): https://the-tower-idle-tower-defense.fandom.com/wiki/The_Tower_-_Idle_Tower_Defense_Wiki
+
+> ⚠️ Note
 > Your data is scoped to your signed-in account. Other users on the same instance cannot see or modify your runs or progress.
 
 > ⚠️ Note

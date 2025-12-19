@@ -15,7 +15,7 @@ from django.contrib.auth.forms import AuthenticationForm, UserCreationForm
 from django.conf import settings
 from django.core.exceptions import ValidationError
 from django.db import transaction
-from django.db.models import Case, ExpressionWrapper, F, FloatField, Max, QuerySet, Value, When
+from django.db.models import Case, Count, ExpressionWrapper, F, FloatField, Max, QuerySet, Value, When
 from django.http import HttpRequest, HttpResponse, JsonResponse, QueryDict
 from django.shortcuts import redirect, render
 from django.core.paginator import Paginator
@@ -78,7 +78,12 @@ from definitions.models import (
     PatchBoundary,
     UltimateWeaponDefinition,
 )
-from gamedata.models import BattleReport, BattleReportProgress
+from gamedata.models import (
+    BattleReport,
+    BattleReportProgress,
+    RunCombatUltimateWeapon,
+    RunUtilityUltimateWeapon,
+)
 from player_state.card_slots import card_slot_max_slots, next_card_slot_unlock_cost_raw
 from player_state.cards import apply_inventory_rollover, derive_card_progress
 from player_state.economy import enforce_and_deduct_gems_if_tracked
@@ -1023,6 +1028,36 @@ def battle_history(request: HttpRequest) -> HttpResponse:
     if preset:
         runs = runs.filter(run_progress__preset=preset)
 
+    killed_by_rows = (
+        runs.values("run_progress__killed_by")
+        .annotate(count=Count("id"))
+        .order_by("-count")
+    )
+    killed_by_counts: dict[str, int] = {}
+    for row in killed_by_rows:
+        label = (row.get("run_progress__killed_by") or "").strip()
+        normalized = label if label else "Missing"
+        killed_by_counts[normalized] = killed_by_counts.get(normalized, 0) + int(row.get("count") or 0)
+
+    killed_by_labels = list(killed_by_counts.keys())
+    killed_by_data = [killed_by_counts[label] for label in killed_by_labels]
+    killed_by_donut_json = (
+        json.dumps(
+            {
+                "labels": killed_by_labels,
+                "datasets": [
+                    {
+                        "label": "Runs",
+                        "unit": "runs",
+                        "data": killed_by_data,
+                    }
+                ],
+            }
+        )
+        if killed_by_labels
+        else None
+    )
+
     paginator = Paginator(runs, 12)
     page_number = request.GET.get("page")
     page_obj = paginator.get_page(page_number)
@@ -1071,6 +1106,7 @@ def battle_history(request: HttpRequest) -> HttpResponse:
             "base_querystring": base_querystring,
             "sort_querystrings": sort_querystrings,
             "current_sort": sort_key,
+            "killed_by_donut_json": killed_by_donut_json,
         },
     )
 
@@ -1675,6 +1711,10 @@ def ultimate_weapon_progress(request: HttpRequest) -> HttpResponse:
         ultimate_weapons_qs = ultimate_weapons_qs.filter(unlocked=False)
 
     any_battles = BattleReport.objects.filter(player=player).exists()
+    has_uw_usage_rows = (
+        RunCombatUltimateWeapon.objects.filter(player=player).exists()
+        or RunUtilityUltimateWeapon.objects.filter(player=player).exists()
+    )
 
     tiles: list[dict[str, object]] = []
     for uw in ultimate_weapons_qs:
@@ -1732,10 +1772,13 @@ def ultimate_weapon_progress(request: HttpRequest) -> HttpResponse:
             messages.warning(request, f"Skipping {uw_def.name}: missing parameter rows.")
             continue
 
-        runs_using = (
-            BattleReport.objects.filter(player=player, run_combat_uws__ultimate_weapon_definition=uw_def)
-            | BattleReport.objects.filter(player=player, run_utility_uws__ultimate_weapon_definition=uw_def)
-        ).distinct()
+        if has_uw_usage_rows:
+            runs_using = (
+                BattleReport.objects.filter(player=player, run_combat_uws__ultimate_weapon_definition=uw_def)
+                | BattleReport.objects.filter(player=player, run_utility_uws__ultimate_weapon_definition=uw_def)
+            ).distinct()
+        else:
+            runs_using = BattleReport.objects.filter(player=player, raw_text__icontains=uw_def.name).distinct()
         runs_count = runs_using.count() if any_battles else 0
 
         tiles.append(
@@ -1775,8 +1818,10 @@ def ultimate_weapon_progress(request: HttpRequest) -> HttpResponse:
             dto = decode_chart_config_dto(dict(snapshot.config))
             validation = validate_chart_config_dto(dto, registry=DEFAULT_REGISTRY)
             if validation.is_valid:
-                runs_qs = BattleReport.objects.select_related("run_progress", "run_progress__preset").order_by(
-                    "run_progress__battle_date"
+                runs_qs = (
+                    BattleReport.objects.filter(player=player)
+                    .select_related("run_progress", "run_progress__preset")
+                    .order_by("run_progress__battle_date")
                 )
                 if dto.context.start_date:
                     runs_qs = runs_qs.filter(run_progress__battle_date__date__gte=dto.context.start_date)
@@ -2601,6 +2646,7 @@ def _filtered_runs(filter_form: ChartContextForm, *, player: Player) -> QuerySet
         "run_bots__bot_definition",
         "run_guardians__guardian_chip_definition",
         "run_combat_uws__ultimate_weapon_definition",
+        "run_utility_uws__ultimate_weapon_definition",
     ).order_by("run_progress__battle_date")
     if not filter_form.is_valid():
         return runs

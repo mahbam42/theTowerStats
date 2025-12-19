@@ -407,13 +407,14 @@ def compute_metric_value(
     if metric_key == "uw_runs_count":
         if not entity_name:
             return None, (), ("Select an Ultimate Weapon to chart usage counts.",)
-        related = getattr(record, "run_combat_uws", None)
-        if related is None:
-            return None, (), ()
-        for row in getattr(related, "all", lambda: related)():
-            uw_def = getattr(row, "ultimate_weapon_definition", None)
-            if getattr(uw_def, "name", None) == entity_name:
-                return 1.0, (), ()
+        for rel_name in ("run_combat_uws", "run_utility_uws"):
+            related = getattr(record, rel_name, None)
+            if related is None:
+                continue
+            for row in getattr(related, "all", lambda: related)():
+                uw_def = getattr(row, "ultimate_weapon_definition", None)
+                if getattr(uw_def, "name", None) == entity_name:
+                    return 1.0, (), ()
         return 0.0, (), ()
 
     if metric_key == "guardian_runs_count":

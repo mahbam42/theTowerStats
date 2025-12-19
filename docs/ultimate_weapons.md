@@ -2,7 +2,7 @@
 
 ## Overview
 
-The Ultimate Weapons page helps you track which Ultimate Weapons you have unlocked, how far each upgrade parameter has progressed, and how often each weapon appears in your imported Battle Reports.
+The Ultimate Weapons page helps you track which Ultimate Weapons you have unlocked, how far each upgrade parameter has progressed, and how often each weapon appears in your imported Battle Reports. Ultimate Weapon names and descriptions are based on the [Ultimate Weapons](https://the-tower-idle-tower-defense.fandom.com/wiki/Ultimate_Weapons) page on the The Tower Idle Tower Defense Fandom Wiki (external).
 
 ## When to Use This
 

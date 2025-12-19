@@ -8,9 +8,15 @@ from __future__ import annotations
 
 from django.db import IntegrityError, transaction
 
-from gamedata.models import BattleReport, BattleReportProgress
+from definitions.models import UltimateWeaponDefinition
+from gamedata.models import (
+    BattleReport,
+    BattleReportProgress,
+    RunCombatUltimateWeapon,
+    RunUtilityUltimateWeapon,
+)
 from player_state.models import Player, Preset
-from core.parsers.battle_report import parse_battle_report
+from core.parsers.battle_report import extract_ultimate_weapon_usage, parse_battle_report
 
 
 def ingest_battle_report(
@@ -59,6 +65,7 @@ def ingest_battle_report(
                 cells_earned=parsed.cells_earned,
                 reroll_shards_earned=parsed.reroll_shards_earned,
             )
+            _ingest_run_ultimate_weapon_usage(battle_report=battle_report, player=player)
             return battle_report, True
     except IntegrityError:
         battle_report = BattleReport.objects.get(player=player, checksum=parsed.checksum)
@@ -68,6 +75,7 @@ def ingest_battle_report(
                 preset_name_snapshot=preset_snapshot["name"],
                 preset_color_snapshot=preset_snapshot["color"],
             )
+        _ingest_run_ultimate_weapon_usage(battle_report=battle_report, player=player)
         return battle_report, False
 
 
@@ -106,3 +114,68 @@ def _preset_snapshot(preset: Preset | None) -> dict[str, str]:
     if preset is None:
         return {"name": "", "color": ""}
     return {"name": preset.name, "color": preset.badge_color()}
+
+
+def _ingest_run_ultimate_weapon_usage(*, battle_report: BattleReport, player: Player) -> None:
+    """Persist best-effort Ultimate Weapon usage rows for a Battle Report.
+
+    Args:
+        battle_report: Persisted BattleReport row to attach usage to.
+        player: Owning player derived from the authenticated user.
+
+    Notes:
+        Usage rows are derived from the Battle Report raw text. Unknown names
+        are ignored, and existing rows are left in place to keep ingestion
+        idempotent for duplicate imports.
+    """
+
+    combat_names, utility_names = extract_ultimate_weapon_usage(battle_report.raw_text or "")
+    if not combat_names and not utility_names:
+        return
+
+    definitions = {
+        definition.name.casefold(): definition
+        for definition in UltimateWeaponDefinition.objects.order_by("id")
+    }
+
+    existing_combat_ids = set(
+        RunCombatUltimateWeapon.objects.filter(
+            player=player, battle_report=battle_report
+        ).values_list("ultimate_weapon_definition_id", flat=True)
+    )
+    existing_utility_ids = set(
+        RunUtilityUltimateWeapon.objects.filter(
+            player=player, battle_report=battle_report
+        ).values_list("ultimate_weapon_definition_id", flat=True)
+    )
+
+    combat_rows: list[RunCombatUltimateWeapon] = []
+    for name in combat_names:
+        definition = definitions.get(name.casefold())
+        if definition is None or definition.id in existing_combat_ids:
+            continue
+        combat_rows.append(
+            RunCombatUltimateWeapon(
+                player=player,
+                battle_report=battle_report,
+                ultimate_weapon_definition=definition,
+            )
+        )
+
+    utility_rows: list[RunUtilityUltimateWeapon] = []
+    for name in utility_names:
+        definition = definitions.get(name.casefold())
+        if definition is None or definition.id in existing_utility_ids:
+            continue
+        utility_rows.append(
+            RunUtilityUltimateWeapon(
+                player=player,
+                battle_report=battle_report,
+                ultimate_weapon_definition=definition,
+            )
+        )
+
+    if combat_rows:
+        RunCombatUltimateWeapon.objects.bulk_create(combat_rows)
+    if utility_rows:
+        RunUtilityUltimateWeapon.objects.bulk_create(utility_rows)

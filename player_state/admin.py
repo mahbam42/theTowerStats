@@ -90,7 +90,7 @@ class PresetAdmin(PlayerScopedAdmin):
 
 
 @admin.register(ChartSnapshot)
-class ChartSnapshotAdmin(admin.ModelAdmin):
+class ChartSnapshotAdmin(PlayerScopedAdmin):
     """Admin configuration for ChartSnapshot."""
 
     list_display = ("player", "name", "target", "created_at")
