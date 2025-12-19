@@ -1335,8 +1335,10 @@ Revisit and build on phase 2 work
   - Are visible and explainable everywhere parameters appear
 
 - No efficiency or recommendation logic depends on undocumented assumptions
-*** Phase 7 Power Tools
+*** IN PROGRESS Phase 7 Power Tools
 
+- State "IN PROGRESS" from              [2025-12-18 Thu 19:34] \\
+  Needs to be manually tested/UAT pass
 **** TODO [#A] Add Chart Builder Modal to Charts Dashboard
 Let user select chart style and metrics to show. The Chart Builder is not a UI feature — it’s a schema and contract feature.
 
@@ -1765,28 +1767,77 @@ This dramatically increases perceived value with very little backend work.
 
 **** TODO [#C] Wireup Github Actions to Run Tests
 Run checks or Ruff Check, mypy ., pytest -q
-** Backlog [0/9]
+
+*** Phase 9 Deploy and Clean out Backlog
+** Backlog [0/10]
 “Out of Scope”:
 - Cloud sync
 - Real-time scraping
   
-*** TODO [#C] Normalize time handling everywhere (game time vs real time vs accelerated)
-Game Time can be accelerated and the rate can be changed during a run. Either via Lab Research (max of 5x) or via perks that increase it further to a variable factor (increased by additional researchs). The hard maximum is 6.25x (according to the Wiki). However the Wiki also notes "Game speed is not accurate. x5.0 speed behaves closer to x4.0 while 6.25 is closer to x5." So our handling of it is not strictly necessary. 
+*** TODO [#A] Review Docs and Note Revisions                          :Max:
 
+*** TODO [#A] Scope and Apply Permissions
+Need to assign Player and Admin permissions
 *** TODO [#A] On the UW Dashboard Runs Used is not updating appropriately
 Based on Battle Reports the 'runs used' should be >0. 
-
-*** TODO [#B] User Guide Operation                                   :docs:
-"Note Battle History surfaces only what exists in your imported text. If a label never appeared in the report, it will not be synthesized here."
-
-This note doesn't make sense. The Battle History is a read-only summary provided by the Game. So assume a player is pasting the full summary into our app every time. 
 
 *** TODO [#A] Cite Sources from the Wiki                             :docs:
 The docs should credit the Wiki early and often.
 *** TODO [#A] Name property links to wiki page as well
 Cards, UWs, Bots, Guardian Chips names should all link to the respective Wiki pages for additional information. They should be appropriately marked as external links. 
-*** TODO [#C] Phase 5 Summary was written as a user facing doc       :docs:
-Should be written as Developer / Progress Documentation. And appropriately filed under 'Development
+*** TODO [#B] User Guide Operation                                   :docs:
+"Note Battle History surfaces only what exists in your imported text. If a label never appeared in the report, it will not be synthesized here."
+
+This note doesn't make sense. The Battle History is a read-only summary provided by the Game. So assume a player is pasting the full summary into our app every time. 
+
+*** TODO [#B] Ranked Recommendations
+
+Only now do you allow:
+
+“Top 3 upgrades for your goal”
+
+“Best next unlock based on your data”
+
+Guardrails:
+
+Always link back to:
+
+Charts
+
+Comparisons
+
+Assumptions
+
+Always show:
+
+Why
+
+Based on how much data
+
+What would change the recommendation
+
+This keeps it defensible.
+*** TODO [#B] What-If Scenarios
+
+This is where simulations might enter — but cautiously.
+
+Examples:
+
+“If Golden Tower cooldown were reduced by 1 level…”
+
+“Projected coin gain range if X upgraded next”
+
+Still deterministic:
+
+Based on historical deltas
+
+No RNG modeling
+
+No balance speculation
+
+*** TODO [#C] Normalize time handling everywhere (game time vs real time vs accelerated)
+Game Time can be accelerated and the rate can be changed during a run. Either via Lab Research (max of 5x) or via perks that increase it further to a variable factor (increased by additional researchs). The hard maximum is 6.25x (according to the Wiki). However the Wiki also notes "Game speed is not accurate. x5.0 speed behaves closer to x4.0 while 6.25 is closer to x5." So our handling of it is not strictly necessary. 
+
 *** TODO [#C] Required Doc Type Header (Must Prepend to All Docs)
 Every document authored or modified by Codex must begin with exactly one of the following headers, placed at the very top of the file.
 
@@ -1862,53 +1913,14 @@ Before writing any documentation, select and prepend the appropriate Doc Type He
 Follow the documentation standards defined in agents.md.
 If writing a User Guide, prioritize clarity for non-technical users, avoid internal details, and follow the required task-based structure.
 Validate the final document against the Documentation Self-Check Checklist before completing the task.
-*** TODO [#B] Ranked Recommendations
-
-Only now do you allow:
-
-“Top 3 upgrades for your goal”
-
-“Best next unlock based on your data”
-
-Guardrails:
-
-Always link back to:
-
-Charts
-
-Comparisons
-
-Assumptions
-
-Always show:
-
-Why
-
-Based on how much data
-
-What would change the recommendation
-
-This keeps it defensible.
-*** TODO [#B] What-If Scenarios
-
-This is where simulations might enter — but cautiously.
-
-Examples:
-
-“If Golden Tower cooldown were reduced by 1 level…”
-
-“Projected coin gain range if X upgraded next”
-
-Still deterministic:
-
-Based on historical deltas
-
-No RNG modeling
-
-No balance speculation
 
 *** Complete
+**** DONE [#C] Phase 5 Summary was written as a user facing doc     :docs:
+CLOSED: [2025-12-18 Thu 19:33]
+- State "DONE"       from "TODO"       [2025-12-18 Thu 19:33]
+Should be written as Developer / Progress Documentation. And appropriately filed under 'Development
 **** DONE [#A] Fix pytest warnings
+
 CLOSED: [2025-12-16 Tue 11:01]
 - State "DONE"       from "TODO"       [2025-12-16 Tue 11:01]
 definitions/models.py:279
