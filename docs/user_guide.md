@@ -21,6 +21,7 @@ theTowerStats turns your imported Battle Reports into Battle History tables, Cha
 6. Select **Import Battle Report**.
 7. Select **Charts** to view time-series charts based on your imported runs.
 8. Select **Cards**, **Ultimate Weapons**, **Guardians**, or **Bots** to record and review saved progress.
+9. Select **Sign out** to end your session.
 
 ## How to Read the Results
 

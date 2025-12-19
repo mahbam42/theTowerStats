@@ -91,6 +91,20 @@
       .preset-color-purple {
         background: #6f42c1;
       }
+
+      .link-button {
+        background: none;
+        border: none;
+        padding: 0;
+        color: #1779ba;
+        cursor: pointer;
+        font: inherit;
+      }
+
+      .link-button:hover,
+      .link-button:focus {
+        text-decoration: underline;
+      }
     </style>
     {% block head %}{% endblock %}
   </head>
@@ -116,7 +130,13 @@
           <li><a href="/admin/" target="_blank" rel="noreferrer">Admin</a></li>
           {% if user.is_authenticated %}
             <li class="menu-text">Signed in as {{ user.username }}</li>
-            <li><a href="{% url 'logout' %}">Sign out</a></li>
+            <li>
+              <form action="{% url 'logout' %}" method="post" style="display: inline">
+                {% csrf_token %}
+                <input type="hidden" name="next" value="{% url 'login' %}" />
+                <button type="submit" class="link-button">Sign out</button>
+              </form>
+            </li>
           {% else %}
             <li><a href="{% url 'login' %}">Sign in</a></li>
           {% endif %}
