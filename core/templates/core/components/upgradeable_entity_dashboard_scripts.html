@@ -91,6 +91,21 @@
       return;
     }
 
+    if (action === 'level_down') {
+      const button = form.querySelector('button');
+      if (button) button.disabled = true;
+
+      try {
+        const resp = await postForm(form);
+        const payload = await resp.json();
+        if (!resp.ok || !payload.ok) throw new Error(payload.error || 'Decrease failed.');
+        window.location.reload();
+      } catch (err) {
+        window.location.reload();
+      }
+      return;
+    }
+
     if (action === 'level_up') {
       const row = tile.querySelector(`.entity-param-row[data-param-id="${form.dataset.paramId}"]`);
       if (!row) return;

@@ -3,7 +3,7 @@
 {% block title %}Bots Progress • theTowerStats{% endblock %}
 
 {% block content %}
-  {% include "core/components/upgradeable_entity_dashboard.html" with dashboard_kicker="Progress" dashboard_title="Bots" dashboard_note="Upgrades currently assume sufficient Medals. Costs are informational only." filter_form=filter_form entities=bots entity_badge="Bot" total_invested_label="Total Medals invested" unlock_cost_currency_label="Medals" unlock_action_value="unlock_bot" level_up_action_value="level_up_bot_param" show_activation=False %}
+{% include "core/components/upgradeable_entity_dashboard.html" with dashboard_kicker="Progress" dashboard_title="Bots" dashboard_note="Upgrades currently assume sufficient Medals. Costs are informational only." filter_form=filter_form entities=bots entity_badge="Bot" total_invested_label="Total Medals invested" unlock_cost_currency_label="Medals" unlock_action_value="unlock_bot" level_up_action_value="level_up_bot_param" level_down_action_value="level_down_bot_param" show_activation=False %}
 {% endblock %}
 
 {% block extra_scripts %}

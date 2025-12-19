@@ -19,6 +19,7 @@ The Bots page helps you track which bots are unlocked, how far each upgrade para
 4. Select **Unlock** on a locked bot to mark it as unlocked in the app.
 5. Select **Details** on an unlocked bot to view its upgrade parameters.
 6. Select **Level Up** on a parameter to increase its level by 1.
+7. Select **Decrease level** on a parameter to reduce its level by 1.
 
 ## How to Read the Results
 
@@ -40,6 +41,9 @@ The Bots page helps you track which bots are unlocked, how far each upgrade para
 
 > **Note**
 > Locked bots do not display parameter rows until they are unlocked in the app.
+
+> **Note**
+> **Decrease level** is available as a safety option if you accidentally record an upgrade you did not intend.
 
 > **Caution**
 > If no Battle Reports have been imported yet, **Runs used** will show “No battles recorded yet”.

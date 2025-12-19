@@ -3,26 +3,6 @@
 {% block title %}Ultimate Weapon Progress • theTowerStats{% endblock %}
 
 {% block content %}
-  <div class="card-shell" id="uw-sync">
-    <p class="muted margin-0">Sync graph</p>
-    {% if uw_sync_chart_json %}
-      {% if uw_sync_summary.includes_golden_bot %}
-        <h3 class="margin-0">Golden Tower • Black Hole • Death Wave • Golden Bot</h3>
-      {% else %}
-        <h3 class="margin-0">Golden Tower • Black Hole • Death Wave</h3>
-      {% endif %}
-      {% if uw_sync_summary %}
-        <p class="muted margin-0">Horizon: {{ uw_sync_summary.horizon_seconds }}s • Cumulative overlap: {{ uw_sync_summary.overlap_percent }}%</p>
-      {% endif %}
-      <canvas id="uw-sync-chart" width="900" height="280"></canvas>
-    {% else %}
-      <h3 class="margin-0">Unavailable</h3>
-      <div class="callout warning margin-top-1">
-        <p class="margin-0"><strong>Sync graph not available yet.</strong> Unlock Golden Tower, Black Hole, and Death Wave and ensure their cooldown and duration values are available.</p>
-      </div>
-    {% endif %}
-  </div>
-
   {% if uw_snapshots %}
     <div class="card-shell margin-top-1">
       <p class="muted margin-0">Snapshot chart</p>
@@ -56,7 +36,27 @@
     </div>
   {% endif %}
 
-  {% include "core/components/upgradeable_entity_dashboard.html" with dashboard_kicker="Progress" dashboard_title="Ultimate Weapons" dashboard_note="Upgrades currently assume sufficient Stones. Costs are informational only. Runs used is observed from imported runs and may include temporary unlocks from Perks." filter_form=filter_form entities=ultimate_weapons entity_badge="UW" total_invested_label="Total Stones invested" unlock_cost_currency_label="Stones" unlock_action_value="unlock_uw" level_up_action_value="level_up_uw_param" show_activation=False %}
+  {% include "core/components/upgradeable_entity_dashboard.html" with dashboard_kicker="Progress" dashboard_title="Ultimate Weapons" dashboard_note="Upgrades currently assume sufficient Stones. Costs are informational only. Runs used is observed from imported runs and may include temporary unlocks from Perks." filter_form=filter_form entities=ultimate_weapons entity_badge="UW" total_invested_label="Total Stones invested" unlock_cost_currency_label="Stones" unlock_action_value="unlock_uw" level_up_action_value="level_up_uw_param" level_down_action_value="level_down_uw_param" show_activation=False %}
+
+  <div class="card-shell margin-top-1" id="uw-sync">
+    <p class="muted margin-0">Sync graph</p>
+    {% if uw_sync_chart_json %}
+      {% if uw_sync_summary.includes_golden_bot %}
+        <h3 class="margin-0">Golden Tower • Black Hole • Death Wave • Golden Bot</h3>
+      {% else %}
+        <h3 class="margin-0">Golden Tower • Black Hole • Death Wave</h3>
+      {% endif %}
+      {% if uw_sync_summary %}
+        <p class="muted margin-0">Horizon: {{ uw_sync_summary.horizon_seconds }}s • Cumulative overlap: {{ uw_sync_summary.overlap_percent }}%</p>
+      {% endif %}
+      <canvas id="uw-sync-chart" width="900" height="280"></canvas>
+    {% else %}
+      <h3 class="margin-0">Unavailable</h3>
+      <div class="callout warning margin-top-1">
+        <p class="margin-0"><strong>Sync graph not available yet.</strong> Unlock Golden Tower, Black Hole, and Death Wave and ensure their cooldown and duration values are available.</p>
+      </div>
+    {% endif %}
+  </div>
 {% endblock %}
 
 {% block extra_scripts %}

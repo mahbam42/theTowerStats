@@ -127,6 +127,38 @@ def test_uw_level_up_increments_until_max(auth_client, player) -> None:
 
 
 @pytest.mark.django_db
+def test_uw_level_down_decrements_until_min(auth_client, player) -> None:
+    """Level-down decrements by 1 and stops at the minimum level."""
+
+    uw = _uw_with_three_parameters(slug="inner_mines", name="Inner Mines")
+    player_uw = PlayerUltimateWeapon.objects.create(
+        player=player,
+        ultimate_weapon_definition=uw,
+        ultimate_weapon_slug=uw.slug,
+        unlocked=True,
+    )
+    param_def = uw.parameter_definitions.order_by("id").first()
+    assert param_def is not None
+    player_param = PlayerUltimateWeaponParameter.objects.create(
+        player=player,
+        player_ultimate_weapon=player_uw,
+        parameter_definition=param_def,
+        level=2,
+    )
+
+    url = reverse("core:ultimate_weapon_progress")
+    response = auth_client.post(url, data={"action": "level_down_uw_param", "param_id": player_param.id})
+    assert response.status_code == 302
+    player_param.refresh_from_db()
+    assert player_param.level == 1
+
+    response = auth_client.post(url, data={"action": "level_down_uw_param", "param_id": player_param.id})
+    assert response.status_code == 302
+    player_param.refresh_from_db()
+    assert player_param.level == 1
+
+
+@pytest.mark.django_db
 def test_uw_dashboard_sorts_unlocked_first(auth_client, player) -> None:
     """Unlocked UWs render before locked UWs by default."""
 

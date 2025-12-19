@@ -1846,7 +1846,14 @@ Prepare App for deployment on Railway
 https://docs.railway.com/guides/django
 ***** [#C] Consolidate CSS and JS to static/ 
 ***** [#B] Prepare migration to Postgres
-
+**** TODO [#A] Hide Admin Link if logged in as non admin/superuser
+**** TODO [#B] On UW/Bots/Guardian Chip Dashboards add a Decrease Level Button
+Safe guard in case a user accidently clicks upgrade by mistake
+**** TODO [#B] Move UW Sync Graph to Bottom of Dashboard 
+**** TODO [#B] Clean Up and Revise Development Docs
+Make them all consistent. 
+**** TODO [#C] Add Wiki External Links on Dashboards
+Cards, UWs, Bots, Guardian Chips
 
 ** Backlog [0/6]
 “Out of Scope”:

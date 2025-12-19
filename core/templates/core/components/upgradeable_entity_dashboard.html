@@ -189,10 +189,18 @@
                           </td>
                           <td class="text-right">
                             {% if demo_mode %}
-                              <button class="button tiny disabled" type="button" disabled aria-disabled="true">
-                                {% if param.is_maxed %}MAX{% else %}Level Up{% endif %}
-                              </button>
+                              <button class="button tiny secondary disabled" type="button" disabled aria-disabled="true">Decrease level</button>
+                              <button class="button tiny disabled" type="button" disabled aria-disabled="true">{% if param.is_maxed %}MAX{% else %}Level Up{% endif %}</button>
                             {% else %}
+                              <form method="post" action="{{ request.path }}" class="inline entity-action-form" data-action="level_down" data-param-id="{{ param.id }}">
+                                {% csrf_token %}
+                                <input type="hidden" name="action" value="{{ level_down_action_value }}" />
+                                <input type="hidden" name="param_id" value="{{ param.id }}" />
+                                <input type="hidden" name="next" value="{{ request.get_full_path }}" />
+                                <button class="button tiny secondary {% if param.is_min %}disabled{% endif %}" type="submit" {% if param.is_min %}disabled aria-disabled="true"{% endif %}>
+                                  Decrease level
+                                </button>
+                              </form>
                               <form method="post" action="{{ request.path }}" class="inline entity-action-form" data-action="level_up" data-param-id="{{ param.id }}">
                                 {% csrf_token %}
                                 <input type="hidden" name="action" value="{{ level_up_action_value }}" />

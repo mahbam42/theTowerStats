@@ -118,7 +118,7 @@
           <li><a href="{% url 'core:cards' %}">Cards</a></li>
           <li><a href="{% url 'core:ultimate_weapon_progress' %}">Ultimate Weapons</a></li>
           <li><a href="{% url 'core:ultimate_weapon_progress' %}#uw-sync">UW Sync</a></li>
-          <li><a href="{% url 'core:guardian_progress' %}">Guardians</a></li>
+          <li><a href="{% url 'core:guardian_progress' %}">Guardian Chips</a></li>
           <li><a href="{% url 'core:bots_progress' %}">Bots</a></li>
         </ul>
       </div>
@@ -128,7 +128,9 @@
             <input type="search" placeholder="Search (coming soon)" aria-label="Search theTowerStats" />
           </li>
           <li><a href="https://mahbam42.github.io/theTowerStats/" target="_blank" rel="noopener noreferrer">Docs</a></li>
-          <li><a href="/admin/" target="_blank" rel="noreferrer">Admin</a></li>
+          {% if user.is_authenticated and user.is_staff or user.is_authenticated and user.is_superuser %}
+            <li><a href="/admin/" target="_blank" rel="noreferrer">Admin</a></li>
+          {% endif %}
           {% if user.is_authenticated %}
             <li>
               {% if demo_mode %}

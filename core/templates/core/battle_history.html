@@ -96,16 +96,6 @@
       </div>
     </div>
     <div class="cell large-9 medium-8">
-      <div class="card-shell margin-bottom-1">
-        <h4 class="margin-0">Killed By (diagnostic)</h4>
-        <p class="muted margin-0">This chart summarizes which “Killed By” labels appear in your filtered Battle Reports.</p>
-        {% if killed_by_donut_json %}
-          <canvas id="killed-by-donut" width="900" height="260"></canvas>
-        {% else %}
-          <p class="muted margin-0">No matching runs to summarize.</p>
-        {% endif %}
-      </div>
-
       <div class="card-shell">
         {% if page_obj.object_list %}
           <div class="table-scroll">
@@ -197,6 +187,15 @@
           <div class="empty-state" role="status">
             No battle reports match the current filters. Import a Battle Report to see history.
           </div>
+        {% endif %}
+      </div>
+      <div class="card-shell margin-bottom-1">
+        <h4 class="margin-0">Killed By (diagnostic)</h4>
+        <p class="muted margin-0">This chart summarizes which “Killed By” labels appear in your filtered Battle Reports.</p>
+        {% if killed_by_donut_json %}
+          <canvas id="killed-by-donut" width="900" height="260"></canvas>
+        {% else %}
+          <p class="muted margin-0">No matching runs to summarize.</p>
         {% endif %}
       </div>
     </div>

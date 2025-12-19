@@ -1661,6 +1661,73 @@ def ultimate_weapon_progress(request: HttpRequest) -> HttpResponse:
             messages.success(request, f"Upgraded {param_def.display_name}.")
             return redirect(redirect_to)
 
+        if action == "level_down_uw_param":
+            player_param_id = int(request.POST.get("param_id") or 0)
+            player_param = (
+                PlayerUltimateWeaponParameter.objects.filter(id=player_param_id)
+                .select_related(
+                    "player_ultimate_weapon",
+                    "player_ultimate_weapon__ultimate_weapon_definition",
+                    "parameter_definition",
+                )
+                .first()
+            )
+            if (
+                player_param is None
+                or player_param.parameter_definition is None
+                or player_param.player_ultimate_weapon.player_id != player.id
+            ):
+                if is_ajax:
+                    return JsonResponse({"ok": False, "error": "Parameter not found."}, status=404)
+                messages.error(request, "Ultimate Weapon parameter not found.")
+                return redirect(redirect_to)
+
+            if not player_param.player_ultimate_weapon.unlocked:
+                if is_ajax:
+                    return JsonResponse({"ok": False, "error": "Ultimate Weapon is locked."}, status=400)
+                messages.error(request, "Cannot change levels on a locked Ultimate Weapon.")
+                return redirect(redirect_to)
+
+            param_def = player_param.parameter_definition
+            levels_qs = param_def.levels.order_by("level")
+            min_level = levels_qs.values_list("level", flat=True).first() or 0
+            if player_param.level <= min_level:
+                if is_ajax:
+                    return JsonResponse({"ok": False, "error": "Already at minimum level."}, status=400)
+                messages.warning(request, "That parameter is already at its minimum level.")
+                return redirect(redirect_to)
+
+            with transaction.atomic():
+                player_param.level -= 1
+                player_param.save(update_fields=["level", "updated_at"])
+
+            if is_ajax:
+                levels = [
+                    ParameterLevelRow(level=row.level, value_raw=row.value_raw, cost_raw=row.cost_raw)
+                    for row in levels_qs
+                ]
+                param_view = build_uw_parameter_view(
+                    player=player,
+                    player_param=player_param,
+                    levels=levels,
+                    unit_kind=param_def.unit_kind,
+                    player_cards=player_cards,
+                )
+                total_stones = total_stones_invested_for_parameter(
+                    parameter_definition=param_def,
+                    level=player_param.level,
+                )
+                return JsonResponse(
+                    {
+                        "ok": True,
+                        "param": param_view,
+                        "total_stones_invested_for_param": total_stones,
+                    }
+                )
+
+            messages.success(request, f"Decreased {param_def.display_name}.")
+            return redirect(redirect_to)
+
         if is_ajax:
             return JsonResponse({"ok": False, "error": "Unknown action."}, status=400)
         messages.error(request, "Unknown action.")
@@ -2092,6 +2159,74 @@ def guardian_progress(request: HttpRequest) -> HttpResponse:
             messages.success(request, f"Upgraded {param_def.display_name}.")
             return redirect(redirect_to)
 
+        if action == "level_down_guardian_param":
+            player_param_id = int(request.POST.get("param_id") or 0)
+            player_param = (
+                PlayerGuardianChipParameter.objects.filter(id=player_param_id)
+                .select_related(
+                    "player_guardian_chip",
+                    "player_guardian_chip__guardian_chip_definition",
+                    "parameter_definition",
+                )
+                .first()
+            )
+            if (
+                player_param is None
+                or player_param.parameter_definition is None
+                or player_param.player_guardian_chip.player_id != player.id
+            ):
+                if is_ajax:
+                    return JsonResponse({"ok": False, "error": "Parameter not found."}, status=404)
+                messages.error(request, "Guardian chip parameter not found.")
+                return redirect(redirect_to)
+
+            if not player_param.player_guardian_chip.unlocked:
+                if is_ajax:
+                    return JsonResponse({"ok": False, "error": "Guardian chip is locked."}, status=400)
+                messages.error(request, "Cannot change levels on a locked Guardian Chip.")
+                return redirect(redirect_to)
+
+            param_def = player_param.parameter_definition
+            levels_qs = param_def.levels.order_by("level")
+            min_level = levels_qs.values_list("level", flat=True).first() or 0
+            if player_param.level <= min_level:
+                if is_ajax:
+                    return JsonResponse({"ok": False, "error": "Already at minimum level."}, status=400)
+                messages.warning(request, "That parameter is already at its minimum level.")
+                return redirect(redirect_to)
+
+            with transaction.atomic():
+                player_param.level -= 1
+                player_param.save(update_fields=["level", "updated_at"])
+
+            if is_ajax:
+                levels = [
+                    ParameterLevelRow(level=row.level, value_raw=row.value_raw, cost_raw=row.cost_raw)
+                    for row in levels_qs
+                ]
+                param_view = build_upgradeable_parameter_view(
+                    player=player,
+                    entity_kind="guardian_chip",
+                    player_param=player_param,
+                    levels=levels,
+                    unit_kind=param_def.unit_kind,
+                    player_cards=player_cards,
+                )
+                total_bits = total_currency_invested_for_parameter(
+                    parameter_definition=param_def,
+                    level=player_param.level,
+                )
+                return JsonResponse(
+                    {
+                        "ok": True,
+                        "param": param_view,
+                        "total_invested_for_param": total_bits,
+                    }
+                )
+
+            messages.success(request, f"Decreased {param_def.display_name}.")
+            return redirect(redirect_to)
+
         if action == "set_guardian_active":
             chip_id = int(request.POST.get("entity_id") or 0)
             desired_active = "1" in {(value or "").strip() for value in request.POST.getlist("active")}
@@ -2485,6 +2620,70 @@ def bots_progress(request: HttpRequest) -> HttpResponse:
                 )
 
             messages.success(request, f"Upgraded {param_def.display_name}.")
+            return redirect(redirect_to)
+
+        if action == "level_down_bot_param":
+            player_param_id = int(request.POST.get("param_id") or 0)
+            player_param = (
+                PlayerBotParameter.objects.filter(id=player_param_id)
+                .select_related("player_bot", "player_bot__bot_definition", "parameter_definition")
+                .first()
+            )
+            if (
+                player_param is None
+                or player_param.parameter_definition is None
+                or player_param.player_bot.player_id != player.id
+            ):
+                if is_ajax:
+                    return JsonResponse({"ok": False, "error": "Parameter not found."}, status=404)
+                messages.error(request, "Bot parameter not found.")
+                return redirect(redirect_to)
+
+            if not player_param.player_bot.unlocked:
+                if is_ajax:
+                    return JsonResponse({"ok": False, "error": "Bot is locked."}, status=400)
+                messages.error(request, "Cannot change levels on a locked Bot.")
+                return redirect(redirect_to)
+
+            param_def = player_param.parameter_definition
+            levels_qs = param_def.levels.order_by("level")
+            min_level = levels_qs.values_list("level", flat=True).first() or 0
+            if player_param.level <= min_level:
+                if is_ajax:
+                    return JsonResponse({"ok": False, "error": "Already at minimum level."}, status=400)
+                messages.warning(request, "That parameter is already at its minimum level.")
+                return redirect(redirect_to)
+
+            with transaction.atomic():
+                player_param.level -= 1
+                player_param.save(update_fields=["level", "updated_at"])
+
+            if is_ajax:
+                levels = [
+                    ParameterLevelRow(level=row.level, value_raw=row.value_raw, cost_raw=row.cost_raw)
+                    for row in levels_qs
+                ]
+                param_view = build_upgradeable_parameter_view(
+                    player=player,
+                    entity_kind="bot",
+                    player_param=player_param,
+                    levels=levels,
+                    unit_kind=param_def.unit_kind,
+                    player_cards=player_cards,
+                )
+                total_medals = total_currency_invested_for_parameter(
+                    parameter_definition=param_def,
+                    level=player_param.level,
+                )
+                return JsonResponse(
+                    {
+                        "ok": True,
+                        "param": param_view,
+                        "total_invested_for_param": total_medals,
+                    }
+                )
+
+            messages.success(request, f"Decreased {param_def.display_name}.")
             return redirect(redirect_to)
 
         if is_ajax:

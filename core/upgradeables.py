@@ -177,6 +177,7 @@ def build_upgradeable_parameter_view(
 
     current_level = int(getattr(player_param, "level", 0) or 0)
     max_level = max((row.level for row in levels), default=0)
+    min_level = levels[0].level if levels else 0
 
     current_row = next((row for row in levels if row.level == current_level), None)
     if current_row is None and levels:
@@ -185,6 +186,7 @@ def build_upgradeable_parameter_view(
 
     next_row = next((row for row in levels if row.level == current_level + 1), None)
     is_maxed = current_level >= max_level and max_level > 0
+    is_min = current_level <= min_level
 
     base_value_raw = current_row.value_raw if current_row else ""
     next_value_raw = next_row.value_raw if next_row else ""
@@ -209,6 +211,7 @@ def build_upgradeable_parameter_view(
         "name": player_param.parameter_definition.display_name,
         "unit_kind": unit_kind,
         "level": current_level,
+        "min_level": min_level,
         "max_level": max_level,
         "base_value_raw": base_value_raw,
         "effective_value_raw": effective_value_raw,
@@ -229,6 +232,7 @@ def build_upgradeable_parameter_view(
             next_raw=next_value_raw,
             unit_kind=unit_kind,
         ),
+        "is_min": is_min,
         "is_maxed": is_maxed,
         "levels": [{"level": row.level, "value_raw": row.value_raw, "cost_raw": row.cost_raw} for row in levels],
     }

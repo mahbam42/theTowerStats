@@ -132,6 +132,38 @@ def test_bot_level_up_increments_until_max(auth_client, player) -> None:
 
 
 @pytest.mark.django_db
+def test_bot_level_down_decrements_until_min(auth_client, player) -> None:
+    """Level-down decrements by 1 and stops at the minimum level."""
+
+    bot_def = _bot_with_four_parameters(slug="freeze_bot", name="Freeze Bot")
+    bot = PlayerBot.objects.create(
+        player=player,
+        bot_definition=bot_def,
+        bot_slug=bot_def.slug,
+        unlocked=True,
+    )
+    param_def = bot_def.parameter_definitions.order_by("id").first()
+    assert param_def is not None
+    player_param = PlayerBotParameter.objects.create(
+        player=player,
+        player_bot=bot,
+        parameter_definition=param_def,
+        level=2,
+    )
+
+    url = reverse("core:bots_progress")
+    response = auth_client.post(url, data={"action": "level_down_bot_param", "param_id": player_param.id})
+    assert response.status_code == 302
+    player_param.refresh_from_db()
+    assert player_param.level == 1
+
+    response = auth_client.post(url, data={"action": "level_down_bot_param", "param_id": player_param.id})
+    assert response.status_code == 302
+    player_param.refresh_from_db()
+    assert player_param.level == 1
+
+
+@pytest.mark.django_db
 def test_bot_dashboard_omits_invalid_bot_in_production(auth_client, player, settings) -> None:
     """Production mode omits bots that do not have exactly 4 parameters."""
 

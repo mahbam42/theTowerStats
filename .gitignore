@@ -5,6 +5,7 @@
 
 # Directories
 archive/
+.vscode
 # Temp Files
 
 # Byte-compiled / optimized / DLL files
