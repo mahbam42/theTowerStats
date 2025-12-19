@@ -4,11 +4,11 @@
 
 {% block content %}
   <div class="grid-x grid-margin-x">
-    <div class="cell medium-6 medium-offset-3">
+    <div class="cell medium-6">
       <div class="card-shell">
         <h2>Sign in</h2>
 
-        {% if form.errors %}
+        {% if login_form.errors %}
           <div class="callout alert" role="alert">
             Your username and password did not match. Please try again.
           </div>
@@ -17,20 +17,59 @@
         <form method="post" action="{% url 'login' %}">
           {% csrf_token %}
 
-          <label for="{{ form.username.id_for_label }}">Username</label>
-          {{ form.username }}
+          <label for="{{ login_form.username.id_for_label }}">Username</label>
+          {{ login_form.username }}
 
-          <label for="{{ form.password.id_for_label }}">Password</label>
-          {{ form.password }}
+          <label for="{{ login_form.password.id_for_label }}">Password</label>
+          {{ login_form.password }}
 
           {% if next %}
             <input type="hidden" name="next" value="{{ next }}" />
           {% endif %}
 
-          <button type="submit" class="button primary">Sign in</button>
+          <button type="submit" name="login_submit" value="1" class="button primary">Sign in</button>
+        </form>
+      </div>
+    </div>
+
+    <div class="cell medium-6">
+      <div class="card-shell">
+        <h2>Create account</h2>
+
+        {% if signup_form.errors %}
+          <div class="callout alert" role="alert">
+            Please review the fields below.
+          </div>
+        {% endif %}
+
+        <form method="post" action="{% url 'login' %}">
+          {% csrf_token %}
+
+          <label for="{{ signup_form.username.id_for_label }}">Username</label>
+          {{ signup_form.username }}
+          {% if signup_form.username.errors %}
+            <p class="help-text">{{ signup_form.username.errors|striptags }}</p>
+          {% endif %}
+
+          <label for="{{ signup_form.password1.id_for_label }}">Password</label>
+          {{ signup_form.password1 }}
+          {% if signup_form.password1.errors %}
+            <p class="help-text">{{ signup_form.password1.errors|striptags }}</p>
+          {% endif %}
+
+          <label for="{{ signup_form.password2.id_for_label }}">Confirm password</label>
+          {{ signup_form.password2 }}
+          {% if signup_form.password2.errors %}
+            <p class="help-text">{{ signup_form.password2.errors|striptags }}</p>
+          {% endif %}
+
+          {% if next %}
+            <input type="hidden" name="next" value="{{ next }}" />
+          {% endif %}
+
+          <button type="submit" name="signup_submit" value="1" class="button secondary">Create account</button>
         </form>
       </div>
     </div>
   </div>
 {% endblock %}
-

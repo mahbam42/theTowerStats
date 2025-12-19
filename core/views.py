@@ -7,7 +7,9 @@ from datetime import date, timedelta
 from typing import Any
 
 from django.contrib import messages
+from django.contrib.auth import login as auth_login
 from django.contrib.auth.decorators import login_required
+from django.contrib.auth.forms import AuthenticationForm, UserCreationForm
 from django.conf import settings
 from django.core.exceptions import ValidationError
 from django.db import transaction
@@ -16,6 +18,7 @@ from django.http import HttpRequest, HttpResponse, JsonResponse, QueryDict
 from django.shortcuts import redirect, render
 from django.core.paginator import Paginator
 from django.urls import reverse
+from django.utils.http import url_has_allowed_host_and_scheme
 
 from analysis.aggregations import summarize_window
 from analysis.chart_config_dto import ChartContextDTO
@@ -93,6 +96,65 @@ def _request_player(request: HttpRequest) -> Player:
         defaults={"display_name": getattr(request.user, "username", "Player")},
     )
     return player
+
+
+def _safe_auth_redirect_url(request: HttpRequest) -> str:
+    """Return a safe post-auth redirect URL derived from `next`.
+
+    Args:
+        request: Incoming request with optional `next` parameter.
+
+    Returns:
+        A safe redirect URL. Defaults to settings.LOGIN_REDIRECT_URL.
+    """
+
+    redirect_url = (request.POST.get("next") or request.GET.get("next") or "").strip()
+    if redirect_url and url_has_allowed_host_and_scheme(
+        url=redirect_url,
+        allowed_hosts={request.get_host()},
+        require_https=request.is_secure(),
+    ):
+        return redirect_url
+    return settings.LOGIN_REDIRECT_URL
+
+
+def login_view(request: HttpRequest) -> HttpResponse:
+    """Render a combined sign-in + account creation page.
+
+    This view replaces Django's default LoginView so new users can create an
+    account directly from the sign-in page.
+    """
+
+    if request.user.is_authenticated:
+        return redirect(settings.LOGIN_REDIRECT_URL)
+
+    next_url = request.GET.get("next", "")
+    login_form = AuthenticationForm(request)
+    signup_form = UserCreationForm()
+
+    if request.method == "POST":
+        next_url = request.POST.get("next", next_url)
+        if "signup_submit" in request.POST:
+            signup_form = UserCreationForm(request.POST)
+            if signup_form.is_valid():
+                user = signup_form.save()
+                auth_login(request, user)
+                return redirect(_safe_auth_redirect_url(request))
+        else:
+            login_form = AuthenticationForm(request, data=request.POST)
+            if login_form.is_valid():
+                auth_login(request, login_form.get_user())
+                return redirect(_safe_auth_redirect_url(request))
+
+    return render(
+        request,
+        "registration/login.html",
+        {
+            "login_form": login_form,
+            "signup_form": signup_form,
+            "next": next_url,
+        },
+    )
 
 
 @login_required
