@@ -1339,7 +1339,9 @@ Revisit and build on phase 2 work
 
 - State "IN PROGRESS" from              [2025-12-18 Thu 19:34] \\
   Needs to be manually tested/UAT pass
-**** TODO [#A] Add Chart Builder Modal to Charts Dashboard
+**** DONE [#A] Add Chart Builder Modal to Charts Dashboard
+CLOSED: [2025-12-19 Fri 12:51]
+- State "DONE"       from "TODO"       [2025-12-19 Fri 12:51]
 Let user select chart style and metrics to show. The Chart Builder is not a UI feature — it’s a schema and contract feature.
 
 Before UI polish:
@@ -1385,21 +1387,25 @@ Add:
 
 This builds trust without over-engineering.
 
-**** TODO [#B] Add a 'Killed By' Donut Chart
+
 
 **** TODO [#B] UW Sync Graph
 There is synergy to using some UW together, specifically Golden Tower, Blackhole and Death Wave. It's common in the meta to keep the cooldowns and durations in sync. We should have the data to chart the three together and how often they overlap/synchronize
 
-**** TODO [#B] Performance Guardrails
+**** DONE [#B] Performance Guardrails
+CLOSED: [2025-12-19 Fri 12:53]
 
+- State "DONE"       from "TODO"       [2025-12-19 Fri 12:53]
 As data grows:
 - Cached derived results per view
 - Explicit limits on chart density
 - Warnings when comparisons get statistically thin
 
 Do this before you have 30 guild members loading it daily.
-**** TODO [#B] UX Pass
+**** DONE [#B] UX Pass
+CLOSED: [2025-12-19 Fri 12:52]
 
+- State "DONE"       from "TODO"       [2025-12-19 Fri 12:52]
 ***** Battle History
 - [ ] Sort by 'Killed By' isn't sorting properly. It should filter alphabetically
 - [ ] Add a tip that the input can only accept 1 battle report at a time. You can add validation that makes sure 'Battle Report' and 'Battle Date' appear exactly once. 
@@ -1408,7 +1414,9 @@ Do this before you have 30 guild members loading it daily.
 Functionality has expanded quite a bit and usability hasn't kept up.
 
 - [ ] Move Filters to the right column. The wider area will make the controls easier to work with. 
-**** TODO [#C] Add Advice for Optimization
+**** DONE [#C] Add Advice for Optimization
+CLOSED: [2025-12-19 Fri 12:53]
+- State "DONE"       from "TODO"       [2025-12-19 Fri 12:53]
 Based on logged performance data, it could be possible to calculate and offer suggestions based on the data.
 
 For Example:
@@ -1416,7 +1424,9 @@ For Example:
 - Bot properties to improve
 - Guardian Chip properties to improve
 - Weighted Preset Rankings
-**** TODO [#A] Validation Gatekeepers
+**** DONE [#A] Validation Gatekeepers
+CLOSED: [2025-12-19 Fri 12:52]
+- State "DONE"       from "TODO"       [2025-12-19 Fri 12:52]
 - DTO used end to end
   Introduce a single persisted/serializable DTO (and version it), use it for snapshot storage, and have the UI submit that DTO (or a strict field set) that round-trips without lossy transforms; add tests that snapshot round-trip reproduces identical DTO.
 - analysis accepts ChartConfig and returns DTOs only
@@ -1775,7 +1785,7 @@ Run checks or Ruff Check, mypy ., pytest -q
 “Out of Scope”:
 - Cloud sync
 - Real-time scraping
-  
+*** TODO [#B] Add a 'Killed By' Donut Chart
 *** TODO [#A] Review Docs and Note Revisions                          :Max:
 
 *** TODO [#A] Scope and Apply Permissions

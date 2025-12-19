@@ -11,11 +11,13 @@ def _assert_nav_links(response) -> None:
 
     content = response.content.decode("utf-8")
     assert 'href="https://mahbam42.github.io/theTowerStats/"' in content
+    uw_sync_href = f'{reverse("core:ultimate_weapon_progress")}#uw-sync'
     expected_hrefs = [
         reverse("core:battle_history"),
         reverse("core:dashboard"),
         reverse("core:cards"),
         reverse("core:ultimate_weapon_progress"),
+        uw_sync_href,
         reverse("core:guardian_progress"),
         reverse("core:bots_progress"),
     ]

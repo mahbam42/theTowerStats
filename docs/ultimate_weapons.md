@@ -16,14 +16,15 @@ The Ultimate Weapons page helps you track which Ultimate Weapons you have unlock
 ## How to Use
 
 1. Select **Ultimate Weapons** in the navigation.
-2. Select **Show** to filter to **Unlocked only** or **Locked only**.
-3. Review a weapon’s **Status** to confirm whether it is unlocked.
-4. Select **Unlock** on a locked weapon to mark it as unlocked in the app.
-5. Select **Details** on an unlocked weapon to view its three upgrade parameters.
-6. Select **Level Up** on a parameter to increase its level by 1.
-7. Review **Total Stones invested** to compare overall investment between weapons.
-8. (Optional) View the **Sync graph** to see when Golden Tower, Black Hole, and Death Wave are active at the same time.
-9. (Optional) Select a saved snapshot in **Ultimate Weapons snapshot** to render a chart above the table.
+2. (Optional) Select **UW Sync** in the navigation to jump directly to the **Sync graph** section.
+3. Select **Show** to filter to **Unlocked only** or **Locked only**.
+4. Review a weapon’s **Status** to confirm whether it is unlocked.
+5. Select **Unlock** on a locked weapon to mark it as unlocked in the app.
+6. Select **Details** on an unlocked weapon to view its three upgrade parameters.
+7. Select **Level Up** on a parameter to increase its level by 1.
+8. Review **Total Stones invested** to compare overall investment between weapons.
+9. (Optional) View the **Sync graph** to see when Golden Tower, Black Hole, and Death Wave are active at the same time.
+10. (Optional) Select a saved snapshot in **Ultimate Weapons snapshot** to render a chart above the table.
 
 ## How to Read the Results
 
