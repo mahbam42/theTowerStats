@@ -1485,7 +1485,9 @@ To keep it clean, Phase 8 should not try to:
 
 Thirty guild members can use this daily without seeing, affecting, or confusing each other’s data—and they trust what the app tells them.
 
-**** TODO [#A] Pillar 1: Multiple Player Support (Foundational, Blocking)
+**** DONE [#A] Pillar 1: Multiple Player Support (Foundational, Blocking)
+CLOSED: [2025-12-19 Fri 14:59]
+- State "DONE"       from "TODO"       [2025-12-19 Fri 14:59]
 ***** Core Principle: Everything Belongs to a Player
 **Analysis Engine is always player-scoped, even if there’s only one player.**
 Every player-specific model must be bound to a Player.
@@ -1656,8 +1658,10 @@ def create_player(sender, instance, created, **kwargs):
 
 
 - [ ] Existing single-player data is migrated into a Player record named 'mahbam42'
-**** TODO [#A] Precondition: Advice Language Enforcement Pass
+**** DONE [#A] Precondition: Advice Language Enforcement Pass
+CLOSED: [2025-12-19 Fri 14:59]
 
+- State "DONE"       from "TODO"       [2025-12-19 Fri 14:59]
 Goal:
 Ensure all advice output is non-imperative, non-authoritative, and explainable.
 
@@ -1702,8 +1706,10 @@ Disallowed Patterns
 
 - “Clearly better” (without scope)
 
-**** TODO [#A] Pillar 2: Advice Becomes Safe, Scoped, and Goal-Aware
+**** DONE [#A] Pillar 2: Advice Becomes Safe, Scoped, and Goal-Aware
+CLOSED: [2025-12-19 Fri 14:59]
 
+- State "DONE"       from "TODO"       [2025-12-19 Fri 14:59]
 ## Advice Becomes Goal-Aware
 
 Introduce explicit player intent.
@@ -1766,7 +1772,9 @@ Efficiency Score =
 
 - No hidden math.
 
-**** TODO [#A] Pillar 3: Demo, Export, and Adoption Features (Non-Blocking)
+**** DONE [#A] Pillar 3: Demo, Export, and Adoption Features (Non-Blocking)
+CLOSED: [2025-12-19 Fri 14:59]
+- State "DONE"       from "TODO"       [2025-12-19 Fri 14:59]
 ***** TODO [#A] Update readme.md
 
 - Make sure it's still aligned with App Behavior and Features
@@ -1785,26 +1793,27 @@ This dramatically increases perceived value with very little backend work.
 Run checks or Ruff Check, mypy ., pytest -q
 
 *** Phase 9 Deploy and Clean out Backlog
-** Backlog [0/12]
-“Out of Scope”:
-- Cloud sync
-- Real-time scraping
-*** TODO [#B] Add a 'Killed By' Donut Chart
-*** TODO [#A] Review Docs and Note Revisions                          :Max:
 
-*** TODO [#A] Scope and Apply Permissions
+**** TODO [#B] Add a 'Killed By' Donut Chart
+**** TODO [#A] Scope and Apply Permissions
 Need to assign Player and Admin permissions
-*** TODO [#A] On the UW Dashboard Runs Used is not updating appropriately
+**** TODO [#A] On the UW Dashboard Runs Used is not updating appropriately
 Based on Battle Reports the 'runs used' should be >0. 
 
-*** TODO [#A] Cite Sources from the Wiki                             :docs:
+**** TODO [#A] Cite Sources from the Wiki                           :docs:
 The docs should credit the Wiki early and often.
-*** TODO [#A] Name property links to wiki page as well
+**** TODO [#A] Name property links to wiki page as well
 Cards, UWs, Bots, Guardian Chips names should all link to the respective Wiki pages for additional information. They should be appropriately marked as external links. 
-*** TODO [#B] User Guide Operation                                   :docs:
+**** TODO [#B] User Guide Operation                                 :docs:
 "Note Battle History surfaces only what exists in your imported text. If a label never appeared in the report, it will not be synthesized here."
 
 This note doesn't make sense. The Battle History is a read-only summary provided by the Game. So assume a player is pasting the full summary into our app every time. 
+
+** Backlog [0/6]
+“Out of Scope”:
+- Cloud sync
+- Real-time scraping
+*** TODO [#A] Review Docs and Note Revisions                          :Max:
 
 *** TODO [#B] Ranked Recommendations
 
