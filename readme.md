@@ -12,11 +12,13 @@ Paste your battle history, visualize your progress over time, and explore how di
 - Paste raw **Battle Report** text directly from the game
 - Automatic deduplication (no accidental double imports)
 - Gracefully handles new or unknown stat labels after game updates
+- Each signed-in account is isolated; your imports are scoped to your user.
 
 ### 📊 Track Progress Over Time
 - Coins per hour and other precomputed series (no client-side math)
 - Filter charts by **date range**, **tier**, **preset**, and overlays
 - Default chart window starts on **2025-12-09 UTC** for recent-run focus
+- Export derived metrics to CSV and download chart images as PNG snapshots
 
 ### 🧮 Analysis Engine (The Core Feature)
 - Deterministic, testable calculations
@@ -40,6 +42,7 @@ Paste your battle history, visualize your progress over time, and explore how di
 - Shared dashboard shell with top navigation, global search stub, and consistent callouts
 - Foundation grid/forms for Battle History, Charts, and progress dashboards
 - Clear charts designed to answer real questions quickly
+- Optional demo dataset for safe exploration without importing your own data
 
 ---
 
@@ -66,10 +69,10 @@ This app is about:
 
 ## Project Status
 
-🚧 **Phase 5 in progress**
+🚧 **Phase 8 in progress**
 
-- UI refit with Foundation across all dashboards
-- Read-only progress pages for cards, ultimate weapons, guardians, and bots
-- Player-facing documentation published via MkDocs Material
+- Stable: Battle Report import, Battle History, Charts (including snapshots), and collection progress dashboards.
+- Multi-user: Each signed-in account has its own isolated dataset.
+- Adoption features: A read-only demo dataset and lightweight export tools for sharing charts and derived metrics.
 
 See the User Guide and Development sections in `/docs` (or the published site) for deeper detail.

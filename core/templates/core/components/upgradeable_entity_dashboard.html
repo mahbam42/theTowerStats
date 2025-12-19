@@ -82,17 +82,24 @@
                 </div>
                 {% if show_activation %}
                   <div class="cell shrink">
-                    <form method="post" action="{{ request.path }}" class="inline entity-action-form" data-action="toggle_active" data-entity-id="{{ entity.id }}">
-                      {% csrf_token %}
-                      <input type="hidden" name="action" value="{{ toggle_active_action_value }}" />
-                      <input type="hidden" name="entity_id" value="{{ entity.id }}" />
-                      <input type="hidden" name="next" value="{{ request.get_full_path }}" />
-                      <input type="hidden" name="active" value="0" />
+                    {% if demo_mode %}
                       <label class="margin-0">
-                        <input class="entity-active-toggle" type="checkbox" name="active" value="1" {% if entity.active %}checked{% endif %} {% if entity.toggle_disabled %}disabled aria-disabled="true"{% endif %} />
+                        <input type="checkbox" {% if entity.active %}checked{% endif %} disabled aria-disabled="true" />
                         Active
                       </label>
-                    </form>
+                    {% else %}
+                      <form method="post" action="{{ request.path }}" class="inline entity-action-form" data-action="toggle_active" data-entity-id="{{ entity.id }}">
+                        {% csrf_token %}
+                        <input type="hidden" name="action" value="{{ toggle_active_action_value }}" />
+                        <input type="hidden" name="entity_id" value="{{ entity.id }}" />
+                        <input type="hidden" name="next" value="{{ request.get_full_path }}" />
+                        <input type="hidden" name="active" value="0" />
+                        <label class="margin-0">
+                          <input class="entity-active-toggle" type="checkbox" name="active" value="1" {% if entity.active %}checked{% endif %} {% if entity.toggle_disabled %}disabled aria-disabled="true"{% endif %} />
+                          Active
+                        </label>
+                      </form>
+                    {% endif %}
                   </div>
                 {% endif %}
                 <div class="cell shrink">
@@ -181,15 +188,21 @@
                             {% endif %}
                           </td>
                           <td class="text-right">
-                            <form method="post" action="{{ request.path }}" class="inline entity-action-form" data-action="level_up" data-param-id="{{ param.id }}">
-                              {% csrf_token %}
-                              <input type="hidden" name="action" value="{{ level_up_action_value }}" />
-                              <input type="hidden" name="param_id" value="{{ param.id }}" />
-                              <input type="hidden" name="next" value="{{ request.get_full_path }}" />
-                              <button class="button tiny {% if param.is_maxed %}disabled{% endif %} entity-level-up" type="submit" {% if param.is_maxed %}disabled aria-disabled="true"{% endif %}>
+                            {% if demo_mode %}
+                              <button class="button tiny disabled" type="button" disabled aria-disabled="true">
                                 {% if param.is_maxed %}MAX{% else %}Level Up{% endif %}
                               </button>
-                            </form>
+                            {% else %}
+                              <form method="post" action="{{ request.path }}" class="inline entity-action-form" data-action="level_up" data-param-id="{{ param.id }}">
+                                {% csrf_token %}
+                                <input type="hidden" name="action" value="{{ level_up_action_value }}" />
+                                <input type="hidden" name="param_id" value="{{ param.id }}" />
+                                <input type="hidden" name="next" value="{{ request.get_full_path }}" />
+                                <button class="button tiny {% if param.is_maxed %}disabled{% endif %} entity-level-up" type="submit" {% if param.is_maxed %}disabled aria-disabled="true"{% endif %}>
+                                  {% if param.is_maxed %}MAX{% else %}Level Up{% endif %}
+                                </button>
+                              </form>
+                            {% endif %}
                           </td>
                         </tr>
                       {% endfor %}
@@ -203,13 +216,17 @@
                   {% if entity.description %}
                     <p class="muted margin-top-1 margin-bottom-0">{{ entity.description }}</p>
                   {% endif %}
-                  <form method="post" action="{{ request.path }}" class="margin-top-1 entity-action-form" data-action="unlock" data-entity-id="{{ entity.id }}">
-                    {% csrf_token %}
-                    <input type="hidden" name="action" value="{{ unlock_action_value }}" />
-                    <input type="hidden" name="entity_id" value="{{ entity.id }}" />
-                    <input type="hidden" name="next" value="{{ request.get_full_path }}" />
-                    <button class="button entity-unlock" type="submit">Unlock</button>
-                  </form>
+                  {% if demo_mode %}
+                    <p class="muted margin-top-1 margin-bottom-0">Unlocks are disabled in demo mode.</p>
+                  {% else %}
+                    <form method="post" action="{{ request.path }}" class="margin-top-1 entity-action-form" data-action="unlock" data-entity-id="{{ entity.id }}">
+                      {% csrf_token %}
+                      <input type="hidden" name="action" value="{{ unlock_action_value }}" />
+                      <input type="hidden" name="entity_id" value="{{ entity.id }}" />
+                      <input type="hidden" name="next" value="{{ request.get_full_path }}" />
+                      <button class="button entity-unlock" type="submit">Unlock</button>
+                    </form>
+                  {% endif %}
                 </div>
               {% endif %}
             </div>

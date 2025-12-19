@@ -3,6 +3,8 @@
 from __future__ import annotations
 
 import json
+import csv
+import io
 from datetime import date, timedelta
 from typing import Any
 
@@ -28,6 +30,7 @@ from analysis.deltas import delta
 from analysis.engine import analyze_metric_series, analyze_runs
 from analysis.dto import RunAnalysis
 from analysis.series_registry import DEFAULT_REGISTRY
+from core.demo import DEMO_USERNAME, demo_mode_enabled, get_demo_player, set_demo_mode
 from core.advice import (
     AdviceItem,
     GoalScopeSample,
@@ -103,7 +106,48 @@ def _request_player(request: HttpRequest) -> Player:
         user=request.user,
         defaults={"display_name": getattr(request.user, "username", "Player")},
     )
+    if demo_mode_enabled(request):
+        return get_demo_player()
     return player
+
+
+def _reject_demo_write(request: HttpRequest) -> HttpResponse:
+    """Reject write actions while demo mode is enabled.
+
+    Args:
+        request: Incoming request.
+
+    Returns:
+        Redirect response back to the current page with an error message.
+    """
+
+    messages.error(request, "Demo mode is read-only. Exit demo mode to make changes.")
+    return redirect(_safe_local_redirect_url(request, fallback=request.path))
+
+
+@login_required
+def enable_demo_mode(request: HttpRequest) -> HttpResponse:
+    """Enable demo mode for the current session."""
+
+    if request.method != "POST":
+        return redirect("core:dashboard")
+
+    _ = get_demo_player()
+    set_demo_mode(request, enabled=True)
+    messages.success(request, "Demo mode enabled.")
+    return redirect(_safe_local_redirect_url(request, fallback=reverse("core:dashboard")))
+
+
+@login_required
+def disable_demo_mode(request: HttpRequest) -> HttpResponse:
+    """Disable demo mode for the current session."""
+
+    if request.method != "POST":
+        return redirect("core:dashboard")
+
+    set_demo_mode(request, enabled=False)
+    messages.success(request, "Demo mode disabled.")
+    return redirect(_safe_local_redirect_url(request, fallback=reverse("core:dashboard")))
 
 
 def _safe_auth_redirect_url(request: HttpRequest) -> str:
@@ -126,6 +170,27 @@ def _safe_auth_redirect_url(request: HttpRequest) -> str:
     return settings.LOGIN_REDIRECT_URL
 
 
+def _safe_local_redirect_url(request: HttpRequest, fallback: str) -> str:
+    """Return a safe local redirect URL derived from `next` or HTTP Referer.
+
+    Args:
+        request: Incoming request with optional `next` form input.
+        fallback: Fallback URL when no safe URL is available.
+
+    Returns:
+        A safe redirect URL limited to the current host.
+    """
+
+    candidate = (request.POST.get("next") or request.META.get("HTTP_REFERER") or "").strip()
+    if candidate and url_has_allowed_host_and_scheme(
+        url=candidate,
+        allowed_hosts={request.get_host()},
+        require_https=request.is_secure(),
+    ):
+        return candidate
+    return fallback
+
+
 def login_view(request: HttpRequest) -> HttpResponse:
     """Render a combined sign-in + account creation page.
 
@@ -145,6 +210,17 @@ def login_view(request: HttpRequest) -> HttpResponse:
         if "signup_submit" in request.POST:
             signup_form = UserCreationForm(request.POST)
             if signup_form.is_valid():
+                if (signup_form.cleaned_data.get("username") or "").strip() == DEMO_USERNAME:
+                    signup_form.add_error("username", "That username is reserved.")
+                    return render(
+                        request,
+                        "registration/login.html",
+                        {
+                            "login_form": login_form,
+                            "signup_form": signup_form,
+                            "next": next_url,
+                        },
+                    )
                 user = signup_form.save()
                 auth_login(request, user)
                 return redirect(_safe_auth_redirect_url(request))
@@ -170,6 +246,8 @@ def dashboard(request: HttpRequest) -> HttpResponse:
     """Render the Charts dashboard driven by ChartConfig definitions."""
 
     player = _request_player(request)
+    if request.method == "POST" and demo_mode_enabled(request):
+        return _reject_demo_write(request)
 
     effective_get: QueryDict | dict[str, object] = request.GET
     snapshot_id = request.GET.get("snapshot_id")
@@ -522,6 +600,73 @@ def dashboard(request: HttpRequest) -> HttpResponse:
     return render(request, "core/dashboard.html", context)
 
 
+@login_required
+def export_derived_metrics_csv(request: HttpRequest) -> HttpResponse:
+    """Export derived chart datasets as a CSV snapshot.
+
+    The export is scoped to the active player (or demo player when demo mode is enabled),
+    and includes only datasets marked as derived by the chart renderer.
+    """
+
+    player = _request_player(request)
+    chart_form = ChartContextForm(request.GET, player=player)
+    chart_form.is_valid()
+    runs = _filtered_runs(chart_form, player=player)
+
+    selected_chart_ids = tuple(chart_form.cleaned_data.get("charts") or ())
+    selected_configs = tuple(
+        CHART_CONFIG_BY_ID[chart_id] for chart_id in selected_chart_ids if chart_id in CHART_CONFIG_BY_ID
+    )
+    rendered = render_charts(
+        configs=selected_configs,
+        records=runs,
+        registry=DEFAULT_REGISTRY,
+        moving_average_window=chart_form.cleaned_data.get("moving_average_window"),
+        entity_selections={
+            "uw": getattr(chart_form.cleaned_data.get("ultimate_weapon"), "name", None),
+            "guardian": getattr(chart_form.cleaned_data.get("guardian_chip"), "name", None),
+            "bot": getattr(chart_form.cleaned_data.get("bot"), "name", None),
+        },
+        patch_boundaries=tuple(PatchBoundary.objects.values_list("boundary_date", flat=True)),
+    )
+
+    columns: list[tuple[str, dict[str, float | None]]] = []
+    all_labels: set[str] = set()
+    for entry in rendered:
+        labels = list(entry.data.get("labels") or [])
+        datasets = list(entry.data.get("datasets") or [])
+        for dataset in datasets:
+            if dataset.get("metricKind") != "derived":
+                continue
+            series = list(dataset.get("data") or [])
+            label_to_value = {labels[idx]: series[idx] if idx < len(series) else None for idx in range(len(labels))}
+            header = f"{entry.config.id}:{dataset.get('label') or entry.config.title}"
+            columns.append((header, label_to_value))
+            all_labels.update(label_to_value.keys())
+
+    if not columns:
+        return HttpResponse(
+            "No derived metrics are selected for export. Select at least one derived chart and try again.\n",
+            content_type="text/plain; charset=utf-8",
+            status=400,
+        )
+
+    ordered_labels = sorted(all_labels)
+    buffer = io.StringIO()
+    writer = csv.writer(buffer)
+    writer.writerow(["date", *[name for name, _mapping in columns]])
+    for label in ordered_labels:
+        row: list[str] = [label]
+        for _name, mapping in columns:
+            value = mapping.get(label)
+            row.append("" if value is None else str(value))
+        writer.writerow(row)
+
+    response = HttpResponse(buffer.getvalue(), content_type="text/csv; charset=utf-8")
+    response["Content-Disposition"] = 'attachment; filename="theTowerStats-derived-metrics.csv"'
+    return response
+
+
 def _goal_weights_from_query(*, goal_intent: str, query: QueryDict) -> tuple[str, GoalWeights]:
     """Return the effective goal label and weights from GET parameters.
 
@@ -786,6 +931,8 @@ def battle_history(request: HttpRequest) -> HttpResponse:
     """Render the Battle History dashboard with filters and pagination."""
 
     player = _request_player(request)
+    if request.method == "POST" and demo_mode_enabled(request):
+        return _reject_demo_write(request)
 
     if request.method == "POST":
         action = (request.POST.get("action") or "").strip()
@@ -1101,18 +1248,21 @@ def cards(request: HttpRequest) -> HttpResponse:
     player = _request_player(request)
     definitions = list(CardDefinition.objects.order_by("name"))
 
-    for definition in definitions:
-        PlayerCard.objects.get_or_create(
-            player=player,
-            card_slug=definition.slug,
-            defaults={
-                "card_definition": definition,
-                "stars_unlocked": 0,
-                "inventory_count": 0,
-            },
-        )
+    if not demo_mode_enabled(request):
+        for definition in definitions:
+            PlayerCard.objects.get_or_create(
+                player=player,
+                card_slug=definition.slug,
+                defaults={
+                    "card_definition": definition,
+                    "stars_unlocked": 0,
+                    "inventory_count": 0,
+                },
+            )
 
     if request.method == "POST":
+        if demo_mode_enabled(request):
+            return _reject_demo_write(request)
         action = (request.POST.get("action") or "").strip()
         redirect_to = request.POST.get("next") or request.path
 
@@ -1297,20 +1447,23 @@ def cards(request: HttpRequest) -> HttpResponse:
 def ultimate_weapon_progress(request: HttpRequest) -> HttpResponse:
     """Render the Ultimate Weapon progress page."""
     player = _request_player(request)
+    if request.method == "POST" and demo_mode_enabled(request):
+        return _reject_demo_write(request)
     player_cards = tuple(
         PlayerCard.objects.filter(player=player, stars_unlocked__gt=0).select_related("card_definition")
     )
 
     uw_definitions = list(UltimateWeaponDefinition.objects.order_by("name"))
-    for uw_def in uw_definitions:
-        uw, created = PlayerUltimateWeapon.objects.get_or_create(
-            player=player,
-            ultimate_weapon_slug=uw_def.slug,
-            defaults={"ultimate_weapon_definition": uw_def, "unlocked": False},
-        )
-        if not created and uw.ultimate_weapon_definition_id is None:
-            uw.ultimate_weapon_definition = uw_def
-            uw.save(update_fields=["ultimate_weapon_definition"])
+    if not demo_mode_enabled(request):
+        for uw_def in uw_definitions:
+            uw, created = PlayerUltimateWeapon.objects.get_or_create(
+                player=player,
+                ultimate_weapon_slug=uw_def.slug,
+                defaults={"ultimate_weapon_definition": uw_def, "unlocked": False},
+            )
+            if not created and uw.ultimate_weapon_definition_id is None:
+                uw.ultimate_weapon_definition = uw_def
+                uw.save(update_fields=["ultimate_weapon_definition"])
 
     if request.method == "POST":
         action = (request.POST.get("action") or "").strip()
@@ -1696,31 +1849,35 @@ def guardian_progress(request: HttpRequest) -> HttpResponse:
     """Render the Guardian Chips progress dashboard."""
 
     player = _request_player(request)
+    if request.method == "POST" and demo_mode_enabled(request):
+        return _reject_demo_write(request)
     player_cards = tuple(
         PlayerCard.objects.filter(player=player, stars_unlocked__gt=0).select_related("card_definition")
     )
 
-    orphaned_guardian_params_deleted, _ = PlayerGuardianChipParameter.objects.filter(
-        player_guardian_chip__player=player,
-        parameter_definition__isnull=True,
-    ).delete()
-    if orphaned_guardian_params_deleted and not request.headers.get("x-requested-with") == "XMLHttpRequest":
-        messages.warning(request, "Removed guardian chip parameter rows that no longer match known definitions.")
+    if not demo_mode_enabled(request):
+        orphaned_guardian_params_deleted, _ = PlayerGuardianChipParameter.objects.filter(
+            player_guardian_chip__player=player,
+            parameter_definition__isnull=True,
+        ).delete()
+        if orphaned_guardian_params_deleted and not request.headers.get("x-requested-with") == "XMLHttpRequest":
+            messages.warning(request, "Removed guardian chip parameter rows that no longer match known definitions.")
 
     guardian_definitions = list(GuardianChipDefinition.objects.order_by("name"))
-    for guardian_def in guardian_definitions:
-        chip, created = PlayerGuardianChip.objects.get_or_create(
-            player=player,
-            guardian_chip_slug=guardian_def.slug,
-            defaults={
-                "guardian_chip_definition": guardian_def,
-                "unlocked": False,
-                "active": False,
-            },
-        )
-        if not created and chip.guardian_chip_definition_id is None:
-            chip.guardian_chip_definition = guardian_def
-            chip.save(update_fields=["guardian_chip_definition"])
+    if not demo_mode_enabled(request):
+        for guardian_def in guardian_definitions:
+            chip, created = PlayerGuardianChip.objects.get_or_create(
+                player=player,
+                guardian_chip_slug=guardian_def.slug,
+                defaults={
+                    "guardian_chip_definition": guardian_def,
+                    "unlocked": False,
+                    "active": False,
+                },
+            )
+            if not created and chip.guardian_chip_definition_id is None:
+                chip.guardian_chip_definition = guardian_def
+                chip.save(update_fields=["guardian_chip_definition"])
 
     if request.method == "POST":
         action = (request.POST.get("action") or "").strip()
@@ -2097,27 +2254,31 @@ def bots_progress(request: HttpRequest) -> HttpResponse:
     """Render the Bots progress dashboard."""
 
     player = _request_player(request)
+    if request.method == "POST" and demo_mode_enabled(request):
+        return _reject_demo_write(request)
     player_cards = tuple(
         PlayerCard.objects.filter(player=player, stars_unlocked__gt=0).select_related("card_definition")
     )
 
-    orphaned_bot_params_deleted, _ = PlayerBotParameter.objects.filter(
-        player_bot__player=player,
-        parameter_definition__isnull=True,
-    ).delete()
-    if orphaned_bot_params_deleted and not request.headers.get("x-requested-with") == "XMLHttpRequest":
-        messages.warning(request, "Removed bot parameter rows that no longer match known definitions.")
+    if not demo_mode_enabled(request):
+        orphaned_bot_params_deleted, _ = PlayerBotParameter.objects.filter(
+            player_bot__player=player,
+            parameter_definition__isnull=True,
+        ).delete()
+        if orphaned_bot_params_deleted and not request.headers.get("x-requested-with") == "XMLHttpRequest":
+            messages.warning(request, "Removed bot parameter rows that no longer match known definitions.")
 
     bot_definitions = list(BotDefinition.objects.order_by("name"))
-    for bot_def in bot_definitions:
-        bot, created = PlayerBot.objects.get_or_create(
-            player=player,
-            bot_slug=bot_def.slug,
-            defaults={"bot_definition": bot_def, "unlocked": False},
-        )
-        if not created and bot.bot_definition_id is None:
-            bot.bot_definition = bot_def
-            bot.save(update_fields=["bot_definition"])
+    if not demo_mode_enabled(request):
+        for bot_def in bot_definitions:
+            bot, created = PlayerBot.objects.get_or_create(
+                player=player,
+                bot_slug=bot_def.slug,
+                defaults={"bot_definition": bot_def, "unlocked": False},
+            )
+            if not created and bot.bot_definition_id is None:
+                bot.bot_definition = bot_def
+                bot.save(update_fields=["bot_definition"])
 
     if request.method == "POST":
         action = (request.POST.get("action") or "").strip()

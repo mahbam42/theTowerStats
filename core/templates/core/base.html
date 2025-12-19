@@ -130,6 +130,21 @@
           <li><a href="https://mahbam42.github.io/theTowerStats/" target="_blank" rel="noopener noreferrer">Docs</a></li>
           <li><a href="/admin/" target="_blank" rel="noreferrer">Admin</a></li>
           {% if user.is_authenticated %}
+            <li>
+              {% if demo_mode %}
+                <form action="{% url 'core:disable_demo_mode' %}" method="post" style="display: inline">
+                  {% csrf_token %}
+                  <input type="hidden" name="next" value="{{ request.get_full_path }}" />
+                  <button type="submit" class="button warning tiny margin-0">Exit demo</button>
+                </form>
+              {% else %}
+                <form action="{% url 'core:enable_demo_mode' %}" method="post" style="display: inline">
+                  {% csrf_token %}
+                  <input type="hidden" name="next" value="{{ request.get_full_path }}" />
+                  <button type="submit" class="button secondary tiny margin-0">View demo data</button>
+                </form>
+              {% endif %}
+            </li>
             <li class="menu-text">Signed in as {{ user.username }}</li>
             <li>
               <form action="{% url 'logout' %}" method="post" style="display: inline">
@@ -146,6 +161,15 @@
     </div>
 
     <div class="grid-container app-shell">
+      {% if demo_mode %}
+        <div class="grid-x grid-margin-x">
+          <div class="cell">
+            <div class="callout warning" role="status">
+              <strong>Demo mode</strong> — You are viewing sample data. Editing and imports are disabled.
+            </div>
+          </div>
+        </div>
+      {% endif %}
       {% if messages %}
         <div class="grid-x grid-margin-x">
           <div class="cell">

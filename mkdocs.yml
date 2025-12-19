@@ -38,6 +38,7 @@ nav:
   - Home: index.md
   - User Guide:
       - Overview: user_guide.md
+      - Demo Data: demo_data.md
       - Battle History: battle_history.md
       - Charts: charts.md
       - Cards: cards.md
@@ -53,6 +54,7 @@ nav:
       - Phase 4: phase4.md
       - Phase 5 Summary: phase5.md
       - Phase 7 Summary: phase7.md
+      - Phase 8 Summary: phase8.md
       - Phase 6 Concepts: phase6_concepts.md
       - Project Structure: project_structure.md
       - Development Notes: development.md

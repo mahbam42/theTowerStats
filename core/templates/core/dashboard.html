@@ -172,6 +172,9 @@
             <button class="button" type="submit">Apply</button>
             <a class="button secondary" href="{% url 'core:dashboard' %}">Clear</a>
           </div>
+          <div class="button-group expanded stack-for-small margin-top-1">
+            <a class="button hollow" href="{% url 'core:export_derived_metrics_csv' %}?{{ request.GET.urlencode }}">Export derived metrics (CSV)</a>
+          </div>
         </form>
       </div>
 
@@ -183,19 +186,21 @@
         </form>
       </div>
 
-      <div class="card-shell margin-top-1">
-        <h5>Quick import</h5>
-        <form method="post">
-          {% csrf_token %}
-          <label>{{ import_form.raw_text.label }}
-            {{ import_form.raw_text }}
-          </label>
-          <label>{{ import_form.preset_name.label }}
-            {{ import_form.preset_name }}
-          </label>
-          <button class="button expanded" type="submit">Import Battle Report</button>
-        </form>
-      </div>
+      {% if not demo_mode %}
+        <div class="card-shell margin-top-1">
+          <h5>Quick import</h5>
+          <form method="post">
+            {% csrf_token %}
+            <label>{{ import_form.raw_text.label }}
+              {{ import_form.raw_text }}
+            </label>
+            <label>{{ import_form.preset_name.label }}
+              {{ import_form.preset_name }}
+            </label>
+            <button class="button expanded" type="submit">Import Battle Report</button>
+          </form>
+        </div>
+      {% endif %}
     </div>
 
     <div class="cell large-9 medium-8 large-order-1 medium-order-1">
@@ -273,6 +278,9 @@
                       </ul>
                     </div>
                   {% endif %}
+                </div>
+                <div class="cell shrink">
+                  <button type="button" class="button tiny secondary download-chart-png" data-chart-id="{{ panel.id }}">Download PNG</button>
                 </div>
               </div>
               <canvas id="chart-{{ panel.id }}" width="900" height="350"></canvas>
@@ -515,6 +523,23 @@
           renderLineChart(`chart-${panel.id}`, panel.labels, panel.datasets);
         }
       }
+
+      function downloadChartPng(chartId) {
+        const canvas = document.getElementById(`chart-${chartId}`);
+        if (!canvas) return;
+        const a = document.createElement("a");
+        a.href = canvas.toDataURL("image/png");
+        a.download = `theTowerStats-${chartId}.png`;
+        document.body.appendChild(a);
+        a.click();
+        document.body.removeChild(a);
+      }
+
+      for (const btn of document.querySelectorAll(".download-chart-png")) {
+        btn.addEventListener("click", function () {
+          downloadChartPng(btn.dataset.chartId);
+        });
+      }
     </script>
 
     <div class="modal-backdrop" id="chart-builder-modal" aria-hidden="true">
@@ -625,31 +650,37 @@
             <button class="button hollow" type="button" id="load-snapshot">Load snapshot</button>
           </div>
 
-          <form method="post" id="snapshot-save-form" class="margin-top-1">
-            {% csrf_token %}
-            <input type="hidden" name="action" value="create_chart_snapshot">
-            <label>Snapshot name
-              <input type="text" name="snapshot_name" maxlength="120" placeholder="e.g. Before unlocking X">
-            </label>
-            <label>Snapshot target
-              <select name="snapshot_target">
-                <option value="charts">Charts</option>
-                <option value="ultimate_weapons">Ultimate Weapons</option>
-              </select>
-            </label>
-            <input type="hidden" name="chart_type" id="snapshot-chart-type-hidden" value="">
-            <input type="hidden" name="group_by" id="snapshot-group-by-hidden" value="">
-            <input type="hidden" name="comparison" id="snapshot-comparison-hidden" value="">
-            <input type="hidden" name="smoothing" id="snapshot-smoothing-hidden" value="">
-            <input type="hidden" name="run_a" id="snapshot-run-a-hidden" value="">
-            <input type="hidden" name="run_b" id="snapshot-run-b-hidden" value="">
-            <input type="hidden" name="window_a_start" id="snapshot-window-a-start-hidden" value="">
-            <input type="hidden" name="window_a_end" id="snapshot-window-a-end-hidden" value="">
-            <input type="hidden" name="window_b_start" id="snapshot-window-b-start-hidden" value="">
-            <input type="hidden" name="window_b_end" id="snapshot-window-b-end-hidden" value="">
-            <div id="snapshot-metric-keys-hidden"></div>
-            <button class="button expanded" type="submit">Save snapshot</button>
-          </form>
+          {% if demo_mode %}
+            <div class="callout warning margin-top-1" role="status">
+              Snapshots are disabled in demo mode.
+            </div>
+          {% else %}
+            <form method="post" id="snapshot-save-form" class="margin-top-1">
+              {% csrf_token %}
+              <input type="hidden" name="action" value="create_chart_snapshot">
+              <label>Snapshot name
+                <input type="text" name="snapshot_name" maxlength="120" placeholder="e.g. Before unlocking X">
+              </label>
+              <label>Snapshot target
+                <select name="snapshot_target">
+                  <option value="charts">Charts</option>
+                  <option value="ultimate_weapons">Ultimate Weapons</option>
+                </select>
+              </label>
+              <input type="hidden" name="chart_type" id="snapshot-chart-type-hidden" value="">
+              <input type="hidden" name="group_by" id="snapshot-group-by-hidden" value="">
+              <input type="hidden" name="comparison" id="snapshot-comparison-hidden" value="">
+              <input type="hidden" name="smoothing" id="snapshot-smoothing-hidden" value="">
+              <input type="hidden" name="run_a" id="snapshot-run-a-hidden" value="">
+              <input type="hidden" name="run_b" id="snapshot-run-b-hidden" value="">
+              <input type="hidden" name="window_a_start" id="snapshot-window-a-start-hidden" value="">
+              <input type="hidden" name="window_a_end" id="snapshot-window-a-end-hidden" value="">
+              <input type="hidden" name="window_b_start" id="snapshot-window-b-start-hidden" value="">
+              <input type="hidden" name="window_b_end" id="snapshot-window-b-end-hidden" value="">
+              <div id="snapshot-metric-keys-hidden"></div>
+              <button class="button expanded" type="submit">Save snapshot</button>
+            </form>
+          {% endif %}
         </div>
       </div>
     </div>

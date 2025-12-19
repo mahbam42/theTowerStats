@@ -54,18 +54,22 @@
             Not tracked yet
           {% endif %}
         </p>
-        <form method="post" class="margin-top-1">
-          {% csrf_token %}
-          <input type="hidden" name="action" value="unlock_slot">
-          <input type="hidden" name="next" value="{{ request.get_full_path }}">
-          <button
-            class="button"
-            type="submit"
-            {% if not card_slots.max or card_slots.unlocked >= card_slots.max %}disabled{% endif %}
-          >
-            Unlock Next Slot{% if card_slots.next_cost %} ({{ card_slots.next_cost }}){% endif %}
-          </button>
-        </form>
+        {% if demo_mode %}
+          <p class="muted margin-top-1 margin-bottom-0">Slot unlocks are disabled in demo mode.</p>
+        {% else %}
+          <form method="post" class="margin-top-1">
+            {% csrf_token %}
+            <input type="hidden" name="action" value="unlock_slot">
+            <input type="hidden" name="next" value="{{ request.get_full_path }}">
+            <button
+              class="button"
+              type="submit"
+              {% if not card_slots.max or card_slots.unlocked >= card_slots.max %}disabled{% endif %}
+            >
+              Unlock Next Slot{% if card_slots.next_cost %} ({{ card_slots.next_cost }}){% endif %}
+            </button>
+          </form>
+        {% endif %}
       </div>
 
       <div class="card-shell margin-top-1">
@@ -178,24 +182,31 @@
                         {% endif %}
                       </td>
                       <td>
-                        <form method="post">
-                          {% csrf_token %}
-                          <input type="hidden" name="action" value="update_inventory">
-                          <input type="hidden" name="next" value="{{ request.get_full_path }}">
-                          <input type="hidden" name="card_id" value="{{ row.id }}">
-                          <input
-                            type="number"
-                            name="inventory_count"
-                            min="0"
-                            value="{{ row.inventory_count }}"
-                            style="max-width: 6rem;"
-                            onchange="this.form.submit()"
-                            {% if row.is_maxed %}disabled{% endif %}
-                          >
+                        {% if demo_mode %}
+                          {{ row.inventory_count }}
                           <span class="muted">
                             / {{ row.inventory_threshold }}{% if row.is_maxed %} (MAX){% endif %}
                           </span>
-                        </form>
+                        {% else %}
+                          <form method="post">
+                            {% csrf_token %}
+                            <input type="hidden" name="action" value="update_inventory">
+                            <input type="hidden" name="next" value="{{ request.get_full_path }}">
+                            <input type="hidden" name="card_id" value="{{ row.id }}">
+                            <input
+                              type="number"
+                              name="inventory_count"
+                              min="0"
+                              value="{{ row.inventory_count }}"
+                              style="max-width: 6rem;"
+                              onchange="this.form.submit()"
+                              {% if row.is_maxed %}disabled{% endif %}
+                            >
+                            <span class="muted">
+                              / {{ row.inventory_threshold }}{% if row.is_maxed %} (MAX){% endif %}
+                            </span>
+                          </form>
+                        {% endif %}
                       </td>
                       <td>
                         {% if row.is_maxed %}
@@ -219,32 +230,34 @@
                             —
                           {% endfor %}
                         </div>
-                        <details class="margin-top-1">
-                          <summary class="muted">Edit</summary>
-                          <form method="post" class="margin-top-1">
-                            {% csrf_token %}
-                            <input type="hidden" name="action" value="update_presets">
-                            <input type="hidden" name="next" value="{{ request.get_full_path }}">
-                            <input type="hidden" name="card_id" value="{{ row.id }}">
-                            <select name="presets" multiple size="4">
-                              {% for preset in presets %}
-                                <option
-                                  value="{{ preset.id }}"
-                                  {% if preset in row.presets %}selected{% endif %}
-                                >
-                                  {{ preset.name }}
-                                </option>
-                              {% endfor %}
-                            </select>
-                            <input
-                              type="text"
-                              name="new_preset_name"
-                              placeholder="New preset"
-                              style="max-width: 10rem;"
-                            >
-                            <button class="button tiny" type="submit">Save</button>
-                          </form>
-                        </details>
+                        {% if not demo_mode %}
+                          <details class="margin-top-1">
+                            <summary class="muted">Edit</summary>
+                            <form method="post" class="margin-top-1">
+                              {% csrf_token %}
+                              <input type="hidden" name="action" value="update_presets">
+                              <input type="hidden" name="next" value="{{ request.get_full_path }}">
+                              <input type="hidden" name="card_id" value="{{ row.id }}">
+                              <select name="presets" multiple size="4">
+                                {% for preset in presets %}
+                                  <option
+                                    value="{{ preset.id }}"
+                                    {% if preset in row.presets %}selected{% endif %}
+                                  >
+                                    {{ preset.name }}
+                                  </option>
+                                {% endfor %}
+                              </select>
+                              <input
+                                type="text"
+                                name="new_preset_name"
+                                placeholder="New preset"
+                                style="max-width: 10rem;"
+                              >
+                              <button class="button tiny" type="submit">Save</button>
+                            </form>
+                          </details>
+                        {% endif %}
                       </td>
                       <td>{{ row.updated_at }}</td>
                     </tr>

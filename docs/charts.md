@@ -27,13 +27,15 @@ Charts help you review how your run results change over time using the same valu
 10. (Optional) In **Goal-aware comparison**, select a **Goal** to choose a preset set of weights.
 11. (Optional) In **Goal-aware comparison**, edit the **Weight** values if you want to change how the percent-change summary is calculated.
 12. Select **Apply** to refresh the dashboard.
-13. (Optional) Select **Chart Builder** to create a custom chart.
-14. In **Chart Builder**, select **Metrics**, then select a **Chart type** and **Group by** option.
-15. (Optional) In **Chart Builder**, select a **Comparison** mode to compare two runs or two date windows.
-16. Select **Apply to dashboard** to add the custom chart to the dashboard.
-17. (Optional) In **Chart Builder**, enter a **Snapshot name**.
-18. (Optional) In **Chart Builder**, select a **Snapshot target** to choose where you plan to use the snapshot.
-19. (Optional) Select **Save snapshot**.
+13. (Optional) Select **Export derived metrics (CSV)** to download a snapshot of derived chart values.
+14. (Optional) Select **Download PNG** on a chart to save an image of the chart as currently displayed.
+15. (Optional) Select **Chart Builder** to create a custom chart.
+16. In **Chart Builder**, select **Metrics**, then select a **Chart type** and **Group by** option.
+17. (Optional) In **Chart Builder**, select a **Comparison** mode to compare two runs or two date windows.
+18. Select **Apply to dashboard** to add the custom chart to the dashboard.
+19. (Optional) In **Chart Builder**, enter a **Snapshot name**.
+20. (Optional) In **Chart Builder**, select a **Snapshot target** to choose where you plan to use the snapshot.
+21. (Optional) Select **Save snapshot**.
 
 ## How to Read the Results
 
@@ -50,6 +52,15 @@ Charts help you review how your run results change over time using the same valu
 
 > **Note**
 > Charts use only the data you have imported. If you have not imported runs for a date range, the chart cannot display values for that period.
+
+> **Note**
+> Exports are snapshots of what you are viewing. They do not update after download.
+
+> **Note**
+> CSV export includes derived metrics only. If your current selection contains no derived charts, the export will be empty or unavailable.
+
+> **Note**
+> PNG export downloads a chart image as currently displayed, including your current filters and chart options.
 
 > **Caution**
 > Some charts require additional selections. For example, “Runs Using Selected UW” needs an Ultimate Weapon selection.

@@ -38,25 +38,27 @@
 
   <div class="grid-x grid-margin-x">
     <div class="cell">
-      <div class="card-shell battle-history-import">
-        <details {% if import_form.errors %}open{% endif %}>
-          <summary>
-            <h4 class="margin-bottom-0">Add Battle Report</h4>
-          </summary>
-          <div class="margin-top-1">
-            <form method="post">
-              {% csrf_token %}
-              <label>{{ import_form.raw_text.label }}
-                {{ import_form.raw_text }}
-              </label>
-              <label>{{ import_form.preset_name.label }}
-                {{ import_form.preset_name }}
-              </label>
-              <button class="button" type="submit">Import Battle Report</button>
-            </form>
-          </div>
-        </details>
-      </div>
+      {% if not demo_mode %}
+        <div class="card-shell battle-history-import">
+          <details {% if import_form.errors %}open{% endif %}>
+            <summary>
+              <h4 class="margin-bottom-0">Add Battle Report</h4>
+            </summary>
+            <div class="margin-top-1">
+              <form method="post">
+                {% csrf_token %}
+                <label>{{ import_form.raw_text.label }}
+                  {{ import_form.raw_text }}
+                </label>
+                <label>{{ import_form.preset_name.label }}
+                  {{ import_form.preset_name }}
+                </label>
+                <button class="button" type="submit">Import Battle Report</button>
+              </form>
+            </div>
+          </details>
+        </div>
+      {% endif %}
     </div>
   </div>
 
@@ -141,20 +143,22 @@
                         <span class="muted">—</span>
                       {% endif %}
 
-                      <form method="post" class="margin-top-1">
-                        {% csrf_token %}
-                        <input type="hidden" name="action" value="update_run_preset">
-                        <input type="hidden" name="progress_id" value="{{ run.run_progress.id }}">
-                        <input type="hidden" name="next" value="{{ request.get_full_path }}">
-                        <select name="preset" class="preset-select" aria-label="Run preset selector" onchange="this.form.submit()">
-                          <option value="" {% if not run.run_progress.preset %}selected{% endif %}>No preset</option>
-                          {% for preset in player_presets %}
-                            <option value="{{ preset.id }}" {% if run.run_progress.preset and preset.id == run.run_progress.preset.id %}selected{% endif %}>
-                              {{ preset.name }}
-                            </option>
-                          {% endfor %}
-                        </select>
-                      </form>
+                      {% if not demo_mode %}
+                        <form method="post" class="margin-top-1">
+                          {% csrf_token %}
+                          <input type="hidden" name="action" value="update_run_preset">
+                          <input type="hidden" name="progress_id" value="{{ run.run_progress.id }}">
+                          <input type="hidden" name="next" value="{{ request.get_full_path }}">
+                          <select name="preset" class="preset-select" aria-label="Run preset selector" onchange="this.form.submit()">
+                            <option value="" {% if not run.run_progress.preset %}selected{% endif %}>No preset</option>
+                            {% for preset in player_presets %}
+                              <option value="{{ preset.id }}" {% if run.run_progress.preset and preset.id == run.run_progress.preset.id %}selected{% endif %}>
+                                {{ preset.name }}
+                              </option>
+                            {% endfor %}
+                          </select>
+                        </form>
+                      {% endif %}
                     </td>
                   </tr>
                 {% endfor %}
