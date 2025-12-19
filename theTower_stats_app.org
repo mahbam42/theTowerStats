@@ -1452,7 +1452,9 @@ CLOSED: [2025-12-19 Fri 12:52]
 - “Insufficient data” degradation
    Implement explicit insufficiency detection (e.g., <N runs per scope, missing values, empty windows) and return a structured advice item that says “Insufficient data” + why; add tests for empty and thin scopes.  
 
-*** Phase 8 Multiple Player Support
+*** DONE Phase 8 Multiple Player Support
+CLOSED: [2025-12-19 Fri 15:42]
+- State "DONE"       from              [2025-12-19 Fri 15:42]
 Phase 8 is the point where the app stops being “your stats tracker” and becomes a shared system.
 Everything else (advice, exports, demos) hangs off that fact.
 
@@ -1789,16 +1791,33 @@ Take some of my data and make plausible changes to store as the Default User. Al
 This dramatically increases perceived value with very little backend work.
 
 
-**** TODO [#C] Wireup Github Actions to Run Tests
+**** DONE [#C] Wireup Github Actions to Run Tests
+CLOSED: [2025-12-19 Fri 15:42]
+- State "DONE"       from "TODO"       [2025-12-19 Fri 15:42]
 Run checks or Ruff Check, mypy ., pytest -q
 
 *** Phase 9 Deploy and Clean out Backlog
+This is “trust + deployment” phase
 
-**** TODO [#B] Add a 'Killed By' Donut Chart
+You can confidently deploy when all Blocking items are complete, even if none of the Nice-to-Have items are.
+
+- closes the multi-player trust loop,
+
+- aligns docs, UI, and behavior,
+
+- removes ambiguity before outside users touch it,
+
+- makes the app deployable without apologies.
+
+**** TODO [#B] Add a 'Killed By' Donut Chart 
 I thought we did this, but now I don't see it...
-**** TODO [#A] Scope and Apply Permissions
-Need to assign Player and Admin permissions
-**** TODO [#A] On the UW Dashboard Runs Used is not updating appropriately
+
+This is Data completeness confirmation and a useful sanity check visualization
+**** TODO [#A] Scope and Apply Permissions (Blocking)
+Need to assign Player and Admin permissions. The groups were created but the Permissions were never assigned. This may require a migration to assign them out. 
+
+Audit every view, admin, and export endpoint for player scoping
+**** TODO [#A] On the UW Dashboard Runs Used is not updating appropriately  (Blocking)
 Based on Battle Reports the 'runs used' should be >0. 
 
 **** TODO [#A] Cite Sources from the Wiki                           :docs:
@@ -1808,11 +1827,14 @@ Cards, UWs, Bots, Guardian Chips names should all link to the respective Wiki pa
 **** TODO [#C] User Guide Operation                                 :docs:
 "Note Battle History surfaces only what exists in your imported text. If a label never appeared in the report, it will not be synthesized here."
 
-This note doesn't make sense. The Battle History is a read-only summary provided by the Game. So assume a player is pasting the full summary into our app every time. 
-**** TODO Deployment Checklist
+This note doesn't make sense. The Battle History is a read-only summary provided by the Game. So assume a player is pasting the full summary into our app every time.
+
+“This app does not invent or infer missing values.”
+“What you see reflects what the game reported.”
+**** TODO [#A] Deployment  (Blocking)
 Prepare App for deployment on Railway
 
-Django Check:
+***** [#B] Django Checklist:
 ?: (security.W004) You have not set a value for the SECURE_HSTS_SECONDS setting. If your entire site is served only over SSL, you may want to consider setting a value and enabling HTTP Strict Transport Security. Be sure to read the documentation first; enabling HSTS carelessly can cause serious, irreversible problems.
 ?: (security.W008) Your SECURE_SSL_REDIRECT setting is not set to True. Unless your site should be available over both SSL and non-SSL connections, you may want to either set this setting True or configure a load balancer or reverse-proxy server to redirect all connections to HTTPS.
 ?: (security.W009) Your SECRET_KEY has less than 50 characters, less than 5 unique characters, or it's prefixed with 'django-insecure-' indicating that it was generated automatically by Django. Please generate a long and random value, otherwise many of Django's security-critical features will be vulnerable to attack.
@@ -1820,6 +1842,11 @@ Django Check:
 ?: (security.W016) You have 'django.middleware.csrf.CsrfViewMiddleware' in your MIDDLEWARE, but you have not set CSRF_COOKIE_SECURE to True. Using a secure-only CSRF cookie makes it more difficult for network traffic sniffers to steal the CSRF token.
 ?: (security.W018) You should not have DEBUG set to True in deployment.
 ?: (security.W020) ALLOWED_HOSTS must not be empty in deployment.
+***** [#A] Railway Deployment Guide
+https://docs.railway.com/guides/django
+***** [#C] Consolidate CSS and JS to static/ 
+***** [#B] Prepare migration to Postgres
+
 
 ** Backlog [0/6]
 “Out of Scope”:
@@ -2047,8 +2074,10 @@ Mostly a visual tweak, but adds context and history for the player to interpert 
 - [X] prompt 26 Phase 6 Addendum: Base vs Effective Value + Modifier Explanations
 - [X] prompt 27 Phase 6 Validation Checklist
 - [X] prompt 28 Phase 7 Power Tools
-- [ ] prompt 28 Validation Checklist
-- [ ] prompt 29 Phase 8, Pillar 1: Multiple Player Support
-- [ ] prompt 29 Multiple Player Support Checklist
-- [ ] prompt 30 Phase 8, Pillar 2: Trustable, Explainable, Goal-Aware Advice
-- [ ] prompt 30 Trustable, Explainable, Goal-Aware Advice Validation
+- [X] prompt 28 Validation Checklist
+- [X] prompt 29 Phase 8, Pillar 1: Multiple Player Support
+- [X] prompt 29 Multiple Player Support Checklist
+- [X] prompt 30 Phase 8, Pillar 2: Trustable, Explainable, Goal-Aware Advice
+- [X] prompt 30 Trustable, Explainable, Goal-Aware Advice Validation
+- [X] prompt 31 Phase 8, Pillar 3: Demo, Export, and Adoption Features
+- [X] port_and_adoption checklist
