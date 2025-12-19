@@ -1370,8 +1370,10 @@ Named snapshots:
 
 These become reusable comparison anchors in charts
 
-**** TODO [#B] Data Quality & Confidence Signals
+**** DONE [#B] Data Quality & Confidence Signals
+CLOSED: [2025-12-19 Fri 12:09]
 
+- State "DONE"       from "TODO"       [2025-12-19 Fri 12:09]
 Players will ask:
 - “Is this run weird?”
 - “Did something change here?”
