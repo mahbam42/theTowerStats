@@ -1335,8 +1335,10 @@ Revisit and build on phase 2 work
   - Are visible and explainable everywhere parameters appear
 
 - No efficiency or recommendation logic depends on undocumented assumptions
-*** IN PROGRESS Phase 7 Power Tools
+*** DONE Phase 7 Power Tools [100%]
+CLOSED: [2025-12-19 Fri 13:50]
 
+- State "DONE"       from "IN PROGRESS" [2025-12-19 Fri 13:50]
 - State "IN PROGRESS" from              [2025-12-18 Thu 19:34] \\
   Needs to be manually tested/UAT pass
 **** DONE [#A] Add Chart Builder Modal to Charts Dashboard
@@ -1389,7 +1391,9 @@ This builds trust without over-engineering.
 
 
 
-**** TODO [#B] UW Sync Graph
+**** DONE [#B] UW Sync Graph
+CLOSED: [2025-12-19 Fri 13:49]
+- State "DONE"       from "TODO"       [2025-12-19 Fri 13:49]
 There is synergy to using some UW together, specifically Golden Tower, Blackhole and Death Wave. It's common in the meta to keep the cooldowns and durations in sync. We should have the data to chart the three together and how often they overlap/synchronize
 
 **** DONE [#B] Performance Guardrails
@@ -1781,7 +1785,7 @@ This dramatically increases perceived value with very little backend work.
 Run checks or Ruff Check, mypy ., pytest -q
 
 *** Phase 9 Deploy and Clean out Backlog
-** Backlog [0/10]
+** Backlog [0/12]
 “Out of Scope”:
 - Cloud sync
 - Real-time scraping
@@ -1847,6 +1851,62 @@ No RNG modeling
 
 No balance speculation
 
+*** TODO [#C] Exploratory Pattern Analysis
+
+K-means is not an optimization engine and not advice logic.
+It’s a lens.
+
+Its role is to answer:
+
+> “What kinds of runs exist in the data, without us naming them first?”
+
+1. Run Archetypes (descriptive only)
+
+Clusters emerge like:
+
+Short / high-yield
+
+Long / low-risk
+
+Volatile / high-variance
+
+These are labels applied after clustering, not baked into the model.
+
+2. Better context for advice (without commands)
+
+Instead of:
+
+“You should invest more in X”
+
+You get:
+
+“Runs similar to this one often emphasize X over Y.”
+
+That’s a huge philosophical win for your system.
+
+3. A future bridge to personalization
+
+Later still, this becomes:
+
+- “You tend to play in Cluster C”
+
+- “This run deviated from your usual cluster”
+
+Still observational. Still safe.
+
+To future-proof it now, I’d lock these in:
+
+- Clustering operates on MetricSeries snapshots only
+
+- Never used as an input to simulations or projections
+
+- Never produces imperative language
+
+- Fully explainable feature vector per cluster
+
+- Can be turned off entirely with no loss of functionality
+
+In other words: insight, not dependency.
 *** TODO [#C] Normalize time handling everywhere (game time vs real time vs accelerated)
 Game Time can be accelerated and the rate can be changed during a run. Either via Lab Research (max of 5x) or via perks that increase it further to a variable factor (increased by additional researchs). The hard maximum is 6.25x (according to the Wiki). However the Wiki also notes "Game speed is not accurate. x5.0 speed behaves closer to x4.0 while 6.25 is closer to x5." So our handling of it is not strictly necessary. 
 

@@ -149,6 +149,25 @@
               {% endfor %}
             </select>
           </label>
+          <hr>
+          <h6 class="margin-bottom-0">Goal-aware comparison</h6>
+          <p class="muted">Goal-aware advice summarizes percent changes across multiple metrics using the weights you select.</p>
+          <label>Goal
+            <select name="goal_intent" id="goal-intent">
+              <option value="hybrid"{% if goal_intent == "hybrid" %} selected{% endif %}>Hybrid</option>
+              <option value="economy"{% if goal_intent == "economy" %} selected{% endif %}>Economy / Farming</option>
+              <option value="progression"{% if goal_intent == "progression" %} selected{% endif %}>Progression / Wave Push</option>
+            </select>
+          </label>
+          <label>Weight: coins/hour
+            <input type="number" step="0.05" name="goal_weight_coins_per_hour" id="goal-weight-coins-per-hour" value="{{ goal_weight_coins_per_hour|default_if_none:'' }}">
+          </label>
+          <label>Weight: coins/wave
+            <input type="number" step="0.05" name="goal_weight_coins_per_wave" id="goal-weight-coins-per-wave" value="{{ goal_weight_coins_per_wave|default_if_none:'' }}">
+          </label>
+          <label>Weight: waves reached
+            <input type="number" step="0.05" name="goal_weight_waves_reached" id="goal-weight-waves-reached" value="{{ goal_weight_waves_reached|default_if_none:'' }}">
+          </label>
           <div class="button-group expanded stack-for-small margin-top-1">
             <button class="button" type="submit">Apply</button>
             <a class="button secondary" href="{% url 'core:dashboard' %}">Clear</a>
@@ -951,6 +970,30 @@
         }
         if (mode) mode.addEventListener("change", updateAdviceControls);
         updateAdviceControls();
+      })();
+    </script>
+
+    <script>
+      (function() {
+        const intent = document.getElementById("goal-intent");
+        const wCph = document.getElementById("goal-weight-coins-per-hour");
+        const wCpw = document.getElementById("goal-weight-coins-per-wave");
+        const wWaves = document.getElementById("goal-weight-waves-reached");
+
+        const presets = {
+          economy: { cph: 1.0, cpw: 0.5, waves: 0.25 },
+          progression: { cph: 0.25, cpw: 0.25, waves: 1.0 },
+          hybrid: { cph: 0.75, cpw: 0.5, waves: 0.75 },
+        };
+
+        function applyPreset(key) {
+          const preset = presets[key] || presets.hybrid;
+          if (wCph) wCph.value = String(preset.cph);
+          if (wCpw) wCpw.value = String(preset.cpw);
+          if (wWaves) wWaves.value = String(preset.waves);
+        }
+
+        if (intent) intent.addEventListener("change", () => applyPreset(intent.value));
       })();
     </script>
 {% endblock %}

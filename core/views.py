@@ -25,10 +25,18 @@ from analysis.chart_config_dto import ChartContextDTO
 from analysis.chart_config_engine import analyze_chart_config_dto
 from analysis.chart_config_validator import validate_chart_config_dto
 from analysis.deltas import delta
-from analysis.engine import analyze_runs
+from analysis.engine import analyze_metric_series, analyze_runs
 from analysis.dto import RunAnalysis
 from analysis.series_registry import DEFAULT_REGISTRY
-from core.advice import AdviceItem, SnapshotDeltaInput, generate_optimization_advice, generate_snapshot_delta_advice
+from core.advice import (
+    AdviceItem,
+    GoalScopeSample,
+    GoalWeights,
+    SnapshotDeltaInput,
+    generate_goal_weighted_advice,
+    generate_optimization_advice,
+    generate_snapshot_delta_advice,
+)
 from core.charting.configs import (
     CHART_CONFIG_BY_ID,
     default_selected_chart_ids,
@@ -278,6 +286,11 @@ def dashboard(request: HttpRequest) -> HttpResponse:
     advice_snapshot_a = getattr(effective_get, "get", lambda _k: None)("advice_snapshot_a")
     advice_snapshot_b = getattr(effective_get, "get", lambda _k: None)("advice_snapshot_b")
     advice_mode = getattr(effective_get, "get", lambda _k: None)("advice_mode") or "snapshot_vs_current"
+    goal_intent = (getattr(effective_get, "get", lambda _k: None)("goal_intent") or "hybrid").strip()
+    goal_label, goal_weights = _goal_weights_from_query(
+        goal_intent=goal_intent,
+        query=effective_get,
+    )
     snapshot_advice_items: tuple[AdviceItem, ...] = ()
     if advice_snapshot_a:
         snapshot_advice_items = _build_snapshot_delta_advice(
@@ -287,6 +300,16 @@ def dashboard(request: HttpRequest) -> HttpResponse:
             snapshot_b_id=(str(advice_snapshot_b) if advice_snapshot_b else None),
             mode=str(advice_mode),
         )
+        goal_items = _build_goal_weighted_advice(
+            player=player,
+            runs_current=runs,
+            snapshot_a_id=str(advice_snapshot_a),
+            snapshot_b_id=(str(advice_snapshot_b) if advice_snapshot_b else None),
+            mode=str(advice_mode),
+            goal_label=goal_label,
+            weights=goal_weights,
+        )
+        snapshot_advice_items = tuple(snapshot_advice_items) + tuple(goal_items)
     advice_items = tuple(advice_items) + tuple(snapshot_advice_items)
 
     builder_data = effective_get if getattr(effective_get, "get", lambda _k: None)("builder") == "1" else None
@@ -473,6 +496,11 @@ def dashboard(request: HttpRequest) -> HttpResponse:
         "advice_snapshot_a": advice_snapshot_a,
         "advice_snapshot_b": advice_snapshot_b,
         "advice_mode": advice_mode,
+        "goal_intent": goal_intent,
+        "goal_label": goal_label,
+        "goal_weight_coins_per_hour": goal_weights.coins_per_hour,
+        "goal_weight_coins_per_wave": goal_weights.coins_per_wave,
+        "goal_weight_waves_reached": goal_weights.waves_reached,
         "chart_builder_form": chart_builder_form,
         "chart_builder_errors": builder_errors,
         "chart_snapshots": ChartSnapshot.objects.filter(player=player, target="charts").order_by("-created_at"),
@@ -492,6 +520,151 @@ def dashboard(request: HttpRequest) -> HttpResponse:
         "chart_empty_state": chart_empty_state,
     }
     return render(request, "core/dashboard.html", context)
+
+
+def _goal_weights_from_query(*, goal_intent: str, query: QueryDict) -> tuple[str, GoalWeights]:
+    """Return the effective goal label and weights from GET parameters.
+
+    Args:
+        goal_intent: Selected goal preset key.
+        query: QueryDict containing optional weight override values.
+
+    Returns:
+        Tuple of (goal_label, GoalWeights) using defaults and user overrides.
+    """
+
+    presets: dict[str, tuple[str, GoalWeights]] = {
+        "economy": ("Economy / Farming", GoalWeights(coins_per_hour=1.0, coins_per_wave=0.5, waves_reached=0.25)),
+        "progression": ("Progression / Wave Push", GoalWeights(coins_per_hour=0.25, coins_per_wave=0.25, waves_reached=1.0)),
+        "hybrid": ("Hybrid", GoalWeights(coins_per_hour=0.75, coins_per_wave=0.5, waves_reached=0.75)),
+    }
+    label, weights = presets.get(goal_intent, presets["hybrid"])
+
+    def override_float(name: str, current: float) -> float:
+        """Parse a float override from the query string."""
+
+        raw = (query.get(name) or "").strip()
+        if raw == "":
+            return current
+        try:
+            return float(raw)
+        except (TypeError, ValueError):
+            return current
+
+    return (
+        label,
+        GoalWeights(
+            coins_per_hour=override_float("goal_weight_coins_per_hour", weights.coins_per_hour),
+            coins_per_wave=override_float("goal_weight_coins_per_wave", weights.coins_per_wave),
+            waves_reached=override_float("goal_weight_waves_reached", weights.waves_reached),
+        ),
+    )
+
+
+def _metric_average_sample(*, runs: QuerySet[BattleReport], metric_key: str) -> tuple[int, float | None]:
+    """Return non-null count and average for a selected metric key.
+
+    Args:
+        runs: Filtered BattleReport queryset for a scope.
+        metric_key: Metric key registered in the analysis engine.
+
+    Returns:
+        Tuple of (count, average) based on non-null metric values.
+    """
+
+    series = analyze_metric_series(runs, metric_key=metric_key)
+    values = [point.value for point in series.points if point.value is not None]
+    if not values:
+        return 0, None
+    return len(values), sum(values) / len(values)
+
+
+def _build_goal_weighted_advice(
+    *,
+    player: Player,
+    runs_current: QuerySet[BattleReport],
+    snapshot_a_id: str,
+    snapshot_b_id: str | None,
+    mode: str,
+    goal_label: str,
+    weights: GoalWeights,
+) -> tuple[AdviceItem, ...]:
+    """Build goal-aware advice comparing a baseline snapshot to another scope.
+
+    Args:
+        player: Active Player owning the snapshots.
+        runs_current: QuerySet already filtered by the current dashboard filters.
+        snapshot_a_id: Snapshot id used as the baseline scope.
+        snapshot_b_id: Optional snapshot id used as the comparison scope.
+        mode: Either "snapshot_vs_current" or "snapshot_vs_snapshot".
+        goal_label: User-selected goal label for framing.
+        weights: User-controlled weights for percent-change scoring.
+
+    Returns:
+        A tuple of AdviceItem values (0–1).
+    """
+
+    try:
+        snapshot_a = ChartSnapshot.objects.filter(player=player, id=int(snapshot_a_id)).first()
+    except (TypeError, ValueError):
+        snapshot_a = None
+    if snapshot_a is None or not snapshot_a.config:
+        return ()
+
+    dto_a = decode_chart_config_dto(dict(snapshot_a.config))
+    validation_a = validate_chart_config_dto(dto_a, registry=DEFAULT_REGISTRY)
+    if not validation_a.is_valid:
+        return ()
+    baseline_runs = _runs_for_chart_context_dto(player=player, context=dto_a.context)
+
+    comparison_label = "Current filters"
+    comparison_runs = runs_current
+    if mode == "snapshot_vs_snapshot":
+        if snapshot_b_id is None:
+            return ()
+        try:
+            snapshot_b = ChartSnapshot.objects.filter(player=player, id=int(snapshot_b_id)).first()
+        except (TypeError, ValueError):
+            snapshot_b = None
+        if snapshot_b is None or not snapshot_b.config:
+            return ()
+        dto_b = decode_chart_config_dto(dict(snapshot_b.config))
+        validation_b = validate_chart_config_dto(dto_b, registry=DEFAULT_REGISTRY)
+        if not validation_b.is_valid:
+            return ()
+        comparison_label = snapshot_b.name
+        comparison_runs = _runs_for_chart_context_dto(player=player, context=dto_b.context)
+
+    baseline_cph_count, baseline_cph = _metric_average_sample(runs=baseline_runs, metric_key="coins_per_hour")
+    baseline_cpw_count, baseline_cpw = _metric_average_sample(runs=baseline_runs, metric_key="coins_per_wave")
+    baseline_waves_count, baseline_waves = _metric_average_sample(runs=baseline_runs, metric_key="waves_reached")
+
+    comparison_cph_count, comparison_cph = _metric_average_sample(runs=comparison_runs, metric_key="coins_per_hour")
+    comparison_cpw_count, comparison_cpw = _metric_average_sample(runs=comparison_runs, metric_key="coins_per_wave")
+    comparison_waves_count, comparison_waves = _metric_average_sample(runs=comparison_runs, metric_key="waves_reached")
+
+    return generate_goal_weighted_advice(
+        goal_label=goal_label,
+        baseline=GoalScopeSample(
+            label=snapshot_a.name,
+            runs_coins_per_hour=baseline_cph_count,
+            runs_coins_per_wave=baseline_cpw_count,
+            runs_waves_reached=baseline_waves_count,
+            coins_per_hour=baseline_cph,
+            coins_per_wave=baseline_cpw,
+            waves_reached=baseline_waves,
+        ),
+        comparison=GoalScopeSample(
+            label=comparison_label,
+            runs_coins_per_hour=comparison_cph_count,
+            runs_coins_per_wave=comparison_cpw_count,
+            runs_waves_reached=comparison_waves_count,
+            coins_per_hour=comparison_cph,
+            coins_per_wave=comparison_cpw,
+            waves_reached=comparison_waves,
+        ),
+        weights=weights,
+    )
 
 def _build_snapshot_delta_advice(
     *,

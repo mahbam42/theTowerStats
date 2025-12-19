@@ -24,14 +24,16 @@ Charts help you review how your run results change over time using the same valu
 7. (Optional) Select **Snapshot A** in the **Advice** section to compare a saved snapshot with your current filters.
 8. (Optional) Select **Compare** in the **Advice** section to choose **Snapshot vs current filters** or **Snapshot vs snapshot**.
 9. (Optional) If you selected **Snapshot vs snapshot**, select **Snapshot B**.
-10. Select **Apply** to refresh the dashboard.
-11. (Optional) Select **Chart Builder** to create a custom chart.
-12. In **Chart Builder**, select **Metrics**, then select a **Chart type** and **Group by** option.
-13. (Optional) In **Chart Builder**, select a **Comparison** mode to compare two runs or two date windows.
-14. Select **Apply to dashboard** to add the custom chart to the dashboard.
-15. (Optional) In **Chart Builder**, enter a **Snapshot name**.
-16. (Optional) In **Chart Builder**, select a **Snapshot target** to choose where you plan to use the snapshot.
-17. (Optional) Select **Save snapshot**.
+10. (Optional) In **Goal-aware comparison**, select a **Goal** to choose a preset set of weights.
+11. (Optional) In **Goal-aware comparison**, edit the **Weight** values if you want to change how the percent-change summary is calculated.
+12. Select **Apply** to refresh the dashboard.
+13. (Optional) Select **Chart Builder** to create a custom chart.
+14. In **Chart Builder**, select **Metrics**, then select a **Chart type** and **Group by** option.
+15. (Optional) In **Chart Builder**, select a **Comparison** mode to compare two runs or two date windows.
+16. Select **Apply to dashboard** to add the custom chart to the dashboard.
+17. (Optional) In **Chart Builder**, enter a **Snapshot name**.
+18. (Optional) In **Chart Builder**, select a **Snapshot target** to choose where you plan to use the snapshot.
+19. (Optional) Select **Save snapshot**.
 
 ## How to Read the Results
 
@@ -41,7 +43,8 @@ Charts help you review how your run results change over time using the same valu
 - If a value is missing in the underlying Battle Report, the chart may show a gap for that date.
 - For donut charts, each slice represents the total for that value within your current filters. A slice named “Other coins” groups any remaining coins that are not listed as a named source.
 - If a point is flagged, the tooltip includes a short reason that explains the signal.
-- The Advice section summarizes observed coins/hour differences using the snapshots you selected and the current filters you applied. It describes the basis and limitations and does not recommend actions.
+- The Advice section summarizes observed differences using the snapshots you selected and the current filters you applied. It describes the basis and limitations and does not recommend actions.
+- The Goal-aware comparison summary is a weighted percent-change index across multiple metrics. A positive value means the selected metrics increased, after applying your selected weights.
 
 ## Notes & Limitations
 
@@ -59,6 +62,9 @@ Charts help you review how your run results change over time using the same valu
 
 > **Caution**
 > Advice summaries require at least 3 runs in each scope. If either scope is thin or empty, the Advice section will show “Insufficient data”.
+
+> **Note**
+> Goal-aware summaries use percent changes. If a baseline average is zero, a percent change cannot be calculated for that metric.
 
 > **Caution**
 > Data quality flags are advisory signals. They do not change values, and they do not block chart rendering.

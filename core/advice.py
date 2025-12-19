@@ -10,8 +10,19 @@ from dataclasses import dataclass
 from typing import Any
 
 
-_FORBIDDEN_TOKENS = ("should", "best", "optimal")
+_FORBIDDEN_TOKENS = (
+    "should",
+    "must",
+    "best",
+    "optimal",
+    "recommended",
+    "recommend",
+    "always",
+    "never",
+    "clearly better",
+)
 MIN_RUNS_FOR_ADVICE = 3
+INSUFFICIENT_DATA_MESSAGE = "Insufficient data to draw a conclusion."
 
 
 @dataclass(frozen=True, slots=True)
@@ -53,7 +64,7 @@ def generate_optimization_advice(comparison_result: dict[str, Any] | None) -> tu
             "Single-run comparisons can be noisy and are not summarized as advice."
         )
         item = AdviceItem(
-            title="Insufficient data to summarize coins/hour change.",
+            title=INSUFFICIENT_DATA_MESSAGE,
             basis=basis,
             context=context,
             limitations=limitations,
@@ -80,7 +91,7 @@ def generate_optimization_advice(comparison_result: dict[str, Any] | None) -> tu
                 f"Limitations: Advice summaries require at least {MIN_RUNS_FOR_ADVICE} runs per scope."
             )
             item = AdviceItem(
-                title="Insufficient data to summarize coins/hour change.",
+                title=INSUFFICIENT_DATA_MESSAGE,
                 basis=basis,
                 context=context,
                 limitations=limitations,
@@ -92,7 +103,7 @@ def generate_optimization_advice(comparison_result: dict[str, Any] | None) -> tu
         comparison = comparison_result.get("comparison_value")
         if baseline is None or comparison is None:
             item = AdviceItem(
-                title="Insufficient data to summarize coins/hour change.",
+                title=INSUFFICIENT_DATA_MESSAGE,
                 basis=basis,
                 context=context,
                 limitations="Limitations: Missing coins/hour values in one or both scopes.",
@@ -168,7 +179,7 @@ def generate_snapshot_delta_advice(delta_input: SnapshotDeltaInput) -> tuple[Adv
             f"Limitations: Advice summaries require at least {MIN_RUNS_FOR_ADVICE} runs per scope and non-empty values."
         )
         item = AdviceItem(
-            title="Insufficient data to summarize coins/hour change.",
+            title=INSUFFICIENT_DATA_MESSAGE,
             basis=basis,
             context=context,
             limitations=limitations,
@@ -190,6 +201,136 @@ def generate_snapshot_delta_advice(delta_input: SnapshotDeltaInput) -> tuple[Adv
         basis=basis,
         context=context,
         limitations="Limitations: Results depend on your selected filters and the runs available in each scope.",
+    )
+    _assert_non_prescriptive(item)
+    return (item,)
+
+
+@dataclass(frozen=True, slots=True)
+class GoalWeights:
+    """User-controlled weights for goal-aware advice scoring.
+
+    These weights apply to percent-change deltas between two scopes. The score
+    is a transparent weighted sum of those percent changes.
+
+    Attributes:
+        coins_per_hour: Weight applied to the coins/hour percent change.
+        coins_per_wave: Weight applied to the coins/wave percent change.
+        waves_reached: Weight applied to the waves reached percent change.
+    """
+
+    coins_per_hour: float
+    coins_per_wave: float
+    waves_reached: float
+
+
+@dataclass(frozen=True, slots=True)
+class GoalScopeSample:
+    """A summarized metric sample for a single comparison scope.
+
+    Attributes:
+        label: Human-friendly label for the scope (snapshot name or "Current filters").
+        runs_coins_per_hour: Number of runs contributing to the coins/hour average.
+        runs_coins_per_wave: Number of runs contributing to the coins/wave average.
+        runs_waves_reached: Number of runs contributing to the waves reached average.
+        coins_per_hour: Average coins/hour across contributing runs, or None.
+        coins_per_wave: Average coins/wave across contributing runs, or None.
+        waves_reached: Average waves reached across contributing runs, or None.
+    """
+
+    label: str
+    runs_coins_per_hour: int
+    runs_coins_per_wave: int
+    runs_waves_reached: int
+    coins_per_hour: float | None
+    coins_per_wave: float | None
+    waves_reached: float | None
+
+
+def generate_goal_weighted_advice(
+    *,
+    goal_label: str,
+    baseline: GoalScopeSample,
+    comparison: GoalScopeSample,
+    weights: GoalWeights,
+) -> tuple[AdviceItem, ...]:
+    """Generate goal-aware, descriptive advice from two summarized scopes.
+
+    Args:
+        goal_label: User-selected intent label (e.g. "Economy / Farming").
+        baseline: Baseline sample summary.
+        comparison: Comparison sample summary.
+        weights: User-controlled weights applied to percent-change deltas.
+
+    Returns:
+        A tuple containing a single AdviceItem.
+    """
+
+    basis = (
+        "Basis: "
+        f"{baseline.label} runs(cph={baseline.runs_coins_per_hour}, cpw={baseline.runs_coins_per_wave}, waves={baseline.runs_waves_reached}); "
+        f"{comparison.label} runs(cph={comparison.runs_coins_per_hour}, cpw={comparison.runs_coins_per_wave}, waves={comparison.runs_waves_reached})."
+    )
+    context = (
+        "Context: score = "
+        f"({weights.coins_per_hour:g}×Δ% coins/hour) + "
+        f"({weights.coins_per_wave:g}×Δ% coins/wave) + "
+        f"({weights.waves_reached:g}×Δ% waves reached)."
+    )
+
+    if (
+        baseline.runs_coins_per_hour < MIN_RUNS_FOR_ADVICE
+        or baseline.runs_coins_per_wave < MIN_RUNS_FOR_ADVICE
+        or baseline.runs_waves_reached < MIN_RUNS_FOR_ADVICE
+        or comparison.runs_coins_per_hour < MIN_RUNS_FOR_ADVICE
+        or comparison.runs_coins_per_wave < MIN_RUNS_FOR_ADVICE
+        or comparison.runs_waves_reached < MIN_RUNS_FOR_ADVICE
+    ):
+        item = AdviceItem(
+            title=f"For your selected goal: {goal_label} — {INSUFFICIENT_DATA_MESSAGE}",
+            basis=basis,
+            context=context,
+            limitations=f"Limitations: Goal-aware summaries require at least {MIN_RUNS_FOR_ADVICE} runs per scope.",
+        )
+        _assert_non_prescriptive(item)
+        return (item,)
+
+    def percent_change(baseline_value: float | None, comparison_value: float | None) -> float | None:
+        """Return percent change (B-A)/A*100 or None when unavailable."""
+
+        if baseline_value is None or comparison_value is None:
+            return None
+        if baseline_value == 0:
+            return None
+        return ((comparison_value - baseline_value) / baseline_value) * 100.0
+
+    pct_cph = percent_change(baseline.coins_per_hour, comparison.coins_per_hour)
+    pct_cpw = percent_change(baseline.coins_per_wave, comparison.coins_per_wave)
+    pct_waves = percent_change(baseline.waves_reached, comparison.waves_reached)
+
+    if pct_cph is None or pct_cpw is None or pct_waves is None:
+        item = AdviceItem(
+            title=f"For your selected goal: {goal_label} — {INSUFFICIENT_DATA_MESSAGE}",
+            basis=basis,
+            context=context,
+            limitations="Limitations: One or more required averages are missing or have a zero baseline.",
+        )
+        _assert_non_prescriptive(item)
+        return (item,)
+
+    score = (
+        (weights.coins_per_hour * pct_cph)
+        + (weights.coins_per_wave * pct_cpw)
+        + (weights.waves_reached * pct_waves)
+    )
+
+    title = f"For your selected goal: {goal_label} — weighted percent index: {score:+.2f}"
+    breakdown = f"Δ%: coins/hour={pct_cph:+.2f}%, coins/wave={pct_cpw:+.2f}%, waves reached={pct_waves:+.2f}%."
+    item = AdviceItem(
+        title=title,
+        basis=basis,
+        context=f"{context} {breakdown}",
+        limitations="Limitations: This index is a transparent summary of percent changes, not a prediction.",
     )
     _assert_non_prescriptive(item)
     return (item,)
