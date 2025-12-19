@@ -10,7 +10,7 @@ The Ultimate Weapons page helps you track which Ultimate Weapons you have unlock
 - You want to record upgrade progress for a weapon’s three parameters.
 - You want to compare total Stones invested across different Ultimate Weapons.
 - You want to review whether a weapon appears in your imported runs.
-- You want to view a descriptive sync graph for Golden Tower, Black Hole, and Death Wave based on your saved cooldown and duration values.
+- You want to view a descriptive sync graph for Golden Tower, Black Hole, and Death Wave based on your saved cooldown values, plus duration values for Golden Tower and Black Hole.
 - You want to include Golden Bot timing in the same sync graph when you track Golden Bot cooldown and duration.
 
 ## How to Use
@@ -40,6 +40,7 @@ The Ultimate Weapons page helps you track which Ultimate Weapons you have unlock
 - **All overlap** is 1 when all listed lines are active at the same time.
 - **Cumulative overlap (%)** shows the running percent of time where all overlap within the displayed horizon.
 - The **Ultimate Weapons snapshot** chart shows the metric(s) saved in the selected snapshot, using the snapshot’s saved filters.
+- In the **Sync graph**, **Death Wave** is shown as a short pulse at each activation because the game does not provide a duration value for it.
 
 ## Notes & Limitations
 
@@ -62,7 +63,10 @@ The Ultimate Weapons page helps you track which Ultimate Weapons you have unlock
 > If an Ultimate Weapon’s upgrade parameters are incomplete or not recognized, it may not appear on this page until the underlying data is available.
 
 > **Note**
-> The Sync graph is descriptive. It uses your saved cooldown and duration values and does not include run-by-run timing or recommendations. When Golden Bot timing is available, the graph includes Golden Bot and updates overlap accordingly.
+> The Sync graph is descriptive. It uses your saved cooldown and duration values where available and does not include run-by-run timing or recommendations. When Golden Bot timing is available, the graph includes Golden Bot and updates overlap accordingly.
+
+> **Note**
+> Death Wave is shown with a 1-second pulse duration so that it can be included in the Sync graph.
 
 > **Note**
 > Ultimate Weapons snapshots are created from the **Charts** page by saving a snapshot and selecting **Ultimate Weapons** as the snapshot target.

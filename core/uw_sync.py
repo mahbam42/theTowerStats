@@ -22,6 +22,8 @@ class UWSyncPayload:
     chart_data: dict[str, object]
     summary: dict[str, object]
 
+DEFAULT_DEATH_WAVE_DURATION_SECONDS = 1
+
 
 def _extract_seconds(value_raw: str) -> int | None:
     """Extract an integer seconds value from a raw parameter string.
@@ -50,7 +52,10 @@ def build_uw_sync_payload(*, player: Player) -> UWSyncPayload | None:
 
     Returns:
         UWSyncPayload when Golden Tower, Black Hole, and Death Wave are unlocked
-        and have parseable cooldown/duration values; otherwise None.
+        and have parseable timing values; otherwise None.
+
+        Death Wave does not have a duration parameter in the game UI, so this
+        chart uses a 1-second "pulse" duration to represent its activation.
     """
 
     required_uws = (
@@ -92,6 +97,8 @@ def build_uw_sync_payload(*, player: Player) -> UWSyncPayload | None:
         )
         cooldown = _extract_seconds(cooldown_raw)
         duration = _extract_seconds(duration_raw)
+        if slug == "death_wave" and duration is None:
+            duration = DEFAULT_DEATH_WAVE_DURATION_SECONDS
         if cooldown is None or duration is None:
             return None
         timings.append(UWTiming(name=display, cooldown_seconds=cooldown, duration_seconds=duration))
