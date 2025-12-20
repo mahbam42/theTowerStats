@@ -50,6 +50,7 @@
         <p class="muted margin-0">Horizon: {{ uw_sync_summary.horizon_seconds }}s • Cumulative overlap: {{ uw_sync_summary.overlap_percent }}%</p>
       {% endif %}
       <canvas id="uw-sync-chart" width="900" height="280"></canvas>
+      <p class="muted margin-top-1 margin-bottom-0">Death Wave is shown as an activation marker. Its on-map persistence can vary and is not modeled.</p>
     {% else %}
       <h3 class="margin-0">Unavailable</h3>
       <div class="callout warning margin-top-1">
@@ -69,6 +70,42 @@
         const canvas = document.getElementById("uw-sync-chart");
         const ctx = canvas ? canvas.getContext("2d") : null;
         if (!ctx) return;
+        const chartType = payload.chart_type || "line";
+        const chartData = { labels: payload.labels || [], datasets: payload.datasets || [] };
+
+        const commonOptions = {
+          responsive: true,
+          interaction: { mode: "nearest", intersect: false },
+          plugins: { legend: { display: true } },
+        };
+
+        if (chartType === "bar") {
+          new Chart(ctx, {
+            type: "bar",
+            data: chartData,
+            options: {
+              ...commonOptions,
+              indexAxis: "y",
+              parsing: { xAxisKey: "x", yAxisKey: "y" },
+              scales: {
+                x: {
+                  type: "linear",
+                  min: 0,
+                  max: payload.horizon_seconds || undefined,
+                  title: { display: true, text: "Time (seconds)" },
+                  ticks: { maxRotation: 0, autoSkip: true },
+                },
+                y: {
+                  type: "category",
+                  title: { display: true, text: "Schedule" },
+                  ticks: { autoSkip: false },
+                },
+              },
+            },
+          });
+          return;
+        }
+
         const overlapWindows = payload.overlap_windows || [];
         const overlapBands = {
           id: "overlapBands",
@@ -93,15 +130,15 @@
             ctx.restore();
           },
         };
+
         new Chart(ctx, {
           type: "line",
-          data: payload,
+          data: chartData,
           plugins: [overlapBands],
           options: {
-            responsive: true,
-            interaction: { mode: "nearest", intersect: false },
+            ...commonOptions,
             plugins: {
-              legend: { display: true },
+              ...commonOptions.plugins,
               tooltip: {
                 callbacks: {
                   title: (items) => (items && items[0] ? `t=${items[0].label}` : ""),

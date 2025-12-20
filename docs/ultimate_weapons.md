@@ -36,11 +36,11 @@ The Ultimate Weapons page helps you track which Ultimate Weapons you have unlock
 - **Next** shows the next-level value, with the change emphasized in parentheses when it can be parsed.
 - **Cost** shows the next-level upgrade cost (informational only).
 - **MAX** indicates the parameter has reached the highest known level and cannot be increased further in the app.
-- In the **Sync graph**, an **Active (0/1)** line indicates whether each Ultimate Weapon is active at a given time.
-- **All overlap** is 1 when all listed lines are active at the same time.
-- **Cumulative overlap (%)** shows the running percent of time where all overlap within the displayed horizon.
+- In the **Sync graph**, each row shows that weapon’s activation schedule within the displayed horizon.
+- Each colored block represents a time window where that weapon is active.
+- The **All overlap** row shows time windows where all listed rows are active at the same time.
 - The **Ultimate Weapons snapshot** chart shows the metric(s) saved in the selected snapshot, using the snapshot’s saved filters.
-- In the **Sync graph**, **Death Wave** is shown as a short pulse at each activation because the game does not provide a duration value for it.
+- In the **Sync graph**, **Death Wave** is shown as a short activation marker. Its on-map persistence can vary and is not modeled.
 
 ## Notes & Limitations
 
@@ -66,7 +66,10 @@ The Ultimate Weapons page helps you track which Ultimate Weapons you have unlock
 > The Sync graph is descriptive. It uses your saved cooldown and duration values where available and does not include run-by-run timing or recommendations. When Golden Bot timing is available, the graph includes Golden Bot and updates overlap accordingly.
 
 > **Note**
-> Death Wave is shown with a 1-second pulse duration so that it can be included in the Sync graph.
+> Death Wave is shown as a short activation marker so that it can be included in the Sync graph. The game does not provide a duration value for Death Wave, and its persistence depends on what it hits.
+
+> **Note**
+> The Sync graph uses the same cooldown and duration values shown in each weapon’s **Details** rows.
 
 > **Note**
 > Ultimate Weapons snapshots are created from the **Charts** page by saving a snapshot and selecting **Ultimate Weapons** as the snapshot target.

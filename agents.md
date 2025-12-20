@@ -35,8 +35,11 @@ feature breadth.
   : All new functions, classes, methods, utilities, and management commands must include concise, descriptive docstrings using standard Django/Python conventions.
 - Analysis Must Feed Visual Output
   : New analysis logic should be demonstrable via a chart or view unless explicitly scoped as backend-only.
+- Never edit .ORG files in the repo
+  : These documents are maintained soly by the humans working on the project. Changes made to the corrisponding .md files will also be overwritten and should be treated as read only.
 
-    ### Docstrings should describe:
+### Docstrings should describe
+
 	- Purpose
 	- Inputs/args
 	- Return value or side effects
@@ -45,6 +48,7 @@ feature breadth.
 ## **Development Workflow**
 
 ### **Environment Setup**
+
 Agents must assume a local development environment using:
 
 - Python (project-specified version)
@@ -52,6 +56,7 @@ Agents must assume a local development environment using:
 - sqlite (default dev database)
 - pytest, pytest-django
 - ruff and mypy
+
 ### **Branch Workflow**
 
 - Add Google-style docstrings to all new public modules, classes, and functions.
@@ -95,6 +100,7 @@ Audience: Players and non-technical users
 Purpose: Explain how to use the app, not how it is built
 
 Includes:
+
 - Battle History
 - Charts
 - Cards
@@ -104,6 +110,7 @@ Includes:
 - General app navigation and workflows
 
 Must NOT include:
+
 - Internal architecture
 - Model names
 - Django concepts

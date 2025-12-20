@@ -1809,22 +1809,28 @@ You can confidently deploy when all Blocking items are complete, even if none of
 
 - makes the app deployable without apologies.
 
-**** TODO [#B] Add a 'Killed By' Donut Chart 
+**** DONE [#B] Add a 'Killed By' Donut Chart 
+CLOSED: [2025-12-19 Fri 19:43]
+- State "DONE"       from "TODO"       [2025-12-19 Fri 19:43]
 I thought we did this, but now I don't see it...
 
 This is Data completeness confirmation and a useful sanity check visualization
-**** TODO [#A] Scope and Apply Permissions (Blocking)
+**** DONE [#A] Scope and Apply Permissions (Blocking)
+CLOSED: [2025-12-19 Fri 19:43]
+- State "DONE"       from "TODO"       [2025-12-19 Fri 19:43]
 Need to assign Player and Admin permissions. The groups were created but the Permissions were never assigned. This may require a migration to assign them out. 
 
 Audit every view, admin, and export endpoint for player scoping
-**** TODO [#A] On the UW Dashboard Runs Used is not updating appropriately  (Blocking)
+**** DONE [#A] On the UW Dashboard Runs Used is not updating appropriately  (Blocking)
+CLOSED: [2025-12-19 Fri 19:43]
+- State "DONE"       from "TODO"       [2025-12-19 Fri 19:43]
 Based on Battle Reports the 'runs used' should be >0. 
 
 **** TODO [#A] Cite Sources from the Wiki                           :docs:
 The docs should credit the Wiki early and often.
 **** TODO [#A] Name property links to wiki page as well
 Cards, UWs, Bots, Guardian Chips names should all link to the respective Wiki pages for additional information. They should be appropriately marked as external links. 
-**** TODO [#C] User Guide Operation                                 :docs:
+**** TODO [#C] User Gmmuide Operation                               :docs:
 "Note Battle History surfaces only what exists in your imported text. If a label never appeared in the report, it will not be synthesized here."
 
 This note doesn't make sense. The Battle History is a read-only summary provided by the Game. So assume a player is pasting the full summary into our app every time.
@@ -1856,17 +1862,50 @@ Safe guard in case a user accidently clicks upgrade by mistake
 **** DONE [#B] Move UW Sync Graph to Bottom of Dashboard 
 CLOSED: [2025-12-19 Fri 17:11]
 - State "DONE"       from "TODO"       [2025-12-19 Fri 17:11]
+**** TODO [#A] Amend how Death Wave works
+Specifically for our Sync Chart, but also as a point of information in the docs.
+
+The Death Wave is a single, powerful wave that deals damage based on a "damage pool."
+Damage Pool: This pool accumulates damage through multiple activations, rather than resetting with each new use, signaled by the Death Wave taking on a blue tint. The damage pool only decreases by the exact amount required to destroy enemies, factoring in any bonuses. This can deal damage through armored enemies.
+Persistence: The Death Wave remains active within your tower’s range until the damage pool is depleted.
+
+So depending on conditions Death Wave can persist for a long period. Including beyond it's cool down time, so it resets and remains active until the damage pool is depleated. 
 **** TODO [#B] Clean Up and Revise Development Docs
 Make them all consistent in style and format. And put them in order -right now the phase 6 concepts is listed after everything else. 
+**** TODO [#B] How does a player create a snapshot
+I dont see a UI element for it, nor is it covered in the documentation
+**** TODO [#B] Runs Used on UW Dashboard
+It's still not right. It's showing 14 for all unlocked UWs. But I've only had Blackhole via Perk Upgrades, on a few of the runs I've added to the app.
+
+Each UW has a row in Battle Reports that we can use to track when a UW was active in a round.
+
+- Black Hole :: Black Hole Damage
+- Chain Lightning :: Chain Lightning Damage
+- Golden Tower :: Coins From Golden Tower (Under RunUtility)
+- Death Wave :: Death Wave Damage
+- Spotlight :: Destroyed in Spotlight (Under RunEnemies
+- Chrono Field :: There doesn't appear to be a metric for Chrono Field. So this one might alwys be 0 until the Game updates. We can note it in the docs that it doesn't work.
+- Poison Swamp :: Swamp Damage
+- Inner Land Mines :: Inner Land Mine Damage
+- Smart Missiles :: Smart Missile Damage
+
+
+If each of those metrics have a value greater than 0, that UW was active during a run.
+
+We should also note in the docs that false positives will occur and skew these counts. Because via Lab Research, Spotlight can fire missiles and the damage is logged in the same target we're using for Smart Missiles. Inner Land Mines can be deployed with a Module (Space Displacer) that we aren't tracking.
 **** TODO [#C] Add Wiki External Links on Dashboards
 Cards, UWs, Bots, Guardian Chips
+**** TODO [#C] Remove UW Sync from Nav Bar.
+And update tests for it. 
 
-** Backlog [0/6]
+** Backlog [1/6]
 “Out of Scope”:
 - Cloud sync
 - Real-time scraping
-*** TODO [#A] Review Docs and Note Revisions                          :Max:
+*** DONE [#A] Review Docs and Note Revisions                          :Max:
+CLOSED: [2025-12-19 Fri 17:24]
 
+- State "DONE"       from "TODO"       [2025-12-19 Fri 17:24]
 *** TODO [#B] Ranked Recommendations
 
 Only now do you allow:
