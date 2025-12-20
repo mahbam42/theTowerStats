@@ -35,6 +35,32 @@
     try { return JSON.parse(el.textContent); } catch (e) { return null; }
   }
 
+  function clearNode(node) {
+    while (node.firstChild) node.removeChild(node.firstChild);
+  }
+
+  function setMutedDash(cell) {
+    if (!cell) return;
+    clearNode(cell);
+    const span = document.createElement('span');
+    span.className = 'muted';
+    span.textContent = '—';
+    cell.appendChild(span);
+  }
+
+  function setValueWithDelta(cell, valueRaw, deltaText) {
+    if (!cell) return;
+    clearNode(cell);
+    if (valueRaw) cell.appendChild(document.createTextNode(valueRaw));
+    if (deltaText) {
+      if (valueRaw) cell.appendChild(document.createTextNode(' '));
+      const strong = document.createElement('strong');
+      strong.className = 'entity-param-delta';
+      strong.textContent = `(${deltaText})`;
+      cell.appendChild(strong);
+    }
+  }
+
   function postForm(form) {
     const data = new FormData(form);
     const token = data.get('csrfmiddlewaretoken') || getCookie('csrftoken');
@@ -148,9 +174,9 @@
         if (nextCell) {
           if (nextNextRow) {
             const delta = formatDelta(nextRow.value_raw, nextNextRow.value_raw, unitKind);
-            nextCell.innerHTML = `${nextNextRow.value_raw || ''}${delta ? ` <strong class="entity-param-delta">(${delta})</strong>` : ''}`;
+            setValueWithDelta(nextCell, nextNextRow.value_raw || '', delta);
           } else {
-            nextCell.innerHTML = '<span class="muted">—</span>';
+            setMutedDash(nextCell);
           }
         }
 
@@ -158,7 +184,7 @@
           if (nextNextRow) {
             costCell.textContent = nextRow.cost_raw || '';
           } else {
-            costCell.innerHTML = '<span class="muted">—</span>';
+            setMutedDash(costCell);
           }
         }
 
