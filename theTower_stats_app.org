@@ -1939,6 +1939,212 @@ I dont see a UI element for it, nor is it covered in the documentation
 
 **** TODO [#B] Extend Python Versioning in Django.yml
 The app has been built and working with Python 3.14, but I don't think any of it requires the latest bleeding edge. 
+**** TODO [#A] Improve Charts Layout
+- Break the “Monolithic Controls” Problem
+
+ A. Split controls into **layers**, not one column
+
+ Right now everything lives in a single vertical Filters panel, which forces users to mentally parse too much at once.
+
+  **Suggested structure (top → bottom):**
+
+  1) Context (always visible, compact)**
+
+     - Date range
+     - Tier
+     - Preset
+     - Rolling window (if enabled)
+
+     These define *what data* you’re looking at. They should feel global and stable.
+
+  2) Chart Definition (collapsible / modal)
+
+     - Metric(s)
+     - Chart type
+     - Group by
+     - Comparison mode
+
+     This is *how data is visualized*. It should not compete visually with context.
+
+  3) Advanced / Analysis (collapsed by default)
+
+     1) Moving average window
+     2) Snapshot comparison
+     3) Goal-aware weights
+
+     These are power-user tools. Hide them unless explicitly opened.
+
+     > **Key principle:**
+     > If a control doesn’t change the chart *immediately*, it probably belongs behind a disclosure.
+
+
+B. Replace the giant sidebar with a **Chart Control Bar**
+
+Instead of a right-hand monolith:
+
+- Add a **horizontal control bar above the chart(s)**:
+
+  * Metric selector (pill-style multiselect)
+  * Date range
+  * Tier
+  * Preset
+  * “⚙ Advanced” button
+
+
+It also reduces eye travel and keeps the chart as the focal point.
+
+
+C. Turn Chart Builder into a **guided flow**
+
+Chart Builder is powerful, but cognitively heavy.
+
+**Improve by:**
+
+ * Step-based layout:
+
+  1. Select metric(s)
+  2. Choose visualization
+  3. Group & compare
+ * Disable steps until prerequisites are met
+ * Show a live preview thumbnail
+
+This reinforces that it’s an *intentional action*, not just “more filters.”
+
+2. Improve Visual Hierarchy (Low Effort, High Impact)
+
+  A. Use section headers with purpose
+
+  Right now headers are informational but not directional.
+
+  Example improvement:
+
+  * **Filters** → “Data Scope”
+  * **Charts** → “What to Measure”
+  * **Advice** → “Insights from Current View”
+
+Add 1-line helper text under headers where needed.
+
+  B. Reduce label repetition
+
+  You repeat context in multiple places:
+
+ ** “Active context”
+ * Filter labels
+ * Chart titles
+
+**Suggestion:**
+
+ * Make “Active context” a compact breadcrumb-style line:
+
+  ```
+  Dec 9–17 • All tiers • All presets • No rolling window
+  ```
+ * Let charts inherit this implicitly.
+
+  C. De-emphasize rarely-used buttons
+
+  Buttons like:
+
+    * “Export derived metrics”
+    * Snapshot save/load
+    * CSV exports
+
+  Should be:
+
+   * Secondary buttons
+   * Icon-based
+   * Or inside an overflow menu (⋯)
+
+  Right now they visually compete with primary actions.
+
+3. Navigation Bar Cleanup (Important)
+
+  A. Fix wrapping by design, not luck
+
+  Your top nav is trying to do too much in one row.
+
+  **Recommended pattern:**
+
+   * **Left:** Product name + primary sections (max 4)
+   * **Right:** Search, Docs, Account menu
+
+   Move secondary links into:
+
+   * A “More” dropdown
+   * Or contextual sub-nav per section
+
+   Example:
+
+   ```
+   theTowerStats | Charts | Battle History | Cards | More ▾
+                                      🔍 Docs  👤
+   ```
+
+   B. Highlight current section strongly
+
+     Right now section changes are subtle.
+
+     * Use:
+
+       * Bold text
+       * Bottom border
+       * Accent color
+       * Make it unmissable which dashboard you’re on
+
+     This matters as the app grows.
+
+
+4. Global Theming & Styling Suggestions
+
+  A. Introduce a **design scale**
+
+  Define (and enforce):
+
+  * 1 spacing unit (e.g., 4px or 8px)
+  * 3 text sizes: label / body / heading
+  * 2 button styles: primary / secondary
+
+  Right now spacing feels “organic” rather than intentional.
+
+  B. Charts need stronger contrast
+
+   * Axis labels are slightly too faint
+   * Gridlines compete with data at times
+
+   Suggestions:
+
+   * Reduce gridline opacity
+   * Increase line thickness slightly
+   * Use consistent color palette across all charts (even comparisons)
+
+  C. Color = meaning, not decoration
+
+    You’re already data-driven—lean into that:
+
+    * One color for “coins”
+    * One for “progression”
+    * One for “comparison”
+
+    Users should start recognizing metrics by color without reading labels.
+
+5. Advice Section: Make It Feel Smarter (Even Before It Is)
+
+Even if the logic stays the same:
+
+  * Frame advice as **observations**, not blocks of text
+  * Use bullet summaries with expandable detail
+  * Tie advice visually to the charts it references
+
+This reinforces trust and reduces the “wall of explanation” feel.
+
+6. A Simple North Star (Use This to Decide Cuts)
+
+  > **Primary loop:**
+  > “What changed → Why → Compared to what → What does that mean”
+
+  Every control, section, and visual should clearly support one of those steps.
+  If it doesn’t, hide it, collapse it, or move it out of the default view.
+
 **** TODO [#A] Make Charts Dashboard more Mobile Friendly
 - Filters, Advice, Goal Aware Comparison, Compare and Quick Import should be collapsible
 - Move Quick Import to the Bottom
@@ -1960,6 +2166,7 @@ Search should have global scope within the app.
 
 
 Add to Docs and link in README.md
+
 ** Backlog [0/8]
 “Out of Scope”:
 - Cloud sync

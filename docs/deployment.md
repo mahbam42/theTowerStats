@@ -68,6 +68,13 @@ This migration is intended to be schema-neutral and behavior-neutral:
 4. Import the exported data into Postgres using `loaddata`.
 5. Validate record counts and spot-check key dashboards.
 
+Recommended commands:
+
+- Export (from SQLite):
+  - `python manage.py dumpdata --natural-foreign --natural-primary -e contenttypes -e auth.permission --indent 2 -o sqlite-export.json`
+- Import (to Postgres):
+  - `python manage.py loaddata sqlite-export.json`
+
 Notes:
 
 > ⚠️ Caution
