@@ -1093,7 +1093,7 @@ It's showing values before any upgrades have been applied
 - [X] All dashboards share a single visual and structural language
 - [X] On Battle History Player can scan, filter, and trust historical data quickly
 - [X] A new contributor understands the app without a walkthrough
-**** Exit Criteria [91%]
+**** Exit Criteria [100%]
 UX & Data Integrity:
 - [X] Dashboards display only computed outputs
 - [X] No dashboard performs calculations inline
@@ -1109,7 +1109,7 @@ Every major entity has a visible dashboard:
 - [X] Bots
 
 Stability:
-- [ ] No new models added
+- [X] No new models added
 - [X] No migrations required
 - [X] Test suite passes unchanged
 
@@ -1119,7 +1119,7 @@ A new user can:
 2. View history
 3. Inspect progress
 4. Understand trends …without explanation.
-*** DONE Phase 6 Expansion of Foundation and Context [11%]
+*** DONE Phase 6 Expansion of Foundation and Context [33%]
 CLOSED: [2025-12-18 Thu 14:53]
 - State "DONE"       from              [2025-12-18 Thu 14:53]
 What’s done has been minimal by design. Now we can expand it to feel “real”. Make foundational rates, units, and context provably correct, visibly coherent, and ready to support higher-order comparisons.
@@ -1187,7 +1187,7 @@ Tests
 
 **Foundations:**
 Revisit the work from phase 1 and expand it
-- [ ] Add 2–3 more canonical rate metrics. Both of these would be best displayed as a donut chart. 
+- [X] Add 2–3 more canonical rate metrics. Both of these would be best displayed as a donut chart. 
   - Coins Earned by Source:
     The following values are available in Battle Reports. We should track them and show the breakdown of Coin sources. 
     - Coins From Death Wave	119.49K
@@ -1215,7 +1215,7 @@ Revisit the work from phase 1 and expand it
     - Common Modules	0
     - Rare Modules	0
 
-- [ ] Lock down Unit Model correctness
+- [X] Lock down Unit Model correctness
   
   - Explicit tests for %, x, time units, magnitudes
     
@@ -1777,14 +1777,15 @@ Efficiency Score =
 **** DONE [#A] Pillar 3: Demo, Export, and Adoption Features (Non-Blocking)
 CLOSED: [2025-12-19 Fri 14:59]
 - State "DONE"       from "TODO"       [2025-12-19 Fri 14:59]
-***** TODO [#A] Update readme.md
 
-- Make sure it's still aligned with App Behavior and Features
-- Project Status reflects docs/ revisions 
-***** TODO [#B] Demo User
+***** DONE [#B] Demo User
+CLOSED: [2025-12-20 Sat 10:29]
+- State "DONE"       from "TODO"       [2025-12-20 Sat 10:29]
 Take some of my data and make plausible changes to store as the Default User. Allow any player to also view the default user data as a preview/demo of the app. 
-***** TODO [#C] Export / Share (Lightweight)
+***** DONE [#C] Export / Share (Lightweight)
+CLOSED: [2025-12-20 Sat 10:29]
 
+- State "DONE"       from "TODO"       [2025-12-20 Sat 10:29]
 - CSV export of derived metrics
 - PNG export of charts
 
@@ -1796,7 +1797,9 @@ CLOSED: [2025-12-19 Fri 15:42]
 - State "DONE"       from "TODO"       [2025-12-19 Fri 15:42]
 Run checks or Ruff Check, mypy ., pytest -q
 
-*** Phase 9 Deploy and Clean out Backlog [87%]
+*** DONE Phase 9 Deploy and Clean out Backlog [100%]
+CLOSED: [2025-12-20 Sat 10:07]
+- State "DONE"       from              [2025-12-20 Sat 10:07]
 This is “trust + deployment” phase
 
 You can confidently deploy when all Blocking items are complete, even if none of the Nice-to-Have items are.
@@ -1843,7 +1846,9 @@ This note doesn't make sense. The Battle History is a read-only summary provided
 
 “This app does not invent or infer missing values.”
 “What you see reflects what the game reported.”
-**** TODO [#A] Deployment  (Blocking)
+**** DONE [#A] Deployment  (Blocking)
+CLOSED: [2025-12-20 Sat 10:07]
+- State "DONE"       from "TODO"       [2025-12-20 Sat 10:07]
 Prepare App for deployment on Railway
 
 ***** [#B] Django Checklist:
@@ -1916,8 +1921,45 @@ CLOSED: [2025-12-19 Fri 20:21]
 - State "DONE"       from "TODO"       [2025-12-19 Fri 20:21]
 And update tests for it. 
 
-**** TODO [#B] How does a player create a snapshot
+**** DONE [#B] How does a player create a snapshot
+CLOSED: [2025-12-20 Sat 10:06]
+- State "DONE"       from "TODO"       [2025-12-20 Sat 10:06]
 I dont see a UI element for it, nor is it covered in the documentation
+
+*** TODO Phase 10 v0.2.0 [0%]
+
+**** TODO [#A] Update readme.md
+
+- Make sure it's still aligned with App Behavior and Features
+- Project Status marks v0.1.0 Release
+  and reflects docs/ revisions
+  - Can add brief summary of v0.2.0 work in progress and coming soon
+
+**** TODO [#A] Write Phase 9 Developer Docs
+
+**** TODO [#B] Extend Python Versioning in Django.yml
+The app has been built and working with Python 3.14, but I don't think any of it requires the latest bleeding edge. 
+**** TODO [#A] Make Charts Dashboard more Mobile Friendly
+- Filters, Advice, Goal Aware Comparison, Compare and Quick Import should be collapsible
+- Move Quick Import to the Bottom
+- Move Charts to the Top
+- The break point seems to be around 630px wide
+
+
+**** TODO [#A] Implement Search
+Search should have global scope within the app. 
+
+**** TODO [#B] Implement ChangeLog.md
+- A CHANGELOG.md template Codex must maintain
+
+- A “breaking change checklist” it must run before suggesting version bumps
+
+- Start initially with brief summary of work leading to v0.1.0 release and point to Developer Docs for additional detail.
+
+- Moving forward there will be changes to agents.md and conventions for maintaining CHANGELOG.md
+
+
+Add to Docs and link in README.md
 ** Backlog [0/8]
 “Out of Scope”:
 - Cloud sync
@@ -1951,16 +1993,8 @@ What would change the recommendation
 
 This keeps it defensible.
 
-*** TODO [#B] Implement Search
 
-*** TODO [#B] Implement ChangeLog.md
-- A CHANGELOG.md template Codex must maintain
-
-- A “breaking change checklist” it must run before suggesting version bumps
-
-
-Add to Docs and link in README.md
-*** TODO [#B] What-If Scenarios
+*** TODO [#B] Wmhat-If Scenarios
 
 This is where simulations might enter — but cautiously.
 
@@ -1978,7 +2012,7 @@ No RNG modeling
 
 No balance speculation
 
-*** TODO [#C] Exploratory Pattern Analysis
+*** TODO [#B] Exploratory Pattern Analysis
 
 K-means is not an optimization engine and not advice logic.
 It’s a lens.
