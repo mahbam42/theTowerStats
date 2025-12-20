@@ -245,3 +245,56 @@ def test_bot_dashboard_deletes_orphaned_parameter_rows(auth_client, player) -> N
     response = auth_client.get(url)
     assert response.status_code == 200
     assert PlayerBotParameter.objects.filter(player_bot=bot).count() == 0
+
+
+@pytest.mark.django_db
+def test_bot_progress_rejects_external_next_redirect(auth_client, player) -> None:
+    """Bot progress redirects ignore external next targets."""
+
+    bot_def = _bot_with_four_parameters(slug="redirect_bot", name="Redirect Bot")
+    bot = PlayerBot.objects.create(
+        player=player,
+        bot_definition=bot_def,
+        bot_slug=bot_def.slug,
+        unlocked=False,
+    )
+
+    url = reverse("core:bots_progress")
+    response = auth_client.post(
+        url,
+        data={
+            "action": "unlock_bot",
+            "entity_id": bot.id,
+            "next": "https://example.invalid/evil",
+        },
+    )
+
+    assert response.status_code == 302
+    assert response["Location"] == url
+
+
+@pytest.mark.django_db
+def test_bot_unlock_ajax_hides_parameter_validation_errors(auth_client, player, settings) -> None:
+    """AJAX unlock hides internal parameter validation errors."""
+
+    settings.DEBUG = False
+    wiki = _wiki(suffix="bad_unlock")
+    bot_def = BotDefinition.objects.create(name="Bad Bot", slug="bad_unlock_bot", source_wikidata=wiki)
+    bot = PlayerBot.objects.create(
+        player=player,
+        bot_definition=bot_def,
+        bot_slug=bot_def.slug,
+        unlocked=False,
+    )
+
+    url = reverse("core:bots_progress")
+    response = auth_client.post(
+        url,
+        data={"action": "unlock_bot", "entity_id": bot.id},
+        HTTP_X_REQUESTED_WITH="XMLHttpRequest",
+    )
+
+    assert response.status_code == 400
+    payload = response.json()
+    assert payload["ok"] is False
+    assert payload["error"] == "Invalid parameter definitions."

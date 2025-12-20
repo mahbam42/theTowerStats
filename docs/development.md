@@ -53,3 +53,8 @@ Phase 8 introduces first-class multi-player support.
 - Views must derive the Player from `request.user` and must not accept a `player_id` from the client.
 - Queryset filtering is mandatory for correctness and isolation; permissions are not a substitute for filtering.
 - Admin pages must scope querysets to `player__user=request.user` for non-superusers and must assign `player` automatically on create.
+
+## Security notes
+
+- Post actions that accept `next` must validate the URL before redirecting. Use the helpers in `core.views` to ensure redirects stay on the current host.
+- AJAX error payloads should avoid raw exception details and return a user-safe message in production.
