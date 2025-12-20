@@ -165,9 +165,10 @@ def _safe_auth_redirect_url(request: HttpRequest) -> str:
     """
 
     redirect_url = (request.POST.get("next") or request.GET.get("next") or "").strip()
+    allowed_hosts = set(settings.ALLOWED_HOSTS)
     if redirect_url and url_has_allowed_host_and_scheme(
         url=redirect_url,
-        allowed_hosts={request.get_host()},
+        allowed_hosts=allowed_hosts,
         require_https=request.is_secure(),
     ):
         return redirect_url
@@ -186,9 +187,10 @@ def _safe_local_redirect_url(request: HttpRequest, fallback: str) -> str:
     """
 
     candidate = (request.POST.get("next") or request.META.get("HTTP_REFERER") or "").strip()
+    allowed_hosts = set(settings.ALLOWED_HOSTS)
     if candidate and url_has_allowed_host_and_scheme(
         url=candidate,
-        allowed_hosts={request.get_host()},
+        allowed_hosts=allowed_hosts,
         require_https=request.is_secure(),
     ):
         return candidate
@@ -970,7 +972,14 @@ def battle_history(request: HttpRequest) -> HttpResponse:
             else:
                 messages.error(request, "Could not update preset for that run.")
 
-            redirect_to = update_form.cleaned_data.get("next") or reverse("core:battle_history")
+            redirect_to = (update_form.cleaned_data.get("next") or "").strip()
+            allowed_hosts = set(settings.ALLOWED_HOSTS)
+            if not url_has_allowed_host_and_scheme(
+                url=redirect_to,
+                allowed_hosts=allowed_hosts,
+                require_https=request.is_secure(),
+            ):
+                redirect_to = reverse("core:battle_history")
             return redirect(redirect_to)
 
         import_form = BattleReportImportForm(request.POST)
@@ -1299,7 +1308,7 @@ def cards(request: HttpRequest) -> HttpResponse:
         if demo_mode_enabled(request):
             return _reject_demo_write(request)
         action = (request.POST.get("action") or "").strip()
-        redirect_to = request.POST.get("next") or request.path
+        redirect_to = _safe_local_redirect_url(request, fallback=request.path)
 
         if action == "unlock_slot":
             max_slots = card_slot_max_slots()
@@ -1504,7 +1513,7 @@ def ultimate_weapon_progress(request: HttpRequest) -> HttpResponse:
     if request.method == "POST":
         action = (request.POST.get("action") or "").strip()
         is_ajax = request.headers.get("x-requested-with") == "XMLHttpRequest"
-        redirect_to = request.POST.get("next") or request.path
+        redirect_to = _safe_local_redirect_url(request, fallback=request.path)
 
         if action == "unlock_uw":
             uw_id = int(request.POST.get("entity_id") or request.POST.get("uw_id") or 0)
@@ -1521,12 +1530,18 @@ def ultimate_weapon_progress(request: HttpRequest) -> HttpResponse:
 
             try:
                 validate_uw_parameter_definitions(uw_definition=uw.ultimate_weapon_definition)
-            except ValueError as exc:
+            except ValueError:
                 if settings.DEBUG:
                     raise
-                messages.warning(request, f"Skipping {uw.ultimate_weapon_definition.name}: {exc}")
+                messages.warning(
+                    request,
+                    f"Skipping {uw.ultimate_weapon_definition.name}: invalid parameter definitions.",
+                )
                 if is_ajax:
-                    return JsonResponse({"ok": False, "error": str(exc)}, status=400)
+                    return JsonResponse(
+                        {"ok": False, "error": "Invalid parameter definitions."},
+                        status=400,
+                    )
                 return redirect(redirect_to)
 
             with transaction.atomic():
@@ -1985,7 +2000,7 @@ def guardian_progress(request: HttpRequest) -> HttpResponse:
     if request.method == "POST":
         action = (request.POST.get("action") or "").strip()
         is_ajax = request.headers.get("x-requested-with") == "XMLHttpRequest"
-        redirect_to = request.POST.get("next") or request.path
+        redirect_to = _safe_local_redirect_url(request, fallback=request.path)
 
         if action == "unlock_guardian_chip":
             chip_id = int(request.POST.get("entity_id") or 0)
@@ -2007,12 +2022,18 @@ def guardian_progress(request: HttpRequest) -> HttpResponse:
                     entity_kind="guardian chip",
                     entity_slug=chip.guardian_chip_definition.slug,
                 )
-            except ValueError as exc:
+            except ValueError:
                 if settings.DEBUG:
                     raise
-                messages.warning(request, f"Skipping {chip.guardian_chip_definition.name}: {exc}")
+                messages.warning(
+                    request,
+                    f"Skipping {chip.guardian_chip_definition.name}: invalid parameter definitions.",
+                )
                 if is_ajax:
-                    return JsonResponse({"ok": False, "error": str(exc)}, status=400)
+                    return JsonResponse(
+                        {"ok": False, "error": "Invalid parameter definitions."},
+                        status=400,
+                    )
                 return redirect(redirect_to)
 
             with transaction.atomic():
@@ -2237,11 +2258,13 @@ def guardian_progress(request: HttpRequest) -> HttpResponse:
             chip.active = desired_active
             try:
                 chip.save(update_fields=["active", "updated_at"])
-            except ValidationError as exc:
-                message = "; ".join(exc.messages) if getattr(exc, "messages", None) else str(exc)
+            except ValidationError:
                 if is_ajax:
-                    return JsonResponse({"ok": False, "error": message}, status=400)
-                messages.error(request, message)
+                    return JsonResponse(
+                        {"ok": False, "error": "Unable to update guardian chip status."},
+                        status=400,
+                    )
+                messages.error(request, "Unable to update guardian chip status.")
                 return redirect(redirect_to)
 
             if is_ajax:
@@ -2455,7 +2478,7 @@ def bots_progress(request: HttpRequest) -> HttpResponse:
     if request.method == "POST":
         action = (request.POST.get("action") or "").strip()
         is_ajax = request.headers.get("x-requested-with") == "XMLHttpRequest"
-        redirect_to = request.POST.get("next") or request.path
+        redirect_to = _safe_local_redirect_url(request, fallback=request.path)
 
         if action == "unlock_bot":
             bot_id = int(request.POST.get("entity_id") or 0)
@@ -2477,12 +2500,18 @@ def bots_progress(request: HttpRequest) -> HttpResponse:
                     entity_kind="bot",
                     entity_slug=bot.bot_definition.slug,
                 )
-            except ValueError as exc:
+            except ValueError:
                 if settings.DEBUG:
                     raise
-                messages.warning(request, f"Skipping {bot.bot_definition.name}: {exc}")
+                messages.warning(
+                    request,
+                    f"Skipping {bot.bot_definition.name}: invalid parameter definitions.",
+                )
                 if is_ajax:
-                    return JsonResponse({"ok": False, "error": str(exc)}, status=400)
+                    return JsonResponse(
+                        {"ok": False, "error": "Invalid parameter definitions."},
+                        status=400,
+                    )
                 return redirect(redirect_to)
 
             with transaction.atomic():
