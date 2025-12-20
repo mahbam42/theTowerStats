@@ -29,7 +29,7 @@ Charts help you review how your run results change over time using the same valu
 12. Select **Apply** to refresh the dashboard.
 13. (Optional) Select **Export derived metrics (CSV)** to download a snapshot of derived chart values.
 14. (Optional) Select **Download PNG** on a chart to save an image of the chart as currently displayed.
-15. (Optional) Select **Chart Builder** to open the chart builder panel.
+15. (Optional) In the **Filters** panel, select **Chart Builder** to open the chart builder panel.
 16. In **Chart Builder**, select **Metrics**, then select a **Chart type** and **Group by** option.
 17. (Optional) In **Chart Builder**, select a **Comparison** mode to compare two runs or two date windows.
 18. Select **Apply to dashboard** to add the custom chart to the dashboard.
@@ -70,6 +70,9 @@ Charts help you review how your run results change over time using the same valu
 
 > **Note**
 > Snapshots are saved as named references and are not editable after creation.
+
+> **Note**
+> Snapshots are disabled while Demo Data is active.
 
 > **Caution**
 > Advice summaries require at least 3 runs in each scope. If either scope is thin or empty, the Advice section will show “Insufficient data”.

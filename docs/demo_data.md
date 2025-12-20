@@ -27,8 +27,7 @@ Demo Data lets you explore the app using a small set of sample runs, without imp
 ## Notes & Limitations
 
 > **Note**
-> Demo Data is read-only. Importing Battle Reports and editing progress values are disabled while demo mode is active.
+> Demo Data is read-only. Importing Battle Reports, editing progress values, and saving snapshots are disabled while demo mode is active.
 
 > **Note**
 > Demo Data can include fewer runs than a real account. Some charts or dashboards may show limited results.
-

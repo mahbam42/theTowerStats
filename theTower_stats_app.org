@@ -1796,7 +1796,7 @@ CLOSED: [2025-12-19 Fri 15:42]
 - State "DONE"       from "TODO"       [2025-12-19 Fri 15:42]
 Run checks or Ruff Check, mypy ., pytest -q
 
-*** Phase 9 Deploy and Clean out Backlog
+*** Phase 9 Deploy and Clean out Backlog [87%]
 This is “trust + deployment” phase
 
 You can confidently deploy when all Blocking items are complete, even if none of the Nice-to-Have items are.
@@ -1856,8 +1856,12 @@ Prepare App for deployment on Railway
 ?: (security.W020) ALLOWED_HOSTS must not be empty in deployment.
 ***** [#A] Railway Deployment Guide
 https://docs.railway.com/guides/django
-***** [#C] Consolidate CSS and JS to static/ 
-***** [#B] Prepare migration to Postgres
+***** DONE [#C] Consolidate CSS and JS to static/ 
+CLOSED: [2025-12-19 Fri 21:40]
+- State "DONE"       from              [2025-12-19 Fri 21:40]
+***** DONE [#B] Prepare migration to Postgres
+CLOSED: [2025-12-19 Fri 21:40]
+- State "DONE"       from              [2025-12-19 Fri 21:40]
 **** DONE [#A] Hide Admin Link if logged in as non admin/superuser
 CLOSED: [2025-12-19 Fri 17:11]
 - State "DONE"       from "TODO"       [2025-12-19 Fri 17:11]
@@ -1882,8 +1886,6 @@ So depending on conditions Death Wave can persist for a long period. Including b
 CLOSED: [2025-12-19 Fri 20:21]
 - State "DONE"       from "TODO"       [2025-12-19 Fri 20:21]
 Make them all consistent in style and format. And put them in order -right now the phase 6 concepts is listed after everything else. 
-**** TODO [#B] How does a player create a snapshot
-I dont see a UI element for it, nor is it covered in the documentation
 **** DONE [#B] Runs Used on UW Dashboard
 CLOSED: [2025-12-19 Fri 20:21]
 - State "DONE"       from "TODO"       [2025-12-19 Fri 20:21]
@@ -1914,7 +1916,9 @@ CLOSED: [2025-12-19 Fri 20:21]
 - State "DONE"       from "TODO"       [2025-12-19 Fri 20:21]
 And update tests for it. 
 
-** Backlog [0/7]
+**** TODO [#B] How does a player create a snapshot
+I dont see a UI element for it, nor is it covered in the documentation
+** Backlog [0/8]
 “Out of Scope”:
 - Cloud sync
 - Real-time scraping
@@ -1947,6 +1951,8 @@ What would change the recommendation
 
 This keeps it defensible.
 
+*** TODO [#B] Implement Search
+
 *** TODO [#B] Implement ChangeLog.md
 - A CHANGELOG.md template Codex must maintain
 
@@ -1976,6 +1982,8 @@ No balance speculation
 
 K-means is not an optimization engine and not advice logic.
 It’s a lens.
+
+Players should never feel measured against others — only contextualized by them.
 
 Its role is to answer:
 
@@ -2028,6 +2036,102 @@ To future-proof it now, I’d lock these in:
 - Can be turned off entirely with no loss of functionality
 
 In other words: insight, not dependency.
+
+Responsible ways to do global exploratory analytics
+1. Aggregation first, always
+
+No raw runs, no individual trajectories.
+
+Safe:
+
+- Cluster centroids
+
+- Distribution ranges
+
+- Percentile bands
+
+Never:
+
+- “Players like X”
+
+- Sample runs you can inspect
+
+- Cluster sizes that reveal minority behaviors
+
+2. Opt-in visibility, not opt-out
+
+This is key.
+
+- Players participate in aggregation by default (that’s normal analytics)
+
+- Viewing global patterns is opt-in
+
+- UI copy explains what isn’t shown as clearly as what is
+
+Example:
+
+> “These patterns summarize thousands of runs. Individual players and runs are never visible.”
+
+3. Language rules (this is huge)
+
+You already care about this, so lean into it.
+
+Allowed:
+
+- “Common patterns”
+
+- “Observed tendencies”
+
+- “Frequently co-occurring choices”
+
+Banned:
+
+- “Best”, “optimal”, “top players”
+
+- “Most successful builds”
+
+- “What winning players do”
+
+This prevents status pressure from forming.
+
+4. Self-relative framing by default
+
+Global data should always be anchored back to the player, not shown raw.
+
+Instead of:
+
+> “Cluster B averages 2.3M coins/hr”
+
+Show:
+
+> “Your run falls near the center of a common cluster that emphasizes coin efficiency over wave depth.”
+
+The global context exists only to explain their data.
+
+5. Minimum population thresholds
+
+A classic but necessary guardrail.
+
+- No global insight is shown unless N ≥ some threshold
+
+- Prevents early users from being “the dataset”
+
+- Prevents deanonymization through edge cases
+
+You can even surface this transparently:
+
+“Global patterns unlock after enough data is available.”
+
+If done right, global clustering becomes:
+
+- A mirror, not a scoreboard
+
+- Educational, not prescriptive
+
+- Optional, not normative
+
+That’s rare in game-adjacent tools — and a real differentiator.
+
 *** TODO [#C] Normalize time handling everywhere (game time vs real time vs accelerated)
 Game Time can be accelerated and the rate can be changed during a run. Either via Lab Research (max of 5x) or via perks that increase it further to a variable factor (increased by additional researchs). The hard maximum is 6.25x (according to the Wiki). However the Wiki also notes "Game speed is not accurate. x5.0 speed behaves closer to x4.0 while 6.25 is closer to x5." So our handling of it is not strictly necessary. 
 
@@ -2163,5 +2267,5 @@ Mostly a visual tweak, but adds context and history for the player to interpert 
 - [X] prompt 32 Phase 9A Cleanup, Trust, and Documentation (Non-Deployment)
 - [X] prompt 32 Validation
 - [X] prompt 33 Deployment Prep
-- [ ] prompt 33 Validation
+- [X] prompt 33 Validation
 - [ ] version1.0.md 
