@@ -1,5 +1,7 @@
 # Development
 
+This page is **Developer Documentation**. It collects operational notes and local workflow details for maintainers.
+
 ## Quality checks
 
 Run the full local validation suite (lint, types, tests):

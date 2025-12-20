@@ -1,4 +1,6 @@
-## Phase 4 — Parameterized Effects & Derived Metrics
+# Phase 4 — Parameterized Effects & Derived Metrics
+
+This page is **Developer Documentation**. It summarizes Phase 4 deliverables and constraints for maintainers.
 
 Phase 4 extends the Analysis Engine to combine:
 

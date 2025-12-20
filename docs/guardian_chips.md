@@ -17,11 +17,12 @@ The Guardian Chips page helps you track which chips are unlocked, which chips ar
 1. Select **Guardians** in the navigation.
 2. Select **Show** to filter to **Unlocked only** or **Locked only**.
 3. Review a chip’s **Status** to confirm whether it is unlocked.
-4. Select **Unlock** on a locked chip to mark it as unlocked in the app.
-5. Select the **Active** toggle to activate or deactivate a chip.
-6. Select **Details** on an unlocked chip to view its upgrade parameters.
-7. Select **Level Up** on a parameter to increase its level by 1.
-8. Select **Decrease level** on a parameter to reduce its level by 1.
+4. (Optional) Select **Wiki** next to a chip name to open its external wiki page.
+5. Select **Unlock** on a locked chip to mark it as unlocked in the app.
+6. Select the **Active** toggle to activate or deactivate a chip.
+7. Select **Details** on an unlocked chip to view its upgrade parameters.
+8. Select **Level Up** on a parameter to increase its level by 1.
+9. Select **Decrease level** on a parameter to reduce its level by 1.
 
 ## How to Read the Results
 

@@ -1,5 +1,7 @@
 # Phase 2.75: Wiki Ingestion (Versioned, No Math)
 
+This page is **Developer Documentation**. It summarizes Phase 2.75 deliverables and constraints for maintainers.
+
 Phase 2.75 introduces a reliable ingestion pipeline for wiki-derived data.
 
 Scope is intentionally limited to data capture and change detection:

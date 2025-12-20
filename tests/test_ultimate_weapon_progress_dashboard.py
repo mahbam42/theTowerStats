@@ -320,7 +320,7 @@ def test_uw_dashboard_runs_used_reflects_imported_battle_reports(auth_client, pl
         "\n".join(
             [
                 "Battle Report",
-                "Ultimate Weapons: Chain Lightning",
+                "Chain Lightning Damage\t1",
                 "Battle Date: 2025-12-01 13:45:00",
                 "Tier: 6",
             ]
@@ -333,3 +333,24 @@ def test_uw_dashboard_runs_used_reflects_imported_battle_reports(auth_client, pl
     assert response.status_code == 200
     tiles = {tile["slug"]: tile for tile in response.context["ultimate_weapons"]}
     assert tiles["chain_lightning"]["summary"]["headline_value"] == 1
+
+
+@pytest.mark.django_db
+def test_uw_dashboard_renders_wiki_link_when_available(auth_client, player) -> None:
+    """Ultimate Weapon tiles include an external wiki link when available."""
+
+    uw = _uw_with_three_parameters(slug="black_hole", name="Black Hole")
+    uw.wiki_page_url = "https://example.test/wiki/Black_Hole"
+    uw.save(update_fields=["wiki_page_url"])
+    PlayerUltimateWeapon.objects.create(
+        player=player,
+        ultimate_weapon_definition=uw,
+        ultimate_weapon_slug=uw.slug,
+        unlocked=True,
+    )
+
+    url = reverse("core:ultimate_weapon_progress")
+    response = auth_client.get(url)
+    assert response.status_code == 200
+    content = response.content.decode("utf-8")
+    assert 'href="https://example.test/wiki/Black_Hole"' in content

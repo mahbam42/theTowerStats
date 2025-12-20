@@ -1,5 +1,7 @@
 # Project Structure
 
+This page is **Developer Documentation**. It describes how the repository is organized for contributors.
+
 This repository is intentionally split into:
 
 - `analysis/`: a pure Python analysis engine (no Django imports, no DB writes)
@@ -13,4 +15,3 @@ python manage.py migrate
 python manage.py runserver
 pytest
 ```
-

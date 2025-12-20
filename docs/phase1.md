@@ -1,5 +1,7 @@
 # Phase 1: Battle Report → Chart
 
+This page is **Developer Documentation**. It summarizes Phase 1 deliverables and constraints for maintainers.
+
 Phase 1 proves the end-to-end pipeline works:
 
 1. paste a Battle Report (raw text),

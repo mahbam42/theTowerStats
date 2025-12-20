@@ -83,6 +83,7 @@ def test_cards_dashboard_updates_inventory_and_presets(auth_client, player) -> N
         name="Coin Bonus",
         slug="coin_bonus",
         rarity="Common",
+        wiki_page_url="https://example.test/wiki/Coin_Bonus",
         effect_raw="+5%",
         description="Increase coins earned.",
         source_wikidata=wiki,
@@ -125,6 +126,7 @@ def test_cards_dashboard_updates_inventory_and_presets(auth_client, player) -> N
     assert "Wave Skip" not in content
     assert "Increase coins earned." in content
     assert "+5% (Level 3)" in content
+    assert 'href="https://example.test/wiki/Coin_Bonus"' in content
 
 
 def _card_names_in_table(html: str) -> list[str]:
@@ -134,11 +136,12 @@ def _card_names_in_table(html: str) -> list[str]:
     if match is None:
         return []
     body = match.group("body")
-    return re.findall(
+    names = re.findall(
         r'<tr[^>]*class="[^"]*card-row[^"]*"[^>]*>.*?<td>(?P<name>[^<]+)</td>',
         body,
         flags=re.DOTALL,
     )
+    return [name.strip() for name in names]
 
 
 @pytest.mark.django_db

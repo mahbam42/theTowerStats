@@ -36,7 +36,19 @@ feature breadth.
 - Analysis Must Feed Visual Output
   : New analysis logic should be demonstrable via a chart or view unless explicitly scoped as backend-only.
 - Never edit .ORG files in the repo
-  : These documents are maintained soly by the humans working on the project. Changes made to the corrisponding .md files will also be overwritten and should be treated as read only.
+  : These documents are maintained solely by the humans working on the project. Changes made to the corresponding .md files will also be overwritten and should be treated as read-only.
+
+## Versioning Enforcement
+
+All automated agents MUST follow the versioning rules defined in `VERSIONING.md`.
+
+Agents are expected to:
+
+- Determine whether changes are breaking, additive, or corrective
+- Propose appropriate version bumps accordingly
+- Avoid introducing breaking changes after 1.0.0 without an explicit MAJOR version increase
+
+Version numbers are treated as a stability contract, not a cosmetic label.
 
 ### Docstrings should describe
 

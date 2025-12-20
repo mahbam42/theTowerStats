@@ -19,14 +19,15 @@ Cards help you track your card slot progression and keep an organized view of yo
 3. Review **Next slot cost** when it is shown.
 4. Select **Unlock Next Slot** to increase your unlocked slot count.
 5. View the **Cards table** to review all cards.
-6. Select a card’s **Inventory** value to enter your current progress.
-7. Review the **Inventory** display to confirm the shown threshold for that card level.
-8. Select a card’s **Presets** section to add or remove preset tags.
-9. Select **Preset filter** to show only cards tagged with specific presets.
-10. Select **Maxed** to show all cards, only maxed cards, or only unmaxed cards.
-11. Select a column header in the cards table to sort the table.
-12. Select the same column header again to reverse the sort order.
-13. Select **Reset Filters** to return to the full list.
+6. (Optional) Select **Wiki** next to a card name to open its external wiki page.
+7. Select a card’s **Inventory** value to enter your current progress.
+8. Review the **Inventory** display to confirm the shown threshold for that card level.
+9. Select a card’s **Presets** section to add or remove preset tags.
+10. Select **Preset filter** to show only cards tagged with specific presets.
+11. Select **Maxed** to show all cards, only maxed cards, or only unmaxed cards.
+12. Select a column header in the cards table to sort the table.
+13. Select the same column header again to reverse the sort order.
+14. Select **Reset Filters** to return to the full list.
 
 ## How to Read the Results
 

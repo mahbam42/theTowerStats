@@ -1,5 +1,7 @@
 # Phase 2: Context + Comparisons
 
+This page is **Developer Documentation**. It summarizes Phase 2 deliverables and constraints for maintainers.
+
 Phase 2 adds contextual analysis on top of the Phase 1 pipeline while staying
 neutral (facts, not advice).
 

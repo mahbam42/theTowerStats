@@ -166,7 +166,21 @@
                     <tr
                       class="card-row rarity-{{ row.rarity|default:''|slugify }} {% if row.is_maxed %}card-maxed{% endif %}"
                     >
-                      <td>{{ row.name }}</td>
+                      <td>
+                        {{ row.name }}
+                        {% if row.wiki_page_url %}
+                          <a
+                            class="muted"
+                            href="{{ row.wiki_page_url }}"
+                            target="_blank"
+                            rel="noopener noreferrer"
+                            aria-label="Open wiki page for {{ row.name }} (external)"
+                            title="Open wiki page (external)"
+                          >
+                            Wiki
+                          </a>
+                        {% endif %}
+                      </td>
                       <td>
                         {% if row.rarity %}
                           {{ row.rarity }}

@@ -1826,11 +1826,17 @@ CLOSED: [2025-12-19 Fri 19:43]
 - State "DONE"       from "TODO"       [2025-12-19 Fri 19:43]
 Based on Battle Reports the 'runs used' should be >0. 
 
-**** TODO [#A] Cite Sources from the Wiki                           :docs:
+**** DONE [#A] Cite Sources from the Wiki                           :docs:
+CLOSED: [2025-12-19 Fri 19:58]
+- State "DONE"       from "TODO"       [2025-12-19 Fri 19:58]
 The docs should credit the Wiki early and often.
-**** TODO [#A] Name property links to wiki page as well
+**** DONE [#A] Name property links to wiki page as well
+CLOSED: [2025-12-19 Fri 19:58]
+- State "DONE"       from "TODO"       [2025-12-19 Fri 19:58]
 Cards, UWs, Bots, Guardian Chips names should all link to the respective Wiki pages for additional information. They should be appropriately marked as external links. 
-**** TODO [#C] User Gmmuide Operation                               :docs:
+**** DONE [#C] User Gmmuide Operation                               :docs:
+CLOSED: [2025-12-19 Fri 19:58]
+- State "DONE"       from "TODO"       [2025-12-19 Fri 19:58]
 "Note Battle History surfaces only what exists in your imported text. If a label never appeared in the report, it will not be synthesized here."
 
 This note doesn't make sense. The Battle History is a read-only summary provided by the Game. So assume a player is pasting the full summary into our app every time.
@@ -1862,7 +1868,9 @@ Safe guard in case a user accidently clicks upgrade by mistake
 **** DONE [#B] Move UW Sync Graph to Bottom of Dashboard 
 CLOSED: [2025-12-19 Fri 17:11]
 - State "DONE"       from "TODO"       [2025-12-19 Fri 17:11]
-**** TODO [#A] Amend how Death Wave works
+**** DONE [#A] Amend how Death Wave works
+CLOSED: [2025-12-19 Fri 19:57]
+- State "DONE"       from "TODO"       [2025-12-19 Fri 19:57]
 Specifically for our Sync Chart, but also as a point of information in the docs.
 
 The Death Wave is a single, powerful wave that deals damage based on a "damage pool."
@@ -1898,14 +1906,11 @@ Cards, UWs, Bots, Guardian Chips
 **** TODO [#C] Remove UW Sync from Nav Bar.
 And update tests for it. 
 
-** Backlog [1/6]
+** Backlog [0/7]
 “Out of Scope”:
 - Cloud sync
 - Real-time scraping
-*** DONE [#A] Review Docs and Note Revisions                          :Max:
-CLOSED: [2025-12-19 Fri 17:24]
 
-- State "DONE"       from "TODO"       [2025-12-19 Fri 17:24]
 *** TODO [#B] Ranked Recommendations
 
 Only now do you allow:
@@ -1933,6 +1938,14 @@ Based on how much data
 What would change the recommendation
 
 This keeps it defensible.
+
+*** TODO [#B] Implement ChangeLog.md
+- A CHANGELOG.md template Codex must maintain
+
+- A “breaking change checklist” it must run before suggesting version bumps
+
+
+Add to Docs and link in README.md
 *** TODO [#B] What-If Scenarios
 
 This is where simulations might enter — but cautiously.
@@ -2010,6 +2023,8 @@ In other words: insight, not dependency.
 *** TODO [#C] Normalize time handling everywhere (game time vs real time vs accelerated)
 Game Time can be accelerated and the rate can be changed during a run. Either via Lab Research (max of 5x) or via perks that increase it further to a variable factor (increased by additional researchs). The hard maximum is 6.25x (according to the Wiki). However the Wiki also notes "Game speed is not accurate. x5.0 speed behaves closer to x4.0 while 6.25 is closer to x5." So our handling of it is not strictly necessary. 
 
+*** TODO [#C] Hide Deathwave on UW Sync Chart
+Add an optional toggle to show/hide the Death Wave activation markers (so the schedule focuses on GT/BH overlap), while still keeping everything descriptive.
 *** TODO [#C] Required Doc Type Header (Must Prepend to All Docs)
 Every document authored or modified by Codex must begin with exactly one of the following headers, placed at the very top of the file.
 
@@ -2087,6 +2102,10 @@ If writing a User Guide, prioritize clarity for non-technical users, avoid inter
 Validate the final document against the Documentation Self-Check Checklist before completing the task.
 
 *** Complete
+**** DONE [#A] Review Docs and Note Revisions                        :Max:
+CLOSED: [2025-12-19 Fri 17:24]
+
+- State "DONE"       from "TODO"       [2025-12-19 Fri 17:24]
 **** DONE [#C] Phase 5 Summary was written as a user facing doc     :docs:
 CLOSED: [2025-12-18 Thu 19:33]
 - State "DONE"       from "TODO"       [2025-12-18 Thu 19:33]
@@ -2133,3 +2152,8 @@ Mostly a visual tweak, but adds context and history for the player to interpert 
 - [X] prompt 30 Trustable, Explainable, Goal-Aware Advice Validation
 - [X] prompt 31 Phase 8, Pillar 3: Demo, Export, and Adoption Features
 - [X] port_and_adoption checklist
+- [X] prompt 32 Phase 9A Cleanup, Trust, and Documentation (Non-Deployment)
+- [X] prompt 32 Validation
+- [ ] prompt 33 Deployment Prep
+- [ ] prompt 33 Validation
+- [ ] version1.0.md 

@@ -133,6 +133,28 @@ def test_guardian_level_up_increments_until_max(auth_client, player) -> None:
 
 
 @pytest.mark.django_db
+def test_guardian_dashboard_renders_wiki_link_when_available(auth_client, player) -> None:
+    """Guardian chip tiles include an external wiki link when available."""
+
+    guardian = _guardian_with_three_parameters(slug="recovery", name="Recovery")
+    guardian.wiki_page_url = "https://example.test/wiki/Recovery"
+    guardian.save(update_fields=["wiki_page_url"])
+    PlayerGuardianChip.objects.create(
+        player=player,
+        guardian_chip_definition=guardian,
+        guardian_chip_slug=guardian.slug,
+        unlocked=True,
+        active=False,
+    )
+
+    url = reverse("core:guardian_progress")
+    response = auth_client.get(url)
+    assert response.status_code == 200
+    content = response.content.decode("utf-8")
+    assert 'href="https://example.test/wiki/Recovery"' in content
+
+
+@pytest.mark.django_db
 def test_guardian_level_down_decrements_until_min(auth_client, player) -> None:
     """Level-down decrements by 1 and stops at the minimum level."""
 

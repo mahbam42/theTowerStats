@@ -1,5 +1,7 @@
 # Phase 3 — UI Structure + Model Scaffolding
 
+This page is **Developer Documentation**. It summarizes Phase 3 deliverables and constraints for maintainers.
+
 Phase 3 focuses on **navigation clarity** and **page-level separation of concerns** as the dataset grows.
 This phase intentionally avoids new gameplay math or analysis changes.
 
@@ -37,4 +39,3 @@ Phase 3 adds schema-only models to support inspection and future work:
 - Bots: `BotParameter`, `PlayerBot`
 
 These models are intended for traceable storage and admin/debug visibility; behavior and game mechanics are added in later phases.
-

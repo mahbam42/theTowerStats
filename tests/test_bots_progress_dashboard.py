@@ -132,6 +132,27 @@ def test_bot_level_up_increments_until_max(auth_client, player) -> None:
 
 
 @pytest.mark.django_db
+def test_bots_dashboard_renders_wiki_link_when_available(auth_client, player) -> None:
+    """Bot tiles include an external wiki link when available."""
+
+    bot_def = _bot_with_four_parameters(slug="golden_bot", name="Golden Bot")
+    bot_def.wiki_page_url = "https://example.test/wiki/Golden_Bot"
+    bot_def.save(update_fields=["wiki_page_url"])
+    PlayerBot.objects.create(
+        player=player,
+        bot_definition=bot_def,
+        bot_slug=bot_def.slug,
+        unlocked=True,
+    )
+
+    url = reverse("core:bots_progress")
+    response = auth_client.get(url)
+    assert response.status_code == 200
+    content = response.content.decode("utf-8")
+    assert 'href="https://example.test/wiki/Golden_Bot"' in content
+
+
+@pytest.mark.django_db
 def test_bot_level_down_decrements_until_min(auth_client, player) -> None:
     """Level-down decrements by 1 and stops at the minimum level."""
 

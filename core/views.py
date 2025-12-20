@@ -81,8 +81,6 @@ from definitions.models import (
 from gamedata.models import (
     BattleReport,
     BattleReportProgress,
-    RunCombatUltimateWeapon,
-    RunUtilityUltimateWeapon,
 )
 from player_state.card_slots import card_slot_max_slots, next_card_slot_unlock_cost_raw
 from player_state.cards import apply_inventory_rollover, derive_card_progress
@@ -102,6 +100,7 @@ from player_state.models import (
 )
 from core.services import ingest_battle_report
 from core.uw_sync import build_uw_sync_payload
+from core.uw_usage import count_observed_uw_runs
 
 
 def _request_player(request: HttpRequest) -> Player:
@@ -1417,6 +1416,7 @@ def cards(request: HttpRequest) -> HttpResponse:
             {
                 "id": card.id,
                 "name": name,
+                "wiki_page_url": (definition.wiki_page_url if definition is not None else ""),
                 "level": display_level,
                 "inventory_count": display_inventory,
                 "inventory_threshold": display_threshold,
@@ -1778,10 +1778,7 @@ def ultimate_weapon_progress(request: HttpRequest) -> HttpResponse:
         ultimate_weapons_qs = ultimate_weapons_qs.filter(unlocked=False)
 
     any_battles = BattleReport.objects.filter(player=player).exists()
-    has_uw_usage_rows = (
-        RunCombatUltimateWeapon.objects.filter(player=player).exists()
-        or RunUtilityUltimateWeapon.objects.filter(player=player).exists()
-    )
+    uw_runs_observed_counts = count_observed_uw_runs(player=player) if any_battles else {}
 
     tiles: list[dict[str, object]] = []
     for uw in ultimate_weapons_qs:
@@ -1839,20 +1836,14 @@ def ultimate_weapon_progress(request: HttpRequest) -> HttpResponse:
             messages.warning(request, f"Skipping {uw_def.name}: missing parameter rows.")
             continue
 
-        if has_uw_usage_rows:
-            runs_using = (
-                BattleReport.objects.filter(player=player, run_combat_uws__ultimate_weapon_definition=uw_def)
-                | BattleReport.objects.filter(player=player, run_utility_uws__ultimate_weapon_definition=uw_def)
-            ).distinct()
-        else:
-            runs_using = BattleReport.objects.filter(player=player, raw_text__icontains=uw_def.name).distinct()
-        runs_count = runs_using.count() if any_battles else 0
+        runs_count = int(uw_runs_observed_counts.get(uw_def.id, 0))
 
         tiles.append(
             {
                 "id": uw.id,
                 "name": uw_def.name,
                 "slug": uw_def.slug,
+                "wiki_page_url": (uw_def.wiki_page_url or ""),
                 "description": ((uw_def.description or "").splitlines() or [""])[0].strip(),
                 "unlocked": uw.unlocked,
                 "unlock_cost_raw": None,
@@ -2402,6 +2393,7 @@ def guardian_progress(request: HttpRequest) -> HttpResponse:
                 "id": chip.id,
                 "name": chip_def.name,
                 "slug": chip_def.slug,
+                "wiki_page_url": (chip_def.wiki_page_url or ""),
                 "description": ((chip_def.description or "").splitlines() or [""])[0].strip(),
                 "unlocked": chip.unlocked,
                 "active": chip.active,
@@ -2815,6 +2807,7 @@ def bots_progress(request: HttpRequest) -> HttpResponse:
                 "id": bot.id,
                 "name": bot_def.name,
                 "slug": bot_def.slug,
+                "wiki_page_url": (bot_def.wiki_page_url or ""),
                 "description": ((bot_def.description or "").splitlines() or [""])[0].strip(),
                 "unlocked": bot.unlocked,
                 "unlock_cost_raw": None,

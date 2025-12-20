@@ -74,7 +74,21 @@
             <div class="callout entity-tile {% if entity.unlocked %}success{% else %}secondary{% endif %}" data-entity-id="{{ entity.id }}">
               <div class="grid-x align-justify align-middle">
                 <div class="cell auto">
-                  <h5 class="margin-0">{{ entity.name }}</h5>
+                  <h5 class="margin-0">
+                    {{ entity.name }}
+                    {% if entity.wiki_page_url %}
+                      <a
+                        class="muted"
+                        href="{{ entity.wiki_page_url }}"
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        aria-label="Open wiki page for {{ entity.name }} (external)"
+                        title="Open wiki page (external)"
+                      >
+                        Wiki
+                      </a>
+                    {% endif %}
+                  </h5>
                   <p class="muted margin-0">
                     Status:
                     <span class="entity-status">{% if entity.unlocked %}Unlocked{% else %}Locked{% endif %}</span>

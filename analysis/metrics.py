@@ -10,6 +10,7 @@ from dataclasses import dataclass
 from typing import Final
 
 from .battle_report_extract import extract_numeric_value
+from .uw_usage import is_ultimate_weapon_observed_active
 from .categories import MetricCategory
 from .context import ParameterInput, PlayerContextInput
 from .derived import MonteCarloConfig
@@ -407,6 +408,13 @@ def compute_metric_value(
     if metric_key == "uw_runs_count":
         if not entity_name:
             return None, (), ("Select an Ultimate Weapon to chart usage counts.",)
+        raw_text = getattr(record, "raw_text", None)
+        if isinstance(raw_text, str) and raw_text.strip():
+            return (
+                1.0 if is_ultimate_weapon_observed_active(raw_text, ultimate_weapon_name=entity_name) else 0.0,
+                (),
+                (),
+            )
         for rel_name in ("run_combat_uws", "run_utility_uws"):
             related = getattr(record, rel_name, None)
             if related is None:

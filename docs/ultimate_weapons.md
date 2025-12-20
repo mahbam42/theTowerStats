@@ -16,21 +16,21 @@ The Ultimate Weapons page helps you track which Ultimate Weapons you have unlock
 ## How to Use
 
 1. Select **Ultimate Weapons** in the navigation.
-2. (Optional) Select **UW Sync** in the navigation to jump directly to the **Sync graph** section.
-3. Select **Show** to filter to **Unlocked only** or **Locked only**.
-4. Review a weapon’s **Status** to confirm whether it is unlocked.
+2. Select **Show** to filter to **Unlocked only** or **Locked only**.
+3. Review a weapon’s **Status** to confirm whether it is unlocked.
+4. (Optional) Select **Wiki** next to a weapon name to open its external wiki page.
 5. Select **Unlock** on a locked weapon to mark it as unlocked in the app.
 6. Select **Details** on an unlocked weapon to view its three upgrade parameters.
 7. Select **Level Up** on a parameter to increase its level by 1.
 8. Select **Decrease level** on a parameter to reduce its level by 1.
 9. Review **Total Stones invested** to compare overall investment between weapons.
-10. (Optional) View the **Sync graph** to see when Golden Tower, Black Hole, and Death Wave are active at the same time.
+10. (Optional) View the **Sync graph** section to see when Golden Tower, Black Hole, and Death Wave are active at the same time.
 11. (Optional) Select a saved snapshot in **Ultimate Weapons snapshot** to render a chart above the table.
 
 ## How to Read the Results
 
 - **Total Stones invested** is the sum of the upgrade costs for the levels you have increased in the app.
-- **Runs used** counts how many of your imported Battle Reports include that Ultimate Weapon.
+- **Runs used (observed)** counts how many of your imported Battle Reports show evidence of that Ultimate Weapon being active.
 - **Level** is your saved upgrade level for that parameter.
 - **Current** is the current raw value for your saved level.
 - **Next** shows the next-level value, with the change emphasized in parentheses when it can be parsed.
@@ -54,10 +54,19 @@ The Ultimate Weapons page helps you track which Ultimate Weapons you have unlock
 > **Decrease level** is available as a safety option if you accidentally record an upgrade you did not intend.
 
 > **Caution**
-> If no Battle Reports have been imported yet, **Runs used** will show “No battles recorded yet”.
+> If no Battle Reports have been imported yet, **Runs used (observed)** will show “No battles recorded yet”.
 
 > **Caution**
 > **Runs used (observed)** is based on what appears in your imported Battle Reports. Some game effects (such as Perks) can temporarily enable an Ultimate Weapon for a single run, so this count may include runs where the weapon is not permanently unlocked.
+
+> **Note**
+> Runs used (observed) is detected from specific Battle Report rows and requires a value greater than 0. For example, Black Hole uses “Black Hole Damage” and Golden Tower uses “Coins From Golden Tower”.
+
+> **Caution**
+> Some Battle Report rows can be affected by other game effects. This can create false positives in Runs used (observed). For example, Spotlight can fire missiles that may be recorded under Smart Missiles, and the Space Displacer module can deploy Inner Land Mines even if Inner Land Mines is not unlocked.
+
+> **Note**
+> Chrono Field does not currently have a reliable Battle Report row for activity detection, so Runs used (observed) may remain 0 even when it is active in the game.
 
 > **Caution**
 > If an Ultimate Weapon’s upgrade parameters are incomplete or not recognized, it may not appear on this page until the underlying data is available.
