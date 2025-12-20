@@ -36,6 +36,11 @@ theTowerStats includes a `Procfile` suitable for Railway’s Django process mode
 - Web process uses Gunicorn with `theTowerStats.wsgi:application`
 - Bind address uses the platform-provided `PORT`
 
+## Dependencies
+
+Production installs runtime dependencies from `requirements.txt`.
+Development and documentation tooling lives in `requirements-dev.txt` and is not required at runtime.
+
 ## Production validation
 
 Run the deployment checklist locally (with production-style environment variables):
@@ -68,4 +73,3 @@ Notes:
 > ⚠️ Caution
 > This project preserves raw ingested data. Avoid transforms during migration.
 > Treat migration as a transfer of serialized rows, not as a “re-interpretation” step.
-

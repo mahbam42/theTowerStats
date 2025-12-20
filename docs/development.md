@@ -2,6 +2,20 @@
 
 This page is **Developer Documentation**. It collects operational notes and local workflow details for maintainers.
 
+## Dependencies
+
+Install runtime dependencies:
+
+```bash
+pip install -r requirements.txt
+```
+
+Install development + documentation tooling:
+
+```bash
+pip install -r requirements-dev.txt
+```
+
 ## Quality checks
 
 Run the full local validation suite (lint, types, tests):
