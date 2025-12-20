@@ -165,9 +165,10 @@ def _safe_auth_redirect_url(request: HttpRequest) -> str:
     """
 
     redirect_url = (request.POST.get("next") or request.GET.get("next") or "").strip()
+    allowed_hosts = set(settings.ALLOWED_HOSTS)
     if redirect_url and url_has_allowed_host_and_scheme(
         url=redirect_url,
-        allowed_hosts={request.get_host()},
+        allowed_hosts=allowed_hosts,
         require_https=request.is_secure(),
     ):
         return redirect_url
@@ -186,9 +187,10 @@ def _safe_local_redirect_url(request: HttpRequest, fallback: str) -> str:
     """
 
     candidate = (request.POST.get("next") or request.META.get("HTTP_REFERER") or "").strip()
+    allowed_hosts = set(settings.ALLOWED_HOSTS)
     if candidate and url_has_allowed_host_and_scheme(
         url=candidate,
-        allowed_hosts={request.get_host()},
+        allowed_hosts=allowed_hosts,
         require_https=request.is_secure(),
     ):
         return candidate
@@ -970,7 +972,14 @@ def battle_history(request: HttpRequest) -> HttpResponse:
             else:
                 messages.error(request, "Could not update preset for that run.")
 
-            redirect_to = update_form.cleaned_data.get("next") or reverse("core:battle_history")
+            redirect_to = (update_form.cleaned_data.get("next") or "").strip()
+            allowed_hosts = set(settings.ALLOWED_HOSTS)
+            if not url_has_allowed_host_and_scheme(
+                url=redirect_to,
+                allowed_hosts=allowed_hosts,
+                require_https=request.is_secure(),
+            ):
+                redirect_to = reverse("core:battle_history")
             return redirect(redirect_to)
 
         import_form = BattleReportImportForm(request.POST)

@@ -124,3 +124,25 @@ def test_battle_history_rejects_unknown_progress_id(auth_client, player) -> None
     )
     assert response.status_code == 302
     assert BattleReportProgress.objects.count() == 0
+
+
+@pytest.mark.django_db
+def test_battle_history_rejects_external_next_redirect(auth_client, player) -> None:
+    """External next targets fall back to the battle history page."""
+
+    report, _ = ingest_battle_report(_battle_report_text(wave=444), player=player, preset_name=None)
+    preset = Preset.objects.create(player=player, name="Tag")
+
+    url = reverse("core:battle_history")
+    response = auth_client.post(
+        url,
+        data={
+            "action": "update_run_preset",
+            "progress_id": report.run_progress.id,
+            "preset": preset.id,
+            "next": "https://example.invalid/evil",
+        },
+    )
+
+    assert response.status_code == 302
+    assert response["Location"] == url
