@@ -71,7 +71,7 @@ This migration is intended to be schema-neutral and behavior-neutral:
 Recommended commands:
 
 - Export (from SQLite):
-  - `python manage.py dumpdata --natural-foreign --natural-primary -e contenttypes -e auth.permission --indent 2 -o sqlite-export.json`
+  - `python manage.py dumpdata --natural-foreign --natural-primary -e contenttypes -e auth.permission -e admin.logentry -e sessions.session --indent 2 -o sqlite-export.json`
 - Import (to Postgres):
   - `python manage.py loaddata sqlite-export.json`
 

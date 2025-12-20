@@ -38,6 +38,9 @@ def ensure_player_for_user(sender, instance, created: bool, **kwargs) -> None:
     The Player is derived from `instance` and never from user input.
     """
 
+    if kwargs.get("raw", False):
+        return
+
     if not created:
         return
 
