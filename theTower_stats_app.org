@@ -1878,11 +1878,15 @@ Damage Pool: This pool accumulates damage through multiple activations, rather t
 Persistence: The Death Wave remains active within your tower’s range until the damage pool is depleted.
 
 So depending on conditions Death Wave can persist for a long period. Including beyond it's cool down time, so it resets and remains active until the damage pool is depleated. 
-**** TODO [#B] Clean Up and Revise Development Docs
+**** DONE [#B] Clean Up and Revise Development Docs
+CLOSED: [2025-12-19 Fri 20:21]
+- State "DONE"       from "TODO"       [2025-12-19 Fri 20:21]
 Make them all consistent in style and format. And put them in order -right now the phase 6 concepts is listed after everything else. 
 **** TODO [#B] How does a player create a snapshot
 I dont see a UI element for it, nor is it covered in the documentation
-**** TODO [#B] Runs Used on UW Dashboard
+**** DONE [#B] Runs Used on UW Dashboard
+CLOSED: [2025-12-19 Fri 20:21]
+- State "DONE"       from "TODO"       [2025-12-19 Fri 20:21]
 It's still not right. It's showing 14 for all unlocked UWs. But I've only had Blackhole via Perk Upgrades, on a few of the runs I've added to the app.
 
 Each UW has a row in Battle Reports that we can use to track when a UW was active in a round.
@@ -1901,9 +1905,13 @@ Each UW has a row in Battle Reports that we can use to track when a UW was activ
 If each of those metrics have a value greater than 0, that UW was active during a run.
 
 We should also note in the docs that false positives will occur and skew these counts. Because via Lab Research, Spotlight can fire missiles and the damage is logged in the same target we're using for Smart Missiles. Inner Land Mines can be deployed with a Module (Space Displacer) that we aren't tracking.
-**** TODO [#C] Add Wiki External Links on Dashboards
+**** DONE [#C] Add Wiki External Links on Dashboards
+CLOSED: [2025-12-19 Fri 20:21]
+- State "DONE"       from "TODO"       [2025-12-19 Fri 20:21]
 Cards, UWs, Bots, Guardian Chips
-**** TODO [#C] Remove UW Sync from Nav Bar.
+**** DONE [#C] Remove UW Sync from Nav Bar.
+CLOSED: [2025-12-19 Fri 20:21]
+- State "DONE"       from "TODO"       [2025-12-19 Fri 20:21]
 And update tests for it. 
 
 ** Backlog [0/7]
@@ -2154,6 +2162,6 @@ Mostly a visual tweak, but adds context and history for the player to interpert 
 - [X] port_and_adoption checklist
 - [X] prompt 32 Phase 9A Cleanup, Trust, and Documentation (Non-Deployment)
 - [X] prompt 32 Validation
-- [ ] prompt 33 Deployment Prep
+- [X] prompt 33 Deployment Prep
 - [ ] prompt 33 Validation
 - [ ] version1.0.md 

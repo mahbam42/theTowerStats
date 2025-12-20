@@ -76,3 +76,8 @@ This app is about:
 - Adoption features: A read-only demo dataset and lightweight export tools for sharing charts and derived metrics.
 
 See the User Guide and Development sections in `/docs` (or the published site) for deeper detail.
+
+### Testing
+
+Tests are run in CI and during development.
+Production deployments install runtime dependencies only and do not execute tests.
