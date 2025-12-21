@@ -2213,13 +2213,20 @@ On mobile, the primary task is viewing trends, not configuring charts.
 ***** TODO [#C] Implement Search
 Search should have global scope within the app. 
 
-** Backlog [0/7]
+** Backlog [0/8]
 “Out of Scope”:
 - Cloud sync
 - Real-time scraping
 
 *** TODO [#A] Battle History Needs to Account for Tournament Runs.
 Battle Reports with 3+, 5+, 8+, etc are from Tournament Rounds and should be highlighted and separate from normal round tiers. There are modified enemy stats and added scaling battle conditions that make Tournament Rounds different from the corrisponding tiers. 
+
+*** TODO [#A] Test Suite Health
+- Defined unit and integration, but none of the tests use them, so you can’t easily run “fast unit only” vs “full integration” in CI/local.
+- Add callouts for Regression and Golden as an additional markers (orthogonal) for fixture-driven, checksum/snapshot-style tests.
+- Start using @pytest.mark.unit for pure functions/DTO parsing
+- Use @pytest.mark.integration for anything with @pytest.mark.django_db, views, commands, model interactions, wiki ingestion/rebuild, migrations.
+- Add Test Taxonomy and Markings to Developer Docs, and fast vs full coverage
 *** TODO [#B] Ranked Recommendations
 
 Only now do you allow:
