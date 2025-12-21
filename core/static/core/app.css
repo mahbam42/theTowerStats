@@ -135,6 +135,8 @@ body {
 
 .top-bar-search input[type="search"] {
   margin: 0;
+  margin-right: 2rem;
+  float: right;
 }
 
 .search-dropdown {
