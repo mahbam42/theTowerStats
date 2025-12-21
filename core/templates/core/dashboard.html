@@ -3,45 +3,6 @@
 {% block title %}Charts • theTowerStats{% endblock %}
 
 {% block head %}
-  <style>
-    .chart-panel canvas {
-      max-width: 100%;
-    }
-
-    .chart-shell {
-      background: #fff;
-      border: 1px solid #e5e5e5;
-      border-radius: 8px;
-      padding: 1rem;
-      box-shadow: 0 1px 4px rgba(0, 0, 0, 0.04);
-    }
-
-    .modal-backdrop {
-      position: fixed;
-      inset: 0;
-      background: rgba(0, 0, 0, 0.55);
-      display: none;
-      align-items: center;
-      justify-content: center;
-      z-index: 9999;
-      padding: 1rem;
-    }
-
-    .modal-backdrop.is-open {
-      display: flex;
-    }
-
-    .modal-shell {
-      width: min(760px, 100%);
-      max-height: 90vh;
-      overflow: auto;
-      background: #fff;
-      border-radius: 10px;
-      border: 1px solid #e5e5e5;
-      box-shadow: 0 10px 40px rgba(0, 0, 0, 0.25);
-      padding: 1rem;
-    }
-  </style>
 {% endblock %}
 
 {% block content %}
@@ -55,155 +16,174 @@
             <p class="muted margin-0">Filters default to December 9, 2025 to focus on recent runs.</p>
           </div>
           <div class="cell shrink text-right">
-            <a class="button" href="{% url 'core:battle_history' %}">View history</a>
-            <p class="muted text-right margin-0">Use the Battle History dashboard to paste new runs.</p>
+            <a class="button secondary" href="{% url 'core:battle_history' %}">Battle History</a>
+            <p class="muted text-right margin-0">Battle History includes Battle Report import and run browsing.</p>
           </div>
         </div>
       </div>
     </div>
   </div>
 
-  <div class="grid-x grid-margin-x">
-    <div class="cell large-3 medium-4 large-order-2 medium-order-2">
-      <div class="card-shell">
-        <h4 class="margin-bottom-1">Filters</h4>
-        <form method="get" id="chart-context-form">
-          <div class="button-group expanded stack-for-small margin-bottom-1">
+  <div class="charts-layout">
+    <div class="card-shell charts-context">
+      <h4 class="margin-bottom-1">Context</h4>
+      <form method="get" id="chart-context-form">
+        <input type="hidden" name="builder" id="builder-flag" value="{% if chart_builder_form.is_bound %}1{% endif %}">
+        <input type="hidden" name="chart_type" id="builder-chart-type-hidden" value="{{ chart_builder_form.chart_type.value|default_if_none:'' }}">
+        <input type="hidden" name="group_by" id="builder-group-by-hidden" value="{{ chart_builder_form.group_by.value|default_if_none:'' }}">
+        <input type="hidden" name="comparison" id="builder-comparison-hidden" value="{{ chart_builder_form.comparison.value|default_if_none:'' }}">
+        <input type="hidden" name="smoothing" id="builder-smoothing-hidden" value="{{ chart_builder_form.smoothing.value|default_if_none:'' }}">
+        <input type="hidden" name="run_a" id="builder-run-a-hidden" value="{{ chart_builder_form.run_a.value|default_if_none:'' }}">
+        <input type="hidden" name="run_b" id="builder-run-b-hidden" value="{{ chart_builder_form.run_b.value|default_if_none:'' }}">
+        <input type="hidden" name="window_a_start" id="builder-window-a-start-hidden" value="{{ chart_builder_form.window_a_start.value|default_if_none:'' }}">
+        <input type="hidden" name="window_a_end" id="builder-window-a-end-hidden" value="{{ chart_builder_form.window_a_end.value|default_if_none:'' }}">
+        <input type="hidden" name="window_b_start" id="builder-window-b-start-hidden" value="{{ chart_builder_form.window_b_start.value|default_if_none:'' }}">
+        <input type="hidden" name="window_b_end" id="builder-window-b-end-hidden" value="{{ chart_builder_form.window_b_end.value|default_if_none:'' }}">
+        <div id="builder-metric-keys-hidden">
+          {% if chart_builder_form.is_bound %}
+            {% for key in chart_builder_form.metric_keys.value %}
+              <input type="hidden" name="metric_keys" value="{{ key }}">
+            {% endfor %}
+          {% endif %}
+        </div>
+
+        <div class="grid-x grid-margin-x align-middle">
+          <div class="cell medium-2">
+            <label class="margin-bottom-0">Start
+              {{ chart_form.start_date }}
+            </label>
+          </div>
+          <div class="cell medium-2">
+            <label class="margin-bottom-0">End
+              {{ chart_form.end_date }}
+            </label>
+          </div>
+          <div class="cell medium-2">
+            <label class="margin-bottom-0">Tier
+              {{ chart_form.tier }}
+            </label>
+          </div>
+          <div class="cell medium-3">
+            <label class="margin-bottom-0">Preset
+              {{ chart_form.preset }}
+            </label>
+          </div>
+          <div class="cell shrink">
             <button class="button secondary" type="button" id="open-chart-builder">Chart Builder</button>
           </div>
-
-          <input type="hidden" name="builder" id="builder-flag" value="{% if chart_builder_form.is_bound %}1{% endif %}">
-          <input type="hidden" name="chart_type" id="builder-chart-type-hidden" value="{{ chart_builder_form.chart_type.value|default_if_none:'' }}">
-          <input type="hidden" name="group_by" id="builder-group-by-hidden" value="{{ chart_builder_form.group_by.value|default_if_none:'' }}">
-          <input type="hidden" name="comparison" id="builder-comparison-hidden" value="{{ chart_builder_form.comparison.value|default_if_none:'' }}">
-          <input type="hidden" name="smoothing" id="builder-smoothing-hidden" value="{{ chart_builder_form.smoothing.value|default_if_none:'' }}">
-          <input type="hidden" name="run_a" id="builder-run-a-hidden" value="{{ chart_builder_form.run_a.value|default_if_none:'' }}">
-          <input type="hidden" name="run_b" id="builder-run-b-hidden" value="{{ chart_builder_form.run_b.value|default_if_none:'' }}">
-          <input type="hidden" name="window_a_start" id="builder-window-a-start-hidden" value="{{ chart_builder_form.window_a_start.value|default_if_none:'' }}">
-          <input type="hidden" name="window_a_end" id="builder-window-a-end-hidden" value="{{ chart_builder_form.window_a_end.value|default_if_none:'' }}">
-          <input type="hidden" name="window_b_start" id="builder-window-b-start-hidden" value="{{ chart_builder_form.window_b_start.value|default_if_none:'' }}">
-          <input type="hidden" name="window_b_end" id="builder-window-b-end-hidden" value="{{ chart_builder_form.window_b_end.value|default_if_none:'' }}">
-          <div id="builder-metric-keys-hidden">
-            {% if chart_builder_form.is_bound %}
-              {% for key in chart_builder_form.metric_keys.value %}
-                <input type="hidden" name="metric_keys" value="{{ key }}">
-              {% endfor %}
-            {% endif %}
-          </div>
-
-          <label>Charts
-            {{ chart_form.charts }}
-          </label>
-          <label>Start date
-            {{ chart_form.start_date }}
-          </label>
-          <label>End date
-            {{ chart_form.end_date }}
-          </label>
-          <label>Tier
-            {{ chart_form.tier }}
-          </label>
-          <label>Preset
-            {{ chart_form.preset }}
-          </label>
-          <label>Ultimate Weapon
-            {{ chart_form.ultimate_weapon }}
-          </label>
-          <label>Guardian Chip
-            {{ chart_form.guardian_chip }}
-          </label>
-          <label>Bot
-            {{ chart_form.bot }}
-          </label>
-          <label>Moving average window
-            {{ chart_form.moving_average_window }}
-          </label>
-          <label>Rolling window
-            {{ chart_form.window_kind }}
-          </label>
-          <label>Rolling window size
-            {{ chart_form.window_n }}
-          </label>
-          <hr>
-          <h5 class="margin-bottom-0">Advice</h5>
-          <p class="muted">Advice is descriptive and based on the selected snapshots and current filters.</p>
-          <label>Snapshot A
-            <select name="advice_snapshot_a" id="advice-snapshot-a">
-              <option value="">(select)</option>
-              {% for snapshot in chart_snapshots %}
-                <option value="{{ snapshot.id }}"{% if advice_snapshot_a|default:"" == snapshot.id|stringformat:"s" %} selected{% endif %}>{{ snapshot.name }}</option>
-              {% endfor %}
-            </select>
-          </label>
-          <label>Compare
-            <select name="advice_mode" id="advice-mode">
-              <option value="snapshot_vs_current"{% if advice_mode == "snapshot_vs_current" %} selected{% endif %}>Snapshot vs current filters</option>
-              <option value="snapshot_vs_snapshot"{% if advice_mode == "snapshot_vs_snapshot" %} selected{% endif %}>Snapshot vs snapshot</option>
-            </select>
-          </label>
-          <label>Snapshot B
-            <select name="advice_snapshot_b" id="advice-snapshot-b">
-              <option value="">(select)</option>
-              {% for snapshot in chart_snapshots %}
-                <option value="{{ snapshot.id }}"{% if advice_snapshot_b|default:"" == snapshot.id|stringformat:"s" %} selected{% endif %}>{{ snapshot.name }}</option>
-              {% endfor %}
-            </select>
-          </label>
-          <hr>
-          <h6 class="margin-bottom-0">Goal-aware comparison</h6>
-          <p class="muted">Goal-aware advice summarizes percent changes across multiple metrics using the weights you select.</p>
-          <label>Goal
-            <select name="goal_intent" id="goal-intent">
-              <option value="hybrid"{% if goal_intent == "hybrid" %} selected{% endif %}>Hybrid</option>
-              <option value="economy"{% if goal_intent == "economy" %} selected{% endif %}>Economy / Farming</option>
-              <option value="progression"{% if goal_intent == "progression" %} selected{% endif %}>Progression / Wave Push</option>
-            </select>
-          </label>
-          <label>Weight: coins/hour
-            <input type="number" step="0.05" name="goal_weight_coins_per_hour" id="goal-weight-coins-per-hour" value="{{ goal_weight_coins_per_hour|default_if_none:'' }}">
-          </label>
-          <label>Weight: coins/wave
-            <input type="number" step="0.05" name="goal_weight_coins_per_wave" id="goal-weight-coins-per-wave" value="{{ goal_weight_coins_per_wave|default_if_none:'' }}">
-          </label>
-          <label>Weight: waves reached
-            <input type="number" step="0.05" name="goal_weight_waves_reached" id="goal-weight-waves-reached" value="{{ goal_weight_waves_reached|default_if_none:'' }}">
-          </label>
-          <div class="button-group expanded stack-for-small margin-top-1">
+          <div class="cell shrink">
             <button class="button" type="submit">Apply</button>
+          </div>
+          <div class="cell shrink">
             <a class="button secondary" href="{% url 'core:dashboard' %}">Clear</a>
           </div>
-          <div class="button-group expanded stack-for-small margin-top-1">
-            <a class="button hollow" href="{% url 'core:export_derived_metrics_csv' %}?{{ request.GET.urlencode }}">Export derived metrics (CSV)</a>
-          </div>
-        </form>
-      </div>
-
-      <div class="card-shell margin-top-1">
-        <h5>Compare</h5>
-        <form method="get">
-          {{ comparison_form.as_p }}
-          <button class="button hollow" type="submit">Compare</button>
-        </form>
-      </div>
-
-      {% if not demo_mode %}
-        <div class="card-shell margin-top-1">
-          <h5>Quick import</h5>
-          <form method="post">
-            {% csrf_token %}
-            <label>{{ import_form.raw_text.label }}
-              {{ import_form.raw_text }}
-            </label>
-            <label>{{ import_form.preset_name.label }}
-              {{ import_form.preset_name }}
-            </label>
-            <button class="button expanded" type="submit">Import Battle Report</button>
-          </form>
         </div>
-      {% endif %}
+
+        <details class="margin-top-1">
+          <summary class="muted">More options</summary>
+          <div class="grid-x grid-margin-x margin-top-1">
+            <div class="cell medium-4">
+              <label>Charts
+                {{ chart_form.charts }}
+              </label>
+            </div>
+            <div class="cell medium-4">
+              <label>Rolling window
+                {{ chart_form.window_kind }}
+              </label>
+            </div>
+            <div class="cell medium-4">
+              <label>Rolling window size
+                {{ chart_form.window_n }}
+              </label>
+            </div>
+            <div class="cell medium-4">
+              <label>Ultimate Weapon
+                {{ chart_form.ultimate_weapon }}
+              </label>
+            </div>
+            <div class="cell medium-4">
+              <label>Guardian Chip
+                {{ chart_form.guardian_chip }}
+              </label>
+            </div>
+            <div class="cell medium-4">
+              <label>Bot
+                {{ chart_form.bot }}
+              </label>
+            </div>
+            <div class="cell medium-4">
+              <label>Moving average window
+                {{ chart_form.moving_average_window }}
+              </label>
+            </div>
+          </div>
+
+          <details class="margin-top-1">
+            <summary class="muted">Advanced analysis</summary>
+            <div class="margin-top-1">
+              <h5 class="margin-bottom-0">Advice</h5>
+              <p class="muted">Advice is descriptive and based on the selected snapshots and current filters.</p>
+              <label>Snapshot A
+                <select name="advice_snapshot_a" id="advice-snapshot-a">
+                  <option value="">(select)</option>
+                  {% for snapshot in chart_snapshots %}
+                    <option value="{{ snapshot.id }}"{% if advice_snapshot_a|default:"" == snapshot.id|stringformat:"s" %} selected{% endif %}>{{ snapshot.name }}</option>
+                  {% endfor %}
+                </select>
+              </label>
+              <label>Compare
+                <select name="advice_mode" id="advice-mode">
+                  <option value="snapshot_vs_current"{% if advice_mode == "snapshot_vs_current" %} selected{% endif %}>Snapshot vs current filters</option>
+                  <option value="snapshot_vs_snapshot"{% if advice_mode == "snapshot_vs_snapshot" %} selected{% endif %}>Snapshot vs snapshot</option>
+                </select>
+              </label>
+              <label>Snapshot B
+                <select name="advice_snapshot_b" id="advice-snapshot-b">
+                  <option value="">(select)</option>
+                  {% for snapshot in chart_snapshots %}
+                    <option value="{{ snapshot.id }}"{% if advice_snapshot_b|default:"" == snapshot.id|stringformat:"s" %} selected{% endif %}>{{ snapshot.name }}</option>
+                  {% endfor %}
+                </select>
+              </label>
+
+              <h6 class="margin-bottom-0">Goal-aware comparison</h6>
+              <p class="muted">Goal-aware advice summarizes percent changes across multiple metrics using the weights you select.</p>
+              <label>Goal
+                <select name="goal_intent" id="goal-intent">
+                  <option value="hybrid"{% if goal_intent == "hybrid" %} selected{% endif %}>Hybrid</option>
+                  <option value="economy"{% if goal_intent == "economy" %} selected{% endif %}>Economy / Farming</option>
+                  <option value="progression"{% if goal_intent == "progression" %} selected{% endif %}>Progression / Wave Push</option>
+                </select>
+              </label>
+              <div class="grid-x grid-margin-x">
+                <div class="cell medium-4">
+                  <label>Weight: coins/hour
+                    <input type="number" step="0.05" name="goal_weight_coins_per_hour" id="goal-weight-coins-per-hour" value="{{ goal_weight_coins_per_hour|default_if_none:'' }}">
+                  </label>
+                </div>
+                <div class="cell medium-4">
+                  <label>Weight: coins/wave
+                    <input type="number" step="0.05" name="goal_weight_coins_per_wave" id="goal-weight-coins-per-wave" value="{{ goal_weight_coins_per_wave|default_if_none:'' }}">
+                  </label>
+                </div>
+                <div class="cell medium-4">
+                  <label>Weight: waves reached
+                    <input type="number" step="0.05" name="goal_weight_waves_reached" id="goal-weight-waves-reached" value="{{ goal_weight_waves_reached|default_if_none:'' }}">
+                  </label>
+                </div>
+              </div>
+
+              <div class="button-group expanded stack-for-small margin-top-1">
+                <a class="button secondary" href="{% url 'core:export_derived_metrics_csv' %}?{{ request.GET.urlencode }}">Export derived metrics (CSV)</a>
+              </div>
+            </div>
+          </details>
+        </details>
+      </form>
     </div>
 
-    <div class="cell large-9 medium-8 large-order-1 medium-order-1">
+    <div class="charts-content">
       <div class="callout primary context-bar" aria-live="polite">
         <strong>Active context</strong>
         <div id="active-context" class="muted"></div>
@@ -288,6 +268,38 @@
           </div>
         {% endfor %}
       </div>
+    </div>
+
+    <div class="charts-controls">
+      <div class="card-shell">
+        <details>
+          <summary class="muted">Compare</summary>
+          <form method="get" class="margin-top-1">
+            {{ comparison_form.as_p }}
+            <button class="button secondary" type="submit">Compare</button>
+          </form>
+        </details>
+      </div>
+
+      {% if not demo_mode %}
+        <div class="card-shell">
+          <details>
+            <summary class="muted">Quick import</summary>
+            <div class="margin-top-1">
+              <form method="post">
+                {% csrf_token %}
+                <label>{{ import_form.raw_text.label }}
+                  {{ import_form.raw_text }}
+                </label>
+                <label>{{ import_form.preset_name.label }}
+                  {{ import_form.preset_name }}
+                </label>
+                <button class="button expanded" type="submit">Import Battle Report</button>
+              </form>
+            </div>
+          </details>
+        </div>
+      {% endif %}
     </div>
   </div>
 {% endblock %}
@@ -379,6 +391,8 @@
         const canvas = document.getElementById(canvasId);
         const ctx = canvas ? canvas.getContext("2d") : null;
         if (!ctx || labels.length === 0 || datasets.length === 0) return;
+        const gridColor = "rgba(0, 0, 0, 0.06)";
+        const tickColor = "rgba(0, 0, 0, 0.72)";
         new Chart(ctx, {
           type: "line",
           data: {
@@ -388,6 +402,10 @@
           options: {
             responsive: true,
             interaction: { mode: "nearest", intersect: false },
+            elements: {
+              line: { borderWidth: 2 },
+              point: { radius: 2, hoverRadius: 4 },
+            },
             plugins: {
               legend: {
                 display: true,
@@ -436,13 +454,16 @@
             scales: {
               x: {
                 title: { display: true, text: "Date" },
-                ticks: { maxRotation: 0, autoSkip: true },
+                grid: { color: gridColor },
+                ticks: { maxRotation: 0, autoSkip: true, color: tickColor },
               },
               y: {
                 beginAtZero: true,
                 title: { display: true, text: datasets[0]?.unit || "Value" },
+                grid: { color: gridColor },
                 ticks: {
                   callback: (value) => formatCompactNumber(value),
+                  color: tickColor,
                 },
               },
             },
@@ -454,6 +475,8 @@
         const canvas = document.getElementById(canvasId);
         const ctx = canvas ? canvas.getContext("2d") : null;
         if (!ctx || labels.length === 0 || datasets.length === 0) return;
+        const gridColor = "rgba(0, 0, 0, 0.06)";
+        const tickColor = "rgba(0, 0, 0, 0.72)";
         new Chart(ctx, {
           type: "bar",
           data: {
@@ -462,6 +485,7 @@
           },
           options: {
             responsive: true,
+            datasets: { bar: { borderWidth: 1 } },
             plugins: {
               legend: { display: true },
               tooltip: {
@@ -471,11 +495,16 @@
               },
             },
             scales: {
-              x: { title: { display: true, text: "Date" }, ticks: { maxRotation: 0, autoSkip: true } },
+              x: {
+                title: { display: true, text: "Date" },
+                grid: { color: gridColor },
+                ticks: { maxRotation: 0, autoSkip: true, color: tickColor },
+              },
               y: {
                 beginAtZero: true,
                 title: { display: true, text: datasets[0]?.unit || "Value" },
-                ticks: { callback: (value) => formatCompactNumber(value) },
+                grid: { color: gridColor },
+                ticks: { callback: (value) => formatCompactNumber(value), color: tickColor },
               },
             },
           },
@@ -550,7 +579,7 @@
             <p class="muted margin-0">Build a constrained chart from registered metrics.</p>
           </div>
           <div class="cell shrink">
-            <button class="button hollow" type="button" id="close-chart-builder">Close</button>
+            <button class="button secondary" type="button" id="close-chart-builder">Close</button>
           </div>
         </div>
 
@@ -571,66 +600,81 @@
             <p class="margin-0" id="builder-constraints-text"></p>
           </div>
 
+          <h5 class="margin-bottom-0">Step 1 — Metrics</h5>
+          <p class="muted margin-top-0">Metrics determine the unit and constraints for the chart.</p>
           <label>{{ chart_builder_form.metric_keys.label }}
             {{ chart_builder_form.metric_keys }}
           </label>
-          <div class="grid-x grid-margin-x">
-            <div class="cell medium-4">
-              <label>{{ chart_builder_form.chart_type.label }}
-                {{ chart_builder_form.chart_type }}
-              </label>
-            </div>
-            <div class="cell medium-4">
-              <label>{{ chart_builder_form.group_by.label }}
-                {{ chart_builder_form.group_by }}
-              </label>
-            </div>
-            <div class="cell medium-4">
-              <label>{{ chart_builder_form.smoothing.label }}
-                {{ chart_builder_form.smoothing }}
-              </label>
+
+          <div id="builder-step-2" class="margin-top-1" hidden>
+            <h5 class="margin-bottom-0">Step 2 — Chart settings</h5>
+            <p class="muted margin-top-0">Chart type and grouping apply to the selected metrics.</p>
+            <div class="grid-x grid-margin-x">
+              <div class="cell medium-4">
+                <label>{{ chart_builder_form.chart_type.label }}
+                  {{ chart_builder_form.chart_type }}
+                </label>
+              </div>
+              <div class="cell medium-4">
+                <label>{{ chart_builder_form.group_by.label }}
+                  {{ chart_builder_form.group_by }}
+                </label>
+              </div>
+              <div class="cell medium-4">
+                <label>{{ chart_builder_form.smoothing.label }}
+                  {{ chart_builder_form.smoothing }}
+                </label>
+              </div>
             </div>
           </div>
 
-          <label>{{ chart_builder_form.comparison.label }}
-            {{ chart_builder_form.comparison }}
-          </label>
+          <div id="builder-step-3" class="margin-top-1" hidden>
+            <h5 class="margin-bottom-0">Step 3 — Comparison (optional)</h5>
+            <p class="muted margin-top-0">Comparison fields appear based on the selected mode.</p>
+            <label>{{ chart_builder_form.comparison.label }}
+              {{ chart_builder_form.comparison }}
+            </label>
 
-          <div class="grid-x grid-margin-x">
-            <div class="cell medium-6">
-              <label>{{ chart_builder_form.run_a.label }}
-                {{ chart_builder_form.run_a }}
-              </label>
+            <div class="grid-x grid-margin-x">
+              <div class="cell medium-6">
+                <label>{{ chart_builder_form.run_a.label }}
+                  {{ chart_builder_form.run_a }}
+                </label>
+              </div>
+              <div class="cell medium-6">
+                <label>{{ chart_builder_form.run_b.label }}
+                  {{ chart_builder_form.run_b }}
+                </label>
+              </div>
             </div>
-            <div class="cell medium-6">
-              <label>{{ chart_builder_form.run_b.label }}
-                {{ chart_builder_form.run_b }}
-              </label>
+
+            <div class="grid-x grid-margin-x">
+              <div class="cell medium-6">
+                <label>{{ chart_builder_form.window_a_start.label }}
+                  {{ chart_builder_form.window_a_start }}
+                </label>
+                <label>{{ chart_builder_form.window_a_end.label }}
+                  {{ chart_builder_form.window_a_end }}
+                </label>
+              </div>
+              <div class="cell medium-6">
+                <label>{{ chart_builder_form.window_b_start.label }}
+                  {{ chart_builder_form.window_b_start }}
+                </label>
+                <label>{{ chart_builder_form.window_b_end.label }}
+                  {{ chart_builder_form.window_b_end }}
+                </label>
+              </div>
             </div>
           </div>
 
-          <div class="grid-x grid-margin-x">
-            <div class="cell medium-6">
-              <label>{{ chart_builder_form.window_a_start.label }}
-                {{ chart_builder_form.window_a_start }}
-              </label>
-              <label>{{ chart_builder_form.window_a_end.label }}
-                {{ chart_builder_form.window_a_end }}
-              </label>
+          <div id="builder-step-4" class="margin-top-1" hidden>
+            <h5 class="margin-bottom-0">Step 4 — Apply</h5>
+            <p class="muted margin-top-0">Applies the selection to the dashboard URL parameters.</p>
+            <div class="button-group expanded stack-for-small">
+              <button class="button" type="button" id="apply-chart-builder">Apply to dashboard</button>
+              <a class="button secondary" href="{% url 'core:dashboard' %}">Clear builder</a>
             </div>
-            <div class="cell medium-6">
-              <label>{{ chart_builder_form.window_b_start.label }}
-                {{ chart_builder_form.window_b_start }}
-              </label>
-              <label>{{ chart_builder_form.window_b_end.label }}
-                {{ chart_builder_form.window_b_end }}
-              </label>
-            </div>
-          </div>
-
-          <div class="button-group expanded stack-for-small margin-top-1">
-            <button class="button" type="button" id="apply-chart-builder">Apply to dashboard</button>
-            <a class="button secondary" href="{% url 'core:dashboard' %}">Clear builder</a>
           </div>
 
           <hr>
@@ -647,7 +691,7 @@
             </select>
           </label>
           <div class="button-group expanded stack-for-small">
-            <button class="button hollow" type="button" id="load-snapshot">Load snapshot</button>
+            <button class="button secondary" type="button" id="load-snapshot">Load snapshot</button>
           </div>
 
           {% if demo_mode %}
@@ -848,6 +892,9 @@
           document.querySelector("#chart-builder-modal [name='window_b_start']"),
           document.querySelector("#chart-builder-modal [name='window_b_end']"),
         ];
+        const step2 = document.getElementById("builder-step-2");
+        const step3 = document.getElementById("builder-step-3");
+        const step4 = document.getElementById("builder-step-4");
 
         function selectedMetricCount() {
           let count = 0;
@@ -921,16 +968,37 @@
         function updateMetricCompatibility() {
           const apply = document.getElementById("apply-chart-builder");
           if (!apply) return;
-          enforceSchemaConstraints();
           const keys = [];
           if (metricsSelect && metricsSelect.options) {
             for (const option of metricsSelect.options) if (option.selected) keys.push(option.value);
           }
+          const hasMetrics = keys.length > 0;
+          if (step2) step2.hidden = !hasMetrics;
+          if (step3) step3.hidden = !hasMetrics;
+          if (step4) step4.hidden = !hasMetrics;
+
           if (!keys.length) {
+            if (chartTypeSelect) chartTypeSelect.disabled = true;
+            if (groupBySelect) groupBySelect.disabled = true;
+            if (comparisonSelect) comparisonSelect.disabled = true;
+            if (smoothingSelect) smoothingSelect.disabled = true;
+            if (runASelect) runASelect.disabled = true;
+            if (runBSelect) runBSelect.disabled = true;
+            for (const input of windowInputs) {
+              if (input) input.disabled = true;
+            }
             apply.disabled = true;
             setConstraintMessage("Select at least one metric.");
             return;
           }
+
+          if (chartTypeSelect) chartTypeSelect.disabled = false;
+          if (comparisonSelect) comparisonSelect.disabled = false;
+          if (smoothingSelect) smoothingSelect.disabled = false;
+          if (groupBySelect) groupBySelect.disabled = false;
+          updateComparisonControls();
+          enforceSchemaConstraints();
+
           if (chartTypeSelect && chartTypeSelect.value === "donut" && keys.length < 2) {
             apply.disabled = true;
             setConstraintMessage("Donut charts require at least two metrics.");

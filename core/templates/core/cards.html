@@ -3,15 +3,6 @@
 {% block title %}Cards • theTowerStats{% endblock %}
 
 {% block head %}
-  <style>
-    .cards-table tr.card-row.rarity-common { background: #fcfcff; }
-    .cards-table tr.card-row.rarity-rare { background: #f5fbff; }
-    .cards-table tr.card-row.rarity-epic { background: #fbf6ff; }
-    .cards-table tr.card-row.rarity-legendary { background: #fff9f0; }
-    .cards-table tr.card-row.rarity-mythic { background: #fff4f4; }
-    .cards-table tr.card-maxed { opacity: 0.85; }
-    .cards-table tr.card-maxed td { font-weight: 600; }
-  </style>
 {% endblock %}
 
 {% block content %}
@@ -25,7 +16,7 @@
             <p class="muted margin-0">Track card slots, inventory, and preset tags.</p>
           </div>
           <div class="cell shrink text-right">
-            <a class="button hollow" href="{% url 'core:dashboard' %}">View charts</a>
+            <a class="button secondary" href="{% url 'core:dashboard' %}">Charts</a>
           </div>
         </div>
       </div>
@@ -120,7 +111,7 @@
             <button class="button" type="submit">Apply</button>
           </div>
           <div class="cell shrink">
-            <a class="button secondary hollow" href="{% url 'core:cards' %}">Reset Filters</a>
+            <a class="button secondary" href="{% url 'core:cards' %}">Reset Filters</a>
           </div>
         </form>
 
@@ -212,7 +203,7 @@
                               name="inventory_count"
                               min="0"
                               value="{{ row.inventory_count }}"
-                              style="max-width: 6rem;"
+                              class="inventory-input"
                               onchange="this.form.submit()"
                               {% if row.is_maxed %}disabled{% endif %}
                             >
@@ -231,7 +222,7 @@
                       </td>
                       <td>
                         {% if row.parameters_text %}
-                          <div style="white-space: pre-line;">{{ row.parameters_text }}</div>
+                          <div class="pre-line">{{ row.parameters_text }}</div>
                         {% else %}
                           —
                         {% endif %}
@@ -266,7 +257,7 @@
                                 type="text"
                                 name="new_preset_name"
                                 placeholder="New preset"
-                                style="max-width: 10rem;"
+                                class="input-short"
                               >
                               <button class="button tiny" type="submit">Save</button>
                             </form>

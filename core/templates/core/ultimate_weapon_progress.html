@@ -54,7 +54,10 @@
     {% else %}
       <h3 class="margin-0">Unavailable</h3>
       <div class="callout warning margin-top-1">
-        <p class="margin-0"><strong>Sync graph not available yet.</strong> Unlock Golden Tower, Black Hole, and Death Wave and ensure their cooldown values are available, plus duration values for Golden Tower and Black Hole.</p>
+        <p class="margin-0">
+          <strong>Sync graph not available yet.</strong>
+          This chart becomes available after Golden Tower, Black Hole, and Death Wave are recorded with cooldown values, plus duration values for Golden Tower and Black Hole.
+        </p>
       </div>
     {% endif %}
   </div>
@@ -72,6 +75,8 @@
         if (!ctx) return;
         const chartType = payload.chart_type || "line";
         const chartData = { labels: payload.labels || [], datasets: payload.datasets || [] };
+        const gridColor = "rgba(0, 0, 0, 0.06)";
+        const tickColor = "rgba(0, 0, 0, 0.72)";
 
         const commonOptions = {
           responsive: true,
@@ -93,12 +98,14 @@
                   min: 0,
                   max: payload.horizon_seconds || undefined,
                   title: { display: true, text: "Time (seconds)" },
-                  ticks: { maxRotation: 0, autoSkip: true },
+                  grid: { color: gridColor },
+                  ticks: { maxRotation: 0, autoSkip: true, color: tickColor },
                 },
                 y: {
                   type: "category",
                   title: { display: true, text: "Schedule" },
-                  ticks: { autoSkip: false },
+                  grid: { display: false },
+                  ticks: { autoSkip: false, color: tickColor },
                 },
               },
             },
@@ -146,12 +153,17 @@
               },
             },
             scales: {
-              x: { title: { display: true, text: "Time (seconds)" }, ticks: { maxRotation: 0, autoSkip: true } },
+              x: {
+                title: { display: true, text: "Time (seconds)" },
+                grid: { color: gridColor },
+                ticks: { maxRotation: 0, autoSkip: true, color: tickColor },
+              },
               y: {
                 title: { display: true, text: "Active (0/1)" },
                 min: 0,
                 max: 1,
-                ticks: { stepSize: 1 },
+                grid: { color: gridColor },
+                ticks: { stepSize: 1, color: tickColor },
               },
               y2: {
                 position: "right",
@@ -159,6 +171,7 @@
                 min: 0,
                 max: 100,
                 grid: { drawOnChartArea: false },
+                ticks: { color: tickColor },
               },
             },
           },
@@ -175,6 +188,8 @@
         if (!ctx) return;
 
         const chartType = payload.chart_type || "line";
+        const gridColor = "rgba(0, 0, 0, 0.06)";
+        const tickColor = "rgba(0, 0, 0, 0.72)";
         const config = {
           type: chartType === "donut" ? "doughnut" : chartType,
           data: {
@@ -199,7 +214,8 @@
               },
             },
             scales: chartType === "donut" ? {} : {
-              x: { ticks: { maxRotation: 0, autoSkip: true } },
+              x: { grid: { color: gridColor }, ticks: { maxRotation: 0, autoSkip: true, color: tickColor } },
+              y: { grid: { color: gridColor }, ticks: { color: tickColor } },
             },
           },
         };

@@ -35,22 +35,102 @@ feature breadth.
   : All new functions, classes, methods, utilities, and management commands must include concise, descriptive docstrings using standard Django/Python conventions.
 - Analysis Must Feed Visual Output
   : New analysis logic should be demonstrable via a chart or view unless explicitly scoped as backend-only.
-- Never edit .ORG files in the repo
-  : These documents are maintained solely by the humans working on the project. Changes made to the corresponding .md files will also be overwritten and should be treated as read-only.
 
-## Versioning Enforcement
+### Source-of-Truth Documentation (Strict)
 
-All automated agents MUST follow the versioning rules defined in `VERSIONING.md`.
+All `.org` files in this repository are considered canonical source documents.
 
-Agents are expected to:
+Agents must never:
+- edit `.org` files,
+- regenerate `.org` files,
+- attempt to keep `.org` files “in sync” with markdown.
 
-- Determine whether changes are breaking, additive, or corrective
-- Propose appropriate version bumps accordingly
-- Avoid introducing breaking changes after 1.0.0 without an explicit MAJOR version increase
+Markdown files exported from `.org` sources may be modified by agents.
+These edits are treated as *proposals* and are subject to human review via diff.
+
+If an agent believes an `.org` file requires changes:
+- Stop execution
+- Describe the suggested change in output
+- Do not modify the file directly
+
+## File Touch Permissions (Strict)
+
+Agents must classify every file before modifying it.
+
+### Allowed Without Approval
+- Application code
+- Tests
+- Static assets
+- Markdown documentation (including exported `.md` files)
+
+### Forbidden
+- `.org` source files
+
+### Conditional (Explicit Instruction Required)
+- agents.md
+- CHANGELOG.md
+- Version numbers
+- Deployment configuration files
+
+If a file’s status is unclear, default to **Forbidden**.
+
+## Versioning & CHANGELOG Semantics (Strict)
+
+This project follows Semantic Versioning:
+
+MAJOR.MINOR.PATCH
+
+### Version Meaning
+
+- MAJOR
+  - Breaking changes
+  - Data model or interpretation changes
+  - Requires explicit human approval
+
+- MINOR
+  - Additive, non-breaking functionality
+  - UI/UX expansions
+  - New dashboards, views, or workflows
+
+- PATCH
+  - Bug fixes
+  - Visual refinements
+  - Documentation updates
+  - Non-behavioral refactors
 
 Version numbers are treated as a stability contract, not a cosmetic label.
 
-### Docstrings should describe
+---
+
+### Agent Rules for Versioning
+
+Agents must:
+
+- Never change version numbers unless explicitly instructed
+- Never infer a version bump
+- Propose a version bump **only** when asked
+
+When a version bump is requested:
+
+- A corresponding CHANGELOG entry is required
+- The CHANGELOG entry must:
+  - State *what changed*
+  - Avoid value judgments or promotional language
+  - Reference the relevant phase when applicable
+
+4. **Changelog entry**
+
+   Required when:
+   - a version bump is requested, or
+   - a phase explicitly includes release or hygiene work
+
+   Changelog entries must:
+   - be descriptive, not promotional
+   - reflect actual shipped behavior
+   - avoid future-facing statements
+
+
+## Docstrings should describe
 
 	- Purpose
 	- Inputs/args

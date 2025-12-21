@@ -2213,11 +2213,13 @@ On mobile, the primary task is viewing trends, not configuring charts.
 ***** TODO [#C] Implement Search
 Search should have global scope within the app. 
 
-** Backlog [0/8]
+** Backlog [0/7]
 “Out of Scope”:
 - Cloud sync
 - Real-time scraping
 
+*** TODO [#A] Battle History Needs to Account for Tournament Runs.
+Battle Reports with 3+, 5+, 8+, etc are from Tournament Rounds and should be highlighted and separate from normal round tiers. There are modified enemy stats and added scaling battle conditions that make Tournament Rounds different from the corrisponding tiers. 
 *** TODO [#B] Ranked Recommendations
 
 Only now do you allow:
@@ -2530,6 +2532,7 @@ definitions/models.py:407
 CLOSED: [2025-12-17 Wed 14:31]
 - State "DONE"       from "TODO"       [2025-12-17 Wed 14:31]
 Mostly a visual tweak, but adds context and history for the player to interpert their performance history. 
+
 ** Codex Tasks
 - [X] prompt 16
 - [X] prompt 17

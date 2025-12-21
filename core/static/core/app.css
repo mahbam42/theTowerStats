@@ -1,5 +1,31 @@
+:root {
+  --tts-space-1: 0.25rem;
+  --tts-space-2: 0.5rem;
+  --tts-space-3: 0.75rem;
+  --tts-space-4: 1rem;
+  --tts-space-5: 1.25rem;
+  --tts-space-6: 1.5rem;
+
+  --tts-radius-1: 6px;
+  --tts-radius-2: 8px;
+  --tts-radius-3: 10px;
+
+  --tts-font-label: 0.875rem;
+  --tts-font-body: 1rem;
+  --tts-font-heading: 1.25rem;
+
+  --tts-color-bg: #f8f8f8;
+  --tts-color-surface: #ffffff;
+  --tts-color-border: #e5e5e5;
+  --tts-color-text-muted: #666666;
+  --tts-color-shadow: rgba(0, 0, 0, 0.04);
+  --tts-color-shadow-strong: rgba(0, 0, 0, 0.25);
+  --tts-color-grid: rgba(0, 0, 0, 0.06);
+ }
+
 body {
-  background: #f8f8f8;
+  background: var(--tts-color-bg);
+  font-size: var(--tts-font-body);
 }
 
 .top-bar {
@@ -10,32 +36,32 @@ body {
 }
 
 .app-shell {
-  padding: 1.5rem 0;
+  padding: var(--tts-space-6) 0;
 }
 
 .muted {
-  color: #666;
+  color: var(--tts-color-text-muted);
 }
 
 .card-shell {
-  background: #fff;
-  border: 1px solid #e5e5e5;
-  border-radius: 8px;
-  padding: 1.25rem;
-  box-shadow: 0 1px 4px rgba(0, 0, 0, 0.04);
+  background: var(--tts-color-surface);
+  border: 1px solid var(--tts-color-border);
+  border-radius: var(--tts-radius-2);
+  padding: var(--tts-space-5);
+  box-shadow: 0 1px 4px var(--tts-color-shadow);
 }
 
 .context-bar {
-  border-radius: 6px;
-  margin-bottom: 1rem;
+  border-radius: var(--tts-radius-1);
+  margin-bottom: var(--tts-space-4);
 }
 
 .empty-state,
 .loading-state {
   border: 1px dashed #d3d3d3;
-  padding: 1rem 1.25rem;
+  padding: var(--tts-space-4) var(--tts-space-5);
   background: #fafafa;
-  border-radius: 6px;
+  border-radius: var(--tts-radius-1);
 }
 
 .filter-row {
@@ -85,4 +111,113 @@ body {
 .link-button:hover,
 .link-button:focus {
   text-decoration: underline;
+}
+
+.inline-form {
+  display: inline;
+}
+
+.top-bar .is-active > a {
+  font-weight: 700;
+  text-decoration: underline;
+}
+
+.chart-panel canvas {
+  max-width: 100%;
+}
+
+.chart-shell {
+  background: var(--tts-color-surface);
+  border: 1px solid var(--tts-color-border);
+  border-radius: var(--tts-radius-2);
+  padding: var(--tts-space-4);
+  box-shadow: 0 1px 4px var(--tts-color-shadow);
+}
+
+.modal-backdrop {
+  position: fixed;
+  inset: 0;
+  background: rgba(0, 0, 0, 0.55);
+  display: none;
+  align-items: center;
+  justify-content: center;
+  z-index: 9999;
+  padding: var(--tts-space-4);
+}
+
+.modal-backdrop.is-open {
+  display: flex;
+}
+
+.modal-shell {
+  width: min(760px, 100%);
+  max-height: 90vh;
+  overflow: auto;
+  background: var(--tts-color-surface);
+  border-radius: var(--tts-radius-3);
+  border: 1px solid var(--tts-color-border);
+  box-shadow: 0 10px 40px var(--tts-color-shadow-strong);
+  padding: var(--tts-space-4);
+}
+
+.battle-history-import details > summary {
+  cursor: pointer;
+}
+
+.battle-history-import textarea {
+  min-height: 6rem;
+}
+
+.preset-select {
+  min-width: 9rem;
+  margin: 0;
+}
+
+.cards-table tr.card-row.rarity-common { background: #fcfcff; }
+.cards-table tr.card-row.rarity-rare { background: #f5fbff; }
+.cards-table tr.card-row.rarity-epic { background: #fbf6ff; }
+.cards-table tr.card-row.rarity-legendary { background: #fff9f0; }
+.cards-table tr.card-row.rarity-mythic { background: #fff4f4; }
+.cards-table tr.card-maxed { opacity: 0.85; }
+.cards-table tr.card-maxed td { font-weight: 600; }
+
+.cards-table .card-icon-small {
+  max-width: 6rem;
+}
+
+.cards-table .card-icon-medium {
+  max-width: 10rem;
+}
+
+.cards-table .inventory-input {
+  max-width: 6rem;
+  margin: 0;
+}
+
+.input-short {
+  max-width: 10rem;
+}
+
+.pre-line {
+  white-space: pre-line;
+}
+
+.charts-layout {
+  display: flex;
+  flex-direction: column;
+  gap: var(--tts-space-4);
+}
+
+.charts-controls summary {
+  cursor: pointer;
+}
+
+@media (max-width: 39.375rem) {
+  .charts-controls {
+    order: 2;
+  }
+
+  .charts-content {
+    order: 1;
+  }
 }

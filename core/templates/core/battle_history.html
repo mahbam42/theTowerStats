@@ -3,20 +3,6 @@
 {% block title %}Battle History • theTowerStats{% endblock %}
 
 {% block head %}
-  <style>
-    .battle-history-import details > summary {
-      cursor: pointer;
-    }
-
-    .battle-history-import textarea {
-      min-height: 6rem;
-    }
-
-    .preset-select {
-      min-width: 9rem;
-      margin: 0;
-    }
-  </style>
   <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
 {% endblock %}
 
@@ -30,7 +16,7 @@
             <p class="muted margin-0">Scan past runs with filters for tier, cause of death, and goal.</p>
           </div>
           <div class="cell shrink text-right">
-            <a class="button hollow" href="{% url 'core:dashboard' %}">View charts</a>
+            <a class="button secondary" href="{% url 'core:dashboard' %}">Charts</a>
           </div>
         </div>
       </div>
