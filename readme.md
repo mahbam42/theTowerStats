@@ -86,7 +86,7 @@ This app is about:
 - Multi-user: Each signed-in account has its own isolated dataset
 - Adoption features: A read-only demo dataset and lightweight export tools for sharing charts and derived metrics
 
-See the User Guide and Development sections in `/docs` (or the published site) for deeper detail.
+See the User Guide and Development sections in `/docs` ([or the published site](https://mahbam42.github.io/theTowerStats/)) for deeper detail.
 
 ### Testing
 
