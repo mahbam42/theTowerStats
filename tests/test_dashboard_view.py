@@ -11,6 +11,8 @@ from analysis.engine import analyze_runs
 from gamedata.models import BattleReport, BattleReportProgress
 from player_state.models import Preset
 
+pytestmark = pytest.mark.integration
+
 FILTER_START = date(2025, 12, 1)
 
 

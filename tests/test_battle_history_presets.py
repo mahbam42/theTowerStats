@@ -9,6 +9,8 @@ from core.services import ingest_battle_report
 from gamedata.models import BattleReportProgress
 from player_state.models import Preset
 
+pytestmark = pytest.mark.integration
+
 
 def _battle_report_text(*, wave: int) -> str:
     """Return a minimal Battle Report payload string for ingestion tests."""

@@ -4,7 +4,11 @@ from __future__ import annotations
 
 from decimal import Decimal
 
+import pytest
+
 from analysis.quantity import UnitType, parse_quantity
+
+pytestmark = pytest.mark.unit
 
 
 def test_parse_quantity_handles_compact_suffixes() -> None:
@@ -47,4 +51,3 @@ def test_parse_quantity_never_raises_on_unknown_formats() -> None:
     parsed = parse_quantity("not-a-number", unit_type=UnitType.coins)
     assert parsed.normalized_value is None
     assert parsed.unit_type == UnitType.coins
-

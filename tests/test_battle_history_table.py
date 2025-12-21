@@ -7,6 +7,8 @@ from django.urls import reverse
 
 from core.services import ingest_battle_report
 
+pytestmark = pytest.mark.integration
+
 
 @pytest.mark.django_db
 def test_battle_history_renders_import_widget_and_sort_links(auth_client, player) -> None:

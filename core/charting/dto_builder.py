@@ -29,6 +29,7 @@ def build_chart_config_dto(*, context_form: ChartContextForm, builder_form: Char
         end_date=context_form.cleaned_data.get("end_date"),
         tier=context_form.cleaned_data.get("tier"),
         preset_id=(preset.id if preset is not None else None),
+        include_tournaments=bool(context_form.cleaned_data.get("include_tournaments") or False),
     )
     selection = builder_form.selection()
     return ChartConfigDTO(
@@ -40,4 +41,3 @@ def build_chart_config_dto(*, context_form: ChartContextForm, builder_form: Char
         context=context,
         scopes=builder_form.scopes(),
     )
-

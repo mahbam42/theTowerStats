@@ -95,6 +95,11 @@ class ChartContextForm(forms.Form):
         label="Preset",
         empty_label="All presets",
     )
+    include_tournaments = forms.BooleanField(
+        required=False,
+        label="Include tournaments",
+        help_text="By default, tournament runs are excluded from analytics and charts.",
+    )
     ultimate_weapon = forms.ModelChoiceField(
         required=False,
         queryset=UltimateWeaponDefinition.objects.none(),
@@ -229,6 +234,11 @@ class BattleHistoryFilterForm(forms.Form):
     tier = forms.IntegerField(required=False, min_value=1, label="Tier")
     killed_by = forms.CharField(required=False, label="Killed by")
     goal = forms.CharField(required=False, label="Goal")
+    include_tournaments = forms.BooleanField(
+        required=False,
+        label="Include tournaments",
+        help_text="By default, tournament runs are excluded from the table and diagnostics.",
+    )
     preset = forms.ModelChoiceField(
         required=False,
         queryset=Preset.objects.none(),

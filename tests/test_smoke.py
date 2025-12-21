@@ -2,7 +2,9 @@
 
 from __future__ import annotations
 
+import pytest
 
+@pytest.mark.unit
 def test_analysis_engine_imports() -> None:
     """Import the analysis engine and verify the public entry point exists."""
 
@@ -11,6 +13,7 @@ def test_analysis_engine_imports() -> None:
     assert callable(analyze_runs)
 
 
+@pytest.mark.integration
 def test_django_project_loads() -> None:
     """Import and initialize Django to verify settings are valid."""
 

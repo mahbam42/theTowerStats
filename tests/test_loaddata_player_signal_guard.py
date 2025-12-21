@@ -10,6 +10,8 @@ from django.core.management import call_command
 
 from player_state.models import Player
 
+pytestmark = pytest.mark.integration
+
 
 @pytest.mark.django_db
 def test_loaddata_does_not_create_duplicate_player_for_user(tmp_path) -> None:
@@ -56,4 +58,3 @@ def test_loaddata_does_not_create_duplicate_player_for_user(tmp_path) -> None:
 
     user = get_user_model().objects.get(pk=1)
     assert Player.objects.filter(user=user).count() == 1
-

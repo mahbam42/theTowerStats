@@ -99,6 +99,7 @@ from player_state.models import (
     Preset,
 )
 from core.services import ingest_battle_report
+from core.tournament import is_tournament, tournament_bracket
 from core.search import build_search_items
 from core.uw_sync import build_uw_sync_payload
 from core.uw_usage import count_observed_uw_runs
@@ -308,6 +309,7 @@ def dashboard(request: HttpRequest) -> HttpResponse:
                 merged["end_date"] = config_dto.context.end_date.isoformat() if config_dto.context.end_date else ""
                 merged["tier"] = str(config_dto.context.tier or "")
                 merged["preset"] = str(config_dto.context.preset_id or "")
+                merged["include_tournaments"] = "on" if config_dto.context.include_tournaments else ""
             else:
                 builder_payload = dict(snapshot.chart_builder or {})
                 context_payload = dict(snapshot.chart_context or {})
@@ -931,6 +933,8 @@ def _runs_for_chart_context_dto(*, player: Player, context: ChartContextDTO) -> 
         .select_related("run_progress", "run_progress__preset")
         .order_by("run_progress__battle_date")
     )
+    if not context.include_tournaments:
+        runs = runs.exclude(run_progress__tier__isnull=True)
     if context.start_date:
         runs = runs.filter(run_progress__battle_date__date__gte=context.start_date)
     if context.end_date:
@@ -1027,6 +1031,9 @@ def battle_history(request: HttpRequest) -> HttpResponse:
 
     sort_key = filter_form.cleaned_data.get("sort") or "-run_progress__battle_date"
     runs = BattleReport.objects.filter(player=player).select_related("run_progress", "run_progress__preset")
+    include_tournaments = bool(filter_form.cleaned_data.get("include_tournaments") or False)
+    if not include_tournaments:
+        runs = runs.exclude(run_progress__tier__isnull=True)
     if sort_key.lstrip("-") == "coins_per_hour":
         coins_per_hour_expr = Case(
             When(
@@ -1099,10 +1106,17 @@ def battle_history(request: HttpRequest) -> HttpResponse:
 
     analyzed_runs = analyze_runs(page_obj.object_list).runs
     run_metrics = {entry.run_id: entry for entry in analyzed_runs}
-    page_rows = [
-        (run, run_metrics.get(getattr(getattr(run, "run_progress", None), "id", None) or run.id))
-        for run in page_obj.object_list
-    ]
+    page_rows: list[dict[str, object]] = []
+    for run in page_obj.object_list:
+        metric = run_metrics.get(getattr(getattr(run, "run_progress", None), "id", None) or run.id)
+        page_rows.append(
+            {
+                "run": run,
+                "metric": metric,
+                "is_tournament": is_tournament(run),
+                "tournament_bracket": tournament_bracket(run),
+            }
+        )
 
     sort_querystrings = _build_sort_querystrings(
         request.GET,
@@ -1933,6 +1947,8 @@ def ultimate_weapon_progress(request: HttpRequest) -> HttpResponse:
                     .select_related("run_progress", "run_progress__preset")
                     .order_by("run_progress__battle_date")
                 )
+                if not dto.context.include_tournaments:
+                    runs_qs = runs_qs.exclude(run_progress__tier__isnull=True)
                 if dto.context.start_date:
                     runs_qs = runs_qs.filter(run_progress__battle_date__date__gte=dto.context.start_date)
                 if dto.context.end_date:
@@ -2912,7 +2928,11 @@ def _filtered_runs(filter_form: ChartContextForm, *, player: Player) -> QuerySet
         "run_combat_uws__ultimate_weapon_definition",
         "run_utility_uws__ultimate_weapon_definition",
     ).order_by("run_progress__battle_date")
-    if not filter_form.is_valid():
+    valid = filter_form.is_valid()
+    include_tournaments = bool(valid and (filter_form.cleaned_data.get("include_tournaments") or False))
+    if not include_tournaments:
+        runs = runs.exclude(run_progress__tier__isnull=True)
+    if not valid:
         return runs
 
     start_date = filter_form.cleaned_data.get("start_date")
@@ -2991,7 +3011,11 @@ def _context_filtered_runs(filter_form: ChartContextForm, *, player: Player) -> 
         "run_progress",
         "run_progress__preset",
     ).order_by("run_progress__battle_date")
-    if not filter_form.is_valid():
+    valid = filter_form.is_valid()
+    include_tournaments = bool(valid and (filter_form.cleaned_data.get("include_tournaments") or False))
+    if not include_tournaments:
+        runs = runs.exclude(run_progress__tier__isnull=True)
+    if not valid:
         return runs
 
     tier = filter_form.cleaned_data.get("tier")

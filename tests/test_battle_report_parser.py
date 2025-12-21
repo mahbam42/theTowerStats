@@ -4,7 +4,11 @@ from __future__ import annotations
 
 from datetime import datetime, timezone
 
+import pytest
+
 from core.parsers.battle_report import parse_battle_report
+
+pytestmark = [pytest.mark.unit, pytest.mark.golden]
 
 
 def test_parse_battle_report_extracts_phase1_fields() -> None:

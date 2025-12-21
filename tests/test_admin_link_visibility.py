@@ -5,6 +5,8 @@ from __future__ import annotations
 import pytest
 from django.urls import reverse
 
+pytestmark = pytest.mark.integration
+
 
 @pytest.mark.django_db
 def test_admin_link_hidden_for_non_staff(auth_client) -> None:
@@ -26,4 +28,3 @@ def test_admin_link_visible_for_staff(client, user) -> None:
     response = client.get(reverse("core:dashboard"))
     assert response.status_code == 200
     assert "/admin/" in response.content.decode("utf-8")
-

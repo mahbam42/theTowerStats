@@ -2,7 +2,11 @@
 
 from __future__ import annotations
 
+import pytest
+
 from analysis.uw_sync import UWTiming, compute_uw_sync_timeline
+
+pytestmark = pytest.mark.unit
 
 
 def test_uw_sync_timeline_computes_overlap_percent() -> None:
@@ -19,4 +23,3 @@ def test_uw_sync_timeline_computes_overlap_percent() -> None:
     )
     assert timeline.horizon_seconds == 9
     assert timeline.overlap_percent_cumulative[-1] == 50.0
-

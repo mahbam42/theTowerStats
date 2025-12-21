@@ -9,6 +9,8 @@ import pytest
 from analysis.dto import WindowSummary
 from core.advice import SnapshotDeltaInput, generate_optimization_advice, generate_snapshot_delta_advice
 
+pytestmark = pytest.mark.unit
+
 
 def test_advice_is_non_prescriptive_for_run_comparison() -> None:
     """Advice output must avoid imperative language and remain descriptive."""

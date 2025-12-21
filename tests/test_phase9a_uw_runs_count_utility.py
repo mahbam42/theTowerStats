@@ -4,8 +4,12 @@ from __future__ import annotations
 
 from dataclasses import dataclass
 
+import pytest
+
 from analysis.metrics import MetricComputeConfig, compute_metric_value
 from core.parsers.battle_report import extract_ultimate_weapon_usage
+
+pytestmark = [pytest.mark.unit, pytest.mark.regression]
 
 
 @dataclass(frozen=True, slots=True)

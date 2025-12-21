@@ -4,6 +4,10 @@ from __future__ import annotations
 
 from pathlib import Path
 
+import pytest
+
+pytestmark = pytest.mark.unit
+
 
 def test_checks_script_runs_expected_commands() -> None:
     """Ensure `scripts/checks` runs ruff, mypy, then pytest."""

@@ -29,12 +29,14 @@ class ChartContextDTO:
         end_date: Optional inclusive upper bound date.
         tier: Optional tier filter.
         preset_id: Optional preset id filter.
+        include_tournaments: Whether tournament runs are included in the scope.
     """
 
     start_date: date | None
     end_date: date | None
     tier: int | None = None
     preset_id: int | None = None
+    include_tournaments: bool = False
 
 
 @dataclass(frozen=True, slots=True)
@@ -77,4 +79,3 @@ class ChartConfigDTO:
     context: ChartContextDTO
     scopes: tuple[ChartScopeDTO, ChartScopeDTO] | None = None
     version: str = "phase7_chart_config_v1"
-

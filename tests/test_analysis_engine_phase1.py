@@ -6,10 +6,14 @@ from dataclasses import dataclass
 from datetime import datetime, timezone
 from typing import cast
 
+import pytest
+
 from analysis.engine import analyze_runs
 from analysis.dto import RunProgressInput
 from core.parsers.battle_report import parse_battle_report
 from pytest import approx
+
+pytestmark = [pytest.mark.unit, pytest.mark.golden]
 
 
 def test_analyze_runs_computes_coins_per_hour() -> None:

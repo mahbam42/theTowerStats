@@ -4,12 +4,16 @@ from __future__ import annotations
 
 from datetime import date, datetime, timezone
 
+import pytest
+
 from analysis.aggregations import (
     daily_average_series,
     simple_moving_average,
     summarize_window,
 )
 from analysis.dto import RunAnalysis
+
+pytestmark = [pytest.mark.unit, pytest.mark.golden]
 
 
 def test_daily_average_series_averages_multiple_runs_per_day() -> None:
@@ -76,4 +80,3 @@ def test_summarize_window_counts_runs_and_averages() -> None:
     summary = summarize_window(runs, start_date=date(2025, 12, 1), end_date=date(2025, 12, 2))
     assert summary.run_count == 1
     assert summary.average_coins_per_hour == 100.0
-

@@ -2,7 +2,11 @@
 
 from __future__ import annotations
 
+import pytest
+
 from core.advice import GoalScopeSample, GoalWeights, INSUFFICIENT_DATA_MESSAGE, generate_goal_weighted_advice
+
+pytestmark = pytest.mark.unit
 
 
 def test_goal_weighted_advice_degrades_with_thin_scopes() -> None:
@@ -62,4 +66,3 @@ def test_goal_weighted_advice_computes_transparent_score() -> None:
     assert items
     assert "For your selected goal: Economy / Farming" in items[0].title
     assert "score = (" in items[0].context
-

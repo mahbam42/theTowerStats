@@ -2694,7 +2694,8 @@ Mostly a visual tweak, but adds context and history for the player to interpert 
 - [X] prompt 32 Validation
 - [X] prompt 33 Deployment Prep
 - [X] prompt 33 Validation
-- [ ] prompt 34 Stabilize, standardize, and clarify
-- [ ] Phase 10 Validation
+- [X] prompt 34 Stabilize, standardize, and clarify
+- [X] Phase 10 Validation
+- [ ] prompt 35 phase 10b 
   
 - [ ] version1.0.md 

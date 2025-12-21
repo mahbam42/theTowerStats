@@ -2,7 +2,10 @@
 
 from __future__ import annotations
 
+import pytest
 from django.urls import reverse
+
+pytestmark = [pytest.mark.integration, pytest.mark.regression]
 
 
 def test_phase10_charts_controls_render_as_layers(auth_client) -> None:

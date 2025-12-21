@@ -35,6 +35,8 @@ from player_state.models import (
     Preset,
 )
 
+pytestmark = pytest.mark.integration
+
 
 FIXTURES_DIR = Path(__file__).parent / "fixtures"
 

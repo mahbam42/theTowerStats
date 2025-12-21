@@ -5,6 +5,8 @@ from __future__ import annotations
 import pytest
 from django.urls import reverse
 
+pytestmark = pytest.mark.integration
+
 
 @pytest.mark.django_db
 def test_base_template_renders_logout_as_post_form(auth_client) -> None:
@@ -31,4 +33,3 @@ def test_logout_post_ends_session(auth_client) -> None:
     after = auth_client.get(reverse("core:dashboard"))
     assert after.status_code == 302
     assert after["Location"].startswith(reverse("login"))
-

@@ -51,34 +51,59 @@
         </ul>
       </div>
       <div class="top-bar-right">
-        <ul class="menu">
+        <ul class="dropdown menu" data-dropdown-menu>
           <li><a href="https://mahbam42.github.io/theTowerStats/" target="_blank" rel="noopener noreferrer">Docs</a></li>
           {% if user.is_authenticated and user.is_staff or user.is_authenticated and user.is_superuser %}
             <li><a href="/admin/" target="_blank" rel="noreferrer">Admin</a></li>
           {% endif %}
           {% if user.is_authenticated %}
             <li>
-              {% if demo_mode %}
-                <form action="{% url 'core:disable_demo_mode' %}" method="post" class="inline-form">
-                  {% csrf_token %}
-                  <input type="hidden" name="next" value="{{ request.get_full_path }}" />
-                  <button type="submit" class="button secondary tiny margin-0">Exit demo</button>
-                </form>
-              {% else %}
-                <form action="{% url 'core:enable_demo_mode' %}" method="post" class="inline-form">
-                  {% csrf_token %}
-                  <input type="hidden" name="next" value="{{ request.get_full_path }}" />
-                  <button type="submit" class="button secondary tiny margin-0">View demo data</button>
-                </form>
-              {% endif %}
+              <span class="show-for-medium">
+                {% if demo_mode %}
+                  <form action="{% url 'core:disable_demo_mode' %}" method="post" class="inline-form">
+                    {% csrf_token %}
+                    <input type="hidden" name="next" value="{{ request.get_full_path }}" />
+                    <button type="submit" class="button secondary tiny margin-0">Exit demo</button>
+                  </form>
+                {% else %}
+                  <form action="{% url 'core:enable_demo_mode' %}" method="post" class="inline-form">
+                    {% csrf_token %}
+                    <input type="hidden" name="next" value="{{ request.get_full_path }}" />
+                    <button type="submit" class="button secondary tiny margin-0">View demo data</button>
+                  </form>
+                {% endif %}
+              </span>
             </li>
-            <li class="menu-text">Signed in as {{ user.username }}</li>
             <li>
-              <form action="{% url 'logout' %}" method="post" class="inline-form">
-                {% csrf_token %}
-                <input type="hidden" name="next" value="{% url 'login' %}" />
-                <button type="submit" class="link-button">Sign out</button>
-              </form>
+              <a href="#" title="{{ user.username }}">
+                <span aria-hidden="true">👤</span>
+                <span class="show-for-medium">{{ user.username }}</span>
+              </a>
+              <ul class="menu vertical">
+                <li class="menu-text show-for-small-only">{{ user.username }}</li>
+                <li class="show-for-small-only">
+                  {% if demo_mode %}
+                    <form action="{% url 'core:disable_demo_mode' %}" method="post">
+                      {% csrf_token %}
+                      <input type="hidden" name="next" value="{{ request.get_full_path }}" />
+                      <button type="submit" class="button secondary tiny expanded margin-0">Exit demo</button>
+                    </form>
+                  {% else %}
+                    <form action="{% url 'core:enable_demo_mode' %}" method="post">
+                      {% csrf_token %}
+                      <input type="hidden" name="next" value="{{ request.get_full_path }}" />
+                      <button type="submit" class="button secondary tiny expanded margin-0">View demo data</button>
+                    </form>
+                  {% endif %}
+                </li>
+                <li>
+                  <form action="{% url 'logout' %}" method="post">
+                    {% csrf_token %}
+                    <input type="hidden" name="next" value="{% url 'login' %}" />
+                    <button type="submit" class="link-button">Sign out</button>
+                  </form>
+                </li>
+              </ul>
             </li>
           {% else %}
             <li><a href="{% url 'login' %}">Sign in</a></li>

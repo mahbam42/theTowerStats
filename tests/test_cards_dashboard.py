@@ -10,6 +10,8 @@ from django.urls import reverse
 from definitions.models import CardDefinition, WikiData
 from player_state.models import PlayerCard, Preset
 
+pytestmark = pytest.mark.integration
+
 
 def _wikidata_row(*, canonical_name: str, entity_id: str, raw_row: dict[str, str], content_hash: str) -> WikiData:
     """Create a minimal WikiData row for test fixtures."""

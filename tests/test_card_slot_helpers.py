@@ -12,6 +12,8 @@ from player_state.card_slots import (
 )
 from player_state.economy import enforce_and_deduct_gems_if_tracked, parse_cost_amount
 
+pytestmark = pytest.mark.integration
+
 
 def _wikidata_row(*, canonical_name: str, entity_id: str, raw_row: dict[str, str], content_hash: str) -> WikiData:
     """Create a minimal WikiData row for card slot fixtures."""

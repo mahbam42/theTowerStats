@@ -9,6 +9,8 @@ import pytest
 from analysis.quantity import UnitType
 from analysis.units import UnitContract, UnitValidationError, parse_validated_quantity
 
+pytestmark = pytest.mark.unit
+
 
 def test_parse_validated_quantity_rejects_multiplier_for_non_multiplier_contract() -> None:
     """Reject `%` and `x…` values when the contract expects a non-multiplier."""
@@ -54,4 +56,3 @@ def test_parse_validated_quantity_rejects_time_strings_for_numeric_contract() ->
 
     with pytest.raises(ValueError):
         parse_validated_quantity("1h 2m 3s", contract=UnitContract(unit_type=UnitType.coins))
-

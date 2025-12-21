@@ -17,6 +17,8 @@ from definitions.models import (
 )
 from player_state.models import PlayerBot, PlayerBotParameter
 
+pytestmark = pytest.mark.integration
+
 
 def _wiki(*, suffix: str | None = None) -> WikiData:
     """Create a minimal WikiData revision row."""
