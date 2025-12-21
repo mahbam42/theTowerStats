@@ -9,6 +9,7 @@ from __future__ import annotations
 
 import os
 from pathlib import Path
+from urllib.parse import urlparse
 
 import dj_database_url
 
@@ -64,6 +65,48 @@ def _env_csv(name: str, *, default: list[str]) -> list[str]:
         return default
     return [part.strip() for part in raw.split(",") if part.strip()]
 
+def _parse_hostname(value: str) -> str | None:
+    """Parse a hostname from a raw hostname or URL string.
+
+    Args:
+        value: Hostname or URL-like value (may include scheme and path).
+
+    Returns:
+        Parsed hostname when present, otherwise None.
+    """
+
+    raw = value.strip()
+    if not raw:
+        return None
+
+    parsed = urlparse(raw if "://" in raw else f"http://{raw}")
+    return parsed.hostname
+
+
+def _env_platform_hosts(names: list[str]) -> list[str]:
+    """Collect hostnames from platform-provided environment variables.
+
+    This is primarily intended for hosted platforms (such as Railway) that
+    provide a public URL or domain via environment variables.
+
+    Args:
+        names: Environment variable names to check for hostnames or URLs.
+
+    Returns:
+        A list of hostnames extracted from the provided environment variables.
+    """
+
+    hosts: list[str] = []
+    for name in names:
+        raw = os.getenv(name)
+        if not raw:
+            continue
+        for part in raw.split(","):
+            hostname = _parse_hostname(part)
+            if hostname and hostname not in hosts:
+                hosts.append(hostname)
+    return hosts
+
 DEBUG = _env_bool("DJANGO_DEBUG", default=True)
 
 _DEV_SECRET_KEY = "dev-only-insecure-secret-key"
@@ -71,10 +114,30 @@ SECRET_KEY = os.getenv("DJANGO_SECRET_KEY") or (_DEV_SECRET_KEY if DEBUG else ""
 if not SECRET_KEY:
     raise RuntimeError("DJANGO_SECRET_KEY is required when DJANGO_DEBUG is False.")
 
+_DJANGO_ALLOWED_HOSTS_RAW = os.getenv("DJANGO_ALLOWED_HOSTS")
 ALLOWED_HOSTS: list[str] = _env_csv(
     "DJANGO_ALLOWED_HOSTS",
     default=["localhost", "127.0.0.1", "[::1]"],
 )
+
+_PLATFORM_HOSTS = _env_platform_hosts(
+    [
+        "RAILWAY_PUBLIC_DOMAIN",
+        "RAILWAY_PUBLIC_URL",
+        "RAILWAY_STATIC_URL",
+        "RAILWAY_URL",
+    ]
+)
+for _platform_host in _PLATFORM_HOSTS:
+    if _platform_host not in ALLOWED_HOSTS:
+        ALLOWED_HOSTS.append(_platform_host)
+
+if not DEBUG and _DJANGO_ALLOWED_HOSTS_RAW is None and not _PLATFORM_HOSTS:
+    raise RuntimeError(
+        "DJANGO_ALLOWED_HOSTS is required in production. "
+        "Set DJANGO_ALLOWED_HOSTS or provide a platform domain via "
+        "RAILWAY_PUBLIC_DOMAIN/RAILWAY_PUBLIC_URL/RAILWAY_STATIC_URL."
+    )
 
 INSTALLED_APPS = [
     "django.contrib.admin",
@@ -151,7 +214,13 @@ STORAGES = {
 if not DEBUG:
     STORAGES["staticfiles"]["BACKEND"] = "whitenoise.storage.CompressedManifestStaticFilesStorage"
 
+_DJANGO_CSRF_TRUSTED_ORIGINS_RAW = os.getenv("DJANGO_CSRF_TRUSTED_ORIGINS")
 CSRF_TRUSTED_ORIGINS = _env_csv("DJANGO_CSRF_TRUSTED_ORIGINS", default=[])
+if not DEBUG and _DJANGO_CSRF_TRUSTED_ORIGINS_RAW is None and _PLATFORM_HOSTS:
+    for _platform_host in _PLATFORM_HOSTS:
+        origin = f"https://{_platform_host}"
+        if origin not in CSRF_TRUSTED_ORIGINS:
+            CSRF_TRUSTED_ORIGINS.append(origin)
 
 SECURE_SSL_REDIRECT = _env_bool("DJANGO_SECURE_SSL_REDIRECT", default=not DEBUG)
 SESSION_COOKIE_SECURE = _env_bool("DJANGO_SESSION_COOKIE_SECURE", default=not DEBUG)

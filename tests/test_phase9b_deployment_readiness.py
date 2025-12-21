@@ -81,3 +81,31 @@ def test_manage_check_deploy_requires_secret_key(tmp_path: Path) -> None:
     )
     assert result.returncode != 0
     assert "DJANGO_SECRET_KEY is required" in result.stderr
+
+
+def test_manage_check_deploy_allows_platform_domain_without_allowed_hosts(tmp_path: Path) -> None:
+    """Accept a platform-provided public domain when explicit hosts are not set."""
+
+    result = _run_manage_check_deploy(
+        env={
+            "DJANGO_DEBUG": "0",
+            "DJANGO_SECRET_KEY": "tests-only-secret-key-please-replace-with-a-long-random-value-0123456789",
+            "RAILWAY_PUBLIC_DOMAIN": "example.up.railway.app",
+            "DATABASE_URL": f"sqlite:///{tmp_path / 'db.sqlite3'}",
+        }
+    )
+    assert result.returncode == 0, result.stdout + "\n" + result.stderr
+
+
+def test_manage_check_deploy_requires_allowed_hosts_or_platform_domain(tmp_path: Path) -> None:
+    """Fail fast in production when no host allowlist is configured."""
+
+    result = _run_manage_check_deploy(
+        env={
+            "DJANGO_DEBUG": "0",
+            "DJANGO_SECRET_KEY": "tests-only-secret-key-please-replace-with-a-long-random-value-0123456789",
+            "DATABASE_URL": f"sqlite:///{tmp_path / 'db.sqlite3'}",
+        }
+    )
+    assert result.returncode != 0
+    assert "DJANGO_ALLOWED_HOSTS is required in production" in result.stderr

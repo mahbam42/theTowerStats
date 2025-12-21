@@ -36,6 +36,21 @@ theTowerStats includes a `Procfile` suitable for Railway’s Django process mode
 - Web process uses Gunicorn with `theTowerStats.wsgi:application`
 - Bind address uses the platform-provided `PORT`
 
+## Railway domains and 400 errors
+
+If Railway’s Public Networking domain changes, Django may start returning `400 Bad Request` until the new domain is allowed.
+
+Recommended configuration:
+
+1. Set `DJANGO_ALLOWED_HOSTS` to include the Railway public domain and any custom domains.
+2. Set `DJANGO_CSRF_TRUSTED_ORIGINS` to include the same domains with `https://` prefixes.
+
+Fallback behavior:
+
+- If `DJANGO_ALLOWED_HOSTS` is not set, the app will attempt to read a hostname from
+  `RAILWAY_PUBLIC_DOMAIN`, `RAILWAY_PUBLIC_URL`, `RAILWAY_STATIC_URL`, or `RAILWAY_URL`.
+- In production, the app will fail fast at startup if neither `DJANGO_ALLOWED_HOSTS` nor a platform domain is available.
+
 ## Dependencies
 
 Production installs runtime dependencies from `requirements.txt`.

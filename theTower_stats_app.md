@@ -1,77 +1,86 @@
 
 # Table of Contents
 
-1.  [Stats Tracking App for The Tower Mobile Game](#org8ac3c51)
-    1.  [Goals/Intent](#orga77d2c9)
-    2.  [Requirements](#org36ea2a7)
-    3.  [Overall Architecture](#orgfd7a211)
-    4.  [Features](#orge9594fd)
-    5.  [Core Responsibilities](#orga0814d3)
-        1.  [Rate Calculations](#org044f0ee)
-        2.  [Delta Calculations](#orgb346341)
-        3.  [Parameterized Effects](#org01967d2)
-        4.  [Aggregations by Intent (Presets)](#orgd36b78b)
-        5.  [Analysis Engine Invocation](#orgb8f2b9a)
-        6.  [Output Shape](#org3320dd3)
-        7.  [Module Structure (Suggested)](#org3ea4ab9)
-    6.  [UX Design](#org15a627f)
-    7.  [Example Stat Data](#orge3cc0bc)
-    8.  [Models](#orgda993db)
-        1.  [Game Data](#org20b86e3)
-        2.  [BotsParameters](#orgc1c592b)
-        3.  [CardDefinition](#org3c89906)
-        4.  [CardLevel / Star](#org09b7c9a)
-        5.  [CardParameters](#org62b98a2)
-        6.  [CardSlots](#orgb7f05d8)
-        7.  [GuardianChipParemeters](#orga623bcd)
-        8.  [PlayerBot](#org7739cad)
-        9.  [PlayerCard](#orgd926a51)
-        10. [PlayerGuardianChip](#org01a737b)
-        11. [PlayerUltimateWeapon](#org51e673d)
-        12. [PresetTags](#org90c27af)
-        13. [UltimateWeaponParameters](#orgd7ed629)
-        14. [Unit Model](#orge262360)
-        15. [WikiData](#org3decd7d)
-    9.  [Views](#org86f1454)
-        1.  [Battle History](#org17ec80a)
-        2.  [Cards](#org00e0678)
-        3.  [Charts](#org7838095)
-        4.  [UW Progress](#orgeb1380e)
-        5.  [Guardian Progress](#orgab9248a)
-        6.  [Bots Progress](#org68d216a)
-    10. [Management Commands](#orgcc33ed8)
-        1.  [fetch<sub>wiki</sub><sub>data</sub>](#org50e3343)
-        2.  [add<sub>battle</sub><sub>report</sub>](#org85c9d5a)
-    11. [Repo Structure](#org6214061)
-    12. [Testing Standards](#orgc0a18d8)
-    13. [Sprint Roadmap](#org871064b)
-        1.  [Phase 1 Foundations](#orgfb364e6)
-        2.  [Phase 2 Context](#org830c9bf)
-        3.  [Phase 3 — App Structure & UX](#org21bba74)
-        4.  [Phase 4 Effects](#orga3e94fe)
-        5.  [Phase 5 Dashboard UX <code>[100%]</code>](#org1ebb152)
-        6.  [Phase 6 Expansion of Foundation and Context <code>[33%]</code>](#org2d4f502)
-        7.  [Phase 7 Power Tools <code>[100%]</code>](#org679c54c)
-        8.  [Phase 8 Multiple Player Support](#org63e482a)
-        9.  [Phase 9 Deploy and Clean out Backlog <code>[100%]</code>](#orgbe1c1c4)
-        10. [Phase 10 v0.2.0 <code>[0%]</code>](#org36b1f94)
-    14. [Backlog <code>[0/8]</code>](#orgefc1453)
-        1.  [Ranked Recommendations](#org619523e)
-        2.  [Wmhat-If Scenarios](#org562a53b)
-        3.  [Exploratory Pattern Analysis](#orgca670a8)
-        4.  [Normalize time handling everywhere (game time vs real time vs accelerated)](#orgdf95d26)
-        5.  [Hide Deathwave on UW Sync Chart](#org31a5a4f)
-        6.  [Required Doc Type Header (Must Prepend to All Docs)](#orge41ee19)
-        7.  [Complete](#orgdb146d7)
-    15. [Codex Tasks](#orgba20259)
+1.  [Stats Tracking App for The Tower Mobile Game](#org3cfb77a)
+    1.  [Goals/Intent](#org94a00ec)
+    2.  [Requirements](#orgf495563)
+    3.  [Overall Architecture](#org9c1ae8d)
+    4.  [Features](#org00cde76)
+    5.  [Core Responsibilities](#orga601350)
+        1.  [Rate Calculations](#orgfefc717)
+        2.  [Delta Calculations](#org107babe)
+        3.  [Parameterized Effects](#orge044d8b)
+        4.  [Aggregations by Intent (Presets)](#org112c7fd)
+        5.  [Analysis Engine Invocation](#org6abe2cb)
+        6.  [Output Shape](#org6344ba2)
+        7.  [Module Structure (Suggested)](#orga368e01)
+    6.  [UX Design](#orgc222fe8)
+    7.  [Example Stat Data](#org429a40c)
+    8.  [Models](#org48f7132)
+        1.  [Game Data](#org8c09983)
+        2.  [BotsParameters](#org4ac26b6)
+        3.  [CardDefinition](#orgd28267b)
+        4.  [CardLevel / Star](#org6ef2c7e)
+        5.  [CardParameters](#orgadf0582)
+        6.  [CardSlots](#orged1bd63)
+        7.  [GuardianChipParemeters](#org133b49a)
+        8.  [PlayerBot](#org583c923)
+        9.  [PlayerCard](#org0b3b970)
+        10. [PlayerGuardianChip](#org6642d0d)
+        11. [PlayerUltimateWeapon](#org421130f)
+        12. [PresetTags](#org0cefc4b)
+        13. [UltimateWeaponParameters](#orgb2bacd4)
+        14. [Unit Model](#orged6e481)
+        15. [WikiData](#org16dc90f)
+    9.  [Views](#orgbdc6781)
+        1.  [Battle History](#org1b31c79)
+        2.  [Cards](#orgee17cd4)
+        3.  [Charts](#org1ac019c)
+        4.  [UW Progress](#orgf6657f6)
+        5.  [Guardian Progress](#org28f3aaf)
+        6.  [Bots Progress](#org67840bd)
+    10. [Management Commands](#orgc5fd86b)
+        1.  [fetch<sub>wiki</sub><sub>data</sub>](#orga20d932)
+        2.  [add<sub>battle</sub><sub>report</sub>](#orga069901)
+    11. [Repo Structure](#orgdf4ba89)
+    12. [Testing Standards](#org82d1b09)
+    13. [Sprint Roadmap](#org0267bad)
+        1.  [Phase 1 Foundations](#org3ddb128)
+        2.  [Phase 2 Context](#orgb8ece7a)
+        3.  [Phase 3 — App Structure & UX](#org0f15c0c)
+        4.  [Phase 4 Effects](#org9ccb677)
+        5.  [Phase 5 Dashboard UX <code>[100%]</code>](#org07bd625)
+        6.  [Phase 6 Expansion of Foundation and Context <code>[33%]</code>](#orgf99d122)
+        7.  [Phase 7 Power Tools <code>[100%]</code>](#org0b95d0c)
+        8.  [Phase 8 Multiple Player Support](#orgabcd3fc)
+        9.  [Phase 9 Deploy and Clean out Backlog <code>[100%]</code>](#orgc6e9b2c)
+        10. [Phase 10 v0.2.0 <code>[0%]</code>](#org5a89cca)
+    14. [Backlog <code>[0/8]</code>](#org949b513)
+        1.  [Ranked Recommendations](#orga75eb25)
+        2.  [Wmhat-If Scenarios](#org845083a)
+        3.  [Exploratory Pattern Analysis](#org80a4ca8)
+        4.  [Normalize time handling everywhere (game time vs real time vs accelerated)](#org54542af)
+        5.  [Hide Deathwave on UW Sync Chart](#org67d10db)
+        6.  [Required Doc Type Header (Must Prepend to All Docs)](#org3f1c70e)
+        7.  [Complete](#orgeef2758)
+    15. [Codex Tasks](#orgc23aeec)
+
+****Codex:**** So help me I will end you if I ever see you checkout or touch this file. Refer to agents.md if you stumble upon this file again.
+
+<!&#x2013;
+NOTE:
+This document was reconstructed after a tooling failure.
+Content has been manually reviewed for accuracy.
+If discrepancies are found, refer to git history where available.
+&#x2013;>
 
 
-<a id="org8ac3c51"></a>
+<a id="org3cfb77a"></a>
 
 # Stats Tracking App for The Tower Mobile Game
 
 
-<a id="orga77d2c9"></a>
+<a id="org94a00ec"></a>
 
 ## Goals/Intent
 
@@ -86,7 +95,7 @@
     -   Battle Results form is designed for mobile
 
 
-<a id="org36ea2a7"></a>
+<a id="orgf495563"></a>
 
 ## Requirements
 
@@ -102,7 +111,7 @@ ruff
 mypy
 
 
-<a id="orgfd7a211"></a>
+<a id="org9c1ae8d"></a>
 
 ## Overall Architecture
 
@@ -117,7 +126,7 @@ Derived Metrics
 Charts / Views
 
 
-<a id="orge9594fd"></a>
+<a id="org00cde76"></a>
 
 ## Features
 
@@ -144,12 +153,12 @@ Targets:
 -   UW Upgrade Table
 
 
-<a id="orga0814d3"></a>
+<a id="orga601350"></a>
 
 ## Core Responsibilities
 
 
-<a id="org044f0ee"></a>
+<a id="orgfefc717"></a>
 
 ### Rate Calculations
 
@@ -163,7 +172,7 @@ Targets:
 These back Phase 1 charts directly.
 
 
-<a id="orgb346341"></a>
+<a id="org107babe"></a>
 
 ### Delta Calculations
 
@@ -181,7 +190,7 @@ Examples:
 No interpretation — just math.
 
 
-<a id="org01967d2"></a>
+<a id="orge044d8b"></a>
 
 ### Parameterized Effects
 
@@ -198,7 +207,7 @@ These are:
 -   Fully testable with golden tests
 
 
-<a id="orgd36b78b"></a>
+<a id="org112c7fd"></a>
 
 ### Aggregations by Intent (Presets)
 
@@ -211,7 +220,7 @@ These are:
 It does not decide which preset is better.
 
 
-<a id="orgb8f2b9a"></a>
+<a id="org6abe2cb"></a>
 
 ### Analysis Engine Invocation
 
@@ -222,7 +231,7 @@ It does not decide which preset is better.
     -   No DB writes
 
 
-<a id="org3320dd3"></a>
+<a id="org6344ba2"></a>
 
 ### Output Shape
 
@@ -245,7 +254,7 @@ All outputs should conform to a small set of DTO-style objects:
 This maps cleanly to Chart.js datasets.
 
 
-<a id="org3ea4ab9"></a>
+<a id="orga368e01"></a>
 
 ### Module Structure (Suggested)
 
@@ -262,7 +271,7 @@ analysis/
 │   └── fixtures/
 
 
-<a id="org15a627f"></a>
+<a id="orgc222fe8"></a>
 
 ## UX Design
 
@@ -273,7 +282,7 @@ analysis/
 -   Maxed Out/Completed Upgrades are highlighted with a Gold Box outline
 
 
-<a id="orge3cc0bc"></a>
+<a id="org429a40c"></a>
 
 ## Example Stat Data
 
@@ -376,12 +385,12 @@ Rare Modules	0
 \#+END<sub>SR</sub>
 
 
-<a id="orgda993db"></a>
+<a id="org48f7132"></a>
 
 ## Models
 
 
-<a id="org20b86e3"></a>
+<a id="org8c09983"></a>
 
 ### Game Data
 
@@ -532,7 +541,7 @@ Properties:
     Rare Modules	0
 
 
-<a id="orgc1c592b"></a>
+<a id="org4ac26b6"></a>
 
 ### BotsParameters
 
@@ -540,7 +549,7 @@ Wiki-derived, FK to PlayerBots
 Immutable per revision. When the wiki changes, insert a new row — don’t overwrite.
 
 
-<a id="org3c89906"></a>
+<a id="orgd28267b"></a>
 
 ### CardDefinition
 
@@ -553,7 +562,7 @@ Properties:
 -   preset<sub>tags</sub> (FK)
 
 
-<a id="org09b7c9a"></a>
+<a id="org6ef2c7e"></a>
 
 ### CardLevel / Star
 
@@ -562,7 +571,7 @@ Properties:
 -   **value:** value of current effect (between base and max)
 
 
-<a id="org62b98a2"></a>
+<a id="orgadf0582"></a>
 
 ### CardParameters
 
@@ -570,7 +579,7 @@ Wiki-derived, FK to PlayerCard
 Immutable per revision. When the wiki changes, insert a new row — don’t overwrite.
 
 
-<a id="orgb7f05d8"></a>
+<a id="orged1bd63"></a>
 
 ### CardSlots
 
@@ -583,7 +592,7 @@ Properties:
 -   Cost integer (Gems)
 
 
-<a id="orga623bcd"></a>
+<a id="org133b49a"></a>
 
 ### GuardianChipParemeters
 
@@ -591,7 +600,7 @@ Wiki-derived, FK to PlayerGuardianChip
 Immutable per revision. When the wiki changes, insert a new row — don’t overwrite.
 
 
-<a id="org7739cad"></a>
+<a id="org583c923"></a>
 
 ### PlayerBot
 
@@ -601,7 +610,7 @@ Properties:
 -   **unlocked:** checkbox
 
 
-<a id="orgd926a51"></a>
+<a id="org0b3b970"></a>
 
 ### PlayerCard
 
@@ -613,7 +622,7 @@ Properties:
 -   **Cards:** integer progress toward next level. 0, 3, 5, 8, 12, 20, 32
 
 
-<a id="org01a737b"></a>
+<a id="org6642d0d"></a>
 
 ### PlayerGuardianChip
 
@@ -623,7 +632,7 @@ Properties:
 -   **unlocked:** checkbox
 
 
-<a id="org51e673d"></a>
+<a id="org421130f"></a>
 
 ### PlayerUltimateWeapon
 
@@ -633,7 +642,7 @@ Properties:
 -   **unlocked:** checkbox
 
 
-<a id="org90c27af"></a>
+<a id="org0cefc4b"></a>
 
 ### PresetTags
 
@@ -642,7 +651,7 @@ Properties:
 -   **limit:** FK with Card Slots
 
 
-<a id="orgd7ed629"></a>
+<a id="orgb2bacd4"></a>
 
 ### UltimateWeaponParameters
 
@@ -661,7 +670,7 @@ Properties:
 -   **Spent:** integer (stones)
 
 
-<a id="orge262360"></a>
+<a id="orged6e481"></a>
 
 ### Unit Model
 
@@ -675,7 +684,7 @@ Properties:
 -   **unit<sub>type</sub>:** coins, damage, count, time
 
 
-<a id="org3decd7d"></a>
+<a id="org16dc90f"></a>
 
 ### WikiData
 
@@ -691,26 +700,26 @@ Stores the anchor names and retrived data caches for Card, Ultimate Weapons, and
 -   parse<sub>version</sub>
 
 
-<a id="org86f1454"></a>
+<a id="orgbdc6781"></a>
 
 ## Views
 
 
-<a id="org17ec80a"></a>
+<a id="org1b31c79"></a>
 
 ### Battle History
 
 View previously entered stats 
 
 
-<a id="org00e0678"></a>
+<a id="orgee17cd4"></a>
 
 ### Cards
 
 Combine 'Cards,' 'CardLevel' and 'CardSlots'
 
 
-<a id="org7838095"></a>
+<a id="org1ac019c"></a>
 
 ### Charts
 
@@ -754,14 +763,14 @@ Sub Charts:
     -   Coins per wave vs wave number
 
 
-<a id="orgeb1380e"></a>
+<a id="orgf6657f6"></a>
 
 ### UW Progress
 
 -   Button to add new UW
 
 
-<a id="orgab9248a"></a>
+<a id="org28f3aaf"></a>
 
 ### Guardian Progress
 
@@ -769,19 +778,19 @@ Sub Charts:
 -   checkbox to flag equiped
 
 
-<a id="org68d216a"></a>
+<a id="org67840bd"></a>
 
 ### Bots Progress
 
 -   button to add new bot
 
 
-<a id="orgcc33ed8"></a>
+<a id="orgc5fd86b"></a>
 
 ## Management Commands
 
 
-<a id="org50e3343"></a>
+<a id="orga20d932"></a>
 
 ### fetch<sub>wiki</sub><sub>data</sub>
 
@@ -802,7 +811,7 @@ Example:
 -   “Logs entity added / changed / unchanged counts”
 
 
-<a id="org85c9d5a"></a>
+<a id="orga069901"></a>
 
 ### add<sub>battle</sub><sub>report</sub>
 
@@ -811,7 +820,7 @@ Ingest and parse battle report data from the player. This is a large blob of dat
 Parser should gracefully alert the player to new labels that may appear after a game update.
 
 
-<a id="org6214061"></a>
+<a id="orgdf4ba89"></a>
 
 ## Repo Structure
 
@@ -849,7 +858,7 @@ theTower<sub>stats</sub><sub>app</sub>
 └── &#x2026;
 
 
-<a id="orgc0a18d8"></a>
+<a id="org82d1b09"></a>
 
 ## Testing Standards
 
@@ -860,14 +869,14 @@ theTower<sub>stats</sub><sub>app</sub>
 -   When completing code, start building/executing tests as specific as possible to the code you changed so that you can catch issues efficiently, then make your way to broader tests as you build confidence.
 
 
-<a id="org871064b"></a>
+<a id="org0267bad"></a>
 
 ## Sprint Roadmap
 
 Each phase must be demoable without admin intervention.
 
 
-<a id="orgfb364e6"></a>
+<a id="org3ddb128"></a>
 
 ### DONE Phase 1 Foundations
 
@@ -911,7 +920,7 @@ Each phase must be demoable without admin intervention.
     -   [X] Test suite passes with no skipped tests
 
 
-<a id="org830c9bf"></a>
+<a id="orgb8ece7a"></a>
 
 ### DONE Phase 2 Context
 
@@ -957,7 +966,7 @@ Each phase must be demoable without admin intervention.
     -   [X] 1 aggregation test using presets
 
 
-<a id="org21bba74"></a>
+<a id="org0f15c0c"></a>
 
 ### DONE Phase 3 — App Structure & UX
 
@@ -971,7 +980,7 @@ Each phase must be demoable without admin intervention.
     -   [X] Model completeness (structure, not logic)
 
 
-<a id="orga3e94fe"></a>
+<a id="org9ccb677"></a>
 
 ### DONE Phase 4 Effects
 
@@ -1095,7 +1104,7 @@ Each phase must be demoable without admin intervention.
         -   [X] 1 test validating revision behavior
 
 
-<a id="org1ebb152"></a>
+<a id="org07bd625"></a>
 
 ### DONE Phase 5 Dashboard UX <code>[100%]</code>
 
@@ -1503,7 +1512,7 @@ General conventions across all Dashboards:
     4.  Understand trends …without explanation.
 
 
-<a id="org2d4f502"></a>
+<a id="orgf99d122"></a>
 
 ### DONE Phase 6 Expansion of Foundation and Context <code>[33%]</code>
 
@@ -1714,7 +1723,7 @@ This prevents balance arguments from stalling Phase 6.
 -   No efficiency or recommendation logic depends on undocumented assumptions
 
 
-<a id="org679c54c"></a>
+<a id="org0b95d0c"></a>
 
 ### DONE Phase 7 Power Tools <code>[100%]</code>
 
@@ -1848,7 +1857,7 @@ This prevents balance arguments from stalling Phase 6.
         Implement explicit insufficiency detection (e.g., <N runs per scope, missing values, empty windows) and return a structured advice item that says “Insufficient data” + why; add tests for empty and thin scopes.
 
 
-<a id="org63e482a"></a>
+<a id="orgabcd3fc"></a>
 
 ### DONE Phase 8 Multiple Player Support
 
@@ -2219,7 +2228,7 @@ Thirty guild members can use this daily without seeing, affecting, or confusing 
     Run checks or Ruff Check, mypy ., pytest -q
 
 
-<a id="orgbe1c1c4"></a>
+<a id="orgc6e9b2c"></a>
 
 ### DONE Phase 9 Deploy and Clean out Backlog <code>[100%]</code>
 
@@ -2383,43 +2392,294 @@ You can confidently deploy when all Blocking items are complete, even if none of
     I dont see a UI element for it, nor is it covered in the documentation
 
 
-<a id="org36b1f94"></a>
+<a id="org5a89cca"></a>
 
 ### TODO Phase 10 v0.2.0 <code>[0%]</code>
 
-1.  TODO Update readme.md
+“Stabilize, standardize, and clarify the product surface.”
 
-    -   Make sure it's still aligned with App Behavior and Features
-    -   Project Status marks v0.1.0 Release
-        and reflects docs/ revisions
+Phase 10 Goal:
 
-2.  TODO Write Phase 9 Developer Docs
+-   Improve clarity, consistency, and usability across the app
 
-3.  TODO Extend Python Versioning in Django.yml
+-   Reduce cognitive load in charts and navigation
 
-    The app has been built and working with Python 3.14, but I don't think any of it requires the latest bleeding edge. 
+-   Establish release hygiene (README, CHANGELOG, versioning)
 
-4.  TODO Make Charts Dashboard more Mobile Friendly
+-   Prepare the codebase and UI for iterative public use
 
-    -   Filters, Advice, Goal Aware Comparison, Compare and Quick Import should be collapsible
-    -   Move Quick Import to the Bottom
-    -   Move Charts to the Top
-    -   The break point seems to be around 630px wide
+Non-Goals:
 
-5.  TODO Implement Search
+-   No new metrics, advice logic, or analysis behavior
 
-    Search should have global scope within the app. 
+-   No schema changes beyond version metadata
 
-6.  TODO Implement ChangeLog.md
+-   No new permissions or player concepts
 
-    -   A CHANGELOG.md template Codex must maintain
+1.  Release & Maintainability
+
+    1.  TODO Update readme.md
     
-    -   A “breaking change checklist” it must run before suggesting version bumps
+        -   Make sure it's still aligned with App Behavior and Features
+        -   Project Status marks v0.1.0 Release
+            and reflects docs/ revisions
+            -   Can add brief summary of v0.2.0 work in progress and coming soon
+        -   Add link to the app deployed on Railway thetowerstats.up.railway.app
     
-    Add to Docs and link in README.md
+    2.  TODO Implement ChangeLog.md
+    
+        Add to Docs and link in README.md
+        
+        -   Start initially with brief summary of work leading to v0.1.0 release and point to Developer Docs for additional detail.
+        
+        -   A CHANGELOG.md template Codex must maintain
+            -   A “breaking change checklist” it must run before suggesting version bumps
+            
+            -   CHANGELOG entries must link to:
+                -   Phase number
+                
+                -   Developer doc (if applicable)
+        
+        -   Moving forward there will be changes to agents.md and conventions for maintaining CHANGELOG.md
+    
+    3.  TODO Extend Python Versioning in Django.yml
+    
+        The app has been built and working with Python 3.14, but I don't think any of it requires the latest bleeding edge. 
+        
+        Specifically add python3.13.11 to match Railway's Environment
+    
+    4.  TODO Write Phase 9 Developer Docs
+
+2.  UX & Interaction Refinement (Core UX)
+
+    -   All spacing must resolve to the design scale
+    -   All buttons must be primary or secondary — no ad-hoc styles
+    -   Charts must use the shared palette registry
+    
+    1.  TODO Global Theming & Styling Suggestions
+    
+        A. Introduce a ********design scale********
+        
+        Define (and enforce):
+        
+        -   1 spacing unit (e.g., 4px or 8px)
+        -   3 text sizes: label / body / heading
+        -   2 button styles: primary / secondary
+        
+        Right now spacing feels “organic” rather than intentional.
+        
+        B. Charts need stronger contrast
+        
+        -   Axis labels are slightly too faint
+        -   Gridlines compete with data at times
+        
+        Suggestions:
+        
+        -   Reduce gridline opacity
+        -   Increase line thickness slightly
+        -   Use consistent color palette across all charts (even comparisons)
+        
+        C. Color = meaning, not decoration
+        
+        You’re already data-driven—lean into that:
+        
+        -   One color for “coins”
+        -   One for “progression”
+        -   One for “comparison”
+        
+        Users should start recognizing metrics by color without reading labels.
+    
+    2.  TODO Navigation Bar Cleanup (Important)
+    
+        ****Constraints:****
+        
+        -   Max 4 primary nav items
+        
+        -   Anything else must live in:
+            -   “More” dropdown or
+            
+            -   Contextual sub-nav
+        
+        -   Context controls must never disappear.
+        
+        -   Visualization controls may collapse.
+        
+        A. Fix wrapping by design, not luck
+        
+        Your top nav is trying to do too much in one row.
+        
+        ********Recommended pattern:********
+        
+        -   ********Left:******** Product name + primary sections (max 4)
+        -   ********Right:******** Search, Docs, Account menu
+        
+        Move secondary links into:
+        
+        -   A “More” dropdown
+        -   Or contextual sub-nav per section
+        
+        Example:
+        
+        \\\`\\\`\\\`
+        theTowerStats | Charts | Battle History | Cards | More ▾
+        				   🔍 Docs  👤
+        \\\`\\\`\\\`
+        
+        B. Highlight current section strongly
+        
+        Right now section changes are subtle.
+        
+        -   Use:
+            -   Bold text
+            -   Bottom border
+            -   Accent color
+            -   Make it unmissable which dashboard you’re on
+        
+        This matters as the app grows.
+    
+    3.  TODO Improve Charts Controls
+    
+        > Key Principles
+        > - Context defines scope, not visualization
+        > - Charts are the focal point
+        > - Advanced tools are opt-in
+        
+        -   Break the “Monolithic Controls” Problem
+            
+            A. Split controls into ********layers********, not one column
+            
+            Right now everything lives in a single vertical Filters panel, which forces users to mentally parse too much at once.
+            
+            ********Suggested structure (top → bottom):********
+            
+            1.  Context (always visible, compact)\\\*\\\*
+                
+                -   Date range
+                -   Tier
+                -   Preset
+                -   Rolling window (if enabled)
+                
+                These define ****what data**** you’re looking at. They should feel global and stable.
+            
+            2.  Chart Definition (collapsible / modal)
+                
+                -   Metric(s)
+                -   Chart type
+                -   Group by
+                -   Comparison mode
+                
+                This is ****how data is visualized****. It should not compete visually with context.
+            
+            3.  Advanced / Analysis (collapsed by default)
+                
+                1.  Moving average window
+                2.  Snapshot comparison
+                3.  Goal-aware weights
+                
+                These are power-user tools. Hide them unless explicitly opened.
+                
+                > ********Key principle:********
+                > If a control doesn’t change the chart ****immediately****, it probably belongs behind a disclosure.
+        
+        B. Replace the giant sidebar with a ********Chart Control Bar********
+        
+        Instead of a right-hand monolith:
+        
+        -   Add a ********horizontal control bar above the chart(s)********:
+            -   Metric selector (pill-style multiselect)
+            -   Date range
+            -   Tier
+            -   Preset
+            -   “⚙ Advanced” button
+        
+        It also reduces eye travel and keeps the chart as the focal point.
+        
+        C. Turn Chart Builder into a ********guided flow********
+        
+        Chart Builder is powerful, but cognitively heavy.
+        
+        ********Improve by:********
+        
+        -   Step-based layout:
+            1.  Select metric(s)
+            2.  Choose visualization
+            3.  Group & compare
+        -   Disable steps until prerequisites are met
+        -   Show a live preview thumbnail
+        
+        This reinforces that it’s an ****intentional action****, not just “more filters.”
+        
+        1.  Improve Visual Hierarchy (Low Effort, High Impact)
+            
+            A. Use section headers with purpose
+            
+            Right now headers are informational but not directional.
+            
+            Example improvement:
+            
+            -   ********Filters******** → “Data Scope”
+            -   ********Charts******** → “What to Measure”
+            -   ********Advice******** → “Insights from Current View”
+        
+        Add 1-line helper text under headers where needed.
+        
+        B. Reduce label repetition
+        
+        You repeat context in multiple places:
+        
+        \\\*\\\* “Active context”
+        
+        -   Filter labels
+        -   Chart titles
+        
+        -   Make “Active context” a compact breadcrumb-style line:
+            
+            \\\`\\\`\\\`
+            Dec 9–17 • All tiers • All presets • No rolling window
+            \\\`\\\`\\\`
+        -   Let charts inherit this implicitly.
+            
+            C. De-emphasize rarely-used buttons
+            
+            Buttons like:
+            
+            -   “Export derived metrics”
+            -   Snapshot save/load
+            -   CSV exports
+            
+            Should be:
+            
+            -   Secondary buttons
+            -   Icon-based
+            -   Or inside an overflow menu (⋯)
+            
+            Right now they visually compete with primary actions.
+        
+        ********Exit Criteria:********
+        
+        -   Replace right-hand monolithic sidebar with:
+            -   Horizontal Chart Control Bar
+            -   Collapsible Advanced panel
+        -   Context controls always visible
+        -   Chart Builder becomes step-based and gated
+        -   Active context rendered once as breadcrumb
+        -   Secondary actions moved to overflow menu
+    
+    4.  TODO Make Charts Dashboard more Mobile Friendly
+    
+        On mobile, the primary task is viewing trends, not configuring charts.
+        
+        -   Filters, Advice, Goal Aware Comparison, Compare and Quick Import should be collapsible
+        -   Move Quick Import to the Bottom
+        -   Move Charts to the Top
+        -   The break point seems to be around 630px wide
+    
+    5.  TODO Implement Search
+    
+        Search should have global scope within the app. 
 
 
-<a id="orgefc1453"></a>
+<a id="org949b513"></a>
 
 ## Backlog <code>[0/8]</code>
 
@@ -2429,7 +2689,7 @@ You can confidently deploy when all Blocking items are complete, even if none of
 -   Real-time scraping
 
 
-<a id="org619523e"></a>
+<a id="orga75eb25"></a>
 
 ### TODO Ranked Recommendations
 
@@ -2460,7 +2720,7 @@ What would change the recommendation
 This keeps it defensible.
 
 
-<a id="org562a53b"></a>
+<a id="org845083a"></a>
 
 ### TODO Wmhat-If Scenarios
 
@@ -2481,7 +2741,7 @@ No RNG modeling
 No balance speculation
 
 
-<a id="orgca670a8"></a>
+<a id="org80a4ca8"></a>
 
 ### TODO Exploratory Pattern Analysis
 
@@ -2639,21 +2899,21 @@ If done right, global clustering becomes:
 That’s rare in game-adjacent tools — and a real differentiator.
 
 
-<a id="orgdf95d26"></a>
+<a id="org54542af"></a>
 
 ### TODO Normalize time handling everywhere (game time vs real time vs accelerated)
 
 Game Time can be accelerated and the rate can be changed during a run. Either via Lab Research (max of 5x) or via perks that increase it further to a variable factor (increased by additional researchs). The hard maximum is 6.25x (according to the Wiki). However the Wiki also notes "Game speed is not accurate. x5.0 speed behaves closer to x4.0 while 6.25 is closer to x5." So our handling of it is not strictly necessary. 
 
 
-<a id="org31a5a4f"></a>
+<a id="org67d10db"></a>
 
 ### TODO Hide Deathwave on UW Sync Chart
 
 Add an optional toggle to show/hide the Death Wave activation markers (so the schedule focuses on GT/BH overlap), while still keeping everything descriptive.
 
 
-<a id="orge41ee19"></a>
+<a id="org3f1c70e"></a>
 
 ### TODO Required Doc Type Header (Must Prepend to All Docs)
 
@@ -2741,7 +3001,7 @@ If Codex is unsure which header to use:
     Validate the final document against the Documentation Self-Check Checklist before completing the task.
 
 
-<a id="orgdb146d7"></a>
+<a id="orgeef2758"></a>
 
 ### Complete
 
@@ -2782,7 +3042,7 @@ If Codex is unsure which header to use:
     Mostly a visual tweak, but adds context and history for the player to interpert their performance history. 
 
 
-<a id="orgba20259"></a>
+<a id="orgc23aeec"></a>
 
 ## Codex Tasks
 
