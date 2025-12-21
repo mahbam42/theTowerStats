@@ -197,6 +197,11 @@ class UpgradeableEntityProgressFilterForm(forms.Form):
     """Validate unlocked/locked filters for upgradeable-entity dashboards."""
 
     status = forms.ChoiceField(required=False, choices=(), label="Show")
+    q = forms.CharField(
+        required=False,
+        label="Search",
+        help_text="Optional: filter by name.",
+    )
 
     def __init__(self, *args, entity_label_plural: str, **kwargs) -> None:
         """Initialize the filter form with an entity-scoped 'All …' label."""
@@ -297,6 +302,11 @@ class BattleHistoryPresetUpdateForm(forms.Form):
 class CardsFilterForm(forms.Form):
     """Validate preset filters for the Cards dashboard."""
 
+    q = forms.CharField(
+        required=False,
+        label="Search",
+        help_text="Optional: filter by card name.",
+    )
     maxed = forms.ChoiceField(
         required=False,
         choices=(
@@ -322,6 +332,11 @@ class CardsFilterForm(forms.Form):
         player: Player = kwargs.pop("player")
         super().__init__(*args, **kwargs)
         self.fields["presets"].queryset = Preset.objects.filter(player=player).order_by("name")
+
+    def clean_q(self) -> str:
+        """Normalize the optional search query."""
+
+        return (self.cleaned_data.get("q") or "").strip()
 
 
 class CardInventoryUpdateForm(forms.Form):

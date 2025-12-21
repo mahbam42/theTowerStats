@@ -2,7 +2,7 @@
 
 A stats‑tracking and analysis app for **The Tower** mobile game.
 
-Paste your battle history, visualize your progress over time, and explore how different mechanics actually affect your runs — without guesswork or prescriptive advice.
+Battle history can be imported as raw text, then explored through charts and read-only progress dashboards — without guesswork or prescriptive advice.
 
 ## Links
 
@@ -50,7 +50,7 @@ Paste your battle history, visualize your progress over time, and explore how di
 
 ### 🌙 Foundation-powered UI
 
-- Shared dashboard shell with top navigation, global search stub, and consistent callouts
+- Shared dashboard shell with top navigation, global search, and consistent callouts
 - Foundation grid/forms for Battle History, Charts, and progress dashboards
 - Clear charts designed to answer real questions quickly
 - Optional demo dataset for safe exploration without importing your own data
@@ -81,6 +81,7 @@ This app is about:
 ## Current Progress
 
 - Current release: **v0.1.0**
+- v0.2.0 (in progress): UI refinement and release hygiene
 - Changelog: `CHANGELOG.md`
 - Stable: Battle Report import, Battle History, Charts (including snapshots), and collection progress dashboards
 - Multi-user: Each signed-in account has its own isolated dataset

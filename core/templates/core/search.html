@@ -31,7 +31,7 @@
             <ul class="no-bullet margin-bottom-0">
               {% for item in results %}
                 <li class="margin-bottom-1">
-                  <a href="{{ item.url }}"><strong>{{ item.title }}</strong></a>
+                  <a href="{{ item.url }}"{% if item.external %} target="_blank" rel="noopener noreferrer"{% endif %}><strong>{{ item.title }}</strong></a>
                   {% if item.subtitle %}
                     <div class="muted">{{ item.subtitle }}</div>
                   {% endif %}
@@ -46,4 +46,3 @@
     </div>
   {% endif %}
 {% endblock %}
-

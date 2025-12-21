@@ -9,6 +9,7 @@ from django.http import HttpRequest
 from django.urls import reverse
 
 from core.demo import demo_mode_enabled, get_demo_player
+from definitions.models import BotDefinition, CardDefinition, GuardianChipDefinition, UltimateWeaponDefinition
 from player_state.models import ChartSnapshot, Player, Preset
 
 
@@ -29,6 +30,7 @@ class SearchItem:
     subtitle: str | None
     url: str
     score: int
+    external: bool = False
 
     def as_json(self) -> dict[str, object]:
         """Return a JSON-serializable representation."""
@@ -40,6 +42,8 @@ class SearchItem:
         }
         if self.subtitle:
             payload["subtitle"] = self.subtitle
+        if self.external:
+            payload["external"] = True
         return payload
 
 
@@ -139,9 +143,10 @@ def _docs_search_item(*, query: str) -> SearchItem:
     return SearchItem(
         kind="docs",
         title=f"Search docs for “{query}”",
-        subtitle="Opens documentation site search",
+        subtitle="Docs search (external)",
         url=url,
         score=1_000,
+        external=True,
     )
 
 
@@ -168,6 +173,28 @@ def build_search_items(*, request: HttpRequest, query: str, limit: int = 10) -> 
         if score is None:
             continue
         items.append(SearchItem(kind=kind, title=title, subtitle=subtitle, url=url, score=score))
+
+    # Entity dashboards by name (definitions-backed).
+    for model, kind, prefix, url_name in (
+        (CardDefinition, "card", "Card", "core:cards"),
+        (UltimateWeaponDefinition, "uw", "Ultimate Weapon", "core:ultimate_weapon_progress"),
+        (GuardianChipDefinition, "guardian", "Guardian Chip", "core:guardian_progress"),
+        (BotDefinition, "bot", "Bot", "core:bots_progress"),
+    ):
+        for row in model.objects.only("name").order_by("name")[:250]:
+            score = fuzzy_score(query=q, candidate=row.name)
+            if score is None:
+                continue
+            url = f"{reverse(url_name)}?{urlencode({'q': row.name})}"
+            items.append(
+                SearchItem(
+                    kind=kind,
+                    title=f"{prefix}: {row.name}",
+                    subtitle="Dashboard item",
+                    url=url,
+                    score=score + 150,
+                )
+            )
 
     player = request_player(request=request)
     if player is not None:
@@ -215,4 +242,3 @@ def build_search_items(*, request: HttpRequest, query: str, limit: int = 10) -> 
 
     items.sort(key=lambda item: (-item.score, item.kind, item.title.lower()))
     return items[:limit]
-

@@ -97,6 +97,12 @@
           {{ filter_form.sort }}
           <div class="cell auto">
             <label class="margin-bottom-0">
+              {{ filter_form.q.label }}
+              {{ filter_form.q }}
+            </label>
+          </div>
+          <div class="cell auto">
+            <label class="margin-bottom-0">
               Preset filter
               {{ filter_form.presets }}
             </label>

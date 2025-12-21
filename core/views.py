@@ -15,7 +15,7 @@ from django.contrib.auth.forms import AuthenticationForm, UserCreationForm
 from django.conf import settings
 from django.core.exceptions import ValidationError
 from django.db import transaction
-from django.db.models import Case, Count, ExpressionWrapper, F, FloatField, Max, QuerySet, Value, When
+from django.db.models import Case, Count, ExpressionWrapper, F, FloatField, Max, Q, QuerySet, Value, When
 from django.http import HttpRequest, HttpResponse, JsonResponse, QueryDict
 from django.shortcuts import redirect, render
 from django.core.paginator import Paginator
@@ -1416,6 +1416,7 @@ def cards(request: HttpRequest) -> HttpResponse:
 
     filter_form = CardsFilterForm(request.GET, player=player)
     filter_form.is_valid()
+    name_query = (filter_form.cleaned_data.get("q") or "").strip()
     selected_presets = tuple(filter_form.cleaned_data.get("presets") or ())
     selected_maxed = (filter_form.cleaned_data.get("maxed") or "").strip()
     requested_sort = (filter_form.cleaned_data.get("sort") or "").strip()
@@ -1426,6 +1427,10 @@ def cards(request: HttpRequest) -> HttpResponse:
         .prefetch_related("presets")
         .order_by("card_definition__name", "card_slug")
     )
+    if name_query:
+        card_qs = card_qs.filter(
+            Q(card_definition__name__icontains=name_query) | Q(card_slug__icontains=name_query)
+        )
     if selected_presets:
         card_qs = card_qs.filter(presets__in=selected_presets).distinct()
 
@@ -1778,6 +1783,7 @@ def ultimate_weapon_progress(request: HttpRequest) -> HttpResponse:
     filter_form = UltimateWeaponProgressFilterForm(request.GET)
     filter_form.is_valid()
     status = (filter_form.cleaned_data.get("status") or "").strip()
+    name_query = (filter_form.cleaned_data.get("q") or "").strip()
 
 
     unlocked_rows = (
@@ -1818,6 +1824,10 @@ def ultimate_weapon_progress(request: HttpRequest) -> HttpResponse:
         ultimate_weapons_qs = ultimate_weapons_qs.filter(unlocked=True)
     elif status == "locked":
         ultimate_weapons_qs = ultimate_weapons_qs.filter(unlocked=False)
+    if name_query:
+        ultimate_weapons_qs = ultimate_weapons_qs.filter(
+            ultimate_weapon_definition__name__icontains=name_query
+        )
 
     any_battles = BattleReport.objects.filter(player=player).exists()
     uw_runs_observed_counts = count_observed_uw_runs(player=player) if any_battles else {}
@@ -2307,6 +2317,7 @@ def guardian_progress(request: HttpRequest) -> HttpResponse:
     filter_form = UpgradeableEntityProgressFilterForm(request.GET, entity_label_plural="guardian chips")
     filter_form.is_valid()
     status = (filter_form.cleaned_data.get("status") or "").strip()
+    name_query = (filter_form.cleaned_data.get("q") or "").strip()
 
     unlocked_rows = (
         PlayerGuardianChip.objects.filter(player=player, unlocked=True)
@@ -2351,6 +2362,8 @@ def guardian_progress(request: HttpRequest) -> HttpResponse:
         chips_qs = chips_qs.filter(unlocked=True)
     elif status == "locked":
         chips_qs = chips_qs.filter(unlocked=False)
+    if name_query:
+        chips_qs = chips_qs.filter(guardian_chip_definition__name__icontains=name_query)
 
     any_battles = BattleReport.objects.filter(player=player).exists()
     active_count = PlayerGuardianChip.objects.filter(player=player, active=True).count()
@@ -2742,6 +2755,7 @@ def bots_progress(request: HttpRequest) -> HttpResponse:
     filter_form = UpgradeableEntityProgressFilterForm(request.GET, entity_label_plural="bots")
     filter_form.is_valid()
     status = (filter_form.cleaned_data.get("status") or "").strip()
+    name_query = (filter_form.cleaned_data.get("q") or "").strip()
 
     unlocked_rows = (
         PlayerBot.objects.filter(player=player, unlocked=True)
@@ -2786,6 +2800,8 @@ def bots_progress(request: HttpRequest) -> HttpResponse:
         bots_qs = bots_qs.filter(unlocked=True)
     elif status == "locked":
         bots_qs = bots_qs.filter(unlocked=False)
+    if name_query:
+        bots_qs = bots_qs.filter(bot_definition__name__icontains=name_query)
 
     any_battles = BattleReport.objects.filter(player=player).exists()
 

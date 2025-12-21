@@ -47,6 +47,11 @@
         a.className = "search-item";
         a.setAttribute("role", "option");
         a.dataset.index = String(idx);
+        if (row.external) {
+          a.dataset.external = "1";
+          a.target = "_blank";
+          a.rel = "noopener noreferrer";
+        }
 
         const title = document.createElement("div");
         title.className = "search-item-title";
@@ -133,6 +138,11 @@
           const selected = dropdown.querySelector(`.search-item[data-index="${activeIndex}"]`);
           if (selected) {
             event.preventDefault();
+            if (selected.dataset.external === "1") {
+              window.open(selected.href, "_blank", "noopener,noreferrer");
+              clearResults();
+              return;
+            }
             window.location.href = selected.href;
           }
         }

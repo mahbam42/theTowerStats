@@ -33,7 +33,7 @@ Search helps you navigate the app quickly by finding pages and your saved labels
 > Search results reflect the account currently signed in. Presets and snapshots from other accounts do not appear.
 
 > **Note**
-> Documentation search opens the published docs site. Availability depends on the docs site being reachable from your device.
+> Documentation search opens the published docs site in a new tab. Availability depends on the docs site being reachable from your device.
 
 ## Advanced Usage
 
