@@ -17,6 +17,8 @@ from definitions.models import ParameterKey, UltimateWeaponDefinition, UltimateW
 from gamedata.models import BattleReport, BattleReportProgress
 from player_state.models import PlayerUltimateWeapon, PlayerUltimateWeaponParameter
 
+pytestmark = pytest.mark.integration
+
 
 @pytest.mark.django_db
 def test_build_player_context_includes_selected_parameter_levels(player) -> None:

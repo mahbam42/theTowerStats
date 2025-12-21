@@ -5,6 +5,8 @@ from __future__ import annotations
 import pytest
 from django.urls import reverse
 
+pytestmark = pytest.mark.integration
+
 
 def _assert_nav_links(response) -> None:
     """Assert the global navigation renders and links resolve."""

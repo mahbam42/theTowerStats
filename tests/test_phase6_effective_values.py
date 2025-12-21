@@ -18,6 +18,8 @@ from definitions.models import (
 )
 from player_state.models import PlayerCard, PlayerUltimateWeapon, PlayerUltimateWeaponParameter
 
+pytestmark = pytest.mark.integration
+
 
 def _wiki(*, suffix: str | None = None) -> WikiData:
     """Create a minimal WikiData revision row."""

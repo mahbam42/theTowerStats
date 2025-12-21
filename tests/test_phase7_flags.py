@@ -7,6 +7,8 @@ from datetime import datetime, timezone
 
 import pytest
 
+pytestmark = pytest.mark.integration
+
 
 @pytest.mark.django_db
 def test_chart_flags_mark_incomplete_runs(auth_client, player) -> None:

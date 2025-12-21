@@ -11,6 +11,8 @@ import pytest
 from gamedata.models import BattleReport, BattleReportProgress
 from player_state.models import Preset
 
+pytestmark = pytest.mark.integration
+
 
 def _panel(response, *, chart_id: str) -> dict[str, Any]:
     """Return a chart panel payload from the dashboard response context."""

@@ -7,6 +7,8 @@ from datetime import datetime, timezone
 
 import pytest
 
+pytestmark = pytest.mark.integration
+
 
 @pytest.mark.django_db
 def test_patch_boundary_dates_are_flagged_in_charts(auth_client, player) -> None:

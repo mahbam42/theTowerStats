@@ -6,6 +6,8 @@ from datetime import datetime, timedelta, timezone
 
 import pytest
 
+pytestmark = pytest.mark.integration
+
 
 @pytest.mark.django_db
 def test_chart_guardrail_limits_data_points(auth_client, player) -> None:

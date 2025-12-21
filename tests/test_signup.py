@@ -6,6 +6,8 @@ import pytest
 from django.contrib.auth import get_user_model
 from django.urls import reverse
 
+pytestmark = pytest.mark.integration
+
 
 @pytest.mark.django_db
 def test_login_page_includes_account_creation_form(client) -> None:
@@ -43,4 +45,3 @@ def test_signup_creates_user_and_logs_in(client) -> None:
 
     dashboard = client.get(reverse("core:dashboard"))
     assert dashboard.status_code == 200
-

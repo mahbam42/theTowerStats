@@ -78,3 +78,52 @@ def test_battle_history_includes_killed_by_donut_chart(auth_client, player) -> N
     assert response.context["killed_by_donut_json"] is not None
     assert "Boss" in response.context["killed_by_donut_json"]
     assert "Killed By (diagnostic)" in response.content.decode("utf-8")
+
+
+@pytest.mark.django_db
+def test_battle_history_excludes_tournaments_by_default_and_can_opt_in(auth_client, player) -> None:
+    """Tournament runs are excluded by default and can be explicitly included."""
+
+    ingest_battle_report(
+        "\n".join(
+            [
+                "Battle Report",
+                "Battle Date: 2025-12-01 13:45:00",
+                "Tier: 6",
+                "Wave: 111",
+                "Real Time: 1h 0m 0s",
+                "Killed By: Boss",
+                "Coins Earned: 1.00M",
+            ]
+        ),
+        player=player,
+    )
+    ingest_battle_report(
+        "\n".join(
+            [
+                "Battle Report",
+                "Battle Date: 2025-12-02 13:45:00",
+                "Tier: 3+",
+                "Wave: 222",
+                "Real Time: 1h 0m 0s",
+                "Killed By: Boss",
+                "Coins Earned: 1.00M",
+            ]
+        ),
+        player=player,
+    )
+
+    response = auth_client.get(reverse("core:battle_history"))
+    assert response.status_code == 200
+    content = response.content.decode("utf-8")
+    assert "111" in content
+    assert "222" not in content
+    assert "Tournament" not in content
+
+    response = auth_client.get(reverse("core:battle_history"), data={"include_tournaments": "on"})
+    assert response.status_code == 200
+    content = response.content.decode("utf-8")
+    assert "111" in content
+    assert "222" in content
+    assert "Tournament: 3+" in content
+    assert "tournament-row" in content

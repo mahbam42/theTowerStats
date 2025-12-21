@@ -6,6 +6,8 @@ import pytest
 from django.db import connections
 from django.db.migrations.loader import MigrationLoader
 
+pytestmark = pytest.mark.integration
+
 
 @pytest.mark.django_db
 def test_player_state_migrations_have_single_leaf() -> None:

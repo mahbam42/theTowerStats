@@ -10,6 +10,8 @@ from django.core.management import call_command
 from core.parsers.battle_report import compute_battle_report_checksum
 from gamedata.models import BattleReport, BattleReportProgress
 
+pytestmark = pytest.mark.integration
+
 
 @pytest.mark.django_db
 def test_reparse_battle_reports_backfills_progress_fields(player) -> None:

@@ -6,6 +6,8 @@ from datetime import date, datetime, timezone
 
 import pytest
 
+pytestmark = pytest.mark.integration
+
 
 @pytest.mark.django_db
 def test_chart_config_dto_validation_rejects_mixed_units() -> None:

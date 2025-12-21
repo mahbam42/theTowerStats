@@ -35,6 +35,8 @@ from player_state.models import (
     PlayerUltimateWeaponParameter,
 )
 
+pytestmark = pytest.mark.integration
+
 
 def _create_wikidata_level_row(
     *,

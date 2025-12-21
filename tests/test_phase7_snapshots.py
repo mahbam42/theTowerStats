@@ -10,6 +10,8 @@ import pytest
 from django.core.exceptions import ValidationError
 from django.urls import reverse
 
+pytestmark = pytest.mark.integration
+
 
 @pytest.mark.django_db
 def test_chart_snapshot_is_immutable(player) -> None:

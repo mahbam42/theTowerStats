@@ -19,6 +19,8 @@ from core.wiki_ingestion import (
     scrape_leveled_entity_rows,
 )
 
+pytestmark = pytest.mark.integration
+
 
 def _fixture_html(name: str) -> str:
     """Load HTML fixture content from the tests fixture directory."""

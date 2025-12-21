@@ -23,6 +23,8 @@ from definitions.models import (
 from gamedata.models import BattleReport, BattleReportProgress, RunBot
 from player_state.models import PlayerBot, PlayerBotParameter, PlayerCard, Preset
 
+pytestmark = pytest.mark.integration
+
 
 @pytest.mark.django_db
 def test_models_create_minimal_rows(player) -> None:

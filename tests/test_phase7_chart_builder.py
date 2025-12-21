@@ -7,6 +7,8 @@ from datetime import datetime, timezone
 
 import pytest
 
+pytestmark = pytest.mark.integration
+
 
 @pytest.mark.django_db
 def test_chart_builder_renders_runtime_chart(auth_client, player) -> None:

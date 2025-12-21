@@ -11,6 +11,8 @@ from django.urls import reverse
 
 from gamedata.models import BattleReport, BattleReportProgress
 
+pytestmark = pytest.mark.integration
+
 
 @pytest.mark.django_db
 def test_dashboard_and_battle_history_are_player_scoped(client) -> None:
@@ -66,4 +68,3 @@ def test_dashboard_and_battle_history_are_player_scoped(client) -> None:
     content = history.content.decode("utf-8")
     assert "111" in content
     assert "222" not in content
-

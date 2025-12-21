@@ -7,6 +7,8 @@ from django.contrib.auth.models import Group
 
 from player_state.signals import _ensure_default_group_permissions
 
+pytestmark = pytest.mark.integration
+
 
 @pytest.mark.django_db
 def test_default_groups_receive_expected_model_permissions() -> None:

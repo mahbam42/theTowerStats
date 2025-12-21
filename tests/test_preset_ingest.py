@@ -8,6 +8,8 @@ from gamedata.models import BattleReportProgress
 from player_state.models import Preset
 from core.services import ingest_battle_report
 
+pytestmark = pytest.mark.integration
+
 
 @pytest.mark.django_db
 def test_ingest_battle_report_associates_preset_tag(player) -> None:

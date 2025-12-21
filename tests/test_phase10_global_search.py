@@ -9,6 +9,8 @@ from django.urls import reverse
 from definitions.models import BotDefinition, CardDefinition, GuardianChipDefinition, UltimateWeaponDefinition
 from player_state.models import ChartSnapshot, Preset
 
+pytestmark = pytest.mark.integration
+
 
 @pytest.mark.django_db
 def test_search_api_returns_navigation_and_docs_results(client) -> None:

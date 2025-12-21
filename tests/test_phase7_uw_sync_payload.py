@@ -5,6 +5,8 @@ from __future__ import annotations
 import pytest
 from typing import cast
 
+pytestmark = pytest.mark.integration
+
 
 @pytest.mark.django_db
 def test_uw_sync_payload_includes_golden_bot_and_overlap_windows(player) -> None:

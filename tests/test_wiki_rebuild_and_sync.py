@@ -12,6 +12,8 @@ from definitions.wiki_rebuild import rebuild_bots_from_wikidata
 from player_state.models import PlayerBot, PlayerBotParameter
 from player_state.sync import sync_player_state_from_definitions
 
+pytestmark = pytest.mark.integration
+
 
 FIXTURES_DIR = Path(__file__).parent / "fixtures"
 
