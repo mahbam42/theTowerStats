@@ -1,70 +1,70 @@
 
 # Table of Contents
 
-1.  [Stats Tracking App for The Tower Mobile Game](#org2c9b0de)
-    1.  [Goals/Intent](#orgda6ec61)
-    2.  [Requirements](#org1f8fae9)
-    3.  [Overall Architecture](#org7a3e12e)
-    4.  [Features](#orgc41d051)
-    5.  [Core Responsibilities](#orgba3e992)
-        1.  [Rate Calculations](#org1fc408c)
-        2.  [Delta Calculations](#org849a3a9)
-        3.  [Parameterized Effects](#orgee98e82)
-        4.  [Aggregations by Intent (Presets)](#org79e3a5b)
-        5.  [Analysis Engine Invocation](#org03b627d)
-        6.  [Output Shape](#org7588476)
-        7.  [Module Structure (Suggested)](#org44ab3e1)
-    6.  [UX Design](#org48ac697)
-    7.  [Example Stat Data](#orgf898e4c)
-    8.  [Models](#org98bd155)
-        1.  [Game Data](#org648191d)
-        2.  [BotsParameters](#org4fa1baf)
-        3.  [CardDefinition](#org2bb5e7e)
-        4.  [CardLevel / Star](#orgae3c123)
-        5.  [CardParameters](#org042cd74)
-        6.  [CardSlots](#org0ebdfd4)
-        7.  [GuardianChipParemeters](#org15d1cbd)
-        8.  [PlayerBot](#org87fa2fa)
-        9.  [PlayerCard](#org34d9f77)
-        10. [PlayerGuardianChip](#org3563025)
-        11. [PlayerUltimateWeapon](#org5ed9f5f)
-        12. [PresetTags](#orgcdbddf4)
-        13. [UltimateWeaponParameters](#orgd87fa01)
-        14. [Unit Model](#org720d69b)
-        15. [WikiData](#orgfa487d4)
-    9.  [Views](#orgd6ed15d)
-        1.  [Battle History](#org22c6682)
-        2.  [Cards](#orge92e136)
-        3.  [Charts](#org28470dc)
-        4.  [UW Progress](#orgce4a004)
-        5.  [Guardian Progress](#org3fa5320)
-        6.  [Bots Progress](#org0f54b59)
-    10. [Management Commands](#org9604cf0)
-        1.  [fetch<sub>wiki</sub><sub>data</sub>](#org9dbb59a)
-        2.  [add<sub>battle</sub><sub>report</sub>](#orgd12d4ff)
-    11. [Repo Structure](#org72c30ea)
-    12. [Testing Standards](#org7e5039d)
-    13. [Sprint Roadmap](#org6ed8bfb)
-        1.  [Phase 1 Foundations](#orga59fe7b)
-        2.  [Phase 2 Context](#org3e67629)
-        3.  [Phase 3 — App Structure & UX](#org5ed34e5)
-        4.  [Phase 4 Effects](#orgb584e09)
-        5.  [Phase 5 Dashboard UX <code>[100%]</code>](#orgbc5fad6)
-        6.  [Phase 6 Expansion of Foundation and Context <code>[33%]</code>](#org8b6bc28)
-        7.  [Phase 7 Power Tools <code>[100%]</code>](#orga835946)
-        8.  [Phase 8 Multiple Player Support](#orgc89eaa1)
-        9.  [Phase 9 Deploy and Clean out Backlog <code>[100%]</code>](#org07e8634)
-        10. [Phase 10 v0.2.0](#org3f1aa12)
-        11. [Phase 10B Additional UX](#orgf341a68)
-    14. [Backlog <code>[0/10]</code>](#org03d35b3)
-        1.  [Ranked Recommendations](#org24ecf23)
-        2.  [Wmhat-If Scenarios](#orga672cf6)
-        3.  [Exploratory Pattern Analysis](#orgeb2b321)
-        4.  [Normalize time handling everywhere (game time vs real time vs accelerated)](#org1bc57fa)
-        5.  [Hide Deathwave on UW Sync Chart](#org88da0d9)
-        6.  [Required Doc Type Header (Must Prepend to All Docs)](#org5ab9602)
-        7.  [Complete](#org758b5af)
-    15. [Codex Tasks](#org4fb41fa)
+1.  [Stats Tracking App for The Tower Mobile Game](#org4b6f9ee)
+    1.  [Goals/Intent](#orgdb67d44)
+    2.  [Requirements](#orge0a2ff7)
+    3.  [Overall Architecture](#org968adca)
+    4.  [Features](#org0d361c7)
+    5.  [Core Responsibilities](#orgc10cab9)
+        1.  [Rate Calculations](#org420ccc3)
+        2.  [Delta Calculations](#orge6e4c59)
+        3.  [Parameterized Effects](#orgfda56ed)
+        4.  [Aggregations by Intent (Presets)](#orgbb97da5)
+        5.  [Analysis Engine Invocation](#org8512bfa)
+        6.  [Output Shape](#org6ba2d33)
+        7.  [Module Structure (Suggested)](#orgb33a790)
+    6.  [UX Design](#org7ef4dee)
+    7.  [Example Stat Data](#org1478776)
+    8.  [Models](#org4e56337)
+        1.  [Game Data](#org4a4e740)
+        2.  [BotsParameters](#orgc757481)
+        3.  [CardDefinition](#org275db11)
+        4.  [CardLevel / Star](#org5aa7225)
+        5.  [CardParameters](#orga10cc1c)
+        6.  [CardSlots](#orgeceeb94)
+        7.  [GuardianChipParemeters](#org6eadd0f)
+        8.  [PlayerBot](#org7879994)
+        9.  [PlayerCard](#org555fd50)
+        10. [PlayerGuardianChip](#org7ec5092)
+        11. [PlayerUltimateWeapon](#org002fecf)
+        12. [PresetTags](#org665f04b)
+        13. [UltimateWeaponParameters](#orgfc38851)
+        14. [Unit Model](#org168515f)
+        15. [WikiData](#orgeb0502a)
+    9.  [Views](#orge83dc07)
+        1.  [Battle History](#org32c258c)
+        2.  [Cards](#orgde7b25b)
+        3.  [Charts](#orgbdb6d23)
+        4.  [UW Progress](#orge4b2b37)
+        5.  [Guardian Progress](#orgb6a5066)
+        6.  [Bots Progress](#org90df9df)
+    10. [Management Commands](#org97c0fc8)
+        1.  [fetch<sub>wiki</sub><sub>data</sub>](#org5111063)
+        2.  [add<sub>battle</sub><sub>report</sub>](#org9bb82ba)
+    11. [Repo Structure](#orgea2dbf0)
+    12. [Testing Standards](#org0a56c80)
+    13. [Sprint Roadmap](#org81b6629)
+        1.  [Phase 1 Foundations](#org28425d5)
+        2.  [Phase 2 Context](#org68b514b)
+        3.  [Phase 3 — App Structure & UX](#org116fd4d)
+        4.  [Phase 4 Effects](#org203e4ea)
+        5.  [Phase 5 Dashboard UX <code>[100%]</code>](#orgf360f99)
+        6.  [Phase 6 Expansion of Foundation and Context <code>[33%]</code>](#org1256afa)
+        7.  [Phase 7 Power Tools <code>[100%]</code>](#org72ef2d4)
+        8.  [Phase 8 Multiple Player Support](#org89b01ce)
+        9.  [Phase 9 Deploy and Clean out Backlog <code>[100%]</code>](#org04dd5de)
+        10. [Phase 10 v0.2.0](#org63848e0)
+        11. [Phase 10B Additional UX](#org73e0f43)
+    14. [Backlog <code>[0/10]</code>](#org205dda3)
+        1.  [Ranked Recommendations](#org51d9955)
+        2.  [Wmhat-If Scenarios](#orge44aa1f)
+        3.  [Exploratory Pattern Analysis](#org4711130)
+        4.  [Normalize time handling everywhere (game time vs real time vs accelerated)](#org786fb8c)
+        5.  [Hide Deathwave on UW Sync Chart](#org15395d4)
+        6.  [Required Doc Type Header (Must Prepend to All Docs)](#orgb7be7b0)
+        7.  [Complete](#orge6b0d6c)
+    15. [Codex Tasks](#org6ca7df7)
 
 ****Codex:**** So help me I will end you if I ever see you checkout or touch this file. Refer to agents.md if you stumble upon this file again.
 
@@ -76,12 +76,12 @@ If discrepancies are found, refer to git history where available.
 &#x2013;>
 
 
-<a id="org2c9b0de"></a>
+<a id="org4b6f9ee"></a>
 
 # Stats Tracking App for The Tower Mobile Game
 
 
-<a id="orgda6ec61"></a>
+<a id="orgdb67d44"></a>
 
 ## Goals/Intent
 
@@ -96,7 +96,7 @@ If discrepancies are found, refer to git history where available.
     -   Battle Results form is designed for mobile
 
 
-<a id="org1f8fae9"></a>
+<a id="orge0a2ff7"></a>
 
 ## Requirements
 
@@ -112,7 +112,7 @@ ruff
 mypy
 
 
-<a id="org7a3e12e"></a>
+<a id="org968adca"></a>
 
 ## Overall Architecture
 
@@ -127,7 +127,7 @@ Derived Metrics
 Charts / Views
 
 
-<a id="orgc41d051"></a>
+<a id="org0d361c7"></a>
 
 ## Features
 
@@ -154,12 +154,12 @@ Targets:
 -   UW Upgrade Table
 
 
-<a id="orgba3e992"></a>
+<a id="orgc10cab9"></a>
 
 ## Core Responsibilities
 
 
-<a id="org1fc408c"></a>
+<a id="org420ccc3"></a>
 
 ### Rate Calculations
 
@@ -173,7 +173,7 @@ Targets:
 These back Phase 1 charts directly.
 
 
-<a id="org849a3a9"></a>
+<a id="orge6e4c59"></a>
 
 ### Delta Calculations
 
@@ -191,7 +191,7 @@ Examples:
 No interpretation — just math.
 
 
-<a id="orgee98e82"></a>
+<a id="orgfda56ed"></a>
 
 ### Parameterized Effects
 
@@ -208,7 +208,7 @@ These are:
 -   Fully testable with golden tests
 
 
-<a id="org79e3a5b"></a>
+<a id="orgbb97da5"></a>
 
 ### Aggregations by Intent (Presets)
 
@@ -221,7 +221,7 @@ These are:
 It does not decide which preset is better.
 
 
-<a id="org03b627d"></a>
+<a id="org8512bfa"></a>
 
 ### Analysis Engine Invocation
 
@@ -232,7 +232,7 @@ It does not decide which preset is better.
     -   No DB writes
 
 
-<a id="org7588476"></a>
+<a id="org6ba2d33"></a>
 
 ### Output Shape
 
@@ -255,7 +255,7 @@ All outputs should conform to a small set of DTO-style objects:
 This maps cleanly to Chart.js datasets.
 
 
-<a id="org44ab3e1"></a>
+<a id="orgb33a790"></a>
 
 ### Module Structure (Suggested)
 
@@ -272,7 +272,7 @@ analysis/
 │   └── fixtures/
 
 
-<a id="org48ac697"></a>
+<a id="org7ef4dee"></a>
 
 ## UX Design
 
@@ -283,7 +283,7 @@ analysis/
 -   Maxed Out/Completed Upgrades are highlighted with a Gold Box outline
 
 
-<a id="orgf898e4c"></a>
+<a id="org1478776"></a>
 
 ## Example Stat Data
 
@@ -386,12 +386,12 @@ Rare Modules	0
 \#+END<sub>SR</sub>
 
 
-<a id="org98bd155"></a>
+<a id="org4e56337"></a>
 
 ## Models
 
 
-<a id="org648191d"></a>
+<a id="org4a4e740"></a>
 
 ### Game Data
 
@@ -542,7 +542,7 @@ Properties:
     Rare Modules	0
 
 
-<a id="org4fa1baf"></a>
+<a id="orgc757481"></a>
 
 ### BotsParameters
 
@@ -550,7 +550,7 @@ Wiki-derived, FK to PlayerBots
 Immutable per revision. When the wiki changes, insert a new row — don’t overwrite.
 
 
-<a id="org2bb5e7e"></a>
+<a id="org275db11"></a>
 
 ### CardDefinition
 
@@ -563,7 +563,7 @@ Properties:
 -   preset<sub>tags</sub> (FK)
 
 
-<a id="orgae3c123"></a>
+<a id="org5aa7225"></a>
 
 ### CardLevel / Star
 
@@ -572,7 +572,7 @@ Properties:
 -   **value:** value of current effect (between base and max)
 
 
-<a id="org042cd74"></a>
+<a id="orga10cc1c"></a>
 
 ### CardParameters
 
@@ -580,7 +580,7 @@ Wiki-derived, FK to PlayerCard
 Immutable per revision. When the wiki changes, insert a new row — don’t overwrite.
 
 
-<a id="org0ebdfd4"></a>
+<a id="orgeceeb94"></a>
 
 ### CardSlots
 
@@ -593,7 +593,7 @@ Properties:
 -   Cost integer (Gems)
 
 
-<a id="org15d1cbd"></a>
+<a id="org6eadd0f"></a>
 
 ### GuardianChipParemeters
 
@@ -601,7 +601,7 @@ Wiki-derived, FK to PlayerGuardianChip
 Immutable per revision. When the wiki changes, insert a new row — don’t overwrite.
 
 
-<a id="org87fa2fa"></a>
+<a id="org7879994"></a>
 
 ### PlayerBot
 
@@ -611,7 +611,7 @@ Properties:
 -   **unlocked:** checkbox
 
 
-<a id="org34d9f77"></a>
+<a id="org555fd50"></a>
 
 ### PlayerCard
 
@@ -623,7 +623,7 @@ Properties:
 -   **Cards:** integer progress toward next level. 0, 3, 5, 8, 12, 20, 32
 
 
-<a id="org3563025"></a>
+<a id="org7ec5092"></a>
 
 ### PlayerGuardianChip
 
@@ -633,7 +633,7 @@ Properties:
 -   **unlocked:** checkbox
 
 
-<a id="org5ed9f5f"></a>
+<a id="org002fecf"></a>
 
 ### PlayerUltimateWeapon
 
@@ -643,7 +643,7 @@ Properties:
 -   **unlocked:** checkbox
 
 
-<a id="orgcdbddf4"></a>
+<a id="org665f04b"></a>
 
 ### PresetTags
 
@@ -652,7 +652,7 @@ Properties:
 -   **limit:** FK with Card Slots
 
 
-<a id="orgd87fa01"></a>
+<a id="orgfc38851"></a>
 
 ### UltimateWeaponParameters
 
@@ -671,7 +671,7 @@ Properties:
 -   **Spent:** integer (stones)
 
 
-<a id="org720d69b"></a>
+<a id="org168515f"></a>
 
 ### Unit Model
 
@@ -685,7 +685,7 @@ Properties:
 -   **unit<sub>type</sub>:** coins, damage, count, time
 
 
-<a id="orgfa487d4"></a>
+<a id="orgeb0502a"></a>
 
 ### WikiData
 
@@ -701,26 +701,26 @@ Stores the anchor names and retrived data caches for Card, Ultimate Weapons, and
 -   parse<sub>version</sub>
 
 
-<a id="orgd6ed15d"></a>
+<a id="orge83dc07"></a>
 
 ## Views
 
 
-<a id="org22c6682"></a>
+<a id="org32c258c"></a>
 
 ### Battle History
 
 View previously entered stats 
 
 
-<a id="orge92e136"></a>
+<a id="orgde7b25b"></a>
 
 ### Cards
 
 Combine 'Cards,' 'CardLevel' and 'CardSlots'
 
 
-<a id="org28470dc"></a>
+<a id="orgbdb6d23"></a>
 
 ### Charts
 
@@ -764,14 +764,14 @@ Sub Charts:
     -   Coins per wave vs wave number
 
 
-<a id="orgce4a004"></a>
+<a id="orge4b2b37"></a>
 
 ### UW Progress
 
 -   Button to add new UW
 
 
-<a id="org3fa5320"></a>
+<a id="orgb6a5066"></a>
 
 ### Guardian Progress
 
@@ -779,19 +779,19 @@ Sub Charts:
 -   checkbox to flag equiped
 
 
-<a id="org0f54b59"></a>
+<a id="org90df9df"></a>
 
 ### Bots Progress
 
 -   button to add new bot
 
 
-<a id="org9604cf0"></a>
+<a id="org97c0fc8"></a>
 
 ## Management Commands
 
 
-<a id="org9dbb59a"></a>
+<a id="org5111063"></a>
 
 ### fetch<sub>wiki</sub><sub>data</sub>
 
@@ -812,7 +812,7 @@ Example:
 -   “Logs entity added / changed / unchanged counts”
 
 
-<a id="orgd12d4ff"></a>
+<a id="org9bb82ba"></a>
 
 ### add<sub>battle</sub><sub>report</sub>
 
@@ -821,7 +821,7 @@ Ingest and parse battle report data from the player. This is a large blob of dat
 Parser should gracefully alert the player to new labels that may appear after a game update.
 
 
-<a id="org72c30ea"></a>
+<a id="orgea2dbf0"></a>
 
 ## Repo Structure
 
@@ -859,7 +859,7 @@ theTower<sub>stats</sub><sub>app</sub>
 └── &#x2026;
 
 
-<a id="org7e5039d"></a>
+<a id="org0a56c80"></a>
 
 ## Testing Standards
 
@@ -870,14 +870,14 @@ theTower<sub>stats</sub><sub>app</sub>
 -   When completing code, start building/executing tests as specific as possible to the code you changed so that you can catch issues efficiently, then make your way to broader tests as you build confidence.
 
 
-<a id="org6ed8bfb"></a>
+<a id="org81b6629"></a>
 
 ## Sprint Roadmap
 
 Each phase must be demoable without admin intervention.
 
 
-<a id="orga59fe7b"></a>
+<a id="org28425d5"></a>
 
 ### DONE Phase 1 Foundations
 
@@ -921,7 +921,7 @@ Each phase must be demoable without admin intervention.
     -   [X] Test suite passes with no skipped tests
 
 
-<a id="org3e67629"></a>
+<a id="org68b514b"></a>
 
 ### DONE Phase 2 Context
 
@@ -967,7 +967,7 @@ Each phase must be demoable without admin intervention.
     -   [X] 1 aggregation test using presets
 
 
-<a id="org5ed34e5"></a>
+<a id="org116fd4d"></a>
 
 ### DONE Phase 3 — App Structure & UX
 
@@ -981,7 +981,7 @@ Each phase must be demoable without admin intervention.
     -   [X] Model completeness (structure, not logic)
 
 
-<a id="orgb584e09"></a>
+<a id="org203e4ea"></a>
 
 ### DONE Phase 4 Effects
 
@@ -1105,7 +1105,7 @@ Each phase must be demoable without admin intervention.
         -   [X] 1 test validating revision behavior
 
 
-<a id="orgbc5fad6"></a>
+<a id="orgf360f99"></a>
 
 ### DONE Phase 5 Dashboard UX <code>[100%]</code>
 
@@ -1513,7 +1513,7 @@ General conventions across all Dashboards:
     4.  Understand trends …without explanation.
 
 
-<a id="org8b6bc28"></a>
+<a id="org1256afa"></a>
 
 ### DONE Phase 6 Expansion of Foundation and Context <code>[33%]</code>
 
@@ -1724,7 +1724,7 @@ This prevents balance arguments from stalling Phase 6.
 -   No efficiency or recommendation logic depends on undocumented assumptions
 
 
-<a id="orga835946"></a>
+<a id="org72ef2d4"></a>
 
 ### DONE Phase 7 Power Tools <code>[100%]</code>
 
@@ -1858,7 +1858,7 @@ This prevents balance arguments from stalling Phase 6.
         Implement explicit insufficiency detection (e.g., <N runs per scope, missing values, empty windows) and return a structured advice item that says “Insufficient data” + why; add tests for empty and thin scopes.
 
 
-<a id="orgc89eaa1"></a>
+<a id="org89b01ce"></a>
 
 ### DONE Phase 8 Multiple Player Support
 
@@ -2229,7 +2229,7 @@ Thirty guild members can use this daily without seeing, affecting, or confusing 
     Run checks or Ruff Check, mypy ., pytest -q
 
 
-<a id="org07e8634"></a>
+<a id="org04dd5de"></a>
 
 ### DONE Phase 9 Deploy and Clean out Backlog <code>[100%]</code>
 
@@ -2393,7 +2393,7 @@ You can confidently deploy when all Blocking items are complete, even if none of
     I dont see a UI element for it, nor is it covered in the documentation
 
 
-<a id="org3f1aa12"></a>
+<a id="org63848e0"></a>
 
 ### DONE Phase 10 v0.2.0
 
@@ -2696,7 +2696,7 @@ Non-Goals:
         Search should have global scope within the app. 
 
 
-<a id="orgf341a68"></a>
+<a id="org73e0f43"></a>
 
 ### Phase 10B Additional UX
 
@@ -2829,7 +2829,7 @@ Non-Goals for Phase 10:
     -   No accidental downgrades
 
 
-<a id="org03d35b3"></a>
+<a id="org205dda3"></a>
 
 ## Backlog <code>[0/10]</code>
 
@@ -2839,7 +2839,7 @@ Non-Goals for Phase 10:
 -   Real-time scraping
 
 
-<a id="org24ecf23"></a>
+<a id="org51d9955"></a>
 
 ### TODO Ranked Recommendations
 
@@ -2870,7 +2870,7 @@ What would change the recommendation
 This keeps it defensible.
 
 
-<a id="orga672cf6"></a>
+<a id="orge44aa1f"></a>
 
 ### TODO Wmhat-If Scenarios
 
@@ -2891,7 +2891,7 @@ No RNG modeling
 No balance speculation
 
 
-<a id="orgeb2b321"></a>
+<a id="org4711130"></a>
 
 ### TODO Exploratory Pattern Analysis
 
@@ -3049,21 +3049,21 @@ If done right, global clustering becomes:
 That’s rare in game-adjacent tools — and a real differentiator.
 
 
-<a id="org1bc57fa"></a>
+<a id="org786fb8c"></a>
 
 ### TODO Normalize time handling everywhere (game time vs real time vs accelerated)
 
 Game Time can be accelerated and the rate can be changed during a run. Either via Lab Research (max of 5x) or via perks that increase it further to a variable factor (increased by additional researchs). The hard maximum is 6.25x (according to the Wiki). However the Wiki also notes "Game speed is not accurate. x5.0 speed behaves closer to x4.0 while 6.25 is closer to x5." So our handling of it is not strictly necessary. 
 
 
-<a id="org88da0d9"></a>
+<a id="org15395d4"></a>
 
 ### TODO Hide Deathwave on UW Sync Chart
 
 Add an optional toggle to show/hide the Death Wave activation markers (so the schedule focuses on GT/BH overlap), while still keeping everything descriptive.
 
 
-<a id="org5ab9602"></a>
+<a id="orgb7be7b0"></a>
 
 ### TODO Required Doc Type Header (Must Prepend to All Docs)
 
@@ -3151,7 +3151,7 @@ If Codex is unsure which header to use:
     Validate the final document against the Documentation Self-Check Checklist before completing the task.
 
 
-<a id="org758b5af"></a>
+<a id="orge6b0d6c"></a>
 
 ### Complete
 
@@ -3192,7 +3192,7 @@ If Codex is unsure which header to use:
     Mostly a visual tweak, but adds context and history for the player to interpert their performance history. 
 
 
-<a id="org4fb41fa"></a>
+<a id="org6ca7df7"></a>
 
 ## Codex Tasks
 
@@ -3220,8 +3220,9 @@ If Codex is unsure which header to use:
 -   [X] prompt 32 Validation
 -   [X] prompt 33 Deployment Prep
 -   [X] prompt 33 Validation
--   [ ] prompt 34 Stabilize, standardize, and clarify
--   [ ] Phase 10 Validation
+-   [X] prompt 34 Stabilize, standardize, and clarify
+-   [X] Phase 10 Validation
+-   [ ] prompt 35 phase 10b
 
 -   [ ] version1.0.md
 
