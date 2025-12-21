@@ -52,9 +52,6 @@
       </div>
       <div class="top-bar-right">
         <ul class="menu">
-          <li>
-            <input type="search" placeholder="Search (coming soon)" aria-label="Search theTowerStats" />
-          </li>
           <li><a href="https://mahbam42.github.io/theTowerStats/" target="_blank" rel="noopener noreferrer">Docs</a></li>
           {% if user.is_authenticated and user.is_staff or user.is_authenticated and user.is_superuser %}
             <li><a href="/admin/" target="_blank" rel="noreferrer">Admin</a></li>
@@ -87,6 +84,21 @@
             <li><a href="{% url 'login' %}">Sign in</a></li>
           {% endif %}
         </ul>
+
+        <div class="top-bar-search">
+          <form method="get" action="{% url 'core:search' %}" class="search-form" autocomplete="off">
+            <label class="show-for-sr">Search</label>
+            <input
+              type="search"
+              id="global-search-input"
+              name="q"
+              placeholder="Search…"
+              aria-label="Search pages, presets, and snapshots"
+              data-search-endpoint="{% url 'core:search_api' %}"
+            />
+          </form>
+          <div id="global-search-dropdown" class="search-dropdown" role="listbox" aria-label="Search results" hidden></div>
+        </div>
       </div>
     </div>
 

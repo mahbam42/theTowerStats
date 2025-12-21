@@ -38,6 +38,7 @@ nav:
   - Home: index.md
   - User Guide:
       - Overview: user_guide.md
+      - Search: search.md
       - Demo Data: demo_data.md
       - Battle History: battle_history.md
       - Charts: charts.md

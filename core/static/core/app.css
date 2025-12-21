@@ -122,6 +122,57 @@ body {
   text-decoration: underline;
 }
 
+.top-bar-search {
+  display: flex;
+  justify-content: flex-end;
+  margin-top: var(--tts-space-2);
+  position: relative;
+}
+
+.top-bar-search .search-form {
+  width: min(28rem, 100%);
+}
+
+.top-bar-search input[type="search"] {
+  margin: 0;
+}
+
+.search-dropdown {
+  position: absolute;
+  top: calc(100% + var(--tts-space-2));
+  right: 0;
+  width: min(32rem, 100%);
+  background: var(--tts-color-surface);
+  border: 1px solid var(--tts-color-border);
+  border-radius: var(--tts-radius-2);
+  box-shadow: 0 10px 24px rgba(0, 0, 0, 0.12);
+  padding: var(--tts-space-2);
+  z-index: 30;
+}
+
+.search-dropdown .search-item {
+  display: block;
+  padding: var(--tts-space-2) var(--tts-space-3);
+  border-radius: var(--tts-radius-1);
+  color: inherit;
+}
+
+.search-dropdown .search-item:hover,
+.search-dropdown .search-item:focus,
+.search-dropdown .search-item.is-selected {
+  background: rgba(23, 121, 186, 0.12);
+  outline: none;
+}
+
+.search-dropdown .search-item-title {
+  font-weight: 600;
+}
+
+.search-dropdown .search-item-subtitle {
+  font-size: var(--tts-font-label);
+  color: var(--tts-color-text-muted);
+}
+
 .chart-panel canvas {
   max-width: 100%;
 }

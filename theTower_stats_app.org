@@ -1959,14 +1959,18 @@ Non-Goals:
   
 **** Release & Maintainability
 
-***** TODO [#A] Update readme.md
+***** DONE [#A] Update readme.md
+CLOSED: [2025-12-21 Sun 14:27]
 
+- State "DONE"       from "TODO"       [2025-12-21 Sun 14:27]
 - Make sure it's still aligned with App Behavior and Features
 - Project Status marks v0.1.0 Release
   and reflects docs/ revisions
   - Can add brief summary of v0.2.0 work in progress and coming soon
 - Add link to the app deployed on Railway thetowerstats.up.railway.app
-***** TODO [#B] Implement ChangeLog.md
+***** DONE [#B] Implement ChangeLog.md
+CLOSED: [2025-12-21 Sun 14:27]
+- State "DONE"       from "TODO"       [2025-12-21 Sun 14:27]
 Add to Docs and link in README.md
 
 - Start initially with brief summary of work leading to v0.1.0 release and point to Developer Docs for additional detail.
@@ -1982,19 +1986,25 @@ Add to Docs and link in README.md
     - Developer doc (if applicable)
 
 - Moving forward there will be changes to agents.md and conventions for maintaining CHANGELOG.md
-***** TODO [#B] Extend Python Versioning in Django.yml
+***** DONE [#B] Extend Python Versioning in Django.yml
+CLOSED: [2025-12-21 Sun 14:27]
+- State "DONE"       from "TODO"       [2025-12-21 Sun 14:27]
 The app has been built and working with Python 3.14, but I don't think any of it requires the latest bleeding edge. 
 
  Specifically add python3.13.11 to match Railway's Environment
-***** TODO [#C] Write Phase 9 Developer Docs
+***** DONE [#C] Write Phase 9 Developer Docs
+CLOSED: [2025-12-21 Sun 14:27]
 
+- State "DONE"       from "TODO"       [2025-12-21 Sun 14:27]
 **** UX & Interaction Refinement (Core UX)
 - All spacing must resolve to the design scale
 - All buttons must be primary or secondary — no ad-hoc styles
 - Charts must use the shared palette registry
 
-***** TODO [#A] Global Theming & Styling Suggestions
+***** DONE [#A] Global Theming & Styling Suggestions
+CLOSED: [2025-12-21 Sun 14:27]
 
+- State "DONE"       from "TODO"       [2025-12-21 Sun 14:27]
     A. Introduce a ****design scale****
     
     Define (and enforce):
@@ -2026,8 +2036,10 @@ The app has been built and working with Python 3.14, but I don't think any of it
     
     Users should start recognizing metrics by color without reading labels.
 
-***** TODO [#B] Navigation Bar Cleanup (Important)
+***** DONE [#B] Navigation Bar Cleanup (Important)
+CLOSED: [2025-12-21 Sun 14:27]
 
+- State "DONE"       from "TODO"       [2025-12-21 Sun 14:27]
 **Constraints:**
 
 - Max 4 primary nav items
@@ -2076,7 +2088,9 @@ B. Highlight current section strongly
     
     This matters as the app grows.
 
-***** TODO [#B] Improve Charts Controls
+***** DONE [#B] Improve Charts Controls
+CLOSED: [2025-12-21 Sun 14:27]
+- State "DONE"       from "TODO"       [2025-12-21 Sun 14:27]
 > Key Principles
 > - Context defines scope, not visualization
 > - Charts are the focal point
@@ -2213,20 +2227,32 @@ On mobile, the primary task is viewing trends, not configuring charts.
 ***** TODO [#C] Implement Search
 Search should have global scope within the app. 
 
-** Backlog [0/8]
-“Out of Scope”:
-- Cloud sync
-- Real-time scraping
-
-*** TODO [#A] Battle History Needs to Account for Tournament Runs.
-Battle Reports with 3+, 5+, 8+, etc are from Tournament Rounds and should be highlighted and separate from normal round tiers. There are modified enemy stats and added scaling battle conditions that make Tournament Rounds different from the corrisponding tiers. 
-
-*** TODO [#A] Test Suite Health
+*** Phase 11 Additional UX 
+**** TODO [#A] Test Suite Health (Blocking)
 - Defined unit and integration, but none of the tests use them, so you can’t easily run “fast unit only” vs “full integration” in CI/local.
 - Add callouts for Regression and Golden as an additional markers (orthogonal) for fixture-driven, checksum/snapshot-style tests.
 - Start using @pytest.mark.unit for pure functions/DTO parsing
 - Use @pytest.mark.integration for anything with @pytest.mark.django_db, views, commands, model interactions, wiki ingestion/rebuild, migrations.
 - Add Test Taxonomy and Markings to Developer Docs, and fast vs full coverage
+
+**** TODO [#A] Battle History Needs to Account for Tournament Runs.
+Battle Reports with 3+, 5+, 8+, etc are from Tournament Rounds and should be highlighted and separate from normal round tiers. There are modified enemy stats and added scaling battle conditions that make Tournament Rounds different from the corrisponding tiers. 
+
+**** TODO [#A] Condense "Signed in as <user>"
+Either just the user name, or an icon + <user>
+
+**** TODO [#C] Hide Demo Data Button on Mobile
+It takes up a lot of space
+
+**** TODO [#B] UW/Guardian Chip/Bots Dashboards
+- [ ] Flip the Level Up / Level Down buttons. Level Up is currently smaller and shows below Level Down. Level Up is the primary CTA
+
+** Backlog [0/10]
+“Out of Scope”:
+- Cloud sync
+- Real-time scraping
+
+
 *** TODO [#B] Ranked Recommendations
 
 Only now do you allow:

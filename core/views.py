@@ -99,6 +99,7 @@ from player_state.models import (
     Preset,
 )
 from core.services import ingest_battle_report
+from core.search import build_search_items
 from core.uw_sync import build_uw_sync_payload
 from core.uw_usage import count_observed_uw_runs
 
@@ -127,6 +128,32 @@ def _reject_demo_write(request: HttpRequest) -> HttpResponse:
 
     messages.error(request, "Demo mode is read-only. Exit demo mode to make changes.")
     return redirect(_safe_local_redirect_url(request, fallback=request.path))
+
+
+def search(request: HttpRequest) -> HttpResponse:
+    """Render the global search page."""
+
+    query = (request.GET.get("q") or "").strip()
+    results = build_search_items(request=request, query=query, limit=30) if query else []
+    return render(
+        request,
+        "core/search.html",
+        {
+            "query": query,
+            "results": results,
+            "demo_mode": demo_mode_enabled(request),
+        },
+    )
+
+
+def search_api(request: HttpRequest) -> JsonResponse:
+    """Return JSON search results for the global typeahead."""
+
+    query = (request.GET.get("q") or "").strip()
+    if not query:
+        return JsonResponse({"query": "", "results": []})
+    results = build_search_items(request=request, query=query, limit=10)
+    return JsonResponse({"query": query, "results": [item.as_json() for item in results]})
 
 
 @login_required
