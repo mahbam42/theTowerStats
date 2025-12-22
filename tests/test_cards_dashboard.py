@@ -139,7 +139,7 @@ def _card_names_in_table(html: str) -> list[str]:
         return []
     body = match.group("body")
     names = re.findall(
-        r'<tr[^>]*class="[^"]*card-row[^"]*"[^>]*>.*?<td>(?P<name>[^<]+)</td>',
+        r'<tr[^>]*class="[^"]*card-row[^"]*"[^>]*>.*?<td[^>]*class="[^"]*card-name[^"]*"[^>]*>\s*(?P<name>[^<]+)',
         body,
         flags=re.DOTALL,
     )
@@ -251,3 +251,59 @@ def test_cards_dashboard_inventory_rollover_and_clamps(auth_client, player) -> N
     card.refresh_from_db()
     assert card.stars_unlocked == 7
     assert card.inventory_count == 32
+
+
+@pytest.mark.django_db
+def test_cards_dashboard_bulk_assigns_presets(auth_client, player) -> None:
+    """Bulk preset edit adds presets to multiple selected cards."""
+
+    alpha = CardDefinition.objects.create(name="Alpha", slug="alpha", rarity="Common")
+    beta = CardDefinition.objects.create(name="Beta", slug="beta", rarity="Rare")
+    card_a = PlayerCard.objects.create(player=player, card_definition=alpha, card_slug=alpha.slug)
+    card_b = PlayerCard.objects.create(player=player, card_definition=beta, card_slug=beta.slug)
+    preset = Preset.objects.create(player=player, name="Farming")
+
+    url = reverse("core:cards")
+    auth_client.post(
+        url,
+        data={
+            "action": "bulk_update_presets",
+            "card_ids": [card_a.id, card_b.id],
+            "presets": [preset.id],
+            "new_preset_name": "",
+        },
+    )
+
+    card_a.refresh_from_db()
+    card_b.refresh_from_db()
+    assert list(card_a.presets.values_list("name", flat=True)) == ["Farming"]
+    assert list(card_b.presets.values_list("name", flat=True)) == ["Farming"]
+
+
+@pytest.mark.django_db
+def test_cards_dashboard_parameters_replace_placeholders_with_level_value(auth_client, player) -> None:
+    """Placeholder descriptions are substituted with the best-effort value for the current level."""
+
+    critical = CardDefinition.objects.create(
+        name="Critical Coin",
+        slug="critical_coin",
+        rarity="Epic",
+        description="Increase critical chance by +#%",
+        effect_raw="+5% / +10% / +15% / +20% / +27%",
+    )
+    damage = CardDefinition.objects.create(
+        name="Damage",
+        slug="damage",
+        rarity="Common",
+        description="Increase tower damage by x #",
+        effect_raw="x 1.00 / x 2.00 / x 3.00 / x 4.00 / x 5.00 / x 6.00 / x 7.00",
+    )
+
+    PlayerCard.objects.create(player=player, card_definition=critical, card_slug=critical.slug, stars_unlocked=5)
+    PlayerCard.objects.create(player=player, card_definition=damage, card_slug=damage.slug, stars_unlocked=7)
+
+    url = reverse("core:cards")
+    response = auth_client.get(url)
+    content = response.content.decode("utf-8")
+    assert "Increase critical chance by +27%" in content
+    assert "Increase tower damage by x 7.00" in content

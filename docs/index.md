@@ -9,9 +9,8 @@ Published documentation: <https://mahbam42.github.io/theTowerStats/>
 
 > **Highlight — Cards**
 > The Cards dashboard surfaces unlocked slots, preset tags, and player card progress in read-only tables.
-> **Presets**
-> Presets define card groupings (unlocked via Lab Research 'Card Presets'). The Game currently allows for 6 presets to be set, this app allows as many as you'd like. Define and set Presets from the Cards Dashboard.
-> Presets can also be assigned to Battle Reports to track card usage over time. 
+> Presets define card groupings (unlocked via Lab Research “Card Presets”). The game currently allows 6 presets to be set, and this app allows as many as you’d like.
+> Presets can also be assigned to Battle Reports to track card usage over time.
 
 ## What’s inside
 

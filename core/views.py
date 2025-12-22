@@ -53,6 +53,7 @@ from core.forms import (
     BattleHistoryPresetUpdateForm,
     BattleReportImportForm,
     CardInventoryUpdateForm,
+    CardPresetBulkUpdateForm,
     CardPresetUpdateForm,
     ChartBuilderForm,
     ChartContextForm,
@@ -1240,18 +1241,84 @@ def _render_card_parameters_text(*, description: str, effect_raw: str, level: in
         A multi-line string suitable for `white-space: pre-line` rendering.
     """
 
+    def _effect_value_for_level(effect_value_raw: str, *, level: int) -> str:
+        """Pick a best-effort effect value for a given card level.
+
+        The wiki "Effect" field sometimes contains a single value, and
+        sometimes a slash-delimited list (ex: "1 / 2 / 3"). This helper keeps
+        the dashboard deterministic without making gameplay inferences.
+
+        Args:
+            effect_value_raw: Wiki-derived raw "Effect" cell text.
+            level: Current displayed card level (0 when unowned).
+
+        Returns:
+            A single effect value string for display (may be empty).
+        """
+
+        cleaned = (effect_value_raw or "").strip()
+        if not cleaned or level <= 0:
+            return cleaned
+        if "/" not in cleaned:
+            return cleaned
+        parts = [part.strip() for part in cleaned.split("/") if part.strip()]
+        if len(parts) <= 1:
+            return cleaned
+        idx = min(max(level, 1), len(parts)) - 1
+        return parts[idx]
+
+    def _replace_placeholders(description_text: str, *, effect_value: str) -> str | None:
+        """Replace common wiki placeholders in a description when possible.
+
+        Args:
+            description_text: Wiki-derived description text.
+            effect_value: Best-effort effect value for the current level.
+
+        Returns:
+            A substituted description string, or None when no substitution was applied.
+        """
+
+        cleaned_description = (description_text or "").strip()
+        cleaned_effect = (effect_value or "").strip()
+        if not cleaned_description or not cleaned_effect:
+            return None
+
+        if "[x]" in cleaned_description:
+            import re
+
+            match = re.search(r"-?\\d+(?:\\.\\d+)?", cleaned_effect)
+            replacement = match.group(0) if match else cleaned_effect
+            return cleaned_description.replace("[x]", replacement)
+
+        if "#" not in cleaned_description:
+            return None
+
+        lowered = cleaned_description.casefold()
+        replacement = cleaned_effect
+        if "#%" in lowered or "+#%" in lowered:
+            replacement = replacement.replace("%", "").strip()
+            if replacement.startswith("+"):
+                replacement = replacement[1:].strip()
+            if replacement.casefold().startswith("x"):
+                replacement = replacement[1:].strip()
+        elif "x #" in lowered:
+            if replacement.casefold().startswith("x"):
+                replacement = replacement[1:].strip()
+        return cleaned_description.replace("#", replacement)
+
     cleaned_description = (description or "").strip()
     cleaned_effect = (effect_raw or "").strip()
     if not cleaned_description and not cleaned_effect:
         return ""
 
-    effect_with_level = cleaned_effect
-    if cleaned_effect and level > 0:
-        effect_with_level = f"{cleaned_effect} (Level {level})"
+    effect_at_level = _effect_value_for_level(cleaned_effect, level=level)
+    substituted = _replace_placeholders(cleaned_description, effect_value=effect_at_level)
+    if substituted is not None:
+        return substituted
 
-    if cleaned_description and "#" in cleaned_description and effect_with_level:
-        # Prefer replacing placeholders when present (common in wiki text like "x #").
-        return cleaned_description.replace("#", effect_with_level)
+    effect_with_level = effect_at_level
+    if effect_at_level and level > 0:
+        effect_with_level = f"{effect_at_level} (Level {level})"
 
     if cleaned_description and effect_with_level:
         return f"{cleaned_description}\n{effect_with_level}"
@@ -1427,6 +1494,42 @@ def cards(request: HttpRequest) -> HttpResponse:
                 chosen_presets.append(preset)
             card.presets.set(chosen_presets, through_defaults={"player": player})
             messages.success(request, "Saved card presets.")
+            return redirect_response
+
+        if action == "bulk_update_presets":
+            form = CardPresetBulkUpdateForm(request.POST, player=player)
+            if not form.is_valid():
+                messages.error(request, "Could not save bulk card presets.")
+                return redirect_response
+
+            card_ids: list[int] = list(form.cleaned_data["card_ids"])
+            chosen_presets = list(form.cleaned_data["presets"])
+            new_name = form.cleaned_data["new_preset_name"]
+            if new_name:
+                preset, _ = Preset.objects.get_or_create(player=player, name=new_name)
+                chosen_presets.append(preset)
+
+            if not chosen_presets:
+                messages.error(request, "Select at least one preset or enter a new preset name.")
+                return redirect_response
+
+            cards = list(
+                PlayerCard.objects.filter(player=player, id__in=card_ids)
+                .prefetch_related("presets")
+                .order_by("id")
+            )
+            if len(cards) != len(set(card_ids)):
+                messages.error(request, "One or more selected cards were not found.")
+                return redirect_response
+
+            with transaction.atomic():
+                for card in cards:
+                    combined: dict[int, Preset] = {preset.id: preset for preset in card.presets.all()}
+                    for preset in chosen_presets:
+                        combined[preset.id] = preset
+                    card.presets.set(list(combined.values()), through_defaults={"player": player})
+
+            messages.success(request, f"Saved presets for {len(cards)} cards.")
             return redirect_response
 
         messages.error(request, "Unknown cards action.")

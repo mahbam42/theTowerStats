@@ -65,6 +65,9 @@
 
       <div class="card-shell margin-top-1">
         <h5>Preset tags</h5>
+        <p class="muted margin-top-1 margin-bottom-0">
+          Presets are optional labels you can use to group cards. Create or assign presets from the table, then use the filter to focus on a specific set.
+        </p>
         {% if preset_links %}
           <div class="grid-x grid-margin-x">
             <div class="cell">
@@ -121,6 +124,33 @@
           </div>
         </form>
 
+        {% if not demo_mode %}
+          <form method="post" id="bulk-presets-form" class="grid-x grid-margin-x align-middle margin-bottom-1">
+            {% csrf_token %}
+            <input type="hidden" name="action" value="bulk_update_presets">
+            <input type="hidden" name="next" value="{{ request.get_full_path }}">
+            <div class="cell auto">
+              <label class="margin-bottom-0">
+                Bulk presets
+                <select name="presets" multiple size="4">
+                  {% for preset in presets %}
+                    <option value="{{ preset.id }}">{{ preset.name }}</option>
+                  {% endfor %}
+                </select>
+              </label>
+            </div>
+            <div class="cell auto">
+              <label class="margin-bottom-0">
+                New preset
+                <input type="text" name="new_preset_name" placeholder="New preset" class="input-short">
+              </label>
+            </div>
+            <div class="cell shrink">
+              <button class="button" type="submit">Apply to selected</button>
+            </div>
+          </form>
+        {% endif %}
+
         <details open>
           <summary class="muted margin-bottom-1">Cards table</summary>
           {% if rows %}
@@ -128,6 +158,11 @@
               <table class="stack cards-table">
                 <thead>
                   <tr>
+                    <th scope="col">
+                      {% if not demo_mode %}
+                        <input type="checkbox" id="select-all-cards" aria-label="Select all cards">
+                      {% endif %}
+                    </th>
                     <th scope="col">
                       <a href="?{{ sort_querystrings.name }}">
                         Card{% if current_sort == "name" %} ▲{% elif current_sort == "-name" %} ▼{% endif %}
@@ -140,7 +175,7 @@
                     </th>
                     <th scope="col">
                       <a href="?{{ sort_querystrings.level }}">
-                        Level{% if current_sort == "level" %} ▲{% elif current_sort == "-level" %} ▼{% endif %}
+                        Next Level{% if current_sort == "level" %} ▲{% elif current_sort == "-level" %} ▼{% endif %}
                       </a>
                     </th>
                     <th scope="col">
@@ -164,6 +199,17 @@
                       class="card-row rarity-{{ row.rarity|default:''|slugify }} {% if row.is_maxed %}card-maxed{% endif %}"
                     >
                       <td>
+                        {% if not demo_mode %}
+                          <input
+                            type="checkbox"
+                            name="card_ids"
+                            value="{{ row.id }}"
+                            form="bulk-presets-form"
+                            aria-label="Select {{ row.name }}"
+                          >
+                        {% endif %}
+                      </td>
+                      <td class="card-name">
                         {{ row.name }}
                         {% if row.wiki_page_url %}
                           <a
@@ -320,6 +366,16 @@
           updatePresetFilters(presetId);
         });
       });
+
+      const selectAll = document.getElementById("select-all-cards");
+      if (selectAll) {
+        selectAll.addEventListener("change", function () {
+          const checked = Boolean(selectAll.checked);
+          document.querySelectorAll('input[name="card_ids"]').forEach(function (el) {
+            el.checked = checked;
+          });
+        });
+      }
     })();
   </script>
 {% endblock %}

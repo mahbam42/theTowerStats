@@ -24,16 +24,18 @@ Cards help you track your card slot progression and keep an organized view of yo
 8. Review the **Inventory** display to confirm the shown threshold for that card level.
 9. Select a card’s **Presets** section to add or remove preset tags.
 10. Select **Preset filter** to show only cards tagged with specific presets.
-11. Select **Maxed** to show all cards, only maxed cards, or only unmaxed cards.
-12. Select a column header in the cards table to sort the table.
-13. Select the same column header again to reverse the sort order.
-14. Select **Reset Filters** to return to the full list.
+    A. (Optional) Select one or more cards using the checkbox column.
+    B. (Optional) Use **Bulk presets** to assign or create presets for the selected cards.
+13. Select **Maxed** to show all cards, only maxed cards, or only unmaxed cards.
+14. Select a column header in the cards table to sort the table.
+15. Select the same column header again to reverse the sort order.
+16. Select **Reset Filters** to return to the full list.
 
 ## How to Read the Results
 
 - **Slots unlocked** shows your current slot count, and the maximum when it is available.
 - **Next slot cost** shows the cost for the next slot when the app has that data available.
-- **Level** increases automatically when your inventory progress rolls over into the next tier.
+- **Next Level** increases automatically when your inventory progress rolls over into the next tier.
 - **Rarity** shows the card’s rarity for quick scanning.
 - **Progress** is shown as current / threshold. When you exceed a threshold, the remainder carries into the next tier.
 - **(MAX)** indicates the card is fully maxed and can no longer be increased.

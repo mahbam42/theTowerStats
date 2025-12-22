@@ -407,6 +407,47 @@ class CardPresetUpdateForm(forms.Form):
         return (self.cleaned_data.get("new_preset_name") or "").strip()
 
 
+class CardPresetBulkUpdateForm(forms.Form):
+    """Validate bulk preset assignments for multiple cards.
+
+    This form is used by the Cards dashboard bulk edit controls. It is intended
+    to add preset tags to a set of selected cards without removing existing
+    tags.
+    """
+
+    action = forms.CharField(widget=forms.HiddenInput())
+    next = forms.CharField(required=False, widget=forms.HiddenInput())
+    card_ids = forms.TypedMultipleChoiceField(
+        required=True,
+        coerce=int,
+        choices=(),
+        widget=forms.MultipleHiddenInput(),
+    )
+    presets = forms.ModelMultipleChoiceField(
+        required=False,
+        queryset=Preset.objects.none(),
+        label="Presets",
+        widget=forms.SelectMultiple(attrs={"size": 4}),
+    )
+    new_preset_name = forms.CharField(required=False, label="New preset")
+
+    def __init__(self, *args, **kwargs) -> None:
+        """Initialize the bulk form with player-scoped choices and presets."""
+
+        player: Player = kwargs.pop("player")
+        super().__init__(*args, **kwargs)
+        self.fields["presets"].queryset = Preset.objects.filter(player=player).order_by("name")
+        self.fields["card_ids"].choices = tuple(
+            (card_id, str(card_id))
+            for card_id in player.cards.order_by("id").values_list("id", flat=True)
+        )
+
+    def clean_new_preset_name(self) -> str:
+        """Normalize the optional new preset name."""
+
+        return (self.cleaned_data.get("new_preset_name") or "").strip()
+
+
 class GameDataChoiceField(forms.ModelChoiceField):
     """A ModelChoiceField with a human-readable label for imported runs."""
 

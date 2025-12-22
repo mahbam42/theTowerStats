@@ -2340,7 +2340,7 @@ CLOSED: [2025-12-22 Mon 08:25]
 Mobile: move to overflow menu or settings
 
 Desktop: keep visible but secondary-styled
-*** Phase 11 Bug Fixes [4/6]
+*** Phase 11 Bug Fixes [6/6]
 
 **** DONE [#A] UW/Guardian Chip/Bots Dashboards (Blocking)           :bug:
 CLOSED: [2025-12-22 Mon 14:19]
@@ -2387,7 +2387,9 @@ CLOSED: [2025-12-22 Mon 14:19]
 - State "DONE"       from "TODO"       [2025-12-22 Mon 14:19]
 Under Development Documentation.
 
-**** TODO [#A] URL redirection from remote source (Blocking)         :bug:
+**** DONE [#A] URL redirection from remote source (Blocking)         :bug:
+CLOSED: [2025-12-22 Mon 15:31]
+- State "DONE"       from "TODO"       [2025-12-22 Mon 15:31]
 There are 51 detected occurances... Apply the fix as a global function, fix where `return redirect(redirect_to)` appears. 
 
 Direct calls to redirect(user_supplied_value) are forbidden.
@@ -2412,45 +2414,16 @@ class RedirectView(View):
 #+END_SRC
 
 Note that url_has_allowed_host_and_scheme handles backslashes correctly, so no additional processing is required.
-**** IN PROGRESS [#B] Wiki Population (v0.2.0x)                      :bug:
+**** DONE [#B] Wiki Population (v0.2.0x)                             :bug:
+CLOSED: [2025-12-22 Mon 15:31]
+- State "DONE"       from "IN PROGRESS" [2025-12-22 Mon 15:31]
 - State "IN PROGRESS" from "TODO"       [2025-12-22 Mon 14:33] \\
   Card Slot Updated still chasing Guardian Slot Issue
 - [X] fetch_wiki_data needs a --target all arg
 - [X] fetch_wiki_data and rebuild_wiki_definitions should have a pretty summary of deltas at the end.
   Especially when using --target all.
 
-*** Phase 12 [0/2]
-
-**** TODO [#A] Cards Dashboard Enhancements (v0.x.x)         :enhancement:
-
-***** TODO [#A] Select Multiple Cards to Assign/Create Preset
-Add a checkbox to each card row to Assign or Create Preset
-
-***** TODO [#A] Card Parameter description should replace placeholder unit with current level value
-Instead of showing 'for [x] sec' or 'by #%' the description should reflect the current card level values
-
-For example:
-- Critical Coin "Increase critical chance by +#%" ::
-  Should read "Increase critical chance by +**27**%" for level 5
-- Damage "Increase tower damage by x #" ::
-  Should read "Increase tower damage by **4.00** #" for level 7/maxed
-
-***** TODO [#A] Level Column should by labeled "Next Level" 
-
-***** [#B] Preset Labels should be better explained in the Docs
-Currently states "Preset labels are shown as badges so you can scan for the context you assigned during import"
-
-Better language:
-Presets define card groupings (unlocked via Lab Research 'Card Presets'). The Game currently allows for 6 presets to be set, this app allows as many as you'd like. Define and set Presets from the Cards Dashboard.
-Presets can also be assigned to Battle Reports to track card usage over time. 
-
-****** TODO Update copy in the Docs
-- [ ] Overview
-- [ ] Battle History
-- [ ] Cards
-
-****** TODO Add brief description of Presets to Cards Dashboard
-Add a block under the presets filter on the left
+*** Phase 12 [2/7]
 
 **** TODO [#B] Error Updating Guardian Upgrade Table                 :bug:
 - [ ] Fix traceback error in production environment (it works in Dev)
@@ -2466,6 +2439,79 @@ Add a block under the presets filter on the left
 
   Expected Result:
   Retrieve 3 parameters from Wiki, 'Recovery Amount,' 'Cooldown (s),' 'Max Recovery' from https://the-tower-idle-tower-defense.fandom.com/wiki/Guardian#Ally table name 'Upgrades.' 
+
+**** TODO [#A] Cards Dashboard Enhancements (v0.x.x)         :enhancement:
+
+***** TODO [#A] Select Multiple Cards to Assign/Create Preset
+Add a checkbox to each card row to Assign or Create Preset
+
+***** TODO [#A] Card Parameter description should replace placeholder unit with current level value
+Instead of showing 'for [x] sec' or 'by #%' the description should reflect the current card level values
+
+For example:
+- Critical Coin "Increase critical chance by +#%" ::
+  Should read "Increase critical chance by +**27**%" for level 5
+- Damage "Increase tower damage by x #" ::
+  Should read "Increase tower damage by **4.00** #" for level 7/maxed
+
+***** DONE [#B] Preset Labels should be better explained in the Docs
+CLOSED: [2025-12-22 Mon 16:57]
+- State "DONE"       from              [2025-12-22 Mon 16:57]
+Currently states "Preset labels are shown as badges so you can scan for the context you assigned during import"
+
+Better language:
+Presets define card groupings (unlocked via Lab Research 'Card Presets'). The Game currently allows for 6 presets to be set, this app allows as many as you'd like. Define and set Presets from the Cards Dashboard.
+Presets can also be assigned to Battle Reports to track card usage over time. 
+
+****** TODO Update copy in the Docs
+- [ ] Overview
+- [ ] Battle History
+- [ ] Cards
+
+****** TODO Add brief description of Presets to Cards Dashboard
+Add a block under the presets filter on the left
+
+**** DONE [#A] Import Battle Report Not Working                      :bug:
+CLOSED: [2025-12-22 Mon 16:23]
+
+- State "DONE"       from "TODO"       [2025-12-22 Mon 16:23]
+Battle Reports aren't being imported from the dashboard or charts quick import.
+
+I pasted in a battle report, clicked 'import battle report', the page reloaded but the battle isn't showing in the history table. This problem arose probably yesterday because I'm not seeing some other reports I tried to load, but I definitely caught it just now.
+Tried in Production and repeated the results in Dev.
+
+Expected result: Adding a battle report succeeds and is shown in the table and accesible in charts.
+
+Fix Battle Report import parsing for space-separated headers
+
+***** DONE [#A] Battle Report Ingest Errors fail silently in Production
+CLOSED: [2025-12-22 Mon 16:23]
+- State "DONE"       from "IN PROGRESS" [2025-12-22 Mon 16:23]
+- State "IN PROGRESS" from              [2025-12-22 Mon 16:23] \\
+  Production ingest errors no longer fail silently: core/views.py now catches unexpected exceptions from ingest_battle_report when DEBUG=False, adds a safe non-field form error, and shows a user-visible message (still re-raises in dev).
+Should show validation error to players in production with debug = 0(/false)
+
+
+**** DONE Manually tag Battle Report as Tournament                   :bug:
+CLOSED: [2025-12-22 Mon 16:23]
+- State "DONE"       from "IN PROGRESS" [2025-12-22 Mon 16:23]
+- State "IN PROGRESS" from "TODO"       [2025-12-22 Mon 16:22] \\
+  Added BattleReportProgress.is_tournament (+ migration) in gamedata/models.py + gamedata/migrations/0005_battlereportprogress_is_tournament.py.
+  Added is_tournament checkbox to BattleReportImportForm in core/forms.py.
+  Wired checkbox into both import entrypoints (Battle History + Charts quick import) in core/views.py and displayed it in core/templates/core/battle_history.html + core/templates/core/dashboard.html.
+  Updated filtering so tournament-tagged runs are excluded by default everywhere that honors “Include tournaments” (core/views.py).
+The game adds visual markers to denote a Tournament round, but it's not indicated in the plain text we ingest. So we need to add a toggle to the Battle History dashboard and 'quick import' on Charts to mark a log as tournament or not. 
+
+**** TODO [#A] On Cards Dashboard Level Column should by labeled "Next Level" 
+
+**** TODO [#B] On Charts Dashboard, Charts should show by date or by battle log
+
+**** TODO Filter Charts by Event Dates
+Events are 14 Days long. The previous event started on 12/09/2025 to 12/22/2025 and the current event is 12/23/2025 to 01/08/2026.
+
+Charts should have a default date range of the current event start to end, buttons to move backward or forward (to end of current), and preserve the current manual date range fields.
+
+Documentation should be updated to reflect this. And a note should be added to the Date Range controls that they coorispond to the 'In Game Events'
 
 ** Backlog [2/5]
 “Out of Scope”:

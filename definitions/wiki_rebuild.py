@@ -518,6 +518,21 @@ def _uw_unit_kind(key: str) -> str:
 def _guardian_header_pairs(raw_row: dict, *, slug: str) -> list[tuple[str, str]]:
     """Return ordered (value_header, cost_header) pairs for a guardian chip row."""
 
+    def _is_cost_header(header: str) -> bool:
+        """Return True when a header looks like a Bits/cost column.
+
+        Args:
+            header: Raw column header string.
+
+        Returns:
+            True when the header appears to represent a cost/currency column.
+        """
+
+        lowered = header.strip().casefold()
+        if "bits" in lowered:
+            return True
+        return lowered.startswith("cost")
+
     header_pairs: list[tuple[str, str]] = []
     keys = [str(k) for k in raw_row.keys()]
     seen_value: set[str] = set()
@@ -526,14 +541,14 @@ def _guardian_header_pairs(raw_row: dict, *, slug: str) -> list[tuple[str, str]]
             continue
         if key.startswith("_"):
             continue
-        if "Bits" in key or "Cost (Bits)" in key:
+        if _is_cost_header(key):
             continue
         if key in seen_value:
             continue
         cost = None
-        for j in range(idx + 1, min(idx + 4, len(keys))):
+        for j in range(idx + 1, min(idx + 12, len(keys))):
             candidate = keys[j]
-            if "Bits" in candidate or "Cost (Bits)" in candidate:
+            if _is_cost_header(candidate):
                 cost = candidate
                 break
         if cost is None:

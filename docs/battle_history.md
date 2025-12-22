@@ -17,8 +17,8 @@ Battle History helps you review your past runs in a table so you can compare res
 1. Select **Battle History** in the navigation.
 2. Select **Add Battle Report** to expand the import panel.
 3. Paste your Battle Report text into the import field.
-4. (Optional) Enter a preset label to group runs by your own intent.
-5. (Optional) Enable **Tournament run** when this run was a tournament round.
+    A. (Optional) Enter a preset label to group runs by your own intent (presets are unlocked via the in-game Lab Research “Card Presets”).
+    B. (Optional) Enable **Tournament run** when this run was a tournament round.
 6. Select **Import Battle Report**.
 7. Select values in **Filters** to narrow the table.
 8. Select a column header to sort the table by that column.
@@ -34,7 +34,7 @@ Battle History helps you review your past runs in a table so you can compare res
 - **Coins earned**, **Cash earned**, and **Interest earned** match the values shown in the report summary.
 - **Coins/real hour** divides coins earned by the run’s **Real Time** duration as reported by the game.
 - **Gem blocks**, **Cells earned**, and **Reroll shards** show run resources that may be missing in older or incomplete reports.
-- **Preset** is an optional label you can use to group runs for review. It does not change any gameplay results.
+- **Preset** is an optional label you can use to group runs for review. The game currently allows 6 presets, and this app lets you save more. Presets do not change any gameplay results.
 - Selecting a column header toggles between ascending and descending order for that column.
 
 ## Notes & Limitations

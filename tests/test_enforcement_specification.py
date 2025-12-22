@@ -424,6 +424,43 @@ def test_guardian_placeholder_levels_are_omitted_on_rebuild() -> None:
 
 
 @pytest.mark.django_db
+def test_guardian_cost_headers_are_detected_case_insensitively() -> None:
+    """Guardian rebuild pairs value columns with cost columns when header casing changes."""
+
+    from core.wiki_ingestion import ScrapedWikiRow, compute_content_hash
+
+    raw_row = {
+        "_wiki_entity_id": "ally",
+        "Guardian": "Ally",
+        "Level": "1",
+        "Recovery Amount": "10",
+        "Cost (bits)": "0",
+        "Cooldown": "5",
+        "Cost (bits)__2": "0",
+        "Max Recovery": "20",
+        "Cost (bits)__3": "0",
+    }
+    ingest_wiki_rows(
+        [
+            ScrapedWikiRow(
+                canonical_name="Ally",
+                entity_id="ally__level_1__star_none",
+                raw_row=raw_row,
+                content_hash=compute_content_hash(raw_row),
+            )
+        ],
+        page_url="https://example.test/wiki/Guardian",
+        source_section="guardian_chips_ally_table_2",
+        parse_version="guardian_chips_v1",
+        write=True,
+    )
+
+    rebuild_guardian_chips_from_wikidata(write=True)
+    chip = GuardianChipDefinition.objects.get(slug="ally")
+    assert chip.parameter_definitions.count() == 3
+
+
+@pytest.mark.django_db
 def test_bot_empty_parameter_cells_are_omitted_on_rebuild() -> None:
     """Bots often leave some parameter columns blank at higher levels; omit those levels per parameter."""
 
