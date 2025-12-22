@@ -78,6 +78,10 @@ class BattleReportProgress(models.Model):
     gem_blocks_tapped = models.PositiveIntegerField(null=True, blank=True)
     cells_earned = models.PositiveIntegerField(null=True, blank=True)
     reroll_shards_earned = models.PositiveIntegerField(null=True, blank=True)
+    is_tournament = models.BooleanField(
+        default=False,
+        help_text="Manual override: mark this run as a tournament when the report text does not indicate it.",
+    )
 
     class Meta:
         verbose_name = "Battle Report Progress"

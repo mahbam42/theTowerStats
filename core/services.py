@@ -20,7 +20,7 @@ from core.parsers.battle_report import extract_ultimate_weapon_usage, parse_batt
 
 
 def ingest_battle_report(
-    raw_text: str, *, player: Player, preset_name: str | None = None
+    raw_text: str, *, player: Player, preset_name: str | None = None, is_tournament: bool = False
 ) -> tuple[BattleReport, bool]:
     """Ingest a Battle Report, rejecting duplicates by checksum.
 
@@ -28,6 +28,7 @@ def ingest_battle_report(
         raw_text: Raw Battle Report text as pasted by the user.
         player: Owning player derived from the authenticated user.
         preset_name: Optional preset label to associate with the run.
+        is_tournament: Manual override to mark a run as a tournament.
 
     Returns:
         A tuple of (battle_report, created) where `created` is False when the report
@@ -64,16 +65,18 @@ def ingest_battle_report(
                 gem_blocks_tapped=parsed.gem_blocks_tapped,
                 cells_earned=parsed.cells_earned,
                 reroll_shards_earned=parsed.reroll_shards_earned,
+                is_tournament=is_tournament,
             )
             _ingest_run_ultimate_weapon_usage(battle_report=battle_report, player=player)
             return battle_report, True
     except IntegrityError:
         battle_report = BattleReport.objects.get(player=player, checksum=parsed.checksum)
-        if preset is not None:
+        if preset is not None or is_tournament:
             BattleReportProgress.objects.filter(battle_report=battle_report, player=player).update(
                 preset=preset,
                 preset_name_snapshot=preset_snapshot["name"],
                 preset_color_snapshot=preset_snapshot["color"],
+                is_tournament=is_tournament,
             )
         _ingest_run_ultimate_weapon_usage(battle_report=battle_report, player=player)
         return battle_report, False

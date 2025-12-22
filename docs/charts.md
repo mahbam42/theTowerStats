@@ -34,6 +34,7 @@ Charts help you review how your run results change over time using the same valu
 17. (Optional) Select **Download PNG** on a chart to save an image of the chart as currently displayed.
 18. (Optional) Open **Compare** to run the separate compare workflow.
 19. (Optional) Open **Quick import** to paste a Battle Report without leaving the Charts page.
+20. (Optional) In **Quick import**, enable **Tournament run** when the run was a tournament round. The app cannot detect tournament runs automatically from pasted text.
 
 ## How to Read the Results
 

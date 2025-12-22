@@ -34,11 +34,30 @@
             <div class="margin-top-1">
               <form method="post">
                 {% csrf_token %}
+                {% if import_form.non_field_errors %}
+                  <div class="callout alert">
+                    {{ import_form.non_field_errors }}
+                  </div>
+                {% endif %}
                 <label>{{ import_form.raw_text.label }}
                   {{ import_form.raw_text }}
+                  {% if import_form.raw_text.errors %}
+                    <span class="form-error is-visible">{{ import_form.raw_text.errors|striptags }}</span>
+                  {% endif %}
                 </label>
                 <label>{{ import_form.preset_name.label }}
                   {{ import_form.preset_name }}
+                  {% if import_form.preset_name.errors %}
+                    <span class="form-error is-visible">{{ import_form.preset_name.errors|striptags }}</span>
+                  {% endif %}
+                </label>
+                <label>
+                  {{ import_form.is_tournament }}
+                  {{ import_form.is_tournament.label }}
+                  <span class="help-text">Tournament runs cannot be detected automatically from pasted text.</span>
+                  {% if import_form.is_tournament.errors %}
+                    <span class="form-error is-visible">{{ import_form.is_tournament.errors|striptags }}</span>
+                  {% endif %}
                 </label>
                 <button class="button" type="submit">Import Battle Report</button>
               </form>

@@ -343,12 +343,25 @@ def dashboard(request: HttpRequest) -> HttpResponse:
         if import_form.is_valid():
             raw_text = import_form.cleaned_data["raw_text"]
             preset_name = import_form.cleaned_data.get("preset_name") or None
-            _, created = ingest_battle_report(raw_text, player=player, preset_name=preset_name)
-            if created:
-                messages.success(request, "Battle Report imported.")
+            is_tournament_override = bool(import_form.cleaned_data.get("is_tournament") or False)
+            try:
+                _, created = ingest_battle_report(
+                    raw_text,
+                    player=player,
+                    preset_name=preset_name,
+                    is_tournament=is_tournament_override,
+                )
+            except Exception:
+                if settings.DEBUG:
+                    raise
+                import_form.add_error(None, "Import failed. Review the pasted report and try again.")
+                messages.error(request, "Could not import Battle Report.")
             else:
-                messages.warning(request, "Duplicate Battle Report ignored.")
-            return redirect("core:dashboard")
+                if created:
+                    messages.success(request, "Battle Report imported.")
+                else:
+                    messages.warning(request, "Duplicate Battle Report ignored.")
+                return redirect("core:dashboard")
     else:
         import_form = BattleReportImportForm()
 
@@ -911,7 +924,7 @@ def _runs_for_chart_context_dto(*, player: Player, context: ChartContextDTO) -> 
         .order_by("run_progress__battle_date")
     )
     if not context.include_tournaments:
-        runs = runs.exclude(run_progress__tier__isnull=True)
+        runs = runs.exclude(Q(run_progress__tier__isnull=True) | Q(run_progress__is_tournament=True))
     if context.start_date:
         runs = runs.filter(run_progress__battle_date__date__gte=context.start_date)
     if context.end_date:
@@ -990,12 +1003,25 @@ def battle_history(request: HttpRequest) -> HttpResponse:
         if import_form.is_valid():
             raw_text = import_form.cleaned_data["raw_text"]
             preset_name = import_form.cleaned_data.get("preset_name") or None
-            _, created = ingest_battle_report(raw_text, player=player, preset_name=preset_name)
-            if created:
-                messages.success(request, "Battle Report imported.")
+            is_tournament_override = bool(import_form.cleaned_data.get("is_tournament") or False)
+            try:
+                _, created = ingest_battle_report(
+                    raw_text,
+                    player=player,
+                    preset_name=preset_name,
+                    is_tournament=is_tournament_override,
+                )
+            except Exception:
+                if settings.DEBUG:
+                    raise
+                import_form.add_error(None, "Import failed. Review the pasted report and try again.")
+                messages.error(request, "Could not import Battle Report.")
             else:
-                messages.warning(request, "Duplicate Battle Report ignored.")
-            return redirect("core:battle_history")
+                if created:
+                    messages.success(request, "Battle Report imported.")
+                else:
+                    messages.warning(request, "Duplicate Battle Report ignored.")
+                return redirect("core:battle_history")
     else:
         import_form = BattleReportImportForm()
 
@@ -1006,7 +1032,7 @@ def battle_history(request: HttpRequest) -> HttpResponse:
     runs = BattleReport.objects.filter(player=player).select_related("run_progress", "run_progress__preset")
     include_tournaments = bool(filter_form.cleaned_data.get("include_tournaments") or False)
     if not include_tournaments:
-        runs = runs.exclude(run_progress__tier__isnull=True)
+        runs = runs.exclude(Q(run_progress__tier__isnull=True) | Q(run_progress__is_tournament=True))
     if sort_key.lstrip("-") == "coins_per_hour":
         coins_per_hour_expr = Case(
             When(
@@ -1082,11 +1108,12 @@ def battle_history(request: HttpRequest) -> HttpResponse:
     page_rows: list[dict[str, object]] = []
     for run in page_obj.object_list:
         metric = run_metrics.get(getattr(getattr(run, "run_progress", None), "id", None) or run.id)
+        manual_tournament = bool(getattr(getattr(run, "run_progress", None), "is_tournament", False))
         page_rows.append(
             {
                 "run": run,
                 "metric": metric,
-                "is_tournament": is_tournament(run),
+                "is_tournament": manual_tournament or is_tournament(run),
                 "tournament_bracket": tournament_bracket(run),
             }
         )
@@ -1929,7 +1956,7 @@ def ultimate_weapon_progress(request: HttpRequest) -> HttpResponse:
                     .order_by("run_progress__battle_date")
                 )
                 if not dto.context.include_tournaments:
-                    runs_qs = runs_qs.exclude(run_progress__tier__isnull=True)
+                    runs_qs = runs_qs.exclude(Q(run_progress__tier__isnull=True) | Q(run_progress__is_tournament=True))
                 if dto.context.start_date:
                     runs_qs = runs_qs.filter(run_progress__battle_date__date__gte=dto.context.start_date)
                 if dto.context.end_date:
@@ -2920,7 +2947,7 @@ def _filtered_runs(filter_form: ChartContextForm, *, player: Player) -> QuerySet
     valid = filter_form.is_valid()
     include_tournaments = bool(valid and (filter_form.cleaned_data.get("include_tournaments") or False))
     if not include_tournaments:
-        runs = runs.exclude(run_progress__tier__isnull=True)
+        runs = runs.exclude(Q(run_progress__tier__isnull=True) | Q(run_progress__is_tournament=True))
     if not valid:
         return runs
 
@@ -3003,7 +3030,7 @@ def _context_filtered_runs(filter_form: ChartContextForm, *, player: Player) -> 
     valid = filter_form.is_valid()
     include_tournaments = bool(valid and (filter_form.cleaned_data.get("include_tournaments") or False))
     if not include_tournaments:
-        runs = runs.exclude(run_progress__tier__isnull=True)
+        runs = runs.exclude(Q(run_progress__tier__isnull=True) | Q(run_progress__is_tournament=True))
     if not valid:
         return runs
 

@@ -6,6 +6,7 @@ import json
 from datetime import date, datetime, timezone
 
 import pytest
+from django.test import override_settings
 
 from analysis.engine import analyze_runs
 from gamedata.models import BattleReport, BattleReportProgress
@@ -45,6 +46,132 @@ def test_dashboard_view_renders_with_no_data(auth_client) -> None:
     response = auth_client.get("/", {"start_date": FILTER_START})
     assert response.status_code == 200
     assert response.context["chart_empty_state"] == "No runs match the current filters."
+
+
+@pytest.mark.django_db
+def test_dashboard_quick_import_accepts_space_separated_headers(auth_client, player) -> None:
+    """Dashboard quick import accepts reports where headers are separated by multiple spaces."""
+
+    raw_text = "\n".join(
+        [
+            "Battle Report",
+            "Battle Date  Dec 21, 2025 13:18",
+            "Tier  8",
+            "Wave  1141",
+            "Real Time  2h 46m 15s",
+            "Coins earned  16.89M",
+        ]
+    )
+    response = auth_client.post("/", data={"raw_text": raw_text}, follow=True)
+    assert response.status_code == 200
+
+    assert BattleReport.objects.filter(player=player).count() == 1
+    assert "Battle Report imported." in response.content.decode("utf-8")
+
+
+@pytest.mark.django_db
+def test_dashboard_quick_import_allows_missing_battle_date(auth_client, player) -> None:
+    """Dashboard quick import allows reports missing Battle Date."""
+
+    raw_text = "\n".join(
+        [
+            "Battle Report",
+            "Game Time\t1d 9h 39m 5s",
+            "Real Time\t9h 3m 18s",
+            "Tier\t1",
+            "Wave\t3656",
+            "Killed By\tFast",
+            "Coins earned\t17.29M",
+        ]
+    )
+    response = auth_client.post("/", data={"raw_text": raw_text}, follow=True)
+    assert response.status_code == 200
+
+    report = BattleReport.objects.get(player=player)
+    assert report.run_progress.battle_date is None
+
+
+@pytest.mark.django_db
+def test_dashboard_quick_import_accepts_single_space_separators(auth_client, player) -> None:
+    """Dashboard quick import accepts reports when the clipboard collapses tabs into single spaces."""
+
+    raw_text = "\n".join(
+        [
+            "Battle Report",
+            "Battle Date Dec 22, 2025 14:56",
+            "Game Time 1d 9h 39m 5s",
+            "Real Time 9h 3m 18s",
+            "Tier 1",
+            "Wave 3656",
+            "Killed By Fast",
+            "Coins earned 17.29M",
+        ]
+    )
+    response = auth_client.post("/", data={"raw_text": raw_text}, follow=True)
+    assert response.status_code == 200
+
+    report = BattleReport.objects.get(player=player)
+    assert report.run_progress.tier == 1
+    assert report.run_progress.wave == 3656
+
+
+@pytest.mark.django_db
+def test_dashboard_quick_import_accepts_crlf_newlines(auth_client, player) -> None:
+    """Dashboard quick import accepts reports pasted via textarea submissions using CRLF newlines."""
+
+    raw_text = "\r\n".join(
+        [
+            "Battle Report",
+            "Battle Date\tDec 22, 2025 14:56",
+            "Real Time\t9h 3m 18s",
+            "Tier\t1",
+            "Wave\t3656",
+        ]
+    )
+    response = auth_client.post("/", data={"raw_text": raw_text}, follow=True)
+    assert response.status_code == 200
+
+    report = BattleReport.objects.get(player=player)
+    assert report.run_progress.tier == 1
+
+
+@pytest.mark.django_db
+def test_dashboard_quick_import_tournament_override_excludes_from_charts_by_default(auth_client, player) -> None:
+    """Tournament-tagged runs are excluded from charts unless explicitly included."""
+
+    raw_text = "\n".join(
+        [
+            "Battle Report",
+            "Battle Date\tDec 22, 2025 14:56",
+            "Real Time\t9h 3m 18s",
+            "Tier\t1",
+            "Wave\t3656",
+            "Coins earned\t17.29M",
+        ]
+    )
+    response = auth_client.post("/", data={"raw_text": raw_text, "is_tournament": "on"}, follow=True)
+    assert response.status_code == 200
+    assert response.context["chart_empty_state"] == "No runs match the current filters."
+
+    response = auth_client.get("/", {"include_tournaments": "on", "start_date": FILTER_START})
+    assert response.status_code == 200
+    assert response.context["chart_empty_state"] != "No runs match the current filters."
+
+
+@pytest.mark.django_db
+@override_settings(DEBUG=False)
+def test_dashboard_import_exception_shows_user_error(auth_client, monkeypatch) -> None:
+    """Unexpected ingest failures surface a safe error message in production."""
+
+    def _boom(*_args, **_kwargs):
+        raise RuntimeError("boom")
+
+    monkeypatch.setattr("core.views.ingest_battle_report", _boom)
+    response = auth_client.post("/", data={"raw_text": "Battle Report\nTier 1\nWave 1\nReal Time 1m\n"}, follow=True)
+    assert response.status_code == 200
+    content = response.content.decode("utf-8")
+    assert "Could not import Battle Report." in content
+    assert "Import failed." in content
 
 
 @pytest.mark.django_db

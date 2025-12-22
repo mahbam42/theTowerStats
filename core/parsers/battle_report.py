@@ -92,11 +92,6 @@ class ParsedBattleReport:
     reroll_shards_earned: int | None
 
 
-_LABEL_SEPARATOR = r"(?:[ \t]*:[ \t]*|\t+[ \t]*|[ \t]{2,})"
-_LABEL_VALUE_RE = re.compile(
-    rf"(?im)^[ \t]*(?P<label>.+?){_LABEL_SEPARATOR}(?P<value>.*?)[ \t]*$"
-)
-
 _LABELS = {
     "battle date": "battle_date",
     "tier": "tier",
@@ -111,6 +106,13 @@ _LABELS = {
     "cells earned": "cells_earned",
     "reroll shards earned": "reroll_shards_earned",
 }
+
+_LABEL_KEYS_BY_LENGTH: tuple[str, ...] = tuple(sorted(_LABELS.keys(), key=len, reverse=True))
+
+_LABEL_SEPARATOR = r"(?:[ \t]*:[ \t]*|\t+[ \t]*|[ \t]{2,})"
+_LABEL_VALUE_RE = re.compile(
+    rf"(?im)^[ \t]*(?P<label>.+?){_LABEL_SEPARATOR}(?P<value>.*?)[ \t]*$"
+)
 
 
 def compute_battle_report_checksum(raw_text: str) -> str:
@@ -219,18 +221,39 @@ def _iter_label_value_lines(raw_text: str) -> list[tuple[str, str]]:
     Notes:
         Battle Reports contain a mix of sections and labels. This function
         tolerates extra whitespace, reordered sections, and previously unseen
-        labels by extracting only lines that look like `Label: Value` or
-        `Label<TAB>Value`.
+        labels by extracting only the labels we know how to interpret. This
+        keeps parsing robust when the clipboard converts tabs into spaces
+        (including single spaces).
     """
 
-    matches = _LABEL_VALUE_RE.finditer(raw_text)
     extracted: list[tuple[str, str]] = []
-    for match in matches:
-        label = (match.group("label") or "").strip()
-        if not label:
+
+    for raw_line in raw_text.splitlines():
+        collapsed = re.sub(r"\s+", " ", (raw_line or "").strip())
+        if not collapsed:
             continue
-        value = (match.group("value") or "").strip()
-        extracted.append((label, value))
+
+        lowered = collapsed.casefold()
+        for label_key in _LABEL_KEYS_BY_LENGTH:
+            if not lowered.startswith(label_key):
+                continue
+
+            remainder = collapsed[len(label_key) :]
+            if not remainder:
+                break
+
+            remainder = remainder.lstrip()
+            if remainder.startswith(":"):
+                remainder = remainder[1:].lstrip()
+            extracted.append((label_key, remainder))
+            break
+        else:
+            match = _LABEL_VALUE_RE.match(raw_line)
+            if match:
+                label = (match.group("label") or "").strip()
+                value = (match.group("value") or "").strip()
+                if label:
+                    extracted.append((label, value))
     return extracted
 
 

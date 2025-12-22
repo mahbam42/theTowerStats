@@ -29,6 +29,9 @@ from player_state.models import Player, Preset
 class BattleReportImportForm(forms.Form):
     """Validate user-submitted raw Battle Report text."""
 
+    _REQUIRED_HEADER_SEPARATOR = r"(?:[ \t]*:[ \t]*|[ \t]+)"
+    _BATTLE_REPORT_HEADER_RE = r"(?im)^[^\S\n]*Battle Report[^\S\n]*$"
+
     raw_text = forms.CharField(
         label="Battle Report",
         widget=forms.Textarea(attrs={"rows": 12, "cols": 80}),
@@ -39,6 +42,11 @@ class BattleReportImportForm(forms.Form):
         label="Preset label (optional)",
         help_text="Optional context tag applied to this run (e.g. 'Farming build').",
     )
+    is_tournament = forms.BooleanField(
+        required=False,
+        label="Tournament run",
+        help_text="Enable when this run was a tournament round but the pasted report text does not indicate it.",
+    )
 
     def clean_raw_text(self) -> str:
         """Validate that the input contains exactly one Battle Report.
@@ -48,15 +56,29 @@ class BattleReportImportForm(forms.Form):
         """
 
         raw_text = self.cleaned_data.get("raw_text") or ""
+        validation_text = (
+            raw_text.replace("\r\n", "\n")
+            .replace("\r", "\n")
+            .replace("\ufeff", "")
+            .replace("\u200b", "")
+        )
+        report_headers = len(re.findall(self._BATTLE_REPORT_HEADER_RE, validation_text))
+        if report_headers != 1:
+            raise forms.ValidationError("Paste exactly one Battle Report (the header must appear once).")
+
         patterns = {
-            "Battle Date": r"(?im)^\s*Battle Date\s*[:\t]",
-            "Tier": r"(?im)^\s*Tier\s*[:\t]",
-            "Wave": r"(?im)^\s*Wave\s*[:\t]",
-            "Real Time": r"(?im)^\s*Real Time\s*[:\t]",
+            "Battle Date": rf"(?im)^[^\S\n]*Battle Date{self._REQUIRED_HEADER_SEPARATOR}",
+            "Tier": rf"(?im)^[^\S\n]*Tier{self._REQUIRED_HEADER_SEPARATOR}",
+            "Wave": rf"(?im)^[^\S\n]*Wave{self._REQUIRED_HEADER_SEPARATOR}",
+            "Real Time": rf"(?im)^[^\S\n]*Real Time{self._REQUIRED_HEADER_SEPARATOR}",
         }
-        counts = {label: len(re.findall(pattern, raw_text)) for label, pattern in patterns.items()}
-        if counts["Battle Date"] != 1:
-            raise forms.ValidationError("Paste exactly one Battle Report (Battle Date must appear once).")
+        counts = {label: len(re.findall(pattern, validation_text)) for label, pattern in patterns.items()}
+        required_once = ("Tier", "Wave", "Real Time")
+        missing_required = [label for label in required_once if counts[label] != 1]
+        if missing_required:
+            labels = ", ".join(missing_required)
+            raise forms.ValidationError(f"Paste exactly one Battle Report ({labels} must appear once).")
+
         duplicates = [label for label, count in counts.items() if count > 1]
         if duplicates:
             raise forms.ValidationError(f"Duplicate headers detected: {', '.join(duplicates)}.")

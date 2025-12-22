@@ -18,11 +18,12 @@ Battle History helps you review your past runs in a table so you can compare res
 2. Select **Add Battle Report** to expand the import panel.
 3. Paste your Battle Report text into the import field.
 4. (Optional) Enter a preset label to group runs by your own intent.
-5. Select **Import Battle Report**.
-6. Select values in **Filters** to narrow the table.
-7. Select a column header to sort the table by that column.
-8. To change a run’s preset later, select a value in the **Preset** selector inside that row.
-9. To filter by a preset, select a value in **Preset** under **Filters**, or select a preset badge in the table.
+5. (Optional) Enable **Tournament run** when this run was a tournament round.
+6. Select **Import Battle Report**.
+7. Select values in **Filters** to narrow the table.
+8. Select a column header to sort the table by that column.
+9. To change a run’s preset later, select a value in the **Preset** selector inside that row.
+10. To filter by a preset, select a value in **Preset** under **Filters**, or select a preset badge in the table.
 
 ## How to Read the Results
 
@@ -41,6 +42,12 @@ Battle History helps you review your past runs in a table so you can compare res
 > **Note**
 > Cells display an em dash (—) when the value does not exist in the imported report.
 
+> **Note**
+> Some Battle Reports do not include a Battle Date. In those cases, Battle History shows an em dash (—) for the date and date-based sorting may place the run later in the list.
+
+> **Note**
+> Tournament rounds can be marked in-game without appearing in the copied Battle Report text. The app cannot detect tournament runs automatically from pasted text, so use **Tournament run** during import to exclude those runs from charts and history by default.
+
 > **Caution**
 > This app does not invent or infer missing values.
 > What you see reflects what the game reported.
@@ -53,3 +60,6 @@ Battle History helps you review your past runs in a table so you can compare res
 
 > **Note**
 > The **Add Battle Report** panel is collapsed by default to keep the page focused on your table.
+
+> **Note**
+> Battle Reports can use tabs, colons, or spacing between labels and values. If an import fails, the page shows an error message under the Battle Report field.
