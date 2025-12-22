@@ -39,6 +39,7 @@ Charts help you review how your run results change over time using the same valu
 
 - The x-axis shows dates from your imported runs.
 - The y-axis shows the value for the selected chart, using the unit shown in the chart title.
+- For per-hour charts (such as coins/real hour), the rate uses the run’s **Real Time** duration as reported in the Battle Report.
 - When a chart includes multiple lines, each line label tells you what group it represents (for example, a tier or a preset label).
 - If a value is missing in the underlying Battle Report, the chart may show a gap for that date.
 - For donut charts, each slice represents the total for that value within your current filters. A slice named “Other coins” groups any remaining coins that are not listed as a named source.
@@ -65,6 +66,9 @@ Charts help you review how your run results change over time using the same valu
 
 > **Note**
 > Moving averages change what you see on the chart, but they do not change your stored data.
+
+> **Note**
+> Per-hour metrics use “Real Time” from each imported Battle Report. In-game seconds (such as cooldowns) are a different time scale and come from reference tables.
 
 > **Note**
 > Snapshots are saved as named references and are not editable after creation.

@@ -22,7 +22,7 @@ The Ultimate Weapons page helps you track which Ultimate Weapons you have unlock
 5. Select **Unlock** on a locked weapon to mark it as unlocked in the app.
 6. Select **Details** on an unlocked weapon to view its three upgrade parameters.
 7. Select **Level Up** on a parameter to increase its level by 1.
-8. Select **Decrease level** on a parameter to reduce its level by 1.
+8. Select **Level Down** on a parameter to reduce its level by 1.
 9. Review **Total Stones invested** to compare overall investment between weapons.
 10. (Optional) View the **Sync graph** section to see when Golden Tower, Black Hole, and Death Wave are active at the same time.
 11. (Optional) Select a saved snapshot in **Ultimate Weapons snapshot** to render a chart above the table.
@@ -51,7 +51,7 @@ The Ultimate Weapons page helps you track which Ultimate Weapons you have unlock
 > Locked weapons do not display parameter rows until they are unlocked in the app.
 
 > **Note**
-> **Decrease level** is available as a safety option if you accidentally record an upgrade you did not intend.
+> **Level Down** is available as a safety option if you accidentally record an upgrade you did not intend.
 
 > **Caution**
 > If no Battle Reports have been imported yet, **Runs used (observed)** will show “No battles recorded yet”.
@@ -79,6 +79,9 @@ The Ultimate Weapons page helps you track which Ultimate Weapons you have unlock
 
 > **Note**
 > The Sync graph uses the same cooldown and duration values shown in each weapon’s **Details** rows.
+
+> **Caution**
+> Cooldown and duration values are based on external wiki tables and are shown in seconds. Wiki values can be inaccurate or drift over time.
 
 > **Note**
 > Ultimate Weapons snapshots are created from the **Charts** page by saving a snapshot and selecting **Ultimate Weapons** as the snapshot target.

@@ -30,44 +30,11 @@ If you want `checks` available in your virtualenv's `PATH`, create a symlink:
 ln -sf ../../scripts/checks .venv/bin/checks
 ```
 
-## Test taxonomy & markings
+## Testing
 
-The test suite is intentionally split by **speed** and **semantics**.
+Testing conventions, markers, and running instructions are documented on the dedicated Testing page.
 
-### Speed markers (required)
-
-Every test must have **exactly one** speed marker:
-
-- `@pytest.mark.unit`
-  - Pure, deterministic tests
-  - No database access
-- `@pytest.mark.integration`
-  - Any test that uses Django, the database, views, management commands, or IO
-
-Run just unit tests:
-
-```bash
-pytest -m unit
-```
-
-Run the full suite (unit + integration):
-
-```bash
-pytest
-```
-
-### Semantic markers (optional)
-
-Optionally, add **one** semantic marker:
-
-- `@pytest.mark.regression` for bug/regression coverage
-- `@pytest.mark.golden` for snapshot/fixture-driven “golden” tests
-
-### Canonical examples
-
-- Unit + golden: `tests/test_battle_report_parser.py`
-- Integration: `tests/test_battle_history_table.py`
-- Unit + regression: `tests/test_phase9a_uw_runs_count_utility.py`
+See: [Testing](testing.md)
 
 ## Migrations
 
@@ -98,6 +65,13 @@ The Charts dashboard is driven by declarative `ChartConfig` entries and a centra
 - `by_tier` and `by_preset` require every metric series to support that dimension.
 - `by_entity` requires `comparison.entities` and exactly one entity filter enabled (`uw`, `guardian`, or `bot`).
 
+## Time semantics
+
+- **Real time** comes from the Battle Report’s “Real Time” field and is used for per-hour rates such as coins/real hour.
+- **In-game timing** (cooldowns and durations) is shown in seconds and is sourced from the external wiki tables.
+- **Accelerated time** can make real-world time diverge from in-game seconds (for example, due to speed effects); dashboards must label units explicitly.
+- Wiki-derived timing values are treated as reference data and may be inaccurate or drift over time.
+
 ## Multi-player scoping
 
 Phase 8 introduces first-class multi-player support.
@@ -109,5 +83,5 @@ Phase 8 introduces first-class multi-player support.
 
 ## Security notes
 
-- Post actions that accept `next` must validate the URL before redirecting. Use the helpers in `core.views` to ensure redirects stay on the current host.
+- Post actions that accept `next` must validate the URL before redirecting. Use `core.redirects.safe_redirect` for any redirect derived from user input.
 - AJAX error payloads should avoid raw exception details and return a user-safe message in production.

@@ -2422,6 +2422,8 @@ It's outdated and needs expansion
 **** TODO [#C] Move ##Test taxonomy & markings to a dedicated testing page (v0.2.0x) :bug:
 Under Development Documentation.
 
+*** Phase 12 Enhancements [0/1]
+
 **** TODO [#B] Cards Dashboard Enhancements (v0.x.x)         :enhancement:
 
 ***** TODO [#A] Select Multiple Cards to Assign/Create Preset
@@ -2458,7 +2460,7 @@ Add a block under the presets filter on the left
 - Cloud sync
 - Real-time scraping
 
-*** TODO [#A] Exploratory Pattern Analysis (v0.X.0)                :kMeans:
+*** TODO [#A] Exploratory Pattern Analysis (v0.X.0)    :kMeans:enhancement:
 
 Guiding Principles:
 

@@ -117,6 +117,17 @@ body {
   display: inline;
 }
 
+.entity-level-controls {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-end;
+  gap: var(--tts-space-2);
+}
+
+.entity-level-controls .button {
+  margin: 0;
+}
+
 .top-bar .is-active > a {
   font-weight: 700;
   text-decoration: underline;

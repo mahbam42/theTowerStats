@@ -14,7 +14,7 @@ Phase 1 proves the end-to-end pipeline works:
 - Dashboard: `/`
   - Paste/import form (POST)
   - Date range filter (GET `start_date`, `end_date`)
-  - Chart: **coins per hour** over time
+  - Chart: **coins/real hour** over time
 
 See `docs/phase2.md` for contextual filters, preset labels, overlays, and delta comparisons.
 
@@ -42,4 +42,4 @@ See `docs/phase2.md` for contextual filters, preset labels, overlays, and delta 
 
 - Only extracts **Battle Date**, **Tier**, **Wave**, **Real Time**
 - Ignores all other labels (unknown labels are non-fatal)
-- Computes only one metric: **coins per hour**
+- Computes only one metric: **coins/real hour**

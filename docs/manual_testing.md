@@ -89,7 +89,7 @@ Golden Tests validate deterministic outputs using the provided three Battle Repo
 
 ### Golden Test 6: Derived metric calculation
 
-1. In **Charts**, select a derived metric (for example, **Coins/hour**).
+1. In **Charts**, select a derived metric (for example, **Coins/real hour**).
 2. For one report, calculate the expected value manually using the report’s coins and run duration.
 3. Compare the chart value to the manual calculation, allowing for the same rounding shown in the UI.
 

@@ -20,7 +20,6 @@ from django.http import HttpRequest, HttpResponse, JsonResponse, QueryDict
 from django.shortcuts import redirect, render
 from django.core.paginator import Paginator
 from django.urls import reverse
-from django.utils.http import url_has_allowed_host_and_scheme
 
 from analysis.aggregations import summarize_window
 from analysis.chart_config_dto import ChartContextDTO
@@ -103,6 +102,7 @@ from core.tournament import is_tournament, tournament_bracket
 from core.search import build_search_items
 from core.uw_sync import build_uw_sync_payload
 from core.uw_usage import count_observed_uw_runs
+from core.redirects import safe_redirect
 
 
 def _request_player(request: HttpRequest) -> Player:
@@ -128,7 +128,11 @@ def _reject_demo_write(request: HttpRequest) -> HttpResponse:
     """
 
     messages.error(request, "Demo mode is read-only. Exit demo mode to make changes.")
-    return redirect(_safe_local_redirect_url(request, fallback=request.path))
+    return safe_redirect(
+        request,
+        candidates=[request.POST.get("next"), request.META.get("HTTP_REFERER")],
+        fallback=request.path,
+    )
 
 
 def search(request: HttpRequest) -> HttpResponse:
@@ -167,7 +171,11 @@ def enable_demo_mode(request: HttpRequest) -> HttpResponse:
     _ = get_demo_player()
     set_demo_mode(request, enabled=True)
     messages.success(request, "Demo mode enabled.")
-    return redirect(_safe_local_redirect_url(request, fallback=reverse("core:dashboard")))
+    return safe_redirect(
+        request,
+        candidates=[request.POST.get("next"), request.META.get("HTTP_REFERER")],
+        fallback=reverse("core:dashboard"),
+    )
 
 
 @login_required
@@ -179,50 +187,11 @@ def disable_demo_mode(request: HttpRequest) -> HttpResponse:
 
     set_demo_mode(request, enabled=False)
     messages.success(request, "Demo mode disabled.")
-    return redirect(_safe_local_redirect_url(request, fallback=reverse("core:dashboard")))
-
-
-def _safe_auth_redirect_url(request: HttpRequest) -> str:
-    """Return a safe post-auth redirect URL derived from `next`.
-
-    Args:
-        request: Incoming request with optional `next` parameter.
-
-    Returns:
-        A safe redirect URL. Defaults to settings.LOGIN_REDIRECT_URL.
-    """
-
-    redirect_url = (request.POST.get("next") or request.GET.get("next") or "").strip()
-    allowed_hosts = set(settings.ALLOWED_HOSTS)
-    if redirect_url and url_has_allowed_host_and_scheme(
-        url=redirect_url,
-        allowed_hosts=allowed_hosts,
-        require_https=request.is_secure(),
-    ):
-        return redirect_url
-    return settings.LOGIN_REDIRECT_URL
-
-
-def _safe_local_redirect_url(request: HttpRequest, fallback: str) -> str:
-    """Return a safe local redirect URL derived from `next` or HTTP Referer.
-
-    Args:
-        request: Incoming request with optional `next` form input.
-        fallback: Fallback URL when no safe URL is available.
-
-    Returns:
-        A safe redirect URL limited to the current host.
-    """
-
-    candidate = (request.POST.get("next") or request.META.get("HTTP_REFERER") or "").strip()
-    allowed_hosts = set(settings.ALLOWED_HOSTS)
-    if candidate and url_has_allowed_host_and_scheme(
-        url=candidate,
-        allowed_hosts=allowed_hosts,
-        require_https=request.is_secure(),
-    ):
-        return candidate
-    return fallback
+    return safe_redirect(
+        request,
+        candidates=[request.POST.get("next"), request.META.get("HTTP_REFERER")],
+        fallback=reverse("core:dashboard"),
+    )
 
 
 def login_view(request: HttpRequest) -> HttpResponse:
@@ -257,12 +226,20 @@ def login_view(request: HttpRequest) -> HttpResponse:
                     )
                 user = signup_form.save()
                 auth_login(request, user)
-                return redirect(_safe_auth_redirect_url(request))
+                return safe_redirect(
+                    request,
+                    candidates=[request.POST.get("next"), request.GET.get("next")],
+                    fallback=settings.LOGIN_REDIRECT_URL,
+                )
         else:
             login_form = AuthenticationForm(request, data=request.POST)
             if login_form.is_valid():
                 auth_login(request, login_form.get_user())
-                return redirect(_safe_auth_redirect_url(request))
+                return safe_redirect(
+                    request,
+                    candidates=[request.POST.get("next"), request.GET.get("next")],
+                    fallback=settings.LOGIN_REDIRECT_URL,
+                )
 
     return render(
         request,
@@ -1003,15 +980,11 @@ def battle_history(request: HttpRequest) -> HttpResponse:
             else:
                 messages.error(request, "Could not update preset for that run.")
 
-            redirect_to = (update_form.cleaned_data.get("next") or "").strip()
-            allowed_hosts = set(settings.ALLOWED_HOSTS)
-            if not url_has_allowed_host_and_scheme(
-                url=redirect_to,
-                allowed_hosts=allowed_hosts,
-                require_https=request.is_secure(),
-            ):
-                redirect_to = reverse("core:battle_history")
-            return redirect(redirect_to)
+            return safe_redirect(
+                request,
+                candidates=[update_form.cleaned_data.get("next")],
+                fallback=reverse("core:battle_history"),
+            )
 
         import_form = BattleReportImportForm(request.POST)
         if import_form.is_valid():
@@ -1349,14 +1322,18 @@ def cards(request: HttpRequest) -> HttpResponse:
         if demo_mode_enabled(request):
             return _reject_demo_write(request)
         action = (request.POST.get("action") or "").strip()
-        redirect_to = _safe_local_redirect_url(request, fallback=request.path)
+        redirect_response = safe_redirect(
+            request,
+            candidates=[request.POST.get("next"), request.META.get("HTTP_REFERER")],
+            fallback=request.path,
+        )
 
         if action == "unlock_slot":
             max_slots = card_slot_max_slots()
             next_cost = next_card_slot_unlock_cost_raw(unlocked=player.card_slots_unlocked)
             if max_slots is None:
                 messages.warning(request, "Card slot limits are not available yet.")
-                return redirect(redirect_to)
+                return redirect_response
             if player.card_slots_unlocked < max_slots:
                 with transaction.atomic():
                     can_afford, parsed_cost = enforce_and_deduct_gems_if_tracked(
@@ -1368,7 +1345,7 @@ def cards(request: HttpRequest) -> HttpResponse:
                             request,
                             f"Not enough gems to unlock the next slot (cost: {parsed_cost}).",
                         )
-                        return redirect(redirect_to)
+                        return redirect_response
                     player.card_slots_unlocked += 1
                     player.save(update_fields=["card_slots_unlocked"])
                 if next_cost:
@@ -1377,18 +1354,18 @@ def cards(request: HttpRequest) -> HttpResponse:
                     messages.success(request, "Unlocked the next card slot.")
             else:
                 messages.warning(request, "No additional card slots are available.")
-            return redirect(redirect_to)
+            return redirect_response
 
         if action == "update_inventory":
             form = CardInventoryUpdateForm(request.POST)
             if not form.is_valid():
                 messages.error(request, "Could not save card inventory.")
-                return redirect(redirect_to)
+                return redirect_response
 
             card = PlayerCard.objects.filter(player=player, id=form.cleaned_data["card_id"]).first()
             if card is None:
                 messages.error(request, "Card row not found.")
-                return redirect(redirect_to)
+                return redirect_response
 
             inventory_input = int(form.cleaned_data["inventory_count"])
             if card.stars_unlocked <= 0 and inventory_input <= 0:
@@ -1403,18 +1380,18 @@ def cards(request: HttpRequest) -> HttpResponse:
                 card.inventory_count = new_inventory
                 card.save(update_fields=["stars_unlocked", "inventory_count", "updated_at"])
             messages.success(request, "Saved card inventory.")
-            return redirect(redirect_to)
+            return redirect_response
 
         if action == "update_presets":
             form = CardPresetUpdateForm(request.POST, player=player)
             if not form.is_valid():
                 messages.error(request, "Could not save card presets.")
-                return redirect(redirect_to)
+                return redirect_response
 
             card = PlayerCard.objects.filter(player=player, id=form.cleaned_data["card_id"]).first()
             if card is None:
                 messages.error(request, "Card row not found.")
-                return redirect(redirect_to)
+                return redirect_response
 
             chosen_presets = list(form.cleaned_data["presets"])
             new_name = form.cleaned_data["new_preset_name"]
@@ -1423,10 +1400,10 @@ def cards(request: HttpRequest) -> HttpResponse:
                 chosen_presets.append(preset)
             card.presets.set(chosen_presets, through_defaults={"player": player})
             messages.success(request, "Saved card presets.")
-            return redirect(redirect_to)
+            return redirect_response
 
         messages.error(request, "Unknown cards action.")
-        return redirect(redirect_to)
+        return redirect_response
 
     filter_form = CardsFilterForm(request.GET, player=player)
     filter_form.is_valid()
@@ -1559,7 +1536,11 @@ def ultimate_weapon_progress(request: HttpRequest) -> HttpResponse:
     if request.method == "POST":
         action = (request.POST.get("action") or "").strip()
         is_ajax = request.headers.get("x-requested-with") == "XMLHttpRequest"
-        redirect_to = _safe_local_redirect_url(request, fallback=request.path)
+        redirect_response = safe_redirect(
+            request,
+            candidates=[request.POST.get("next"), request.META.get("HTTP_REFERER")],
+            fallback=request.path,
+        )
 
         if action == "unlock_uw":
             uw_id = int(request.POST.get("entity_id") or request.POST.get("uw_id") or 0)
@@ -1572,7 +1553,7 @@ def ultimate_weapon_progress(request: HttpRequest) -> HttpResponse:
                 if is_ajax:
                     return JsonResponse({"ok": False, "error": "Ultimate Weapon not found."}, status=404)
                 messages.error(request, "Ultimate Weapon not found.")
-                return redirect(redirect_to)
+                return redirect_response
 
             try:
                 validate_uw_parameter_definitions(uw_definition=uw.ultimate_weapon_definition)
@@ -1588,7 +1569,7 @@ def ultimate_weapon_progress(request: HttpRequest) -> HttpResponse:
                         {"ok": False, "error": "Invalid parameter definitions."},
                         status=400,
                     )
-                return redirect(redirect_to)
+                return redirect_response
 
             with transaction.atomic():
                 uw.unlocked = True
@@ -1653,7 +1634,7 @@ def ultimate_weapon_progress(request: HttpRequest) -> HttpResponse:
                 )
 
             messages.success(request, f"Unlocked {uw.ultimate_weapon_definition.name}.")
-            return redirect(redirect_to)
+            return redirect_response
 
         if action == "level_up_uw_param":
             player_param_id = int(request.POST.get("param_id") or 0)
@@ -1674,13 +1655,13 @@ def ultimate_weapon_progress(request: HttpRequest) -> HttpResponse:
                 if is_ajax:
                     return JsonResponse({"ok": False, "error": "Parameter not found."}, status=404)
                 messages.error(request, "Ultimate Weapon parameter not found.")
-                return redirect(redirect_to)
+                return redirect_response
 
             if not player_param.player_ultimate_weapon.unlocked:
                 if is_ajax:
                     return JsonResponse({"ok": False, "error": "Ultimate Weapon is locked."}, status=400)
                 messages.error(request, "Cannot upgrade a locked Ultimate Weapon.")
-                return redirect(redirect_to)
+                return redirect_response
 
             param_def = player_param.parameter_definition
             levels_qs = param_def.levels.order_by("level")
@@ -1689,7 +1670,7 @@ def ultimate_weapon_progress(request: HttpRequest) -> HttpResponse:
                 if is_ajax:
                     return JsonResponse({"ok": False, "error": "Already at max level."}, status=400)
                 messages.warning(request, "That parameter is already maxed.")
-                return redirect(redirect_to)
+                return redirect_response
 
             with transaction.atomic():
                 player_param.level += 1
@@ -1720,7 +1701,7 @@ def ultimate_weapon_progress(request: HttpRequest) -> HttpResponse:
                 )
 
             messages.success(request, f"Upgraded {param_def.display_name}.")
-            return redirect(redirect_to)
+            return redirect_response
 
         if action == "level_down_uw_param":
             player_param_id = int(request.POST.get("param_id") or 0)
@@ -1741,13 +1722,13 @@ def ultimate_weapon_progress(request: HttpRequest) -> HttpResponse:
                 if is_ajax:
                     return JsonResponse({"ok": False, "error": "Parameter not found."}, status=404)
                 messages.error(request, "Ultimate Weapon parameter not found.")
-                return redirect(redirect_to)
+                return redirect_response
 
             if not player_param.player_ultimate_weapon.unlocked:
                 if is_ajax:
                     return JsonResponse({"ok": False, "error": "Ultimate Weapon is locked."}, status=400)
                 messages.error(request, "Cannot change levels on a locked Ultimate Weapon.")
-                return redirect(redirect_to)
+                return redirect_response
 
             param_def = player_param.parameter_definition
             levels_qs = param_def.levels.order_by("level")
@@ -1756,7 +1737,7 @@ def ultimate_weapon_progress(request: HttpRequest) -> HttpResponse:
                 if is_ajax:
                     return JsonResponse({"ok": False, "error": "Already at minimum level."}, status=400)
                 messages.warning(request, "That parameter is already at its minimum level.")
-                return redirect(redirect_to)
+                return redirect_response
 
             with transaction.atomic():
                 player_param.level -= 1
@@ -1787,12 +1768,12 @@ def ultimate_weapon_progress(request: HttpRequest) -> HttpResponse:
                 )
 
             messages.success(request, f"Decreased {param_def.display_name}.")
-            return redirect(redirect_to)
+            return redirect_response
 
         if is_ajax:
             return JsonResponse({"ok": False, "error": "Unknown action."}, status=400)
         messages.error(request, "Unknown action.")
-        return redirect(redirect_to)
+        return redirect_response
 
     filter_form = UltimateWeaponProgressFilterForm(request.GET)
     filter_form.is_valid()
@@ -2053,7 +2034,11 @@ def guardian_progress(request: HttpRequest) -> HttpResponse:
     if request.method == "POST":
         action = (request.POST.get("action") or "").strip()
         is_ajax = request.headers.get("x-requested-with") == "XMLHttpRequest"
-        redirect_to = _safe_local_redirect_url(request, fallback=request.path)
+        redirect_response = safe_redirect(
+            request,
+            candidates=[request.POST.get("next"), request.META.get("HTTP_REFERER")],
+            fallback=request.path,
+        )
 
         if action == "unlock_guardian_chip":
             chip_id = int(request.POST.get("entity_id") or 0)
@@ -2066,7 +2051,7 @@ def guardian_progress(request: HttpRequest) -> HttpResponse:
                 if is_ajax:
                     return JsonResponse({"ok": False, "error": "Guardian chip not found."}, status=404)
                 messages.error(request, "Guardian chip not found.")
-                return redirect(redirect_to)
+                return redirect_response
 
             try:
                 validate_parameter_definitions(
@@ -2087,7 +2072,7 @@ def guardian_progress(request: HttpRequest) -> HttpResponse:
                         {"ok": False, "error": "Invalid parameter definitions."},
                         status=400,
                     )
-                return redirect(redirect_to)
+                return redirect_response
 
             with transaction.atomic():
                 chip.unlocked = True
@@ -2154,7 +2139,7 @@ def guardian_progress(request: HttpRequest) -> HttpResponse:
                 )
 
             messages.success(request, f"Unlocked {chip.guardian_chip_definition.name}.")
-            return redirect(redirect_to)
+            return redirect_response
 
         if action == "level_up_guardian_param":
             player_param_id = int(request.POST.get("param_id") or 0)
@@ -2175,13 +2160,13 @@ def guardian_progress(request: HttpRequest) -> HttpResponse:
                 if is_ajax:
                     return JsonResponse({"ok": False, "error": "Parameter not found."}, status=404)
                 messages.error(request, "Guardian chip parameter not found.")
-                return redirect(redirect_to)
+                return redirect_response
 
             if not player_param.player_guardian_chip.unlocked:
                 if is_ajax:
                     return JsonResponse({"ok": False, "error": "Guardian chip is locked."}, status=400)
                 messages.error(request, "Cannot upgrade a locked Guardian Chip.")
-                return redirect(redirect_to)
+                return redirect_response
 
             param_def = player_param.parameter_definition
             levels_qs = param_def.levels.order_by("level")
@@ -2190,7 +2175,7 @@ def guardian_progress(request: HttpRequest) -> HttpResponse:
                 if is_ajax:
                     return JsonResponse({"ok": False, "error": "Already at max level."}, status=400)
                 messages.warning(request, "That parameter is already maxed.")
-                return redirect(redirect_to)
+                return redirect_response
 
             with transaction.atomic():
                 player_param.level += 1
@@ -2222,7 +2207,7 @@ def guardian_progress(request: HttpRequest) -> HttpResponse:
                 )
 
             messages.success(request, f"Upgraded {param_def.display_name}.")
-            return redirect(redirect_to)
+            return redirect_response
 
         if action == "level_down_guardian_param":
             player_param_id = int(request.POST.get("param_id") or 0)
@@ -2243,13 +2228,13 @@ def guardian_progress(request: HttpRequest) -> HttpResponse:
                 if is_ajax:
                     return JsonResponse({"ok": False, "error": "Parameter not found."}, status=404)
                 messages.error(request, "Guardian chip parameter not found.")
-                return redirect(redirect_to)
+                return redirect_response
 
             if not player_param.player_guardian_chip.unlocked:
                 if is_ajax:
                     return JsonResponse({"ok": False, "error": "Guardian chip is locked."}, status=400)
                 messages.error(request, "Cannot change levels on a locked Guardian Chip.")
-                return redirect(redirect_to)
+                return redirect_response
 
             param_def = player_param.parameter_definition
             levels_qs = param_def.levels.order_by("level")
@@ -2258,7 +2243,7 @@ def guardian_progress(request: HttpRequest) -> HttpResponse:
                 if is_ajax:
                     return JsonResponse({"ok": False, "error": "Already at minimum level."}, status=400)
                 messages.warning(request, "That parameter is already at its minimum level.")
-                return redirect(redirect_to)
+                return redirect_response
 
             with transaction.atomic():
                 player_param.level -= 1
@@ -2290,7 +2275,7 @@ def guardian_progress(request: HttpRequest) -> HttpResponse:
                 )
 
             messages.success(request, f"Decreased {param_def.display_name}.")
-            return redirect(redirect_to)
+            return redirect_response
 
         if action == "set_guardian_active":
             chip_id = int(request.POST.get("entity_id") or 0)
@@ -2300,13 +2285,13 @@ def guardian_progress(request: HttpRequest) -> HttpResponse:
                 if is_ajax:
                     return JsonResponse({"ok": False, "error": "Guardian chip not found."}, status=404)
                 messages.error(request, "Guardian chip not found.")
-                return redirect(redirect_to)
+                return redirect_response
 
             if desired_active and not chip.unlocked:
                 if is_ajax:
                     return JsonResponse({"ok": False, "error": "Guardian chip is locked."}, status=400)
                 messages.error(request, "Cannot activate a locked Guardian Chip.")
-                return redirect(redirect_to)
+                return redirect_response
 
             chip.active = desired_active
             try:
@@ -2318,17 +2303,17 @@ def guardian_progress(request: HttpRequest) -> HttpResponse:
                         status=400,
                     )
                 messages.error(request, "Unable to update guardian chip status.")
-                return redirect(redirect_to)
+                return redirect_response
 
             if is_ajax:
                 return JsonResponse({"ok": True, "active": chip.active})
             messages.success(request, "Saved active guardian chip selection.")
-            return redirect(redirect_to)
+            return redirect_response
 
         if is_ajax:
             return JsonResponse({"ok": False, "error": "Unknown action."}, status=400)
         messages.error(request, "Unknown action.")
-        return redirect(redirect_to)
+        return redirect_response
 
     filter_form = UpgradeableEntityProgressFilterForm(request.GET, entity_label_plural="guardian chips")
     filter_form.is_valid()
@@ -2534,7 +2519,11 @@ def bots_progress(request: HttpRequest) -> HttpResponse:
     if request.method == "POST":
         action = (request.POST.get("action") or "").strip()
         is_ajax = request.headers.get("x-requested-with") == "XMLHttpRequest"
-        redirect_to = _safe_local_redirect_url(request, fallback=request.path)
+        redirect_response = safe_redirect(
+            request,
+            candidates=[request.POST.get("next"), request.META.get("HTTP_REFERER")],
+            fallback=request.path,
+        )
 
         if action == "unlock_bot":
             bot_id = int(request.POST.get("entity_id") or 0)
@@ -2547,7 +2536,7 @@ def bots_progress(request: HttpRequest) -> HttpResponse:
                 if is_ajax:
                     return JsonResponse({"ok": False, "error": "Bot not found."}, status=404)
                 messages.error(request, "Bot not found.")
-                return redirect(redirect_to)
+                return redirect_response
 
             try:
                 validate_parameter_definitions(
@@ -2568,7 +2557,7 @@ def bots_progress(request: HttpRequest) -> HttpResponse:
                         {"ok": False, "error": "Invalid parameter definitions."},
                         status=400,
                     )
-                return redirect(redirect_to)
+                return redirect_response
 
             with transaction.atomic():
                 bot.unlocked = True
@@ -2633,7 +2622,7 @@ def bots_progress(request: HttpRequest) -> HttpResponse:
                 )
 
             messages.success(request, f"Unlocked {bot.bot_definition.name}.")
-            return redirect(redirect_to)
+            return redirect_response
 
         if action == "level_up_bot_param":
             player_param_id = int(request.POST.get("param_id") or 0)
@@ -2650,13 +2639,13 @@ def bots_progress(request: HttpRequest) -> HttpResponse:
                 if is_ajax:
                     return JsonResponse({"ok": False, "error": "Parameter not found."}, status=404)
                 messages.error(request, "Bot parameter not found.")
-                return redirect(redirect_to)
+                return redirect_response
 
             if not player_param.player_bot.unlocked:
                 if is_ajax:
                     return JsonResponse({"ok": False, "error": "Bot is locked."}, status=400)
                 messages.error(request, "Cannot upgrade a locked Bot.")
-                return redirect(redirect_to)
+                return redirect_response
 
             param_def = player_param.parameter_definition
             levels_qs = param_def.levels.order_by("level")
@@ -2665,7 +2654,7 @@ def bots_progress(request: HttpRequest) -> HttpResponse:
                 if is_ajax:
                     return JsonResponse({"ok": False, "error": "Already at max level."}, status=400)
                 messages.warning(request, "That parameter is already maxed.")
-                return redirect(redirect_to)
+                return redirect_response
 
             with transaction.atomic():
                 player_param.level += 1
@@ -2697,7 +2686,7 @@ def bots_progress(request: HttpRequest) -> HttpResponse:
                 )
 
             messages.success(request, f"Upgraded {param_def.display_name}.")
-            return redirect(redirect_to)
+            return redirect_response
 
         if action == "level_down_bot_param":
             player_param_id = int(request.POST.get("param_id") or 0)
@@ -2714,13 +2703,13 @@ def bots_progress(request: HttpRequest) -> HttpResponse:
                 if is_ajax:
                     return JsonResponse({"ok": False, "error": "Parameter not found."}, status=404)
                 messages.error(request, "Bot parameter not found.")
-                return redirect(redirect_to)
+                return redirect_response
 
             if not player_param.player_bot.unlocked:
                 if is_ajax:
                     return JsonResponse({"ok": False, "error": "Bot is locked."}, status=400)
                 messages.error(request, "Cannot change levels on a locked Bot.")
-                return redirect(redirect_to)
+                return redirect_response
 
             param_def = player_param.parameter_definition
             levels_qs = param_def.levels.order_by("level")
@@ -2729,7 +2718,7 @@ def bots_progress(request: HttpRequest) -> HttpResponse:
                 if is_ajax:
                     return JsonResponse({"ok": False, "error": "Already at minimum level."}, status=400)
                 messages.warning(request, "That parameter is already at its minimum level.")
-                return redirect(redirect_to)
+                return redirect_response
 
             with transaction.atomic():
                 player_param.level -= 1
@@ -2761,12 +2750,12 @@ def bots_progress(request: HttpRequest) -> HttpResponse:
                 )
 
             messages.success(request, f"Decreased {param_def.display_name}.")
-            return redirect(redirect_to)
+            return redirect_response
 
         if is_ajax:
             return JsonResponse({"ok": False, "error": "Unknown action."}, status=400)
         messages.error(request, "Unknown action.")
-        return redirect(redirect_to)
+        return redirect_response
 
     filter_form = UpgradeableEntityProgressFilterForm(request.GET, entity_label_plural="bots")
     filter_form.is_valid()

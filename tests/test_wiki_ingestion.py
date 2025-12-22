@@ -268,6 +268,7 @@ def test_fetch_wiki_data_resolves_bot_cost_table_under_anchor() -> None:
 
     html = _fixture_html("wiki_bot_thunder_bot_v1.html")
     spec = _IngestionSpec(
+        target="bots",
         kind="leveled_entity",
         parse_version="bots_v1",
         source_prefix="bots_thunder_bot",

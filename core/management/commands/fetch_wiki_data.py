@@ -75,13 +75,14 @@ class Command(BaseCommand):
 
         parser.add_argument(
             "--target",
-            choices=("slots", "cards_list", "bots", "guardian_chips", "ultimate_weapons"),
+            choices=("slots", "cards_list", "bots", "guardian_chips", "ultimate_weapons", "all"),
             default=self.DEFAULT_TARGET,
             help=(
                 "Which table(s) to ingest from the page: "
                 "slots (top Cards table), cards_list (tables under #List_of_Cards), "
                 "bots (bot upgrade tables), guardian_chips (Guardian chip tables), "
-                "ultimate_weapons (ultimate weapon upgrade tables)."
+                "ultimate_weapons (ultimate weapon upgrade tables), "
+                "all (run every target with default URLs)."
             ),
         )
         parser.add_argument(
@@ -115,6 +116,11 @@ class Command(BaseCommand):
         check: bool = options["check"]
         write: bool = options["write"]
 
+        if target == "all" and url:
+            raise CommandError("--url is not supported with --target all.")
+        if target == "all" and table_indexes:
+            raise CommandError("--table-index is not supported with --target all.")
+
         if check and write:
             raise CommandError("Use either --check or --write, not both.")
         if not check and not write:
@@ -122,6 +128,7 @@ class Command(BaseCommand):
 
         mode = "CHECK" if check else "WRITE"
         totals = {"added": 0, "changed": 0, "unchanged": 0, "deprecated": 0}
+        totals_by_target: dict[str, dict[str, int]] = {}
         specs_by_url: dict[str, list[_IngestionSpec]] = {}
         for page_url, spec in _iter_ingestion_specs(target=target, url_override=url):
             specs_by_url.setdefault(page_url, []).append(spec)
@@ -133,7 +140,7 @@ class Command(BaseCommand):
             for spec in specs:
                 selected_indexes = _resolve_table_indexes(
                     html,
-                    target=target,
+                    target=spec.target,
                     explicit_indexes=table_indexes,
                     spec=spec,
                 )
@@ -141,29 +148,57 @@ class Command(BaseCommand):
                     table_meta = meta_by_index.get(table_index)
                     table_label = _table_label(table_meta, fallback=f"table_{table_index}")
 
-                    scraped, parse_version, source_section = _scrape_for_spec(
-                        html,
-                        table_index=table_index,
-                        table_label=table_label,
-                        spec=spec,
-                    )
-                    summary = ingest_wiki_rows(
-                        scraped,
-                        page_url=page_url,
-                        source_section=source_section,
-                        parse_version=parse_version,
-                        write=write,
+                    try:
+                        scraped, parse_version, source_section = _scrape_for_spec(
+                            html,
+                            table_index=table_index,
+                            table_label=table_label,
+                            spec=spec,
+                        )
+                    except Exception as exc:  # noqa: BLE001
+                        raise CommandError(
+                            f"Failed to scrape target={spec.target} url={page_url} table_index={table_index}: {exc}"
+                        ) from exc
+
+                    try:
+                        summary = ingest_wiki_rows(
+                            scraped,
+                            page_url=page_url,
+                            source_section=source_section,
+                            parse_version=parse_version,
+                            write=write,
+                        )
+                    except Exception as exc:  # noqa: BLE001
+                        raise CommandError(
+                            f"Failed to ingest target={spec.target} url={page_url} table_index={table_index}: {exc}"
+                        ) from exc
+
+                    target_totals = totals_by_target.setdefault(
+                        spec.target,
+                        {"added": 0, "changed": 0, "unchanged": 0, "deprecated": 0},
                     )
                     totals["added"] += summary.added
                     totals["changed"] += summary.changed
                     totals["unchanged"] += summary.unchanged
                     totals["deprecated"] += summary.deprecated
+                    target_totals["added"] += summary.added
+                    target_totals["changed"] += summary.changed
+                    target_totals["unchanged"] += summary.unchanged
+                    target_totals["deprecated"] += summary.deprecated
 
                     self.stdout.write(
-                        f"[{mode}] target={target} url={page_url} table_index={table_index} source_section={source_section} "
+                        f"[{mode}] target={spec.target} url={page_url} table_index={table_index} source_section={source_section} "
                         f"parse_version={parse_version} added={summary.added} changed={summary.changed} "
                         f"unchanged={summary.unchanged} deprecated={summary.deprecated}"
                     )
+
+        for target_key in sorted(totals_by_target):
+            target_totals = totals_by_target[target_key]
+            self.stdout.write(
+                f"[{mode}] TOTAL target={target_key} tables=* "
+                f"added={target_totals['added']} changed={target_totals['changed']} "
+                f"unchanged={target_totals['unchanged']} deprecated={target_totals['deprecated']}"
+            )
 
         self.stdout.write(
             f"[{mode}] TOTAL target={target} tables=* "
@@ -181,7 +216,13 @@ def _resolve_table_indexes(
     if explicit_indexes:
         return explicit_indexes
     if target == "slots":
-        return [0]
+        indexes = _find_table_indexes_with_headers(html, required={"Slots"})
+        indexes = _filter_tables_by_any_headers(
+            html,
+            indexes=indexes,
+            required_any={"Gem Cost", "Unlock Cost", "Cost"},
+        )
+        return indexes or [0]
     if target == "cards_list":
         indexes = find_table_indexes_by_anchor(html, anchor_id=Command.CARDS_LIST_ANCHOR_ID)
         if not indexes:
@@ -287,6 +328,7 @@ class _IngestionSpec:
     def __init__(
         self,
         *,
+        target: str,
         kind: str,
         parse_version: str,
         source_prefix: str,
@@ -298,6 +340,7 @@ class _IngestionSpec:
         section_anchor_id: str | None = None,
         wiki_table_label: str | None = None,
     ) -> None:
+        self.target = target
         self.kind = kind
         self.parse_version = parse_version
         self.source_prefix = source_prefix
@@ -313,12 +356,30 @@ class _IngestionSpec:
 def _iter_ingestion_specs(*, target: str, url_override: str | None) -> list[tuple[str, _IngestionSpec]]:
     """Build page+spec entries for the requested target."""
 
+    if target == "all":
+        if url_override:
+            raise CommandError("--url is not supported with --target all.")
+        combined: list[tuple[str, _IngestionSpec]] = []
+        for part in ("slots", "cards_list", "bots", "guardian_chips", "ultimate_weapons"):
+            combined.extend(_iter_ingestion_specs(target=part, url_override=None))
+        return combined
+
     if target in {"slots", "cards_list"}:
         url = url_override or Command.DEFAULT_CARDS_URL
         kind = "cards_list" if target == "cards_list" else "slots"
         source_prefix = "cards_list" if target == "cards_list" else "cards_table"
         parse_version = Command.PARSE_VERSION_CARDS_LIST if target == "cards_list" else Command.PARSE_VERSION_SLOTS
-        return [(url, _IngestionSpec(kind=kind, parse_version=parse_version, source_prefix=source_prefix))]
+        return [
+            (
+                url,
+                _IngestionSpec(
+                    target=target,
+                    kind=kind,
+                    parse_version=parse_version,
+                    source_prefix=source_prefix,
+                ),
+            )
+        ]
 
     if target == "bots":
         if url_override:
@@ -327,6 +388,7 @@ def _iter_ingestion_specs(*, target: str, url_override: str | None) -> list[tupl
                 (
                     url_override,
                     _IngestionSpec(
+                        target=target,
                         kind="leveled_entity",
                         parse_version=Command.PARSE_VERSION_BOTS,
                         source_prefix=f"bots_{_slug(make_entity_id(name))}",
@@ -343,6 +405,7 @@ def _iter_ingestion_specs(*, target: str, url_override: str | None) -> list[tupl
                 (
                     page_url,
                     _IngestionSpec(
+                        target=target,
                         kind="leveled_entity",
                         parse_version=Command.PARSE_VERSION_BOTS,
                         source_prefix=f"bots_{_slug(make_entity_id(name))}",
@@ -362,6 +425,7 @@ def _iter_ingestion_specs(*, target: str, url_override: str | None) -> list[tupl
                 (
                     url_override,
                     _IngestionSpec(
+                        target=target,
                         kind="leveled_entity",
                         parse_version=Command.PARSE_VERSION_ULTIMATE_WEAPONS,
                         source_prefix=f"ultimate_weapons_{_slug(make_entity_id(name))}",
@@ -382,6 +446,7 @@ def _iter_ingestion_specs(*, target: str, url_override: str | None) -> list[tupl
                 (
                     page_url,
                     _IngestionSpec(
+                        target=target,
                         kind="leveled_entity",
                         parse_version=Command.PARSE_VERSION_ULTIMATE_WEAPONS,
                         source_prefix=f"ultimate_weapons_{_slug(make_entity_id(name))}",
@@ -412,6 +477,7 @@ def _iter_ingestion_specs(*, target: str, url_override: str | None) -> list[tupl
                 (
                     guardian_url,
                     _IngestionSpec(
+                        target=target,
                         kind="leveled_entity",
                         parse_version=Command.PARSE_VERSION_GUARDIAN_CHIPS,
                         source_prefix=f"guardian_chips_{_slug(chip_id)}",

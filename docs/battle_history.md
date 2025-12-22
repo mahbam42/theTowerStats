@@ -31,6 +31,7 @@ Battle History helps you review your past runs in a table so you can compare res
 - **Killed by** shows the cause of death when it exists in the report.
 - **Killed By (diagnostic)** summarizes how often each **Killed by** label appears across the current filters.
 - **Coins earned**, **Cash earned**, and **Interest earned** match the values shown in the report summary.
+- **Coins/real hour** divides coins earned by the run’s **Real Time** duration as reported by the game.
 - **Gem blocks**, **Cells earned**, and **Reroll shards** show run resources that may be missing in older or incomplete reports.
 - **Preset** is an optional label you can use to group runs for review. It does not change any gameplay results.
 - Selecting a column header toggles between ascending and descending order for that column.
@@ -43,6 +44,9 @@ Battle History helps you review your past runs in a table so you can compare res
 > **Caution**
 > This app does not invent or infer missing values.
 > What you see reflects what the game reported.
+
+> **Note**
+> “Real Time” comes from the Battle Report and represents real-world duration as reported by the game. It can differ from in-game timing.
 
 > **Note**
 > If you delete a preset later, runs that used it can still show the saved label in the table so your history stays readable.

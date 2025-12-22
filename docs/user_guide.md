@@ -32,7 +32,7 @@ theTowerStats turns your imported Battle Reports into Battle History tables, Cha
 - Battle History shows one row per imported run, with filters and sorting to narrow what you see.
 - Preset labels are shown as badges so you can scan for the context you assigned during import.
 - Charts reflect the current filters you selected (date range, tier, preset, and optional overlays).
-- Coins/hour and other derived values are computed from the imported run text and displayed as numbers you can compare across runs.
+- Coins/real hour and other derived values are computed from the imported run text and displayed as numbers you can compare across runs.
 
 ## Notes & Limitations
 
@@ -50,6 +50,9 @@ theTowerStats turns your imported Battle Reports into Battle History tables, Cha
 
 > ⚠️ Note
 > Values shown are calculated at the time you view the page and may change if your data changes.
+
+> ⚠️ Note
+> Coins/real hour uses the Battle Report’s “Real Time” value. Cooldowns and durations in collection pages are shown in seconds and are based on external wiki tables.
 
 ## Advanced Usage
 

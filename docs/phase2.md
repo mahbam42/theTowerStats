@@ -45,7 +45,7 @@ Optional moving average overlay:
 
 - Active context is shown in a sticky summary bar and updates live as filters change.
 - Legend entries can be clicked to toggle individual datasets on/off.
-- Tooltips show exact `coins/hour` values plus the current context (date range, filters, overlays).
+- Tooltips show exact `coins/hour` values (coins/real hour) plus the current context (date range, filters, overlays).
 - Missing dates are rendered as gaps (lines do not connect across missing data).
 
 ### Delta comparisons (GET)
@@ -62,4 +62,4 @@ chart `start_date`/`end_date` filters (the window dates control inclusion).
 
 Currently displayed delta metric:
 
-- coins/hour (absolute + percent)
+- coins/hour (coins/real hour; absolute + percent)

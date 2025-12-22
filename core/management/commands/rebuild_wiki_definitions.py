@@ -87,6 +87,7 @@ class Command(BaseCommand):
 
         check = not write
         if target in {"cards", "all"}:
+            call_command("fetch_wiki_data", target="slots", check=check, write=write)
             call_command("fetch_wiki_data", target="cards_list", check=check, write=write)
         if target in {"bots", "all"}:
             call_command("fetch_wiki_data", target="bots", check=check, write=write)
@@ -94,4 +95,3 @@ class Command(BaseCommand):
             call_command("fetch_wiki_data", target="guardian_chips", check=check, write=write)
         if target in {"ultimate_weapons", "all"}:
             call_command("fetch_wiki_data", target="ultimate_weapons", check=check, write=write)
-

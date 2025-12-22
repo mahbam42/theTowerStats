@@ -29,6 +29,8 @@ feature breadth.
 
 - Documentation Updates Required
   : Any functional change (model, view, importer, command, or UI behavior) must update project documentation located in /docs/ and indexed in mkdocs.yml.
+- Safe Redirects Required
+  : Direct redirects using user-supplied values are forbidden. Redirects derived from user input (for example, `next` or referer headers) must use the centralized safe redirect helper.
 - Permissions on New Commands
   : All new Django management commands must include appropriate permission checks and should integrate cleanly with the existing access-control patterns.
 - Docstrings Required on New Code

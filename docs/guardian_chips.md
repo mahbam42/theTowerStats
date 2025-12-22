@@ -22,7 +22,7 @@ The Guardian Chips page helps you track which chips are unlocked, which chips ar
 6. Select the **Active** toggle to activate or deactivate a chip.
 7. Select **Details** on an unlocked chip to view its upgrade parameters.
 8. Select **Level Up** on a parameter to increase its level by 1.
-9. Select **Decrease level** on a parameter to reduce its level by 1.
+9. Select **Level Down** on a parameter to reduce its level by 1.
 
 ## How to Read the Results
 
@@ -47,7 +47,10 @@ The Guardian Chips page helps you track which chips are unlocked, which chips ar
 > Locked chips cannot be activated and do not display parameter rows until they are unlocked in the app.
 
 > **Note**
-> **Decrease level** is available as a safety option if you accidentally record an upgrade you did not intend.
+> **Level Down** is available as a safety option if you accidentally record an upgrade you did not intend.
+
+> **Caution**
+> Cooldown and duration values are based on external wiki tables and are shown in seconds. Wiki values can be inaccurate or drift over time.
 
 > **Caution**
 > If no Battle Reports have been imported yet, **Runs used** will show “No battles recorded yet”.
