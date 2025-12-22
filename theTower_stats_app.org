@@ -2412,27 +2412,16 @@ class RedirectView(View):
 #+END_SRC
 
 Note that url_has_allowed_host_and_scheme handles backslashes correctly, so no additional processing is required.
-**** TODO [#B] Wiki Population (v0.2.0x)                             :bug:
-- [ ] fetch_wiki_data needs a --target all arg
-- [ ] fetch_wiki_data and rebuild_wiki_definitions should have a pretty summary of deltas at the end.
+**** IN PROGRESS [#B] Wiki Population (v0.2.0x)                      :bug:
+- State "IN PROGRESS" from "TODO"       [2025-12-22 Mon 14:33] \\
+  Card Slot Updated still chasing Guardian Slot Issue
+- [X] fetch_wiki_data needs a --target all arg
+- [X] fetch_wiki_data and rebuild_wiki_definitions should have a pretty summary of deltas at the end.
   Especially when using --target all.
-- [ ] Fix traceback error in production environment (it works in Dev)
-  Command: python3 manage.py rebuild_wiki_definitions --target all --write
-  
-  Traceback:
-  #+BEGIN_SRC bash
-      raise ValueError(
-        f"Guardian upgrade table drift for slug={slug}: expected 3 parameters, got {pairs!r}"
-      )
-      ValueError: Guardian upgrade table drift for slug=ally: expected 3 parameters, got []
-  #+END_SRC
 
-  Expected Result:
-  As of a game update this week 1 new card slot has been added totalling 22 CardSlots. Running rebuild_wikidefinitions() should retrieve that change without hitting the traceback error above. 
+*** Phase 12 [0/2]
 
-*** Phase 12 Enhancements [0/1]
-
-**** TODO [#B] Cards Dashboard Enhancements (v0.x.x)         :enhancement:
+**** TODO [#A] Cards Dashboard Enhancements (v0.x.x)         :enhancement:
 
 ***** TODO [#A] Select Multiple Cards to Assign/Create Preset
 Add a checkbox to each card row to Assign or Create Preset
@@ -2462,6 +2451,21 @@ Presets can also be assigned to Battle Reports to track card usage over time.
 
 ****** TODO Add brief description of Presets to Cards Dashboard
 Add a block under the presets filter on the left
+
+**** TODO [#B] Error Updating Guardian Upgrade Table                 :bug:
+- [ ] Fix traceback error in production environment (it works in Dev)
+  Command: python3 manage.py rebuild_wiki_definitions --target all --write
+  
+  Traceback:
+  #+BEGIN_SRC bash
+      raise ValueError(
+        f"Guardian upgrade table drift for slug={slug}: expected 3 parameters, got {pairs!r}"
+      )
+      ValueError: Guardian upgrade table drift for slug=ally: expected 3 parameters, got []
+  #+END_SRC
+
+  Expected Result:
+  Retrieve 3 parameters from Wiki, 'Recovery Amount,' 'Cooldown (s),' 'Max Recovery' from https://the-tower-idle-tower-defense.fandom.com/wiki/Guardian#Ally table name 'Upgrades.' 
 
 ** Backlog [2/5]
 “Out of Scope”:
