@@ -2231,7 +2231,9 @@ CLOSED: [2025-12-21 Sun 14:54]
 - State "DONE"       from "TODO"       [2025-12-21 Sun 14:54]
 Search should have global scope within the app. 
 
-*** Phase 10B Additional UX
+*** DONE Phase 10B Additional UX
+CLOSED: [2025-12-22 Mon 08:26]
+- State "DONE"       from              [2025-12-22 Mon 08:26]
 Additional Phase 10 Exit Definition:
 - Tests are classifiable and runnable by intent
 - Tournament data cannot contaminate normal analytics
@@ -2246,7 +2248,9 @@ Non-Goals for Phase 10:
 
 - No schema changes beyond classification fields
   
-**** TODO [#A] Test Suite Health (Blocking)
+**** DONE [#A] Test Suite Health (Blocking)
+CLOSED: [2025-12-22 Mon 08:25]
+- State "DONE"       from "TODO"       [2025-12-22 Mon 08:25]
 Defined unit and integration, but none of the tests use them, so you can’t easily run “fast unit only” vs “full integration” in CI/local.
 
 - [ ] Add callouts for Regression and Golden as an additional markers (orthogonal) for fixture-driven, checksum/snapshot-style tests.
@@ -2267,7 +2271,9 @@ Acceptance criteria
 - [ ] pytest -m unit runs fast (< X seconds locally).
 - [ ] CI has at least two jobs: unit and full.
 - [ ] Dev docs include a short Test Taxonomy section.
-**** TODO [#A] Battle History Needs to Account for Tournament Runs.
+**** DONE [#A] Battle History Needs to Account for Tournament Runs.
+CLOSED: [2025-12-22 Mon 08:25]
+- State "DONE"       from "TODO"       [2025-12-22 Mon 08:25]
 Battle Reports with 3+, 5+, 8+, etc are from Tournament Rounds and should be highlighted and separate from normal round tiers. There are modified enemy stats and added scaling battle conditions that make Tournament Rounds different from the corrisponding tiers.
 
 Tournament runs are inferred from existing fields (e.g. tier labels like 3+, 5+, 8+)
@@ -2317,7 +2323,9 @@ Scope control:
 - Do not re-infer in templates or JS
 
 - Do not scatter regex checks
-**** TODO [#A] Condense "Signed in as <user>"
+**** DONE [#A] Condense "Signed in as <user>"
+CLOSED: [2025-12-22 Mon 08:25]
+- State "DONE"       from "TODO"       [2025-12-22 Mon 08:25]
 Either just the user name, or an icon + <user>
 
 Desktop: 👤 username
@@ -2325,13 +2333,38 @@ Desktop: 👤 username
 Mobile: avatar/icon only, username on hover/tap
 
 Make the username the dropdown trigger (reduces nav clutter)
-**** TODO [#C] Hide Demo Data Button on Mobile
+**** DONE [#C] Hide Demo Data Button on Mobile
+CLOSED: [2025-12-22 Mon 08:25]
 
+- State "DONE"       from "TODO"       [2025-12-22 Mon 08:25]
 Mobile: move to overflow menu or settings
 
 Desktop: keep visible but secondary-styled
+*** Phase 11 Bug Fixes
 
-**** TODO [#B] UW/Guardian Chip/Bots Dashboards
+**** TODO [#A] URL redirection from remote source (Blocking) 
+There are 51 detected occurances... Apply the fix as a global function, fix where `return redirect(redirect_to)` appears, and suggest a rule for agents.md to strictly enforce using the fix. 
+
+For Django application, you can use the function url_has_allowed_host_and_scheme to check that a URL is safe to redirect to, as shown in the following example:
+
+#+BEGIN_SRC python
+from django.http import HttpResponseRedirect
+from django.shortcuts import redirect
+from django.utils.http import url_has_allowed_host_and_scheme
+from django.views import View
+
+class RedirectView(View):
+    def get(self, request, *args, **kwargs):
+        target = request.GET.get('target', '')
+        if url_has_allowed_host_and_scheme(target, allowed_hosts=None):
+            return HttpResponseRedirect(target)
+        else:
+            # ignore the target and redirect to the home page
+            return redirect('/')
+#+END_SRC
+
+Note that url_has_allowed_host_and_scheme handles backslashes correctly, so no additional processing is required.
+**** TODO [#A] UW/Guardian Chip/Bots Dashboards (Blocking)
 - [ ] Flip the Level Up / Level Down buttons.
   Level Up:
   - Primary button
@@ -2350,79 +2383,67 @@ Desktop: keep visible but secondary-styled
   - Primary CTA visually obvious
 
   - No accidental downgrades
-** Backlog [0/10]
+
+
+  *** TODO [#A] Manually tag Tournament Runs (0.2.x)
+The game visually indicates Tournament runs, but the plain text Battle Report does not.
+
+Need to add a manual flag to 'Add Battle Report' to flag runs as Tournament Runs. 
+
+**** TODO [#B] Wiki Population (v0.2.0x)
+- [ ] fetch_wiki_data needs a --target all arg
+- [ ] Fix traceback error in production environment (it works in Dev)
+  Command: python3 manage.py rebuild_wiki_definitions --target all --write
+  
+  Traceback:
+  #+BEGIN_SRC bash
+      raise ValueError(
+        f"Guardian upgrade table drift for slug={slug}: expected 3 parameters, got {pairs!r}"
+      )
+      ValueError: Guardian upgrade table drift for slug=ally: expected 3 parameters, got []
+  #+END_SRC
+
+  Expected Result:
+  1 new card slot has been added totalling 22 CardSlots.
+- [ ] fetch_wiki_data and rebuild_wiki_definitions should have a pretty summary of deltas at the end.
+  Especially when using --target all.
+
+**** TODO [#C] Normalize time handling everywhere (game time vs real time vs accelerated) (v0.2.0x)
+Game Time can be accelerated and the rate can be changed during a run. Either via Lab Research (max of 5x) or via perks that increase it further to a variable factor (increased by additional researchs). The hard maximum is 6.25x (according to the Wiki). However the Wiki also notes "Game speed is not accurate. x5.0 speed behaves closer to x4.0 while 6.25 is closer to x5." So our handling of it is not strictly necessary. 
+
+**** TODO [#C] Revise project_structure.md (v0.2.0x)
+It's outdated and needs expansion
+
+**** TODO [#C] Move ##Test taxonomy & markings to a dedicated testing page (v0.2.0x)
+Under Development Documentation.
+
+** Backlog [2/5]
 “Out of Scope”:
 - Cloud sync
 - Real-time scraping
 
+*** TODO [#A] Exploratory Pattern Analysis (v0.X.0)                :kMeans:
 
-*** TODO [#B] Ranked Recommendations
+Guiding Principles:
 
-Only now do you allow:
-
-“Top 3 upgrades for your goal”
-
-“Best next unlock based on your data”
-
-Guardrails:
-
-Always link back to:
-
-Charts
-
-Comparisons
-
-Assumptions
-
-Always show:
-
-Why
-
-Based on how much data
-
-What would change the recommendation
-
-This keeps it defensible.
-
-
-*** TODO [#B] Wmhat-If Scenarios
-
-This is where simulations might enter — but cautiously.
-
-Examples:
-
-“If Golden Tower cooldown were reduced by 1 level…”
-
-“Projected coin gain range if X upgraded next”
-
-Still deterministic:
-
-Based on historical deltas
-
-No RNG modeling
-
-No balance speculation
-
-*** TODO [#B] Exploratory Pattern Analysis
-
-K-means is not an optimization engine and not advice logic.
+- K-means is not an optimization engine and not advice logic.
 It’s a lens.
 
-Players should never feel measured against others — only contextualized by them.
+- Players should never feel measured against others — only contextualized by them.
 
-Its role is to answer:
+- Its role is to answer:
 
-> “What kinds of runs exist in the data, without us naming them first?”
+  > “What kinds of runs exist in the data, without us naming them first?”
 
 1. Run Archetypes (descriptive only)
 
-Clusters emerge like:
+  Clusters emerge like:
 
-Short / high-yield
+  - Short / high-yield
 
-Long / low-risk
+  - Long / low-risk
 
-Volatile / high-variance
+  - Volatile / high-variance
 
 These are labels applied after clustering, not baked into the model.
 
@@ -2463,6 +2484,7 @@ To future-proof it now, I’d lock these in:
 In other words: insight, not dependency.
 
 Responsible ways to do global exploratory analytics
+
 1. Aggregation first, always
 
 No raw runs, no individual trajectories.
@@ -2557,8 +2579,27 @@ If done right, global clustering becomes:
 
 That’s rare in game-adjacent tools — and a real differentiator.
 
-*** TODO [#C] Normalize time handling everywhere (game time vs real time vs accelerated)
-Game Time can be accelerated and the rate can be changed during a run. Either via Lab Research (max of 5x) or via perks that increase it further to a variable factor (increased by additional researchs). The hard maximum is 6.25x (according to the Wiki). However the Wiki also notes "Game speed is not accurate. x5.0 speed behaves closer to x4.0 while 6.25 is closer to x5." So our handling of it is not strictly necessary. 
+If clustering ever looks like:
+
+- leaderboard-adjacent
+
+- ranking-adjacent
+
+- “top cluster”
+
+- “advanced players tend to…”
+
+**You’ve violated your core difference.**
+
+K-means belongs entirely inside of analysis
+
+- It explains patterns in metrics
+
+- It never evaluates players
+
+- It never assigns value
+
+- It never implies success
 
 *** TODO [#C] Hide Deathwave on UW Sync Chart
 Add an optional toggle to show/hide the Death Wave activation markers (so the schedule focuses on GT/BH overlap), while still keeping everything descriptive.
@@ -2638,6 +2679,59 @@ Follow the documentation standards defined in agents.md.
 If writing a User Guide, prioritize clarity for non-technical users, avoid internal details, and follow the required task-based structure.
 Validate the final document against the Documentation Self-Check Checklist before completing the task.
 
+*** CANCELED [#C] Wmhat-If Scenarios
+CLOSED: [2025-12-22 Mon 09:01]
+
+- State "CANCELED"   from "TODO"       [2025-12-22 Mon 09:01] \\
+  don't want to implement it
+This is where simulations might enter — but cautiously.
+
+Examples:
+
+“If Golden Tower cooldown were reduced by 1 level…”
+
+“Projected coin gain range if X upgraded next”
+
+Still deterministic:
+
+Based on historical deltas
+
+No RNG modeling
+
+No balance speculation
+
+*** CANCELED [#C] Ranked Recommendations
+CLOSED: [2025-12-21 Sun 18:19]
+
+- State "CANCELED"   from "TODO"       [2025-12-21 Sun 18:19] \\
+  Wrong paradigm for this app
+Only now do you allow:
+
+“Top 3 upgrades for your goal”
+
+“Best next unlock based on your data”
+
+Guardrails:
+
+Always link back to:
+
+Charts
+
+Comparisons
+
+Assumptions
+
+Always show:
+
+Why
+
+Based on how much data
+
+What would change the recommendation
+
+This keeps it defensible.
+
+
 *** Complete
 **** DONE [#A] Review Docs and Note Revisions                        :Max:
 CLOSED: [2025-12-19 Fri 17:24]
@@ -2668,7 +2762,6 @@ definitions/models.py:407
 CLOSED: [2025-12-17 Wed 14:31]
 - State "DONE"       from "TODO"       [2025-12-17 Wed 14:31]
 Mostly a visual tweak, but adds context and history for the player to interpert their performance history. 
-
 ** Codex Tasks
 - [X] prompt 16
 - [X] prompt 17

@@ -61,6 +61,7 @@ nav:
       - Phase 10 Summary: phase10.md
       - Deployment (Railway): deployment.md
       - Project Structure: project_structure.md
+      - Manual Testing Guide: manual_testing.md
       - Development Notes: development.md
   - Reference:
       - Management Commands: management_commands.md
