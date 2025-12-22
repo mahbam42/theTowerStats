@@ -2340,7 +2340,52 @@ CLOSED: [2025-12-22 Mon 08:25]
 Mobile: move to overflow menu or settings
 
 Desktop: keep visible but secondary-styled
-*** Phase 11 Bug Fixes [0/7]
+*** Phase 11 Bug Fixes [4/6]
+
+**** DONE [#A] UW/Guardian Chip/Bots Dashboards (Blocking)           :bug:
+CLOSED: [2025-12-22 Mon 14:19]
+- State "DONE"       from "TODO"       [2025-12-22 Mon 14:19]
+- [ ] Flip the Level Up / Level Down buttons.
+  Level Up:
+  - Primary button
+  - Larger size
+  - Above Level Down
+
+  Level Down:
+  - Secondary / danger style
+
+
+  Disable Level Up when capped
+
+  Disable Level Down at level 0
+
+  Acceptance criteria:
+  - Primary CTA visually obvious
+
+  - No accidental downgrades
+
+
+  *** TODO [#A] Manually tag Tournament Runs (0.2.x)
+The game visually indicates Tournament runs, but the plain text Battle Report does not.
+
+Need to add a manual flag to 'Add Battle Report' to flag runs as Tournament Runs. 
+
+**** DONE [#C] Normalize time handling everywhere (game time vs real time vs accelerated) (v0.2.0x) :bug:
+CLOSED: [2025-12-22 Mon 14:19]
+- State "DONE"       from "TODO"       [2025-12-22 Mon 14:19]
+Game Time can be accelerated and the rate can be changed during a run. Either via Lab Research (max of 5x) or via perks that increase it further to a variable factor (increased by additional researchs). The hard maximum is 6.25x (according to the Wiki). However the Wiki also notes "Game speed is not accurate. x5.0 speed behaves closer to x4.0 while 6.25 is closer to x5." So our handling of it is not strictly necessary.
+
+Explicitly do not retroactively recompute historical metrics.
+
+**** DONE [#C] Revise project_structure.md (v0.2.0x)                 :bug:
+CLOSED: [2025-12-22 Mon 14:19]
+- State "DONE"       from "TODO"       [2025-12-22 Mon 14:19]
+It's outdated and needs expansion
+
+**** DONE [#C] Move ##Test taxonomy & markings to a dedicated testing page (v0.2.0x) :bug:
+CLOSED: [2025-12-22 Mon 14:19]
+- State "DONE"       from "TODO"       [2025-12-22 Mon 14:19]
+Under Development Documentation.
 
 **** TODO [#A] URL redirection from remote source (Blocking)         :bug:
 There are 51 detected occurances... Apply the fix as a global function, fix where `return redirect(redirect_to)` appears. 
@@ -2367,32 +2412,6 @@ class RedirectView(View):
 #+END_SRC
 
 Note that url_has_allowed_host_and_scheme handles backslashes correctly, so no additional processing is required.
-**** TODO [#A] UW/Guardian Chip/Bots Dashboards (Blocking)           :bug:
-- [ ] Flip the Level Up / Level Down buttons.
-  Level Up:
-  - Primary button
-  - Larger size
-  - Above Level Down
-
-  Level Down:
-  - Secondary / danger style
-
-
-  Disable Level Up when capped
-
-  Disable Level Down at level 0
-
-  Acceptance criteria:
-  - Primary CTA visually obvious
-
-  - No accidental downgrades
-
-
-  *** TODO [#A] Manually tag Tournament Runs (0.2.x)
-The game visually indicates Tournament runs, but the plain text Battle Report does not.
-
-Need to add a manual flag to 'Add Battle Report' to flag runs as Tournament Runs. 
-
 **** TODO [#B] Wiki Population (v0.2.0x)                             :bug:
 - [ ] fetch_wiki_data needs a --target all arg
 - [ ] fetch_wiki_data and rebuild_wiki_definitions should have a pretty summary of deltas at the end.
@@ -2410,17 +2429,6 @@ Need to add a manual flag to 'Add Battle Report' to flag runs as Tournament Runs
 
   Expected Result:
   As of a game update this week 1 new card slot has been added totalling 22 CardSlots. Running rebuild_wikidefinitions() should retrieve that change without hitting the traceback error above. 
-
-**** TODO [#C] Normalize time handling everywhere (game time vs real time vs accelerated) (v0.2.0x) :bug:
-Game Time can be accelerated and the rate can be changed during a run. Either via Lab Research (max of 5x) or via perks that increase it further to a variable factor (increased by additional researchs). The hard maximum is 6.25x (according to the Wiki). However the Wiki also notes "Game speed is not accurate. x5.0 speed behaves closer to x4.0 while 6.25 is closer to x5." So our handling of it is not strictly necessary.
-
-Explicitly do not retroactively recompute historical metrics.
-
-**** TODO [#C] Revise project_structure.md (v0.2.0x)                 :bug:
-It's outdated and needs expansion
-
-**** TODO [#C] Move ##Test taxonomy & markings to a dedicated testing page (v0.2.0x) :bug:
-Under Development Documentation.
 
 *** Phase 12 Enhancements [0/1]
 
