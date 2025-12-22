@@ -21,7 +21,9 @@ theTowerStats turns your imported Battle Reports into Battle History tables, Cha
 6. Select **Battle History**.
 7. Select **Add Battle Report**.
 8. Paste the Battle Report text from the game.
-9. (Optional) Enter a preset label to group runs by your own goals.
+
+    a. (Optional) Enter a preset label to group runs by your own goals.
+
 10. Select **Import Battle Report**.
 11. Select **Charts** to view time-series charts based on your imported runs.
 12. Select **Cards**, **Ultimate Weapons**, **Guardians**, or **Bots** to record and review saved progress.

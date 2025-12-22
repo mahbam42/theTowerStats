@@ -36,10 +36,12 @@ Cards help you track your card slot progression and keep an organized view of yo
 - **Level** increases automatically when your inventory progress rolls over into the next tier.
 - **Rarity** shows the card’s rarity for quick scanning.
 - **Progress** is shown as current / threshold. When you exceed a threshold, the remainder carries into the next tier.
-- **Maxed** shows **MAX** when the card is fully maxed.
-- **Parameters** show the card description and the effect value at your current level when available.
 - **(MAX)** indicates the card is fully maxed and can no longer be increased.
-- **Presets** are labels that help you filter and group cards; they do not change gameplay outcomes.
+- **Parameters** show the card description and the effect value at your current level when available.
+- **Presets** are labels that help you filter and group cards (unlocked via Lab Research 'Card Presets'). The Game currently allows for 6 presets to be set, this app allows as many as you'd like. Define and set Presets from the Cards Dashboard.
+
+    > **Note**
+    > Presets can also be assigned to Battle Reports to track card usage over time. 
 
 ## Notes & Limitations
 

@@ -37,10 +37,10 @@ The Ultimate Weapons page helps you track which Ultimate Weapons you have unlock
 - **Cost** shows the next-level upgrade cost (informational only).
 - **MAX** indicates the parameter has reached the highest known level and cannot be increased further in the app.
 - In the **Sync graph**, each row shows that weapon’s activation schedule within the displayed horizon.
-- Each colored block represents a time window where that weapon is active.
-- The **All overlap** row shows time windows where all listed rows are active at the same time.
+    - Each colored block represents a time window where that weapon is active.
+    - The **All overlap** row shows time windows where all listed rows are active at the same time.
+    - In the **Sync graph**, **Death Wave** is shown as a short activation marker. Its on-map persistence can vary and is not modeled.
 - The **Ultimate Weapons snapshot** chart shows the metric(s) saved in the selected snapshot, using the snapshot’s saved filters.
-- In the **Sync graph**, **Death Wave** is shown as a short activation marker. Its on-map persistence can vary and is not modeled.
 
 ## Notes & Limitations
 
