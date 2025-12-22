@@ -2340,10 +2340,13 @@ CLOSED: [2025-12-22 Mon 08:25]
 Mobile: move to overflow menu or settings
 
 Desktop: keep visible but secondary-styled
-*** Phase 11 Bug Fixes
+*** Phase 11 Bug Fixes [0/7]
 
-**** TODO [#A] URL redirection from remote source (Blocking) 
-There are 51 detected occurances... Apply the fix as a global function, fix where `return redirect(redirect_to)` appears, and suggest a rule for agents.md to strictly enforce using the fix. 
+**** TODO [#A] URL redirection from remote source (Blocking)         :bug:
+There are 51 detected occurances... Apply the fix as a global function, fix where `return redirect(redirect_to)` appears. 
+
+Direct calls to redirect(user_supplied_value) are forbidden.
+All redirects must pass through safe_redirect()
 
 For Django application, you can use the function url_has_allowed_host_and_scheme to check that a URL is safe to redirect to, as shown in the following example:
 
@@ -2364,7 +2367,7 @@ class RedirectView(View):
 #+END_SRC
 
 Note that url_has_allowed_host_and_scheme handles backslashes correctly, so no additional processing is required.
-**** TODO [#A] UW/Guardian Chip/Bots Dashboards (Blocking)
+**** TODO [#A] UW/Guardian Chip/Bots Dashboards (Blocking)           :bug:
 - [ ] Flip the Level Up / Level Down buttons.
   Level Up:
   - Primary button
@@ -2390,8 +2393,10 @@ The game visually indicates Tournament runs, but the plain text Battle Report do
 
 Need to add a manual flag to 'Add Battle Report' to flag runs as Tournament Runs. 
 
-**** TODO [#B] Wiki Population (v0.2.0x)
+**** TODO [#B] Wiki Population (v0.2.0x)                             :bug:
 - [ ] fetch_wiki_data needs a --target all arg
+- [ ] fetch_wiki_data and rebuild_wiki_definitions should have a pretty summary of deltas at the end.
+  Especially when using --target all.
 - [ ] Fix traceback error in production environment (it works in Dev)
   Command: python3 manage.py rebuild_wiki_definitions --target all --write
   
@@ -2404,18 +2409,49 @@ Need to add a manual flag to 'Add Battle Report' to flag runs as Tournament Runs
   #+END_SRC
 
   Expected Result:
-  1 new card slot has been added totalling 22 CardSlots.
-- [ ] fetch_wiki_data and rebuild_wiki_definitions should have a pretty summary of deltas at the end.
-  Especially when using --target all.
+  As of a game update this week 1 new card slot has been added totalling 22 CardSlots. Running rebuild_wikidefinitions() should retrieve that change without hitting the traceback error above. 
 
-**** TODO [#C] Normalize time handling everywhere (game time vs real time vs accelerated) (v0.2.0x)
-Game Time can be accelerated and the rate can be changed during a run. Either via Lab Research (max of 5x) or via perks that increase it further to a variable factor (increased by additional researchs). The hard maximum is 6.25x (according to the Wiki). However the Wiki also notes "Game speed is not accurate. x5.0 speed behaves closer to x4.0 while 6.25 is closer to x5." So our handling of it is not strictly necessary. 
+**** TODO [#C] Normalize time handling everywhere (game time vs real time vs accelerated) (v0.2.0x) :bug:
+Game Time can be accelerated and the rate can be changed during a run. Either via Lab Research (max of 5x) or via perks that increase it further to a variable factor (increased by additional researchs). The hard maximum is 6.25x (according to the Wiki). However the Wiki also notes "Game speed is not accurate. x5.0 speed behaves closer to x4.0 while 6.25 is closer to x5." So our handling of it is not strictly necessary.
 
-**** TODO [#C] Revise project_structure.md (v0.2.0x)
+Explicitly do not retroactively recompute historical metrics.
+
+**** TODO [#C] Revise project_structure.md (v0.2.0x)                 :bug:
 It's outdated and needs expansion
 
-**** TODO [#C] Move ##Test taxonomy & markings to a dedicated testing page (v0.2.0x)
+**** TODO [#C] Move ##Test taxonomy & markings to a dedicated testing page (v0.2.0x) :bug:
 Under Development Documentation.
+
+**** TODO [#B] Cards Dashboard Enhancements (v0.x.x)         :enhancement:
+
+***** TODO [#A] Select Multiple Cards to Assign/Create Preset
+Add a checkbox to each card row to Assign or Create Preset
+
+***** TODO [#A] Card Parameter description should replace placeholder unit with current level value
+Instead of showing 'for [x] sec' or 'by #%' the description should reflect the current card level values
+
+For example:
+- Critical Coin "Increase critical chance by +#%" ::
+  Should read "Increase critical chance by +**27**%" for level 5
+- Damage "Increase tower damage by x #" ::
+  Should read "Increase tower damage by **4.00** #" for level 7/maxed
+
+***** TODO [#A] Level Column should by labeled "Next Level" 
+
+***** [#B] Preset Labels should be better explained in the Docs
+Currently states "Preset labels are shown as badges so you can scan for the context you assigned during import"
+
+Better language:
+Presets define card groupings (unlocked via Lab Research 'Card Presets'). The Game currently allows for 6 presets to be set, this app allows as many as you'd like. Define and set Presets from the Cards Dashboard.
+Presets can also be assigned to Battle Reports to track card usage over time. 
+
+****** TODO Update copy in the Docs
+- [ ] Overview
+- [ ] Battle History
+- [ ] Cards
+
+****** TODO Add brief description of Presets to Cards Dashboard
+Add a block under the presets filter on the left
 
 ** Backlog [2/5]
 “Out of Scope”:
