@@ -2423,9 +2423,11 @@ CLOSED: [2025-12-22 Mon 15:31]
 - [X] fetch_wiki_data and rebuild_wiki_definitions should have a pretty summary of deltas at the end.
   Especially when using --target all.
 
-*** Phase 12 [2/7]
+*** Bugs/Enhancements [4/15]
 
-**** TODO [#B] Error Updating Guardian Upgrade Table                 :bug:
+**** DONE [#B] Error Updating Guardian Upgrade Table                 :bug:
+CLOSED: [2025-12-22 Mon 18:51]
+- State "DONE"       from "TODO"       [2025-12-22 Mon 18:51]
 - [ ] Fix traceback error in production environment (it works in Dev)
   Command: python3 manage.py rebuild_wiki_definitions --target all --write
   
@@ -2439,37 +2441,6 @@ CLOSED: [2025-12-22 Mon 15:31]
 
   Expected Result:
   Retrieve 3 parameters from Wiki, 'Recovery Amount,' 'Cooldown (s),' 'Max Recovery' from https://the-tower-idle-tower-defense.fandom.com/wiki/Guardian#Ally table name 'Upgrades.' 
-
-**** TODO [#A] Cards Dashboard Enhancements (v0.x.x)         :enhancement:
-
-***** TODO [#A] Select Multiple Cards to Assign/Create Preset
-Add a checkbox to each card row to Assign or Create Preset
-
-***** TODO [#A] Card Parameter description should replace placeholder unit with current level value
-Instead of showing 'for [x] sec' or 'by #%' the description should reflect the current card level values
-
-For example:
-- Critical Coin "Increase critical chance by +#%" ::
-  Should read "Increase critical chance by +**27**%" for level 5
-- Damage "Increase tower damage by x #" ::
-  Should read "Increase tower damage by **4.00** #" for level 7/maxed
-
-***** DONE [#B] Preset Labels should be better explained in the Docs
-CLOSED: [2025-12-22 Mon 16:57]
-- State "DONE"       from              [2025-12-22 Mon 16:57]
-Currently states "Preset labels are shown as badges so you can scan for the context you assigned during import"
-
-Better language:
-Presets define card groupings (unlocked via Lab Research 'Card Presets'). The Game currently allows for 6 presets to be set, this app allows as many as you'd like. Define and set Presets from the Cards Dashboard.
-Presets can also be assigned to Battle Reports to track card usage over time. 
-
-****** TODO Update copy in the Docs
-- [ ] Overview
-- [ ] Battle History
-- [ ] Cards
-
-****** TODO Add brief description of Presets to Cards Dashboard
-Add a block under the presets filter on the left
 
 **** DONE [#A] Import Battle Report Not Working                      :bug:
 CLOSED: [2025-12-22 Mon 16:23]
@@ -2502,18 +2473,233 @@ CLOSED: [2025-12-22 Mon 16:23]
   Updated filtering so tournament-tagged runs are excluded by default everywhere that honors “Include tournaments” (core/views.py).
 The game adds visual markers to denote a Tournament round, but it's not indicated in the plain text we ingest. So we need to add a toggle to the Battle History dashboard and 'quick import' on Charts to mark a log as tournament or not. 
 
-**** TODO [#A] On Cards Dashboard Level Column should by labeled "Next Level" 
+**** DONE [#A] Cards Dashboard Enhancements (v0.x.x)         :enhancement:
+CLOSED: [2025-12-22 Mon 19:15]
 
-**** TODO [#B] On Charts Dashboard, Charts should show by date or by battle log
+- State "DONE"       from "TODO"       [2025-12-22 Mon 19:15]
+***** DONE [#A] Select Multiple Cards to Assign/Create Preset
+CLOSED: [2025-12-22 Mon 18:59]
+- State "DONE"       from "TODO"       [2025-12-22 Mon 18:59]
+Add a checkbox to each card row to Assign or Create Preset
 
-**** TODO Filter Charts by Event Dates
+***** DONE [#A] On Cards Dashboard Level Column should by labeled "Next Level" 
+CLOSED: [2025-12-22 Mon 18:59]
+
+- State "DONE"       from "DELEGATED"  [2025-12-22 Mon 19:14]
+- State "DONE"       from "TODO"       [2025-12-22 Mon 18:59]
+**** IN PROGRESS [#B] Card Parameter description should replace placeholder unit with current level value :enhancement:
+- State "IN PROGRESS" from "TODO"       [2025-12-22 Mon 18:59] \\
+  Some work done but not complete
+Instead of showing 'for [x] sec' or 'by #%' the description should reflect the current card level values
+
+For example:
+- Critical Coin "Increase critical chance by +#%" ::
+  Should read "Increase critical chance by +**27**%" for level 5
+- Damage "Increase tower damage by x #" ::
+  Should read "Increase tower damage by **4.00** #" for level 7/maxed
+
+***** DONE [#B] Preset Labels should be better explained in the Docs
+CLOSED: [2025-12-22 Mon 16:57]
+- State "DONE"       from              [2025-12-22 Mon 16:57]
+Currently states "Preset labels are shown as badges so you can scan for the context you assigned during import"
+
+Better language:
+Presets define card groupings (unlocked via Lab Research 'Card Presets'). The Game currently allows for 6 presets to be set, this app allows as many as you'd like. Define and set Presets from the Cards Dashboard.
+Presets can also be assigned to Battle Reports to track card usage over time. 
+
+****** TODO Update copy in the Docs
+- [ ] Overview
+- [ ] Battle History
+- [ ] Cards
+
+****** TODO Add brief description of Presets to Cards Dashboard
+Add a block under the presets filter on the left
+
+**** TODO [#A] Chart Taxonomy (Codex-friendly)
+
+Think in three axes:
+
+1. What system does this describe?
+
+2. What question does it answer?
+
+3. Is it absolute or relative?
+
+
+Charts must answer one of:
+- “What did I get?”
+- “Where did damage come from?”
+- “What killed enemies?”
+
+Charts that answer “How should I play?” are out of scope.
+
+***** Rebuild Chart Classifications
+- Economy (What did this run produce?)
+  - Coins
+  - Cash
+  - Cells
+  - Reroll Shards
+
+  Examples:
+  - Coins by Source
+  - Coins from Ultimate Weapons
+  - Cash Earned per Run
+  - Cash by Source (e.g. Golden Tower, Interest)
+  - Cells Earned per Run
+
+Reroll Shards Earned per Run
+- Damage (Where did damage come from?)
+  - Damage by Source (absolute)
+  - Damage Contribution (relative / %)
+
+  Examples:
+  - Damage by Source (stacked bar)
+  - % of Total Damage by Source (donut or stacked)
+  - Damage vs Enemies Destroyed (comparative)
+- Enemy Destruction (“What actually killed enemies?”)
+  Enemy Destruction charts must compute totals from child rows, never from Battle Report totals.
+  
+  - Destruction by Source
+  - Enemy Type Distribution
+
+  Exanples:
+  - Enemies Destroyed by Source (donut + %)
+  - Enemy Type Breakdown (Basic / Fast / Tank / Ranged / Boss)
+  - Destroyed in Spotlight / Golden Bot (as sources, not enemy types)
+- Efficiency
+
+  - Time-normalized metrics
+
+  Examples:
+  - Coins per Hour
+  - Waves per Hour
+  - Enemies Destroyed per Hour
+
+***** Chart Types
+- Distribution
+  Donut, stacked bar
+  → must show % explicitly
+
+- Contribution
+  Relative share of a whole
+  → requires a derived denominator
+
+- Absolute Totals
+  Bars, timelines
+  → no implied comparison
+
+- Comparative
+  Two related metrics side-by-side
+  → must share units or be clearly labeled
+**** TODO [#B] On Charts Dashboard, Charts should show by date or by battle log :enhancement:
+Charts would be more clear if they also showed by battle report instead of only daily totals. 
+
+**** TODO [#B] Filter Charts by Event Dates                  :enhancement:
 Events are 14 Days long. The previous event started on 12/09/2025 to 12/22/2025 and the current event is 12/23/2025 to 01/08/2026.
 
 Charts should have a default date range of the current event start to end, buttons to move backward or forward (to end of current), and preserve the current manual date range fields.
 
 Documentation should be updated to reflect this. And a note should be added to the Date Range controls that they coorispond to the 'In Game Events'
 
-** Backlog [2/5]
+**** TODO [#B] Add Damage Charts/Metrics
+- Total Damage
+  take 'damage dealt' as total
+
+  
+Use the following metrics from 'Battle Report':
+  - Projectiles Damage	17.94Q
+
+  - Thorn damage	267.27Q
+
+  - Orb Damage	3.36s
+
+  - Land Mine Damage	331.60q
+
+  - Rend Armor Damage	0
+
+  - Death Ray Damage	13.61q
+
+  - Smart Missile Damage	1.79q
+
+  - Inner Land Mine Damage	0
+
+  - Chain Lightning Damage	24.00Q
+
+  - Death Wave Damage	10.62T
+
+  - Swamp Damage	0
+
+  - Black Hole Damage	1.56Q
+
+  - Electrons Damage	0
+
+
+Note that 'Land Mine Damage' and 'Inner Land Mine Damage' are separate metrics, Land Mine is a defense workshop, ILM is a UW. 
+
+**** TODO [#B] % of total damage by source as stacked bar per battle report
+
+**** TODO [#C] Damage vs Destroyed By stacked bar 
+
+**** TODO [#C] Orb Effectiveness
+
+Composite view:
+
+- Orb Damage
+
+- Enemies Hit by Orbs
+
+- Enemies Destroyed by Orbs
+
+**** TODO [#B] Add Coins from UWs Charts/Metrics
+Add a donut chart tracking the following from Battle Reports Utility section. 
+
+- Coins From Death Wave	165.52K
+
+- Coins From Golden Tower	4.61M
+
+- Coins From Black Hole	0
+
+- Coins From Spotlight	94.30K
+
+**** TODO [#B] Add 'Enemies Destroyed' Donut to Charts/Metrics
+Add the following from Battle Report Enemies Destroyed
+
+- Basic	150877
+- Fast	46543
+- Tank	56081
+- Ranged	38140
+- Boss	349
+- Protector	0
+- Vampires	116
+- Rays	133
+- Scatters	125
+- Saboteur	0
+- Commander	0
+- Overcharge	0
+
+There is an asymmetry found in the game's reported 'total enemies' and 'total elites' that doesn't align with the summed totals of reported enemy types. Therefore we will ignore those metrics and roll our own to avoid misleading charts. This should be clearly stated in the docs. 
+
+**** TODO Cash Charts
+Economy → Cash (Definition)
+
+Cash represents in-run purchasing power.
+It is not progression currency and does not persist across runs.
+
+Cash charts answer:
+
+“How much in-run buying power did this run generate, and from where?”
+
+- Cash Earned (total, absolute)
+- Interest Earned
+- Cash From Golden Tower
+
+Optional (if already parsed):
+
+- Any other explicit “Cash From X” fields the game exposes later
+
+
+
+** 2/5 [Backlog]
 “Out of Scope”:
 - Cloud sync
 - Real-time scraping
@@ -2885,6 +3071,9 @@ Mostly a visual tweak, but adds context and history for the player to interpert 
 - [X] prompt 33 Validation
 - [X] prompt 34 Stabilize, standardize, and clarify
 - [X] Phase 10 Validation
-- [X] prompt 35 phase 10b 
+- [X] prompt 35 phase 10b
+- [X] prompt 36 phase 11 bug fixes
+- [ ] promt 37 Charts Enhancements
+- [ ] prompt 37 validation
   
 - [ ] version1.0.md 
