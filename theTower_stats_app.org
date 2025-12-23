@@ -2487,18 +2487,7 @@ CLOSED: [2025-12-22 Mon 18:59]
 
 - State "DONE"       from "DELEGATED"  [2025-12-22 Mon 19:14]
 - State "DONE"       from "TODO"       [2025-12-22 Mon 18:59]
-**** IN PROGRESS [#B] Card Parameter description should replace placeholder unit with current level value :enhancement:
-- State "IN PROGRESS" from "TODO"       [2025-12-22 Mon 18:59] \\
-  Some work done but not complete
-Instead of showing 'for [x] sec' or 'by #%' the description should reflect the current card level values
-
-For example:
-- Critical Coin "Increase critical chance by +#%" ::
-  Should read "Increase critical chance by +**27**%" for level 5
-- Damage "Increase tower damage by x #" ::
-  Should read "Increase tower damage by **4.00** #" for level 7/maxed
-
-***** DONE [#B] Preset Labels should be better explained in the Docs
+**** DONE [#B] Preset Labels should be better explained in the Docs
 CLOSED: [2025-12-22 Mon 16:57]
 - State "DONE"       from              [2025-12-22 Mon 16:57]
 Currently states "Preset labels are shown as badges so you can scan for the context you assigned during import"
@@ -2507,12 +2496,16 @@ Better language:
 Presets define card groupings (unlocked via Lab Research 'Card Presets'). The Game currently allows for 6 presets to be set, this app allows as many as you'd like. Define and set Presets from the Cards Dashboard.
 Presets can also be assigned to Battle Reports to track card usage over time. 
 
-****** TODO Update copy in the Docs
+***** DONE Update copy in the Docs
+CLOSED: [2025-12-23 Tue 13:50]
+- State "DONE"       from "TODO"       [2025-12-23 Tue 13:50]
 - [ ] Overview
 - [ ] Battle History
 - [ ] Cards
 
-****** TODO Add brief description of Presets to Cards Dashboard
+***** DONE Add brief description of Presets to Cards Dashboard
+CLOSED: [2025-12-23 Tue 13:50]
+- State "DONE"       from "TODO"       [2025-12-23 Tue 13:50]
 Add a block under the presets filter on the left
 
 **** TODO [#A] Chart Taxonomy (Codex-friendly)
@@ -2698,6 +2691,40 @@ Optional (if already parsed):
 - Any other explicit “Cash From X” fields the game exposes later
 
 
+
+**** IN PROGRESS [#B] Card Parameter description should replace placeholder unit with current level value :enhancement:
+- State "IN PROGRESS" from "TODO"       [2025-12-22 Mon 18:59] \\
+  Some work done but not complete
+Instead of showing 'for [x] sec' or 'by #%' the description should reflect the current card level values
+
+For example:
+- Critical Coin "Increase critical chance by +#%" ::
+  Should read "Increase critical chance by +**27**%" for level 5
+- Damage "Increase tower damage by x #" ::
+  Should read "Increase tower damage by **4.00** #" for level 7/maxed
+
+Card descriptions must be rendered from structured parameter data, not static strings.
+
+Any card description containing placeholder tokens ([x], #, %, sec) must be replaced at render-time with the effective value for the card’s current level. If card level is 0 placeholder is permitted.
+
+The displayed value must be computed using:
+
+- base value
+- per-level scaling
+- current card level
+- max-level cap (if applicable)
+
+No placeholder text may remain once the computation succeeds.
+
+Completion criteria:
+
+- No unresolved placeholders remain anywhere in the Cards Dashboard
+
+- All cards render level-correct values consistently
+
+- Failure to meet any criterion means the task is incomplete
+
+- Prompt38Validation.yml accurately marked complete
 
 ** 2/5 [Backlog]
 “Out of Scope”:

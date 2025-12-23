@@ -22,6 +22,10 @@ ChartCategory = Literal[
     "derived",
 ]
 
+ChartDomain = Literal["economy", "damage", "enemy_destruction", "efficiency"]
+
+ChartSemanticType = Literal["absolute", "distribution", "contribution", "comparative"]
+
 ChartType = Literal["line", "bar", "area", "scatter", "donut"]
 
 MetricTransform = Literal["none", "moving_average", "cumulative", "rate_per_hour"]
@@ -145,11 +149,15 @@ class ChartConfig:
         title: Chart title displayed in the UI.
         description: Optional chart description shown in selection lists/tooltips.
         category: Used for grouping charts in the selection UI.
+        domain: Taxonomy domain for the chart ("economy", "damage", "enemy_destruction", "efficiency").
+        semantic_type: Semantic chart type used for guardrails and validation.
         chart_type: The visual chart type.
         metric_series: One or more metric series definitions that feed the chart.
         filters: Filter toggles, including default date range behavior.
         comparison: Optional comparison behavior (generates multiple datasets).
         derived: Optional derived metric definition (computed from series inputs).
+        multi_axis: Whether the chart may display multiple y-axes (comparative charts only).
+        donut_value_mode: When chart_type="donut", choose whether the donut uses raw values or percentages.
         ui: UI behavior flags (default selection, ordering, etc).
     """
 
@@ -157,9 +165,13 @@ class ChartConfig:
     title: str
     description: str | None
     category: ChartCategory
+    domain: ChartDomain
+    semantic_type: ChartSemanticType
     chart_type: ChartType
     metric_series: tuple[ChartSeriesConfig, ...]
     filters: ChartFilters
     comparison: ChartComparison | None = None
     derived: ChartDerived | None = None
+    multi_axis: bool = False
+    donut_value_mode: Literal["raw", "percent"] = "raw"
     ui: ChartUI = ChartUI(show_by_default=False, selectable=True, order=999)

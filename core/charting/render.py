@@ -314,13 +314,15 @@ def _render_donut_chart(
         "#22AA99",
     ]
 
+    raw_labels: list[str] = []
+
     for idx, series_config in enumerate(config.metric_series):
         spec = registry.get(series_config.metric_key)
         if spec is None:
             continue
 
         slice_label = series_config.label or spec.label
-        slice_labels.append(slice_label)
+        raw_labels.append(slice_label)
         slice_units.append(_unit_for_series(spec.unit, series_config))
         if not has_any_records:
             slice_values.append(None)
@@ -342,7 +344,26 @@ def _render_donut_chart(
             slice_values.append(round(total, 2))
         slice_colors.append(palette[idx % len(palette)])
 
-    unit = slice_units[0] if slice_units and all(u == slice_units[0] for u in slice_units) else ""
+    total_value = sum(v for v in slice_values if isinstance(v, (int, float)))
+    slice_labels = []
+    for label, value in zip(raw_labels, slice_values, strict=False):
+        if total_value > 0 and isinstance(value, (int, float)):
+            pct = 100.0 * float(value) / float(total_value)
+            slice_labels.append(f"{label} ({pct:.1f}%)")
+        else:
+            slice_labels.append(label)
+
+    if config.donut_value_mode == "percent":
+        if total_value <= 0:
+            slice_values = [None for _ in slice_values]
+        else:
+            slice_values = [
+                (round(100.0 * float(value) / float(total_value), 2) if isinstance(value, (int, float)) else None)
+                for value in slice_values
+            ]
+        unit = "%"
+    else:
+        unit = slice_units[0] if slice_units and all(u == slice_units[0] for u in slice_units) else ""
     dataset: ChartDataset = {
         "label": config.title,
         "metricKey": config.id,

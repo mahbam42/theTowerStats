@@ -40,10 +40,15 @@ Charts help you review how your run results change over time using the same valu
 
 - The x-axis shows dates from your imported runs.
 - The y-axis shows the value for the selected chart, using the unit shown in the chart title.
+- Charts are grouped by domain:
+  - **Economy** shows what your run produced (coins, cash, cells, reroll shards).
+  - **Damage** shows where damage came from.
+  - **Enemy Destruction** shows what actually killed enemies.
+  - **Efficiency** shows time-normalized rates (per hour).
 - For per-hour charts (such as coins/real hour), the rate uses the run’s **Real Time** duration as reported in the Battle Report.
 - When a chart includes multiple lines, each line label tells you what group it represents (for example, a tier or a preset label).
 - If a value is missing in the underlying Battle Report, the chart may show a gap for that date.
-- For donut charts, each slice represents the total for that value within your current filters. A slice named “Other coins” groups any remaining coins that are not listed as a named source.
+- For donut charts, each slice represents the total for that value within your current filters, and the label includes the percent of the donut total. A slice named “Other coins” groups any remaining coins that are not listed as a named source.
 - If a point is flagged, the tooltip includes a short reason that explains the signal.
 - The Advice section summarizes observed differences using the snapshots you selected and the current filters you applied. It describes the basis and limitations and does not recommend actions.
 - The Goal-aware comparison summary is a weighted percent-change index across multiple metrics. A positive value means the selected metrics increased, after applying your selected weights.
@@ -70,6 +75,12 @@ Charts help you review how your run results change over time using the same valu
 
 > **Note**
 > Per-hour metrics use “Real Time” from each imported Battle Report. In-game seconds (such as cooldowns) are a different time scale and come from reference tables.
+
+> **Note**
+> Cash represents in-run purchasing power. It resets every run, does not persist, and is not directly comparable to coins.
+
+> **Caution**
+> Enemy totals shown in the Battle Report are not used. Enemy Destruction charts derive totals by summing the per-type rows, which may not match the game’s “Total Enemies” and “Total Elites” lines.
 
 > **Note**
 > Snapshots are saved as named references and are not editable after creation.

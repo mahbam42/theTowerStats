@@ -33,6 +33,8 @@ def test_chart_config_validation_rejects_unknown_metric_key() -> None:
         title="Bad Chart",
         description=None,
         category="top_level",
+        domain="economy",
+        semantic_type="absolute",
         chart_type="line",
         metric_series=(ChartSeriesConfig(metric_key="does_not_exist"),),
         filters=ChartFilters(
@@ -54,6 +56,8 @@ def test_chart_config_validation_rejects_unknown_formula_identifiers() -> None:
         title="Bad Formula",
         description=None,
         category="derived",
+        domain="economy",
+        semantic_type="absolute",
         chart_type="line",
         metric_series=(
             ChartSeriesConfig(metric_key="coins_earned"),
@@ -98,6 +102,8 @@ def test_chart_config_validation_requires_comparison_dimension_support() -> None
         title="Compare Tiers",
         description=None,
         category="comparison",
+        domain="economy",
+        semantic_type="comparative",
         chart_type="line",
         metric_series=(ChartSeriesConfig(metric_key="metric"),),
         filters=ChartFilters(
@@ -120,6 +126,8 @@ def test_chart_config_validation_by_entity_requires_exactly_one_entity_filter() 
         title="Compare Entities",
         description=None,
         category="comparison",
+        domain="economy",
+        semantic_type="comparative",
         chart_type="line",
         metric_series=(ChartSeriesConfig(metric_key="uw_runs_count"),),
         filters=ChartFilters(
@@ -161,6 +169,8 @@ def test_chart_config_validation_rejects_derived_axis_mismatch() -> None:
         title="Axis mismatch",
         description=None,
         category="derived",
+        domain="economy",
+        semantic_type="absolute",
         chart_type="line",
         metric_series=(ChartSeriesConfig(metric_key="per_wave"),),
         filters=ChartFilters(
@@ -183,6 +193,8 @@ def test_chart_config_validation_rejects_mixed_units_in_multi_series_chart() -> 
         title="Mixed units",
         description=None,
         category="top_level",
+        domain="economy",
+        semantic_type="absolute",
         chart_type="line",
         metric_series=(
             ChartSeriesConfig(metric_key="coins_earned"),
@@ -206,6 +218,8 @@ def test_chart_config_validation_rejects_cross_category_metric_mix() -> None:
         title="Cross category",
         description=None,
         category="top_level",
+        domain="economy",
+        semantic_type="absolute",
         chart_type="line",
         metric_series=(
             ChartSeriesConfig(metric_key="coins_earned"),
@@ -229,6 +243,8 @@ def test_chart_config_validation_requires_donut_to_have_multiple_metrics() -> No
         title="Donut one metric",
         description=None,
         category="top_level",
+        domain="economy",
+        semantic_type="distribution",
         chart_type="donut",
         metric_series=(ChartSeriesConfig(metric_key="coins_earned"),),
         filters=ChartFilters(
@@ -249,6 +265,8 @@ def test_chart_config_validation_rejects_derived_on_derived_formulas() -> None:
         title="Derived on derived",
         description=None,
         category="derived",
+        domain="economy",
+        semantic_type="absolute",
         chart_type="line",
         metric_series=(
             ChartSeriesConfig(metric_key="coins_per_wave"),
@@ -273,6 +291,8 @@ def test_chart_config_validation_requires_exactly_two_scopes_for_run_vs_run() ->
         title="Run vs run",
         description=None,
         category="comparison",
+        domain="economy",
+        semantic_type="comparative",
         chart_type="line",
         metric_series=(ChartSeriesConfig(metric_key="coins_earned"),),
         filters=ChartFilters(
@@ -294,6 +314,8 @@ def test_chart_config_validation_requires_run_ids_for_run_vs_run_scopes() -> Non
         title="Run vs run",
         description=None,
         category="comparison",
+        domain="economy",
+        semantic_type="comparative",
         chart_type="line",
         metric_series=(ChartSeriesConfig(metric_key="coins_earned"),),
         filters=ChartFilters(

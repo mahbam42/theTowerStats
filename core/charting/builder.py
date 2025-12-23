@@ -12,10 +12,14 @@ from dataclasses import dataclass
 from datetime import UTC, date, datetime
 from typing import Literal
 
+from analysis.categories import MetricCategory
+from analysis.series_registry import DEFAULT_REGISTRY
+
 from .schema import (
     ChartCategory,
     ChartComparison,
     ChartConfig,
+    ChartDomain,
     ChartFilters,
     ChartSeriesConfig,
     ChartUI,
@@ -100,6 +104,8 @@ def build_runtime_chart_config(selection: ChartBuilderSelection) -> ChartConfig:
         title="Custom chart",
         description="Chart Builder output (not persisted).",
         category=category,
+        domain=_infer_domain(selection.metric_keys),
+        semantic_type="distribution" if selection.chart_type == "donut" else "absolute",
         chart_type=selection.chart_type,  # type: ignore[arg-type]
         metric_series=metric_series,
         filters=filters,
@@ -108,6 +114,40 @@ def build_runtime_chart_config(selection: ChartBuilderSelection) -> ChartConfig:
         ui=ChartUI(show_by_default=False, selectable=False, order=0),
     )
 
+
+def _infer_domain(metric_keys: tuple[str, ...]) -> ChartDomain:
+    """Infer a chart domain for Chart Builder selections.
+
+    Args:
+        metric_keys: MetricSeries keys selected in the builder.
+
+    Returns:
+        Best-effort ChartDomain based on the registered metric categories.
+    """
+
+    domains: set[ChartDomain] = set()
+    for key in metric_keys:
+        spec = DEFAULT_REGISTRY.get(key)
+        if spec is None:
+            continue
+        domains.add(_domain_for_category(spec.category))
+    if len(domains) == 1:
+        return next(iter(domains))
+    return "economy"
+
+
+def _domain_for_category(category: MetricCategory) -> ChartDomain:
+    """Map a MetricCategory to a ChartDomain."""
+
+    if category in (MetricCategory.damage, MetricCategory.combat):
+        return "damage"
+    if category == MetricCategory.enemy_destruction:
+        return "enemy_destruction"
+    if category == MetricCategory.efficiency:
+        return "efficiency"
+    if category == MetricCategory.utility:
+        return "efficiency"
+    return "economy"
 
 def build_before_after_scopes(
     *,

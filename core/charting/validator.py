@@ -11,9 +11,10 @@ from datetime import date
 from datetime import datetime
 from typing import Iterable
 
+from analysis.categories import MetricCategory
 from analysis.series_registry import MetricSeriesRegistry, MetricSeriesSpec
 
-from .schema import ChartConfig, ComparisonScope
+from .schema import ChartConfig, ChartDomain, ChartSemanticType, ComparisonScope
 
 
 @dataclass(frozen=True, slots=True)
@@ -62,11 +63,23 @@ def validate_chart_config(config: ChartConfig, *, registry: MetricSeriesRegistry
     if config.category not in allowed_categories:
         errors.append(f"ChartConfig[{config.id}].category is not a supported value: {config.category!r}.")
 
+    allowed_domains: set[ChartDomain] = {"economy", "damage", "enemy_destruction", "efficiency"}
+    if config.domain not in allowed_domains:
+        errors.append(f"ChartConfig[{config.id}].domain is not a supported value: {config.domain!r}.")
+
+    allowed_semantic_types: set[ChartSemanticType] = {"absolute", "distribution", "contribution", "comparative"}
+    if config.semantic_type not in allowed_semantic_types:
+        errors.append(f"ChartConfig[{config.id}].semantic_type is not a supported value: {config.semantic_type!r}.")
+
     allowed_chart_types = {"line", "bar", "area", "scatter", "donut"}
     if config.chart_type not in allowed_chart_types:
         errors.append(f"ChartConfig[{config.id}].chart_type is not a supported value: {config.chart_type!r}.")
 
     if config.chart_type == "donut":
+        if config.semantic_type not in ("distribution", "contribution"):
+            errors.append(
+                f"ChartConfig[{config.id}] donut charts must use semantic_type 'distribution' or 'contribution'."
+            )
         if config.derived is not None:
             errors.append(f"ChartConfig[{config.id}] donut charts cannot declare derived formulas.")
         if config.comparison is not None and config.comparison.mode != "none":
@@ -108,6 +121,7 @@ def validate_chart_config(config: ChartConfig, *, registry: MetricSeriesRegistry
         resolved_specs=resolved_specs,
         errors=errors,
     )
+    _validate_domain_exclusivity(config, resolved_specs=resolved_specs, errors=errors)
 
     if config.comparison is not None:
         mode = config.comparison.mode
@@ -249,6 +263,9 @@ def _validate_units_and_categories(
     if config.derived is not None:
         return
 
+    if config.semantic_type == "comparative" and config.multi_axis:
+        return
+
     specs = [(idx, key, spec) for (idx, key, spec) in resolved_specs]
     if len(specs) < 2:
         return
@@ -264,6 +281,62 @@ def _validate_units_and_categories(
         errors.append(
             f"ChartConfig[{config.id}] mixes metric categories across metric_series: {sorted(c for c in categories if c)}."
         )
+
+
+def _validate_domain_exclusivity(
+    config: ChartConfig,
+    *,
+    resolved_specs: list[tuple[int, str, MetricSeriesSpec]],
+    errors: list[str],
+) -> None:
+    """Enforce chart-domain guardrails on metric selection.
+
+    Comparative charts may mix damage and enemy destruction metrics, but:
+    - economy metrics must never be mixed with non-economy domains
+    - cash and coins units must never appear together in a single chart
+    """
+
+    if config.derived is not None:
+        return
+
+    domains = {_domain_for_category(spec.category) for _, _, spec in resolved_specs}
+    if not domains:
+        return
+
+    if config.semantic_type != "comparative":
+        if len(domains) > 1:
+            errors.append(f"ChartConfig[{config.id}] mixes chart domains across metric_series: {sorted(domains)}.")
+            return
+        only_domain = next(iter(domains))
+        if only_domain != config.domain:
+            errors.append(
+                f"ChartConfig[{config.id}] domain={config.domain!r} does not match series domain={only_domain!r}."
+            )
+        return
+
+    if "economy" in domains and len(domains) > 1:
+        errors.append(f"ChartConfig[{config.id}] cannot mix economy metrics with non-economy domains.")
+
+    if not domains.issubset({"damage", "enemy_destruction", "efficiency", "economy"}):
+        errors.append(f"ChartConfig[{config.id}] contains unsupported domains for comparative chart: {sorted(domains)}.")
+
+    units = {spec.unit.casefold() for _, _, spec in resolved_specs}
+    if any("cash" in unit for unit in units) and any("coin" in unit for unit in units):
+        errors.append(f"ChartConfig[{config.id}] cannot mix cash and coins units in a single chart.")
+
+
+def _domain_for_category(category: MetricCategory) -> ChartDomain:
+    """Map a MetricCategory to a ChartDomain."""
+
+    if category in (MetricCategory.damage, MetricCategory.combat):
+        return "damage"
+    if category == MetricCategory.enemy_destruction:
+        return "enemy_destruction"
+    if category == MetricCategory.efficiency:
+        return "efficiency"
+    if category == MetricCategory.utility:
+        return "efficiency"
+    return "economy"
 
 
 def _validate_two_scope_comparison(config: ChartConfig, *, errors: list[str]) -> None:
@@ -302,6 +375,7 @@ def _validate_two_scope_comparison(config: ChartConfig, *, errors: list[str]) ->
                 errors.append(f"ChartConfig[{config.id}] before_after scope {idx} end_date must be a date.")
             if scope.start_date is not None and scope.end_date is not None and scope.start_date > scope.end_date:
                 errors.append(f"ChartConfig[{config.id}] before_after scope {idx} start_date must be <= end_date.")
+
 
 def _validate_comparison_dimension(
     config: ChartConfig,

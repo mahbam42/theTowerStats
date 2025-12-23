@@ -16,6 +16,9 @@ class MetricCategory(StrEnum):
     """
 
     economy = "economy"
+    efficiency = "efficiency"
+    damage = "damage"
+    enemy_destruction = "enemy_destruction"
     combat = "combat"
     fetch = "fetch"
     utility = "utility"

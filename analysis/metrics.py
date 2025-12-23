@@ -50,6 +50,13 @@ METRICS: Final[dict[str, MetricDefinition]] = {
         category=MetricCategory.economy,
         kind="observed",
     ),
+    "interest_earned": MetricDefinition(
+        key="interest_earned",
+        label="Interest earned",
+        unit="cash",
+        category=MetricCategory.economy,
+        kind="observed",
+    ),
     "cells_earned": MetricDefinition(
         key="cells_earned",
         label="Cells earned",
@@ -110,8 +117,22 @@ METRICS: Final[dict[str, MetricDefinition]] = {
         key="coins_per_hour",
         label="Coins/hour",
         unit="coins/hour",
-        category=MetricCategory.economy,
+        category=MetricCategory.efficiency,
         kind="observed",
+    ),
+    "waves_per_hour": MetricDefinition(
+        key="waves_per_hour",
+        label="Waves/hour",
+        unit="waves/hour",
+        category=MetricCategory.efficiency,
+        kind="derived",
+    ),
+    "enemies_destroyed_per_hour": MetricDefinition(
+        key="enemies_destroyed_per_hour",
+        label="Enemies destroyed/hour",
+        unit="enemies/hour",
+        category=MetricCategory.efficiency,
+        kind="derived",
     ),
     "coins_from_death_wave": MetricDefinition(
         key="coins_from_death_wave",
@@ -133,6 +154,13 @@ METRICS: Final[dict[str, MetricDefinition]] = {
         unit="cash",
         category=MetricCategory.economy,
         kind="observed",
+    ),
+    "cash_from_other_sources": MetricDefinition(
+        key="cash_from_other_sources",
+        label="Other cash",
+        unit="cash",
+        category=MetricCategory.economy,
+        kind="derived",
     ),
     "coins_from_black_hole": MetricDefinition(
         key="coins_from_black_hole",
@@ -181,6 +209,244 @@ METRICS: Final[dict[str, MetricDefinition]] = {
         label="Guardian Damage",
         unit="damage",
         category=MetricCategory.combat,
+        kind="observed",
+    ),
+    "damage_dealt": MetricDefinition(
+        key="damage_dealt",
+        label="Damage dealt",
+        unit="damage",
+        category=MetricCategory.damage,
+        kind="observed",
+    ),
+    "projectiles_damage": MetricDefinition(
+        key="projectiles_damage",
+        label="Projectiles Damage",
+        unit="damage",
+        category=MetricCategory.damage,
+        kind="observed",
+    ),
+    "thorn_damage": MetricDefinition(
+        key="thorn_damage",
+        label="Thorn Damage",
+        unit="damage",
+        category=MetricCategory.damage,
+        kind="observed",
+    ),
+    "orb_damage": MetricDefinition(
+        key="orb_damage",
+        label="Orb Damage",
+        unit="damage",
+        category=MetricCategory.damage,
+        kind="observed",
+    ),
+    "land_mine_damage": MetricDefinition(
+        key="land_mine_damage",
+        label="Land Mine Damage",
+        unit="damage",
+        category=MetricCategory.damage,
+        kind="observed",
+    ),
+    "inner_land_mine_damage": MetricDefinition(
+        key="inner_land_mine_damage",
+        label="Inner Land Mine Damage",
+        unit="damage",
+        category=MetricCategory.damage,
+        kind="observed",
+    ),
+    "chain_lightning_damage": MetricDefinition(
+        key="chain_lightning_damage",
+        label="Chain Lightning Damage",
+        unit="damage",
+        category=MetricCategory.damage,
+        kind="observed",
+    ),
+    "death_wave_damage": MetricDefinition(
+        key="death_wave_damage",
+        label="Death Wave Damage",
+        unit="damage",
+        category=MetricCategory.damage,
+        kind="observed",
+    ),
+    "death_ray_damage": MetricDefinition(
+        key="death_ray_damage",
+        label="Death Ray Damage",
+        unit="damage",
+        category=MetricCategory.damage,
+        kind="observed",
+    ),
+    "smart_missile_damage": MetricDefinition(
+        key="smart_missile_damage",
+        label="Smart Missile Damage",
+        unit="damage",
+        category=MetricCategory.damage,
+        kind="observed",
+    ),
+    "black_hole_damage": MetricDefinition(
+        key="black_hole_damage",
+        label="Black Hole Damage",
+        unit="damage",
+        category=MetricCategory.damage,
+        kind="observed",
+    ),
+    "swamp_damage": MetricDefinition(
+        key="swamp_damage",
+        label="Swamp Damage",
+        unit="damage",
+        category=MetricCategory.damage,
+        kind="observed",
+    ),
+    "electrons_damage": MetricDefinition(
+        key="electrons_damage",
+        label="Electrons Damage",
+        unit="damage",
+        category=MetricCategory.damage,
+        kind="observed",
+    ),
+    "rend_armor_damage": MetricDefinition(
+        key="rend_armor_damage",
+        label="Rend Armor Damage",
+        unit="damage",
+        category=MetricCategory.damage,
+        kind="observed",
+    ),
+    "enemies_hit_by_orbs": MetricDefinition(
+        key="enemies_hit_by_orbs",
+        label="Enemies Hit by Orbs",
+        unit="count",
+        category=MetricCategory.damage,
+        kind="observed",
+    ),
+    "enemies_destroyed_total": MetricDefinition(
+        key="enemies_destroyed_total",
+        label="Enemies destroyed (derived total)",
+        unit="count",
+        category=MetricCategory.enemy_destruction,
+        kind="derived",
+    ),
+    "enemies_destroyed_basic": MetricDefinition(
+        key="enemies_destroyed_basic",
+        label="Basic",
+        unit="count",
+        category=MetricCategory.enemy_destruction,
+        kind="observed",
+    ),
+    "enemies_destroyed_fast": MetricDefinition(
+        key="enemies_destroyed_fast",
+        label="Fast",
+        unit="count",
+        category=MetricCategory.enemy_destruction,
+        kind="observed",
+    ),
+    "enemies_destroyed_tank": MetricDefinition(
+        key="enemies_destroyed_tank",
+        label="Tank",
+        unit="count",
+        category=MetricCategory.enemy_destruction,
+        kind="observed",
+    ),
+    "enemies_destroyed_ranged": MetricDefinition(
+        key="enemies_destroyed_ranged",
+        label="Ranged",
+        unit="count",
+        category=MetricCategory.enemy_destruction,
+        kind="observed",
+    ),
+    "enemies_destroyed_boss": MetricDefinition(
+        key="enemies_destroyed_boss",
+        label="Boss",
+        unit="count",
+        category=MetricCategory.enemy_destruction,
+        kind="observed",
+    ),
+    "enemies_destroyed_protector": MetricDefinition(
+        key="enemies_destroyed_protector",
+        label="Protector",
+        unit="count",
+        category=MetricCategory.enemy_destruction,
+        kind="observed",
+    ),
+    "enemies_destroyed_vampires": MetricDefinition(
+        key="enemies_destroyed_vampires",
+        label="Vampires",
+        unit="count",
+        category=MetricCategory.enemy_destruction,
+        kind="observed",
+    ),
+    "enemies_destroyed_rays": MetricDefinition(
+        key="enemies_destroyed_rays",
+        label="Rays",
+        unit="count",
+        category=MetricCategory.enemy_destruction,
+        kind="observed",
+    ),
+    "enemies_destroyed_scatters": MetricDefinition(
+        key="enemies_destroyed_scatters",
+        label="Scatters",
+        unit="count",
+        category=MetricCategory.enemy_destruction,
+        kind="observed",
+    ),
+    "enemies_destroyed_saboteur": MetricDefinition(
+        key="enemies_destroyed_saboteur",
+        label="Saboteur",
+        unit="count",
+        category=MetricCategory.enemy_destruction,
+        kind="observed",
+    ),
+    "enemies_destroyed_commander": MetricDefinition(
+        key="enemies_destroyed_commander",
+        label="Commander",
+        unit="count",
+        category=MetricCategory.enemy_destruction,
+        kind="observed",
+    ),
+    "enemies_destroyed_overcharge": MetricDefinition(
+        key="enemies_destroyed_overcharge",
+        label="Overcharge",
+        unit="count",
+        category=MetricCategory.enemy_destruction,
+        kind="observed",
+    ),
+    "enemies_destroyed_by_orbs": MetricDefinition(
+        key="enemies_destroyed_by_orbs",
+        label="Destroyed By Orbs",
+        unit="count",
+        category=MetricCategory.enemy_destruction,
+        kind="observed",
+    ),
+    "enemies_destroyed_by_thorns": MetricDefinition(
+        key="enemies_destroyed_by_thorns",
+        label="Destroyed by Thorns",
+        unit="count",
+        category=MetricCategory.enemy_destruction,
+        kind="observed",
+    ),
+    "enemies_destroyed_by_death_ray": MetricDefinition(
+        key="enemies_destroyed_by_death_ray",
+        label="Destroyed by Death Ray",
+        unit="count",
+        category=MetricCategory.enemy_destruction,
+        kind="observed",
+    ),
+    "enemies_destroyed_by_land_mine": MetricDefinition(
+        key="enemies_destroyed_by_land_mine",
+        label="Destroyed by Land Mine",
+        unit="count",
+        category=MetricCategory.enemy_destruction,
+        kind="observed",
+    ),
+    "enemies_destroyed_in_spotlight": MetricDefinition(
+        key="enemies_destroyed_in_spotlight",
+        label="Destroyed in Spotlight",
+        unit="count",
+        category=MetricCategory.enemy_destruction,
+        kind="observed",
+    ),
+    "enemies_destroyed_in_golden_bot": MetricDefinition(
+        key="enemies_destroyed_in_golden_bot",
+        label="Destroyed in Golden Bot",
+        unit="count",
+        category=MetricCategory.enemy_destruction,
         kind="observed",
     ),
     "guardian_summoned_enemies": MetricDefinition(
@@ -391,6 +657,13 @@ def compute_metric_value(
     if metric_key == "cash_earned":
         return (float(cash) if cash is not None else None, (), ())
 
+    if metric_key == "interest_earned":
+        battle_text = getattr(record, "raw_text", None)
+        if not isinstance(battle_text, str):
+            return None, (), ()
+        observed = _compute_observed_from_raw_text(metric_key, battle_text=battle_text)
+        return (observed, (), ()) if observed is not None else (None, (), ())
+
     if metric_key == "cells_earned":
         return (float(cells) if cells is not None else None, (), ())
 
@@ -456,11 +729,45 @@ def compute_metric_value(
             (),
         )
 
+    if metric_key == "waves_per_hour":
+        if wave is None or real_time_seconds is None or real_time_seconds <= 0:
+            return None, (), ()
+        return (float(wave) * 3600.0 / float(real_time_seconds), (), ("waves/hour = waves_reached / real_time_hours.",))
+
+    if metric_key == "enemies_destroyed_per_hour":
+        if real_time_seconds is None or real_time_seconds <= 0:
+            return None, (), ()
+        battle_text = getattr(record, "raw_text", None)
+        if not isinstance(battle_text, str):
+            return None, (), ()
+        total = _compute_enemies_destroyed_total(battle_text=battle_text)
+        if total is None:
+            return None, (), ()
+        return (float(total) * 3600.0 / float(real_time_seconds), (), ("enemies/hour = enemies_destroyed_total / real_time_hours.",))
+
+    if metric_key == "enemies_destroyed_total":
+        battle_text = getattr(record, "raw_text", None)
+        if not isinstance(battle_text, str):
+            return None, (), ()
+        total = _compute_enemies_destroyed_total(battle_text=battle_text)
+        if total is None:
+            return None, (), ()
+        return (float(total), (), ("Derived total: sums per-type destroyed counts; ignores game-reported totals.",))
+
     if metric_key == "coins_from_other_sources":
         battle_text = getattr(record, "raw_text", None)
         if coins is None or not isinstance(battle_text, str):
             return None, (), ()
         return _compute_other_coins_from_sources(coins=coins, battle_text=battle_text), (), ()
+
+    if metric_key == "cash_from_other_sources":
+        battle_text = getattr(record, "raw_text", None)
+        if cash is None or not isinstance(battle_text, str):
+            return None, (), ()
+        cash_from_gt = _compute_observed_from_raw_text("cash_from_golden_tower", battle_text=battle_text) or 0.0
+        interest = _compute_observed_from_raw_text("interest_earned", battle_text=battle_text) or 0.0
+        residual = float(cash) - float(cash_from_gt) - float(interest)
+        return residual, (), ("Other cash = cash_earned - cash_from_golden_tower - interest_earned.",)
 
     battle_text = getattr(record, "raw_text", None)
     if isinstance(battle_text, str):
@@ -564,6 +871,7 @@ def _compute_observed_from_raw_text(metric_key: str, *, battle_text: str) -> flo
 
     mapping: dict[str, tuple[str, UnitType]] = {
         "coins_from_death_wave": ("Coins From Death Wave", UnitType.coins),
+        "interest_earned": ("Interest earned", UnitType.cash),
         "cash_from_golden_tower": ("Cash From Golden Tower", UnitType.cash),
         "coins_from_golden_tower": ("Coins From Golden Tower", UnitType.coins),
         "coins_from_black_hole": ("Coins From Black Hole", UnitType.coins),
@@ -571,6 +879,39 @@ def _compute_observed_from_raw_text(metric_key: str, *, battle_text: str) -> flo
         "coins_from_orb": ("Coins From Orb", UnitType.coins),
         "coins_from_coin_upgrade": ("Coins from Coin Upgrade", UnitType.coins),
         "coins_from_coin_bonuses": ("Coins from Coin Bonuses", UnitType.coins),
+        "damage_dealt": ("Damage dealt", UnitType.damage),
+        "projectiles_damage": ("Projectiles Damage", UnitType.damage),
+        "thorn_damage": ("Thorn Damage", UnitType.damage),
+        "orb_damage": ("Orb Damage", UnitType.damage),
+        "land_mine_damage": ("Land Mine Damage", UnitType.damage),
+        "inner_land_mine_damage": ("Inner Land Mine Damage", UnitType.damage),
+        "chain_lightning_damage": ("Chain Lightning Damage", UnitType.damage),
+        "death_wave_damage": ("Death Wave Damage", UnitType.damage),
+        "death_ray_damage": ("Death Ray Damage", UnitType.damage),
+        "smart_missile_damage": ("Smart Missile Damage", UnitType.damage),
+        "black_hole_damage": ("Black Hole Damage", UnitType.damage),
+        "swamp_damage": ("Swamp Damage", UnitType.damage),
+        "electrons_damage": ("Electrons Damage", UnitType.damage),
+        "rend_armor_damage": ("Rend Armor Damage", UnitType.damage),
+        "enemies_hit_by_orbs": ("Enemies Hit by Orbs", UnitType.count),
+        "enemies_destroyed_basic": ("Basic", UnitType.count),
+        "enemies_destroyed_fast": ("Fast", UnitType.count),
+        "enemies_destroyed_tank": ("Tank", UnitType.count),
+        "enemies_destroyed_ranged": ("Ranged", UnitType.count),
+        "enemies_destroyed_boss": ("Boss", UnitType.count),
+        "enemies_destroyed_protector": ("Protector", UnitType.count),
+        "enemies_destroyed_vampires": ("Vampires", UnitType.count),
+        "enemies_destroyed_rays": ("Rays", UnitType.count),
+        "enemies_destroyed_scatters": ("Scatters", UnitType.count),
+        "enemies_destroyed_saboteur": ("Saboteur", UnitType.count),
+        "enemies_destroyed_commander": ("Commander", UnitType.count),
+        "enemies_destroyed_overcharge": ("Overcharge", UnitType.count),
+        "enemies_destroyed_by_orbs": ("Destroyed By Orbs", UnitType.count),
+        "enemies_destroyed_by_thorns": ("Destroyed by Thorns", UnitType.count),
+        "enemies_destroyed_by_death_ray": ("Destroyed by Death Ray", UnitType.count),
+        "enemies_destroyed_by_land_mine": ("Destroyed by Land Mine", UnitType.count),
+        "enemies_destroyed_in_spotlight": ("Destroyed in Spotlight", UnitType.count),
+        "enemies_destroyed_in_golden_bot": ("Destroyed in Golden Bot", UnitType.count),
         "guardian_damage": ("Damage", UnitType.damage),
         "guardian_summoned_enemies": ("Summoned enemies", UnitType.count),
         "guardian_coins_stolen": ("Guardian coins stolen", UnitType.coins),
@@ -595,6 +936,49 @@ def _compute_observed_from_raw_text(metric_key: str, *, battle_text: str) -> flo
     if extracted is None:
         return 0.0
     return extracted.value
+
+
+def _compute_enemies_destroyed_total(*, battle_text: str) -> int | None:
+    """Compute enemies destroyed total by summing per-type rows.
+
+    Args:
+        battle_text: Raw Battle Report text.
+
+    Returns:
+        Sum of base and elite enemy type counts when at least one type is present;
+        otherwise None.
+    """
+
+    labels = (
+        "Basic",
+        "Fast",
+        "Tank",
+        "Ranged",
+        "Boss",
+        "Protector",
+        "Vampires",
+        "Rays",
+        "Scatters",
+        "Saboteur",
+        "Commander",
+        "Overcharge",
+    )
+
+    total = 0.0
+    has_any = False
+    for label in labels:
+        extracted = extract_numeric_value(battle_text, label=label, unit_type=UnitType.count)
+        if extracted is None:
+            continue
+        has_any = True
+        total += float(extracted.value)
+
+    if not has_any:
+        return None
+    try:
+        return int(total)
+    except (ValueError, OverflowError):
+        return None
 
 
 def _compute_other_coins_from_sources(*, coins: int, battle_text: str) -> float:

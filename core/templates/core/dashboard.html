@@ -418,11 +418,12 @@
         if (!ctx || labels.length === 0 || datasets.length === 0) return;
         const gridColor = "rgba(0, 0, 0, 0.06)";
         const tickColor = "rgba(0, 0, 0, 0.72)";
+        const { mappedDatasets, scales } = buildAxes(labels, datasets, gridColor, tickColor);
         new Chart(ctx, {
           type: "line",
           data: {
             labels,
-            datasets,
+            datasets: mappedDatasets,
           },
           options: {
             responsive: true,
@@ -476,22 +477,7 @@
                 },
               },
             },
-            scales: {
-              x: {
-                title: { display: true, text: "Date" },
-                grid: { color: gridColor },
-                ticks: { maxRotation: 0, autoSkip: true, color: tickColor },
-              },
-              y: {
-                beginAtZero: true,
-                title: { display: true, text: datasets[0]?.unit || "Value" },
-                grid: { color: gridColor },
-                ticks: {
-                  callback: (value) => formatCompactNumber(value),
-                  color: tickColor,
-                },
-              },
-            },
+            scales,
           },
         });
       }
@@ -502,11 +488,12 @@
         if (!ctx || labels.length === 0 || datasets.length === 0) return;
         const gridColor = "rgba(0, 0, 0, 0.06)";
         const tickColor = "rgba(0, 0, 0, 0.72)";
+        const { mappedDatasets, scales } = buildAxes(labels, datasets, gridColor, tickColor);
         new Chart(ctx, {
           type: "bar",
           data: {
             labels,
-            datasets,
+            datasets: mappedDatasets,
           },
           options: {
             responsive: true,
@@ -519,21 +506,49 @@
                 },
               },
             },
-            scales: {
-              x: {
-                title: { display: true, text: "Date" },
-                grid: { color: gridColor },
-                ticks: { maxRotation: 0, autoSkip: true, color: tickColor },
-              },
-              y: {
-                beginAtZero: true,
-                title: { display: true, text: datasets[0]?.unit || "Value" },
-                grid: { color: gridColor },
-                ticks: { callback: (value) => formatCompactNumber(value), color: tickColor },
-              },
-            },
+            scales,
           },
         });
+      }
+
+      function buildAxes(labels, datasets, gridColor, tickColor) {
+        const uniqueUnits = [];
+        const unitToAxisId = {};
+        for (const dataset of datasets) {
+          const unit = dataset?.unit || "";
+          if (unitToAxisId[unit]) continue;
+          const axisId = uniqueUnits.length === 0 ? "y" : `y${uniqueUnits.length}`;
+          unitToAxisId[unit] = axisId;
+          uniqueUnits.push(unit);
+        }
+
+        const mappedDatasets = datasets.map((dataset) => {
+          const unit = dataset?.unit || "";
+          const axisId = unitToAxisId[unit] || "y";
+          return Object.assign({}, dataset, { yAxisID: axisId });
+        });
+
+        const scales = {
+          x: {
+            title: { display: true, text: "Date" },
+            grid: { color: gridColor },
+            ticks: { maxRotation: 0, autoSkip: true, color: tickColor },
+          },
+        };
+
+        for (let idx = 0; idx < uniqueUnits.length; idx += 1) {
+          const axisId = idx === 0 ? "y" : `y${idx}`;
+          const unit = uniqueUnits[idx];
+          scales[axisId] = {
+            beginAtZero: true,
+            position: idx === 0 ? "left" : "right",
+            title: { display: true, text: unit || "Value" },
+            grid: idx === 0 ? { color: gridColor } : { drawOnChartArea: false },
+            ticks: { callback: (value) => formatCompactNumber(value), color: tickColor },
+          };
+        }
+
+        return { mappedDatasets, scales };
       }
 
       function renderDonutChart(canvasId, labels, datasets) {
