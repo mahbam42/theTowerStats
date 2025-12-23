@@ -39,7 +39,7 @@ Cards help you track your card slot progression and keep an organized view of yo
 - **Rarity** shows the card’s rarity for quick scanning.
 - **Progress** is shown as current / threshold. When you exceed a threshold, the remainder carries into the next tier.
 - **(MAX)** indicates the card is fully maxed and can no longer be increased.
-- **Parameters** show the card description and the effect value at your current level when available.
+- **Parameters** show the card description with the current level value emphasized when the card is owned.
 - **Presets** are labels that help you filter and group cards (unlocked via Lab Research 'Card Presets'). The Game currently allows for 6 presets to be set, this app allows as many as you'd like. Define and set Presets from the Cards Dashboard.
 
     > **Note**
@@ -64,6 +64,9 @@ Cards help you track your card slot progression and keep an organized view of yo
 
 > **Caution**
 > The Cards page is an organizer and tracker. It does not recommend builds or presets.
+
+> **Note**
+> When a card is unowned (level 0), placeholder descriptions may be shown without a computed value.
 
 ## Advanced Usage
 

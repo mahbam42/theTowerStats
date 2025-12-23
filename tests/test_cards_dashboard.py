@@ -127,7 +127,7 @@ def test_cards_dashboard_updates_inventory_and_presets(auth_client, player) -> N
     assert "Coin Bonus" in content
     assert "Wave Skip" not in content
     assert "Increase coins earned." in content
-    assert "+5% (Level 3)" in content
+    assert "+<strong>5</strong>% (Level 3)" in content
     assert 'href="https://example.test/wiki/Coin_Bonus"' in content
 
 
@@ -289,14 +289,14 @@ def test_cards_dashboard_parameters_replace_placeholders_with_level_value(auth_c
         slug="critical_coin",
         rarity="Epic",
         description="Increase critical chance by +#%",
-        effect_raw="+5% / +10% / +15% / +20% / +27%",
+        effect_raw="+15% / +18% / +21% / +24% / +27% / +30% / +33%",
     )
     damage = CardDefinition.objects.create(
         name="Damage",
         slug="damage",
         rarity="Common",
         description="Increase tower damage by x #",
-        effect_raw="x 1.00 / x 2.00 / x 3.00 / x 4.00 / x 5.00 / x 6.00 / x 7.00",
+        effect_raw="x 1.60 / x 2.00 / x 2.40 / x 2.80 / x 3.20 / x 3.60 / x 4.00",
     )
 
     PlayerCard.objects.create(player=player, card_definition=critical, card_slug=critical.slug, stars_unlocked=5)
@@ -305,5 +305,30 @@ def test_cards_dashboard_parameters_replace_placeholders_with_level_value(auth_c
     url = reverse("core:cards")
     response = auth_client.get(url)
     content = response.content.decode("utf-8")
-    assert "Increase critical chance by +27%" in content
-    assert "Increase tower damage by x 7.00" in content
+    assert "Increase critical chance by +<strong>27</strong>%" in content
+    assert "Increase tower damage by x <strong>4.00</strong>" in content
+
+
+@pytest.mark.django_db
+def test_cards_dashboard_allows_placeholders_when_level_is_zero(auth_client, player) -> None:
+    """Level 0 cards may display placeholder descriptions unchanged."""
+
+    critical = CardDefinition.objects.create(
+        name="Critical Coin",
+        slug="critical_coin",
+        rarity="Epic",
+        description="Increase critical chance by +#%",
+        effect_raw="+15% / +18% / +21% / +24% / +27% / +30% / +33%",
+    )
+    PlayerCard.objects.create(
+        player=player,
+        card_definition=critical,
+        card_slug=critical.slug,
+        stars_unlocked=0,
+        inventory_count=0,
+    )
+
+    url = reverse("core:cards")
+    response = auth_client.get(url)
+    content = response.content.decode("utf-8")
+    assert "Increase critical chance by +#%" in content

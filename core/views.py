@@ -1326,6 +1326,166 @@ def _render_card_parameters_text(*, description: str, effect_raw: str, level: in
     return cleaned_description or effect_with_level
 
 
+def _render_card_parameters_html(*, description: str, effect_raw: str, level: int) -> str:
+    """Render an HTML-safe parameters string for the Cards dashboard.
+
+    This renderer replaces placeholder tokens (e.g. `#`, `[x]`) in card
+    descriptions with the effective value for the current card level. When
+    `level == 0`, placeholders are permitted and no substitution is attempted.
+
+    Args:
+        description: Wiki-derived description text for the card.
+        effect_raw: Wiki-derived effect value text for the card.
+        level: Current displayed card level (0 when unowned).
+
+    Returns:
+        A Django SafeString-like object suitable for direct template rendering.
+    """
+
+    from dataclasses import dataclass
+    from decimal import Decimal, InvalidOperation, ROUND_HALF_UP
+    import re
+
+    from django.utils.html import format_html
+    from django.utils.html import escape
+
+    @dataclass(frozen=True, slots=True)
+    class _Computed:
+        kind: str
+        value: Decimal
+
+    def _token_kind(token: str) -> str:
+        lowered = (token or "").casefold()
+        if "%" in lowered:
+            return "percent"
+        if lowered.lstrip().startswith("x") or "x" in lowered:
+            return "multiplier"
+        if "sec" in lowered or re.search(r"\\b\\d+(?:\\.\\d+)?\\s*s\\b", lowered):
+            return "seconds"
+        return "number"
+
+    def _parse_decimal(token: str) -> Decimal | None:
+        match = re.search(r"([+-]?[0-9]+(?:\\.[0-9]+)?)", (token or "").replace(",", ""))
+        if not match:
+            return None
+        try:
+            return Decimal(match.group(1))
+        except (InvalidOperation, ValueError):
+            return None
+
+    def _parse_level_values(effect_value_raw: str) -> tuple[str, tuple[Decimal, ...]] | None:
+        cleaned = (effect_value_raw or "").strip()
+        if not cleaned:
+            return None
+        parts = [part.strip() for part in cleaned.split("/") if part.strip()]
+        kind = _token_kind(parts[0])
+        parsed: list[Decimal] = []
+        for part in parts:
+            if _token_kind(part) != kind:
+                return None
+            value = _parse_decimal(part)
+            if value is None:
+                return None
+            parsed.append(value)
+        return kind, tuple(parsed)
+
+    def _effective_value(kind: str, values: tuple[Decimal, ...], *, level: int) -> Decimal:
+        clamped_level = max(1, min(int(level), len(values)))
+        base = values[0]
+        deltas = [values[i] - values[i - 1] for i in range(1, len(values))]
+        scaled = base + sum(deltas[: clamped_level - 1], Decimal(0))
+        return scaled
+
+    def _format_numeric(kind: str, value: Decimal) -> str:
+        if kind == "multiplier":
+            return f"{value.quantize(Decimal('0.01'), rounding=ROUND_HALF_UP):.2f}"
+        if kind == "percent":
+            rounded = value.quantize(Decimal("1"), rounding=ROUND_HALF_UP)
+            return f"{int(rounded)}"
+        if kind == "seconds":
+            rounded = value.quantize(Decimal("0.01"), rounding=ROUND_HALF_UP)
+            as_str = f"{rounded:f}"
+            return as_str.rstrip("0").rstrip(".") if "." in as_str else as_str
+        rounded = value.quantize(Decimal("0.01"), rounding=ROUND_HALF_UP)
+        as_str = f"{rounded:f}"
+        return as_str.rstrip("0").rstrip(".") if "." in as_str else as_str
+
+    def _compute(effect_value_raw: str, *, level: int) -> _Computed | None:
+        parsed = _parse_level_values(effect_value_raw)
+        if parsed is None:
+            return None
+        kind, values = parsed
+        return _Computed(kind=kind, value=_effective_value(kind, values, level=level))
+
+    def _effect_token_for_level(effect_value_raw: str, *, level: int) -> str:
+        cleaned = (effect_value_raw or "").strip()
+        if not cleaned or level <= 0:
+            return cleaned
+        if "/" not in cleaned:
+            return cleaned
+        parts = [part.strip() for part in cleaned.split("/") if part.strip()]
+        if len(parts) <= 1:
+            return cleaned
+        idx = min(max(level, 1), len(parts)) - 1
+        return parts[idx]
+
+    def _bold_first_number(text: str, *, replacement: str) -> str:
+        match = re.search(r"([0-9]+(?:\\.[0-9]+)?)", (text or "").replace(",", ""))
+        if not match:
+            return escape(text)
+        start, end = match.span(1)
+        before = escape(text[:start])
+        after = escape(text[end:])
+        return format_html("{}{}{}", before, format_html("<strong>{}</strong>", replacement), after)
+
+    def _substitute(text: str, *, computed: _Computed) -> str:
+        numeric = _format_numeric(computed.kind, computed.value)
+        bold = format_html("<strong>{}</strong>", numeric)
+        parts = re.split(r"(\\[x\\]|#)", text)
+        rendered: str = ""
+        for part in parts:
+            if part in ("[x]", "#"):
+                rendered = format_html("{}{}", rendered, bold)
+            else:
+                rendered = format_html("{}{}", rendered, escape(part))
+        return rendered
+
+    cleaned_description = (description or "").strip()
+    cleaned_effect = (effect_raw or "").strip()
+    if not cleaned_description and not cleaned_effect:
+        return ""
+
+    if level <= 0:
+        if cleaned_description and cleaned_effect:
+            return format_html("{}\n{}", escape(cleaned_description), escape(cleaned_effect))
+        return escape(cleaned_description or cleaned_effect)
+
+    computed = _compute(cleaned_effect, level=level)
+    if computed is None:
+        return escape(
+            _render_card_parameters_text(description=cleaned_description, effect_raw=cleaned_effect, level=level)
+        )
+
+    lines: list[str] = []
+    if cleaned_description:
+        lines.append(_substitute(cleaned_description, computed=computed))
+    elif cleaned_effect:
+        lines.append(escape(cleaned_effect))
+
+    effect_token = _effect_token_for_level(cleaned_effect, level=level)
+    if effect_token:
+        numeric = _format_numeric(computed.kind, computed.value)
+        effect_display = _bold_first_number(effect_token, replacement=numeric)
+        lines.append(format_html("{} (Level {})", effect_display, level))
+
+    if not lines:
+        return ""
+    rendered = lines[0]
+    for line in lines[1:]:
+        rendered = format_html("{}\n{}", rendered, line)
+    return rendered
+
+
 def _sort_card_rows(rows: list[dict[str, object]], *, sort_key: str) -> list[dict[str, object]]:
     """Sort Cards dashboard rows using the validated sort key.
 
@@ -1569,7 +1729,7 @@ def cards(request: HttpRequest) -> HttpResponse:
         display_level = 0 if is_unowned else progress.level
         display_inventory = 0 if is_unowned else progress.inventory
         display_threshold = 0 if is_unowned else progress.threshold
-        parameters_text = _render_card_parameters_text(
+        parameters_html = _render_card_parameters_html(
             description=(definition.description if definition is not None else ""),
             effect_raw=(definition.effect_raw if definition is not None else ""),
             level=display_level,
@@ -1584,7 +1744,7 @@ def cards(request: HttpRequest) -> HttpResponse:
                 "inventory_threshold": display_threshold,
                 "is_maxed": (not is_unowned and progress.is_maxed),
                 "rarity": (definition.rarity if definition is not None else ""),
-                "parameters_text": parameters_text,
+                "parameters_html": parameters_html,
                 "presets": tuple(card.presets.all()),
                 "updated_at": card.updated_at,
             }
