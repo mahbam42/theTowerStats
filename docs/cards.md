@@ -68,6 +68,9 @@ Cards help you track your card slot progression and keep an organized view of yo
 > **Note**
 > When a card is unowned (level 0), placeholder descriptions may be shown without a computed value.
 
+> **Note**
+> If the app does not have a per-level value available for a card, the Parameters text may be shown without a highlighted current value.
+
 ## Advanced Usage
 
 1. Select multiple items in **Preset filter** to narrow the table to a combined view.

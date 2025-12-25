@@ -1286,7 +1286,7 @@ def _render_card_parameters_text(*, description: str, effect_raw: str, level: in
         if "[x]" in cleaned_description:
             import re
 
-            match = re.search(r"-?\\d+(?:\\.\\d+)?", cleaned_effect)
+            match = re.search(r"-?\d+(?:\.\d+)?", cleaned_effect)
             replacement = match.group(0) if match else cleaned_effect
             return cleaned_description.replace("[x]", replacement)
 
@@ -1360,12 +1360,12 @@ def _render_card_parameters_html(*, description: str, effect_raw: str, level: in
             return "percent"
         if lowered.lstrip().startswith("x") or "x" in lowered:
             return "multiplier"
-        if "sec" in lowered or re.search(r"\\b\\d+(?:\\.\\d+)?\\s*s\\b", lowered):
+        if "sec" in lowered or re.search(r"\b\d+(?:\.\d+)?\s*s\b", lowered):
             return "seconds"
         return "number"
 
     def _parse_decimal(token: str) -> Decimal | None:
-        match = re.search(r"([+-]?[0-9]+(?:\\.[0-9]+)?)", (token or "").replace(",", ""))
+        match = re.search(r"([+-]?[0-9]+(?:\.[0-9]+)?)", (token or "").replace(",", ""))
         if not match:
             return None
         try:
@@ -1430,7 +1430,7 @@ def _render_card_parameters_html(*, description: str, effect_raw: str, level: in
         return parts[idx]
 
     def _bold_first_number(text: str, *, replacement: str) -> str:
-        match = re.search(r"([0-9]+(?:\\.[0-9]+)?)", (text or "").replace(",", ""))
+        match = re.search(r"([0-9]+(?:\.[0-9]+)?)", (text or "").replace(",", ""))
         if not match:
             return escape(text)
         start, end = match.span(1)
@@ -1441,7 +1441,7 @@ def _render_card_parameters_html(*, description: str, effect_raw: str, level: in
     def _substitute(text: str, *, computed: _Computed) -> str:
         numeric = _format_numeric(computed.kind, computed.value)
         bold = format_html("<strong>{}</strong>", numeric)
-        parts = re.split(r"(\\[x\\]|#)", text)
+        parts = re.split(r"(\[x\]|#)", text)
         rendered: str = ""
         for part in parts:
             if part in ("[x]", "#"):

@@ -93,6 +93,64 @@ def _safe_int(value: object) -> int:
         return 0
 
 
+def _derive_card_effect_raw(raw_row: dict[str, object], *, description: str) -> str:
+    """Derive a card effect string from wiki table rows.
+
+    Some card list tables provide a single "Effect" column, while newer tables
+    provide per-level columns like "Lv. 1", "Lv. 2", ... instead. This helper
+    preserves the raw per-level values by joining them into a slash-delimited
+    string that downstream rendering can interpret deterministically.
+
+    Args:
+        raw_row: Normalized wiki row mapping (header -> value).
+        description: Wiki-derived description text, used only for light
+            formatting hints (for example, when the description uses `x #`
+            multiplier tokens but the table provides bare numeric values).
+
+    Returns:
+        A best-effort `effect_raw` string (may be empty).
+    """
+
+    import re
+
+    direct = str(raw_row.get("Effect") or "").strip()
+    if direct:
+        return direct
+
+    level_pattern = re.compile(r"^(?:Lv\.?|Lvl\.?|Level)\s*\.?\s*(\d+)$", re.IGNORECASE)
+    levels: list[tuple[int, str]] = []
+    for key, value in raw_row.items():
+        match = level_pattern.match(str(key or "").strip())
+        if not match:
+            continue
+        level = _safe_int(match.group(1))
+        text = str(value or "").strip()
+        if level <= 0 or not text:
+            continue
+        levels.append((level, text))
+
+    if not levels:
+        return ""
+
+    levels.sort(key=lambda pair: pair[0])
+
+    wants_multiplier = bool(re.search(r"\bx\s*(?:#|\[x\])", (description or "").casefold()))
+    numeric_only = re.compile(r"^[+-]?\d+(?:\.\d+)?$")
+    normalized_values: list[str] = []
+    for _level, text in levels:
+        cleaned = text.strip()
+        if (
+            wants_multiplier
+            and numeric_only.match(cleaned)
+            and not cleaned.casefold().startswith(("x", "×"))
+        ):
+            normalized_values.append(f"x {cleaned}")
+        else:
+            normalized_values.append(cleaned)
+
+    return " / ".join(normalized_values)
+
+
 def rebuild_cards_from_wikidata(*, write: bool, parse_version: str = "cards_list_v1") -> RebuildSummary:
     """Upsert CardDefinition rows from card list WikiData.
 
@@ -109,14 +167,15 @@ def rebuild_cards_from_wikidata(*, write: bool, parse_version: str = "cards_list
             slug = _slugify(row.canonical_name)
             table_rarity = (row.raw_row.get("_wiki_table_label") or "").strip()
             rarity = (row.raw_row.get("Rarity") or table_rarity or "").strip()
+            description = (row.raw_row.get("Description") or "").strip()
             defaults = {
                 "name": row.canonical_name,
                 "slug": slug,
                 "wiki_page_url": row.page_url,
                 "wiki_entity_id": row.raw_row.get("_wiki_entity_id", row.entity_id),
-                "description": (row.raw_row.get("Description") or "").strip(),
+                "description": description,
                 "rarity": rarity,
-                "effect_raw": (row.raw_row.get("Effect") or "").strip(),
+                "effect_raw": _derive_card_effect_raw(row.raw_row, description=description),
                 "unlock_text": (row.raw_row.get("Unlock") or row.raw_row.get("Unlock Text") or "").strip(),
                 "source_wikidata": row,
             }

@@ -2423,7 +2423,7 @@ CLOSED: [2025-12-22 Mon 15:31]
 - [X] fetch_wiki_data and rebuild_wiki_definitions should have a pretty summary of deltas at the end.
   Especially when using --target all.
 
-*** Bugs/Enhancements [4/15]
+*** Bugs/Enhancements [5/17]
 
 **** DONE [#B] Error Updating Guardian Upgrade Table                 :bug:
 CLOSED: [2025-12-22 Mon 18:51]
@@ -2726,7 +2726,17 @@ Completion criteria:
 
 - Prompt38Validation.yml accurately marked complete
 
-** 2/5 [Backlog]
+**** TODO [#A] Create a new Goals Dashboard
+
+Create a new dashboard and widgets for players to specify a target upgrade level and calculate the total currancy needed.
+
+A player will select a parameter from UWs/Bots/Guardian Chips and the level they want to target.
+
+The new dashboard will show all tracked parameters. A small widget will show the relevant metrics on the respective dashboards.
+
+The dashboard and widgets will label the currency (stones, bits, medals)
+
+** Backlog [2/5]
 “Out of Scope”:
 - Cloud sync
 - Real-time scraping
