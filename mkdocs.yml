@@ -70,4 +70,7 @@ nav:
       - Development Notes: development.md
   - Reference:
       - Management Commands: management_commands.md
+      - Analytics: reference/analytics.md
+      - Core Charting: reference/core_charting.md
+      - Core Parsers: reference/core_parsers.md
       - Public APIs: api.md

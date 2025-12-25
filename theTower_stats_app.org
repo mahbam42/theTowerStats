@@ -2423,7 +2423,7 @@ CLOSED: [2025-12-22 Mon 15:31]
 - [X] fetch_wiki_data and rebuild_wiki_definitions should have a pretty summary of deltas at the end.
   Especially when using --target all.
 
-*** Bugs/Enhancements [19/22]
+*** Bugs/Enhancements [20/23]
 
 **** DONE [#B] Error Updating Guardian Upgrade Table                 :bug:
 CLOSED: [2025-12-22 Mon 18:51]
@@ -2775,8 +2775,10 @@ CLOSED: [2025-12-25 Thu 13:28]
 - State "DONE"       from "TODO"       [2025-12-25 Thu 13:28]
 They don't fire until the first cooldown when a run starts. 
 
-**** TODO [#A] Create a new Goals Dashboard
+**** DONE [#A] Create a new Goals Dashboard
+CLOSED: [2025-12-25 Thu 15:58]
 
+- State "DONE"       from "TODO"       [2025-12-25 Thu 15:58]
 Create a new dashboard and widgets for players to specify a target upgrade level and calculate the total currancy needed.
 
 A player will select a parameter from UWs/Bots/Guardian Chips and the level they want to target.
@@ -2801,10 +2803,13 @@ The dashboard and widgets will label the currency (stones, bits, medals)
 - [X] On UWs/Bots/Guardian Chips Dashboard the Goals pane needs to be hidden if there is not active goals.
 - [X] In the Add Goal Modal, fix the rows showing no delta (see screenshot)
 - [X] In the Add Goal Modal, the target delta needs to show the increase from current level. Not just +2 for each.
-**** TODO [#A] Update Readme.md, changelog to v0.3.0
-Summarize last few commits. Call out Cards and Charts Enhancements, Goals Dashboard.
 
-Our current changelog is at 0.2.2 (in progress) and published releases on Github are 0.2.1. I think we can safely say we can tag our work as 0.3.0, would you agree?
+**** TODO Add mkdocstrings pages for Analytics/, Core/Charting/, Core/Parsers/
+Add to mkdocs.yml under 'Reference' 
+**** TODO [#A] Update Readme.md, changelog to v0.3.0
+Summarize last few commits. Call out Cards and Charts Enhancements, Goals Dashboard, and Docs additions 
+
+Our current changelog is at 0.2.2 (in progress) and published releases on Github are 0.2.1. I think we can safely say we can tag our work as 0.3.0, would you agree? You can run `git log -14` to review progress
 
 **** TODO [#A] On Railway run rebuild_wiki_definitions --target cards after deploying v0.3.0
 
