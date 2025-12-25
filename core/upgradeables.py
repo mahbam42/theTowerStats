@@ -13,6 +13,7 @@ from __future__ import annotations
 
 import re
 from dataclasses import dataclass
+from decimal import Decimal, InvalidOperation
 from typing import Protocol, Sequence
 
 from django.db.models import QuerySet
@@ -33,22 +34,27 @@ class ParameterLevelRow:
     cost_raw: str
 
 
-def _extract_number(value_raw: str) -> float | None:
-    """Extract a best-effort float from a raw wiki string.
+def _extract_decimal(value_raw: str) -> tuple[Decimal, int] | None:
+    """Extract a best-effort Decimal and decimal-places count from a raw wiki string.
 
     Args:
         value_raw: Raw value string from wiki-derived tables.
 
     Returns:
-        Parsed float when a numeric token is present, otherwise None.
+        Tuple of (Decimal value, decimal_places) when a numeric token is present,
+        otherwise None.
     """
 
-    match = re.search(r"([+-]?[0-9]+(?:\\.[0-9]+)?)", value_raw.replace(",", ""))
+    match = re.search(r"([+-]?[0-9]+(?:\.[0-9]+)?)", value_raw.replace(",", ""))
     if not match:
         return None
+    token = match.group(1)
+    decimal_places = 0
+    if "." in token:
+        decimal_places = len(token.split(".", 1)[1])
     try:
-        return float(match.group(1))
-    except ValueError:
+        return Decimal(token), decimal_places
+    except (InvalidOperation, ValueError):
         return None
 
 
@@ -67,17 +73,20 @@ def format_delta(*, current_raw: str | None, next_raw: str | None, unit_kind: st
 
     if not current_raw or not next_raw:
         return None
-    current_num = _extract_number(current_raw)
-    next_num = _extract_number(next_raw)
-    if current_num is None or next_num is None:
+    current = _extract_decimal(current_raw)
+    nxt = _extract_decimal(next_raw)
+    if current is None or nxt is None:
         return None
 
+    current_num, current_dp = current
+    next_num, next_dp = nxt
     delta = next_num - current_num
     if delta == 0:
         return None
 
     sign = "+" if delta > 0 else "−"
     magnitude = abs(delta)
+    display_dp = max(current_dp, next_dp)
 
     suffix = ""
     if unit_kind == Unit.Kind.SECONDS:
@@ -87,7 +96,12 @@ def format_delta(*, current_raw: str | None, next_raw: str | None, unit_kind: st
     elif unit_kind == Unit.Kind.MULTIPLIER:
         suffix = "x"
 
-    display = f"{magnitude:g}{suffix}"
+    if display_dp > 0:
+        display_raw = f"{magnitude:.{display_dp}f}"
+        display_trimmed = display_raw.rstrip("0").rstrip(".")
+        display = f"{display_trimmed}{suffix}"
+    else:
+        display = f"{int(magnitude)}{suffix}"
     return f"{sign}{display}"
 
 

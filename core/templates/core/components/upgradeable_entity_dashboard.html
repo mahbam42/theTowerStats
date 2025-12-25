@@ -10,7 +10,7 @@
   </div>
 </div>
 
-{% if goals_widget_rows is not None and goals_widget_goal_type %}
+{% if goals_widget_rows and goals_widget_goal_type %}
   <div class="grid-x grid-margin-x margin-top-1">
     <div class="cell">
       {% include "core/components/goals_widget.html" with rows=goals_widget_rows goal_type=goals_widget_goal_type %}

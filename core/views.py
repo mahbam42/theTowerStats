@@ -66,7 +66,13 @@ from core.forms import (
     UpgradeableEntityProgressFilterForm,
     UltimateWeaponProgressFilterForm,
 )
-from core.goals import GoalRow, goal_rows_for_dashboard, goals_widget_rows
+from core.goals import (
+    GoalCandidate,
+    GoalRow,
+    goal_candidates_for_modal,
+    goal_rows_for_dashboard,
+    goals_widget_rows,
+)
 from core.upgradeables import (
     ParameterLevelRow,
     build_upgradeable_parameter_view,
@@ -3306,6 +3312,20 @@ def goals_dashboard(request: HttpRequest) -> HttpResponse:
         for row in rows:
             row_index[(row.goal_type, row.goal_key)] = row
 
+    candidates = goal_candidates_for_modal(player=player, goal_type=selected_goal_type)
+    candidates_payload = [
+        {
+            "goal_type": c.goal_type,
+            "goal_key": c.goal_key,
+            "label": c.label,
+            "currency": c.currency,
+            "max_level": c.max_level,
+            "target_options": list(c.target_options),
+        }
+        for c in candidates
+    ]
+    candidate_index: dict[str, GoalCandidate] = {c.goal_key: c for c in candidates}
+
     if request.method == "POST":
         action = (request.POST.get("action") or "").strip()
         redirect_response = safe_redirect(
@@ -3328,32 +3348,42 @@ def goals_dashboard(request: HttpRequest) -> HttpResponse:
                 messages.warning(request, "Goal not found.")
             return redirect_response
 
-        if action in {"set_goal", "set_goal_max"}:
+        if action in {"create_goal", "update_goal", "set_goal_max"}:
             goal_type = (request.POST.get("goal_type") or "").strip()
             goal_key = (request.POST.get("goal_key") or "").strip()
             selected_row = row_index.get((goal_type, goal_key))
-            if selected_row is None:
-                messages.error(request, "Goal target not found.")
-                return redirect_response
 
             if action == "set_goal_max":
+                if selected_row is None:
+                    messages.error(request, "Goal target not found.")
+                    return redirect_response
                 target_level = int(selected_row.max_level or 0)
                 existing = GoalTarget.objects.filter(player=player, goal_type=goal_type, goal_key=goal_key).first()
-                label = existing.label if existing else ""
                 notes = existing.notes if existing else ""
                 if target_level <= 0:
                     messages.error(request, "Max level is unavailable for that parameter.")
                     return redirect_response
             else:
-                form = GoalTargetUpdateForm(request.POST, max_level=int(selected_row.max_level or 0) or None)
+                max_level = None
+                if selected_row is not None:
+                    max_level = int(selected_row.max_level or 0) or None
+                elif action == "create_goal":
+                    candidate = candidate_index.get(goal_key)
+                    max_level = int(candidate.max_level) if candidate else None
+                form = GoalTargetUpdateForm(request.POST, max_level=max_level)
                 if not form.is_valid():
                     messages.error(request, "Unable to save goal. Check target level and try again.")
                     return redirect_response
                 target_level = int(form.cleaned_data["target_level"])
-                label = str(form.cleaned_data.get("label") or "")
-                notes = str(form.cleaned_data.get("notes") or "")
+                if "notes" in request.POST:
+                    notes = str(form.cleaned_data.get("notes") or "")
+                else:
+                    existing = GoalTarget.objects.filter(
+                        player=player, goal_type=goal_type, goal_key=goal_key
+                    ).first()
+                    notes = existing.notes if existing else ""
 
-            is_assumed = bool(getattr(selected_row, "current_is_assumed", False))
+            is_assumed = bool(getattr(selected_row, "current_is_assumed", False)) if selected_row is not None else False
             assumed_current_level = 0 if is_assumed else None
 
             GoalTarget.objects.update_or_create(
@@ -3362,7 +3392,6 @@ def goals_dashboard(request: HttpRequest) -> HttpResponse:
                 goal_key=goal_key,
                 defaults={
                     "target_level": target_level,
-                    "label": label,
                     "notes": notes,
                     "assumed_current_level": assumed_current_level,
                     "is_current_level_assumed": is_assumed,
@@ -3395,6 +3424,7 @@ def goals_dashboard(request: HttpRequest) -> HttpResponse:
             "filter_form": filter_form,
             "sections": sections,
             "show_completed": show_completed,
+            "goal_candidates": candidates_payload,
         },
     )
 

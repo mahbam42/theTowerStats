@@ -2793,8 +2793,18 @@ The dashboard and widgets will label the currency (stones, bits, medals)
 - Provide quick actions: “Set target = max”, “+1 level”, “Clear goal”. -We don't need " +1 level" (that's already shown on the dashboards.
 - Widget UX: show top 3 by remaining cost + “View all goals” link (make sure the link uses the safe-redirect helper if any next param is involved).
 - Testing: add golden tests for totals using real rows from the parameter-level tables (catches cost table changes immediately).
+
+***** Refinements:
+- [X] New goals need to  be created via a modal. Only show active goals on the Goals Dashboard.
+- [X] Get rid of optional label field
+- [X] Target needs to be a dropdown populated with the level number, delta, and cost
+- [X] On UWs/Bots/Guardian Chips Dashboard the Goals pane needs to be hidden if there is not active goals.
+- [X] In the Add Goal Modal, fix the rows showing no delta (see screenshot)
+- [X] In the Add Goal Modal, the target delta needs to show the increase from current level. Not just +2 for each.
 **** TODO [#A] Update Readme.md, changelog to v0.3.0
-Summarize last few commits. Call out Cards and Charts Enhancements, Goals Dashboard
+Summarize last few commits. Call out Cards and Charts Enhancements, Goals Dashboard.
+
+Our current changelog is at 0.2.2 (in progress) and published releases on Github are 0.2.1. I think we can safely say we can tag our work as 0.3.0, would you agree?
 
 **** TODO [#A] On Railway run rebuild_wiki_definitions --target cards after deploying v0.3.0
 

@@ -9,6 +9,9 @@
         <p class="muted margin-0">Dashboard</p>
         <h2 class="margin-0">Goals</h2>
         <p class="muted margin-0">Set target levels and review remaining currency required to reach them.</p>
+        {% if not demo_mode %}
+          <button class="button tiny margin-top-1" type="button" data-open="goal-create-modal">Add goal</button>
+        {% endif %}
       </div>
     </div>
   </div>
@@ -37,6 +40,16 @@
     </div>
   </div>
 
+  {% if not sections %}
+    <div class="grid-x grid-margin-x margin-top-1">
+      <div class="cell">
+        <div class="callout secondary">
+          <p class="margin-0">No active goals yet.</p>
+        </div>
+      </div>
+    </div>
+  {% endif %}
+
   {% for section in sections %}
     <div class="grid-x grid-margin-x margin-top-1">
       <div class="cell">
@@ -55,6 +68,7 @@
                   <th>Target</th>
                   <th>Max</th>
                   <th>Remaining</th>
+                  <th>Total to target</th>
                   <th>Actions</th>
                 </tr>
               </thead>
@@ -76,13 +90,16 @@
                       {% else %}
                         <form method="post" action="{% url 'core:goals_dashboard' %}" class="inline goals-inline-form">
                           {% csrf_token %}
-                          <input type="hidden" name="action" value="set_goal" />
+                          <input type="hidden" name="action" value="update_goal" />
                           <input type="hidden" name="goal_type" value="{{ row.goal_type }}" />
                           <input type="hidden" name="goal_key" value="{{ row.goal_key }}" />
                           <input type="hidden" name="next" value="{{ request.get_full_path }}" />
-                          <input type="number" name="target_level" value="{{ row.target_level|default:'' }}" min="1" max="{{ row.max_level }}" class="goals-target-input" />
-                          <input type="text" name="label" value="{{ row.label }}" placeholder="Label (optional)" class="goals-label-input" />
-                          <textarea name="notes" rows="1" placeholder="Notes (optional)" class="goals-notes-input">{{ row.notes }}</textarea>
+                          <label class="show-for-sr">Target</label>
+                          <select name="target_level" class="goals-target-select">
+                            {% for opt in row.target_options %}
+                              <option value="{{ opt.level }}"{% if row.target_level == opt.level %} selected{% endif %}>{{ opt.label }} {{ row.currency }}</option>
+                            {% endfor %}
+                          </select>
                           <button type="submit" class="button tiny margin-0">Save</button>
                         </form>
                       {% endif %}
@@ -91,6 +108,13 @@
                     <td>
                       {% if row.breakdown %}
                         {{ row.breakdown.total_remaining }} {{ row.currency }}
+                      {% else %}
+                        <span class="muted">—</span>
+                      {% endif %}
+                    </td>
+                    <td>
+                      {% if row.breakdown %}
+                        {{ row.breakdown.total_to_target }} {{ row.currency }}
                       {% else %}
                         <span class="muted">—</span>
                       {% endif %}
@@ -112,7 +136,7 @@
                   </tr>
                   {% if row.breakdown %}
                     <tr class="goal-breakdown-row">
-                      <td colspan="8">
+                      <td colspan="9">
                         <details>
                           <summary>Per-level breakdown</summary>
                           {% if row.breakdown.assumptions %}
@@ -163,4 +187,148 @@
       </div>
     </div>
   {% endfor %}
+
+  {% if not demo_mode %}
+    {{ goal_candidates|json_script:"goal-candidate-data" }}
+    <div class="reveal" id="goal-create-modal" data-reveal>
+      <h3 class="margin-0">Add goal</h3>
+      <p class="muted margin-top-1">Search and select a parameter, then choose a target level.</p>
+      <form method="post" action="{% url 'core:goals_dashboard' %}">
+        {% csrf_token %}
+        <input type="hidden" name="action" value="create_goal" />
+        <input type="hidden" name="next" value="{{ request.get_full_path }}" />
+        <label>Search
+          <input id="goal-create-search" type="search" placeholder="Search parameters…" autocomplete="off" />
+        </label>
+        <div class="goals-candidate-list" id="goal-candidate-list" role="listbox" aria-label="Goal candidates"></div>
+        <input type="hidden" id="goal-create-type" name="goal_type" value="" />
+        <input type="hidden" id="goal-create-key" name="goal_key" value="" />
+        <label>Target
+          <select id="goal-create-target" name="target_level" class="goals-target-select"></select>
+        </label>
+        <label>Notes (optional)
+          <textarea name="notes" rows="2"></textarea>
+        </label>
+        <div class="grid-x grid-margin-x align-right">
+          <div class="cell shrink">
+            <button type="button" class="button secondary" data-close>Cancel</button>
+          </div>
+          <div class="cell shrink">
+            <button type="submit" class="button">Create</button>
+          </div>
+        </div>
+      </form>
+      <button class="close-button" data-close aria-label="Close modal" type="button">
+        <span aria-hidden="true">&times;</span>
+      </button>
+    </div>
+
+    <script>
+      (function() {
+        function getCandidateData() {
+          const el = document.getElementById("goal-candidate-data");
+          if (!el) return [];
+          try {
+            return JSON.parse(el.textContent || "[]");
+          } catch (_err) {
+            return [];
+          }
+        }
+
+        const candidates = getCandidateData();
+        const searchInput = document.getElementById("goal-create-search");
+        const candidateList = document.getElementById("goal-candidate-list");
+        const goalTypeInput = document.getElementById("goal-create-type");
+        const goalKeyInput = document.getElementById("goal-create-key");
+        const targetSelect = document.getElementById("goal-create-target");
+        const form = searchInput ? searchInput.closest("form") : null;
+        if (!searchInput || !candidateList || !goalTypeInput || !goalKeyInput || !targetSelect || !form) return;
+
+        const byKey = new Map();
+        for (const c of candidates) {
+          if (!c || !c.goal_key) continue;
+          byKey.set(c.goal_key, c);
+        }
+
+        let selectedKey = "";
+
+        function normalize(text) {
+          return String(text || "").toLowerCase().trim();
+        }
+
+        function renderTargets(candidate) {
+          targetSelect.innerHTML = "";
+          if (!candidate) return;
+          const opts = Array.isArray(candidate.target_options) ? candidate.target_options : [];
+          for (const opt of opts) {
+            const option = document.createElement("option");
+            option.value = String(opt.level);
+            option.textContent = `${opt.label} ${candidate.currency || ""}`.trim();
+            targetSelect.appendChild(option);
+          }
+          if (candidate.max_level) {
+            targetSelect.value = String(candidate.max_level);
+          }
+        }
+
+        function selectCandidate(goalKey) {
+          const candidate = byKey.get(goalKey);
+          if (!candidate) return;
+          selectedKey = goalKey;
+          goalTypeInput.value = candidate.goal_type || "";
+          goalKeyInput.value = candidate.goal_key || "";
+          renderTargets(candidate);
+          for (const node of candidateList.querySelectorAll(".goals-candidate-row")) {
+            node.classList.toggle("is-selected", node.dataset.goalKey === goalKey);
+          }
+        }
+
+        function renderCandidates() {
+          const query = normalize(searchInput.value);
+          candidateList.innerHTML = "";
+          const rows = candidates
+            .filter(c => c && c.goal_key)
+            .filter(c => {
+              if (!query) return true;
+              const label = normalize(c.label);
+              const currency = normalize(c.currency);
+              return label.includes(query) || currency.includes(query);
+            })
+            .slice(0, 200);
+
+          if (!rows.length) {
+            const empty = document.createElement("div");
+            empty.className = "muted";
+            empty.textContent = "No matches.";
+            candidateList.appendChild(empty);
+            return;
+          }
+
+          for (const c of rows) {
+            const row = document.createElement("button");
+            row.type = "button";
+            row.className = "goals-candidate-row";
+            row.dataset.goalKey = c.goal_key;
+            row.textContent = `${c.label || c.goal_key} (${c.currency || ""})`.trim();
+            row.addEventListener("click", () => selectCandidate(c.goal_key));
+            row.classList.toggle("is-selected", selectedKey === c.goal_key);
+            candidateList.appendChild(row);
+          }
+        }
+
+        form.addEventListener("submit", (e) => {
+          if (!goalKeyInput.value) {
+            e.preventDefault();
+            searchInput.focus();
+          }
+        });
+
+        searchInput.addEventListener("input", renderCandidates);
+        renderCandidates();
+        if (candidates.length) {
+          selectCandidate(candidates[0].goal_key);
+        }
+      })();
+    </script>
+  {% endif %}
 {% endblock %}

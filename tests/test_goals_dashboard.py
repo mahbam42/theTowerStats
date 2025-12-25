@@ -13,10 +13,20 @@ from definitions.models import (
     BotParameterDefinition,
     BotParameterLevel,
     Currency,
+    GuardianChipDefinition,
+    GuardianChipParameterDefinition,
+    GuardianChipParameterLevel,
     ParameterKey,
     WikiData,
 )
-from player_state.models import GoalTarget, GoalType, PlayerBot, PlayerBotParameter
+from player_state.models import (
+    GoalTarget,
+    GoalType,
+    PlayerBot,
+    PlayerBotParameter,
+    PlayerGuardianChip,
+    PlayerGuardianChipParameter,
+)
 
 pytestmark = pytest.mark.integration
 
@@ -81,6 +91,28 @@ def _bot_with_parameters(*, slug: str, name: str, count: int = 4) -> BotDefiniti
     return bot
 
 
+def _guardian_with_parameters(*, slug: str, name: str) -> GuardianChipDefinition:
+    """Create a guardian chip definition with one parameter and level rows."""
+
+    wiki = _wiki(suffix=slug)
+    guardian = GuardianChipDefinition.objects.create(name=name, slug=slug, source_wikidata=wiki)
+    param_def = GuardianChipParameterDefinition.objects.create(
+        guardian_chip_definition=guardian,
+        key=ParameterKey.COOLDOWN,
+        display_name="Cooldown",
+    )
+    for level, cost in ((1, "5"), (2, "7"), (3, "9")):
+        GuardianChipParameterLevel.objects.create(
+            parameter_definition=param_def,
+            level=level,
+            value_raw=str(level),
+            cost_raw=cost,
+            currency=Currency.BITS,
+            source_wikidata=wiki,
+        )
+    return guardian
+
+
 @pytest.mark.django_db
 def test_goals_dashboard_can_set_and_clear_goal(auth_client, player) -> None:
     """Players can create and clear a goal target from the Goals dashboard."""
@@ -97,11 +129,10 @@ def test_goals_dashboard_can_set_and_clear_goal(auth_client, player) -> None:
     response = auth_client.post(
         url,
         data={
-            "action": "set_goal",
+            "action": "create_goal",
             "goal_type": str(GoalType.BOT),
             "goal_key": goal_key,
-            "target_level": 3,
-            "label": "Next milestone",
+            "target_level": "3",
             "notes": "Test notes",
         },
     )
@@ -111,8 +142,9 @@ def test_goals_dashboard_can_set_and_clear_goal(auth_client, player) -> None:
     response = auth_client.get(url, data={"goal_type": str(GoalType.BOT)})
     assert response.status_code == 200
     content = response.content.decode("utf-8")
-    assert "12 medals" in content
+    assert "21 medals" in content
     assert "Per-level breakdown" in content
+    assert "L0 → L1" in content
     assert "L1 → L2" in content
     assert "L2 → L3" in content
 
@@ -204,3 +236,64 @@ def test_bots_progress_includes_goals_widget(auth_client, player) -> None:
     content = response.content.decode("utf-8")
     assert "Upgrade targets" in content
     assert f'href="{reverse("core:goals_dashboard")}?goal_type={str(GoalType.BOT)}"' in content
+
+
+@pytest.mark.django_db
+def test_bots_progress_hides_goals_widget_when_empty(auth_client, player) -> None:
+    """Bots dashboard hides the goals widget when the player has no active goals."""
+
+    bot_def = _bot_with_parameters(slug="no_goals_bot", name="No Goals Bot", count=4)
+    PlayerBot.objects.create(
+        player=player,
+        bot_definition=bot_def,
+        bot_slug=bot_def.slug,
+        unlocked=True,
+    )
+
+    url = reverse("core:bots_progress")
+    response = auth_client.get(url)
+    assert response.status_code == 200
+    content = response.content.decode("utf-8")
+    assert "Upgrade targets" not in content
+
+
+@pytest.mark.django_db
+def test_goals_dashboard_shows_total_to_target_for_guardian(auth_client, player) -> None:
+    """Goals dashboard shows both remaining and total-to-target values."""
+
+    guardian = _guardian_with_parameters(slug="summon", name="Summon")
+    param_def = guardian.parameter_definitions.get()
+    chip = PlayerGuardianChip.objects.create(
+        player=player,
+        guardian_chip_definition=guardian,
+        guardian_chip_slug=guardian.slug,
+        unlocked=True,
+        active=False,
+    )
+    PlayerGuardianChipParameter.objects.create(
+        player=player,
+        player_guardian_chip=chip,
+        parameter_definition=param_def,
+        level=2,
+    )
+
+    goal_key = goal_key_for_parameter(
+        goal_type=str(GoalType.GUARDIAN_CHIP),
+        entity_slug=guardian.slug,
+        parameter_key=param_def.key,
+    )
+    GoalTarget.objects.create(
+        player=player,
+        goal_type=str(GoalType.GUARDIAN_CHIP),
+        goal_key=goal_key,
+        target_level=3,
+        is_current_level_assumed=False,
+    )
+
+    url = reverse("core:goals_dashboard")
+    response = auth_client.get(url, data={"goal_type": str(GoalType.GUARDIAN_CHIP)})
+    assert response.status_code == 200
+    content = response.content.decode("utf-8")
+    assert "9 bits" in content
+    assert "21 bits" in content
+

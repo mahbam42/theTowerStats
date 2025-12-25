@@ -31,6 +31,7 @@ Goal keys are generated as `{goal_type}:{entity_slug}:{parameter_key}` to stay s
 - `analysis/goals.py` provides pure functions that:
   - parse cost strings
   - compute per-level costs from current to target
+  - compute total-to-target (from the starting level)
   - return a breakdown DTO suitable for templates
 
 Views assemble the level-table cost mapping and pass it into the analysis helpers.
@@ -38,6 +39,7 @@ Views assemble the level-table cost mapping and pass it into the analysis helper
 ### UI Integration
 
 - `/goals/` provides the main Goals dashboard.
+- New goals are created via a modal dialog; the dashboard only lists stored GoalTarget rows.
 - Bots, Guardian Chips, and Ultimate Weapons dashboards render a small goals widget (top remaining costs) using a shared component.
 
 ### Safety and Guardrails
@@ -49,4 +51,3 @@ Views assemble the level-table cost mapping and pass it into the analysis helper
 
 - Unit: goal cost breakdown computations.
 - Integration: goals dashboard create/clear, completed-goal visibility, and widget rendering.
-

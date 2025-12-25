@@ -769,7 +769,6 @@ class GoalTargetUpdateForm(forms.Form):
     goal_type = forms.ChoiceField(choices=GoalType.choices)
     goal_key = forms.CharField(max_length=240)
     target_level = forms.IntegerField(min_value=1)
-    label = forms.CharField(max_length=120, required=False)
     notes = forms.CharField(required=False, widget=forms.Textarea(attrs={"rows": 2}))
 
     def __init__(self, *args, max_level: int | None = None, **kwargs) -> None:

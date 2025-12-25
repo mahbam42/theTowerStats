@@ -192,23 +192,40 @@ body {
   margin: 0;
 }
 
-.goals-target-input {
-  width: 6rem;
-  margin: 0;
-}
-
-.goals-label-input {
-  width: 12rem;
-  margin: 0;
-}
-
-.goals-notes-input {
-  width: 16rem;
+.goals-target-select {
+  min-width: 14rem;
   margin: 0;
 }
 
 .goal-breakdown-row details {
   margin-top: var(--tts-space-2);
+}
+
+.goals-candidate-list {
+  border: 1px solid var(--tts-color-border);
+  border-radius: var(--tts-radius-2);
+  padding: var(--tts-space-2);
+  max-height: 18rem;
+  overflow: auto;
+  background: var(--tts-color-surface);
+}
+
+.goals-candidate-row {
+  display: block;
+  width: 100%;
+  text-align: left;
+  padding: var(--tts-space-2);
+  border-radius: var(--tts-radius-1);
+  background: transparent;
+  border: 0;
+  cursor: pointer;
+}
+
+.goals-candidate-row:hover,
+.goals-candidate-row:focus,
+.goals-candidate-row.is-selected {
+  background: rgba(23, 121, 186, 0.12);
+  outline: none;
 }
 
 .search-dropdown .search-item-subtitle {
