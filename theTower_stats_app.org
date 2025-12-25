@@ -2423,7 +2423,7 @@ CLOSED: [2025-12-22 Mon 15:31]
 - [X] fetch_wiki_data and rebuild_wiki_definitions should have a pretty summary of deltas at the end.
   Especially when using --target all.
 
-*** Bugs/Enhancements [19/21]
+*** Bugs/Enhancements [19/22]
 
 **** DONE [#B] Error Updating Guardian Upgrade Table                 :bug:
 CLOSED: [2025-12-22 Mon 18:51]
@@ -2784,6 +2784,17 @@ A player will select a parameter from UWs/Bots/Guardian Chips and the level they
 The new dashboard will show all tracked parameters. A small widget will show the relevant metrics on the respective dashboards.
 
 The dashboard and widgets will label the currency (stones, bits, medals)
+
+- We don't need a status column, we do need behavior for when a goal is reached. The goal should be hidden from the table. We can add a toggle to 'show completed'
+- Make targets validate against max level from Bot parameter levels / Guardian chip parameter levels / Ultimate weapon parameter levels (clamp or show a clear error).
+- Store both target_level and an optional notes/label per goal (lets players group goals like “Next milestone” without affecting analysis). -I like it!
+- Persist an explicit assumed_current_level flag/value when current is missing (so totals are traceable even if player data changes later).
+- Add a “last recalculated” timestamp and show which cost-table revision/source is used (ties nicely to your “source wikidata” keying). -I don't think we need it, but build it out clean and compartmentalized so it's easy to remove.
+- Provide quick actions: “Set target = max”, “+1 level”, “Clear goal”. -We don't need " +1 level" (that's already shown on the dashboards.
+- Widget UX: show top 3 by remaining cost + “View all goals” link (make sure the link uses the safe-redirect helper if any next param is involved).
+- Testing: add golden tests for totals using real rows from the parameter-level tables (catches cost table changes immediately).
+**** TODO [#A] Update Readme.md, changelog to v0.3.0
+Summarize last few commits. Call out Cards and Charts Enhancements, Goals Dashboard
 
 **** TODO [#A] On Railway run rebuild_wiki_definitions --target cards after deploying v0.3.0
 
