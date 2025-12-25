@@ -560,3 +560,59 @@ class PlayerGuardianChipParameter(models.Model):
 
         self.full_clean()
         super().save(*args, **kwargs)
+
+
+class GoalType(models.TextChoices):
+    """Supported goal scopes for upgradeable parameters."""
+
+    BOT = "bot", "Bot"
+    GUARDIAN_CHIP = "guardian_chip", "Guardian chip"
+    ULTIMATE_WEAPON = "ultimate_weapon", "Ultimate weapon"
+
+
+class GoalTarget(models.Model):
+    """A player-defined target level for an upgradeable parameter."""
+
+    player = models.ForeignKey("Player", on_delete=models.CASCADE, related_name="goal_targets")
+    goal_type = models.CharField(max_length=40, choices=GoalType.choices, db_index=True)
+    goal_key = models.CharField(max_length=240, db_index=True)
+    target_level = models.PositiveSmallIntegerField()
+
+    label = models.CharField(max_length=120, blank=True, default="")
+    notes = models.TextField(blank=True, default="")
+
+    assumed_current_level = models.PositiveSmallIntegerField(null=True, blank=True)
+    is_current_level_assumed = models.BooleanField(default=False)
+
+    last_recalculated_at = models.DateTimeField(null=True, blank=True)
+    cost_source_revision = models.CharField(max_length=120, blank=True, default="")
+
+    created_at = models.DateTimeField(auto_now_add=True, editable=False)
+    updated_at = models.DateTimeField(auto_now=True)
+
+    class Meta:
+        constraints = [
+            models.UniqueConstraint(
+                fields=["player", "goal_type", "goal_key"],
+                name="uniq_goal_target_key",
+            )
+        ]
+
+    def clean(self) -> None:
+        """Validate assumption bookkeeping invariants."""
+
+        if self.is_current_level_assumed and self.assumed_current_level is None:
+            raise ValidationError("assumed_current_level is required when is_current_level_assumed is True.")
+        if not self.is_current_level_assumed and self.assumed_current_level is not None:
+            raise ValidationError("assumed_current_level must be null when is_current_level_assumed is False.")
+
+    def save(self, *args, **kwargs) -> None:
+        """Save while enforcing invariants."""
+
+        self.full_clean()
+        super().save(*args, **kwargs)
+
+    def __str__(self) -> str:
+        """Return a concise display string."""
+
+        return f"GoalTarget({self.goal_type}:{self.goal_key} → L{self.target_level})"

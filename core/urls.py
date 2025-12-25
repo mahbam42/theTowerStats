@@ -18,6 +18,7 @@ urlpatterns = [
     path("demo/disable/", views.disable_demo_mode, name="disable_demo_mode"),
     path("battle-history/", views.battle_history, name="battle_history"),
     path("cards/", views.cards, name="cards"),
+    path("goals/", views.goals_dashboard, name="goals_dashboard"),
     path("ultimate-weapons/", views.ultimate_weapon_progress, name="ultimate_weapon_progress"),
     path("guardians/", views.guardian_progress, name="guardian_progress"),
     path("bots/", views.bots_progress, name="bots_progress"),

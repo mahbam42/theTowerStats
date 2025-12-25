@@ -24,7 +24,7 @@ from core.charting.builder import (
 )
 from definitions.models import BotDefinition, GuardianChipDefinition, UltimateWeaponDefinition
 from gamedata.models import BattleReport
-from player_state.models import Player, Preset
+from player_state.models import GoalType, Player, Preset
 
 
 class BattleReportImportForm(forms.Form):
@@ -746,3 +746,44 @@ class ChartBuilderForm(forms.Form):
                 end_date=selection.scope_b.end_date,
             ),
         )
+
+
+class GoalsFilterForm(forms.Form):
+    """Validate filter controls for the Goals dashboard."""
+
+    goal_type = forms.ChoiceField(
+        required=False,
+        choices=(("", "All"), *GoalType.choices),
+        label="Category",
+    )
+    show_completed = forms.BooleanField(
+        required=False,
+        label="Show completed",
+        help_text="Completed goals are hidden by default.",
+    )
+
+
+class GoalTargetUpdateForm(forms.Form):
+    """Validate create/update requests for an individual goal target."""
+
+    goal_type = forms.ChoiceField(choices=GoalType.choices)
+    goal_key = forms.CharField(max_length=240)
+    target_level = forms.IntegerField(min_value=1)
+    label = forms.CharField(max_length=120, required=False)
+    notes = forms.CharField(required=False, widget=forms.Textarea(attrs={"rows": 2}))
+
+    def __init__(self, *args, max_level: int | None = None, **kwargs) -> None:
+        """Initialize with an optional max level for validation."""
+
+        super().__init__(*args, **kwargs)
+        self._max_level = max_level
+
+    def clean_target_level(self) -> int | None:
+        """Validate target level against the optional max level constraint."""
+
+        raw = self.cleaned_data.get("target_level")
+        if raw is None:
+            return None
+        if self._max_level is not None and raw > self._max_level:
+            raise forms.ValidationError(f"Target level cannot exceed max level {self._max_level}.")
+        return int(raw)

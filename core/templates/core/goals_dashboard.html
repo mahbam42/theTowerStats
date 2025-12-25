@@ -1,0 +1,166 @@
+{% extends "core/base.html" %}
+
+{% block title %}Goals • theTowerStats{% endblock %}
+
+{% block content %}
+  <div class="grid-x grid-margin-x">
+    <div class="cell">
+      <div class="card-shell">
+        <p class="muted margin-0">Dashboard</p>
+        <h2 class="margin-0">Goals</h2>
+        <p class="muted margin-0">Set target levels and review remaining currency required to reach them.</p>
+      </div>
+    </div>
+  </div>
+
+  <div class="grid-x grid-margin-x margin-top-1">
+    <div class="cell">
+      <form method="get" class="card-shell">
+        <div class="grid-x grid-margin-x align-middle">
+          <div class="cell medium-4">
+            <label class="margin-0">
+              {{ filter_form.goal_type.label }}
+              {{ filter_form.goal_type }}
+            </label>
+          </div>
+          <div class="cell medium-4">
+            <label class="margin-0">
+              {{ filter_form.show_completed }}
+              {{ filter_form.show_completed.label }}
+            </label>
+          </div>
+          <div class="cell shrink">
+            <button class="button" type="submit">Apply</button>
+          </div>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  {% for section in sections %}
+    <div class="grid-x grid-margin-x margin-top-1">
+      <div class="cell">
+        <div class="card-shell">
+          <h4 class="margin-0">{{ section.label }}</h4>
+          {% if not section.rows %}
+            <p class="muted margin-top-1 margin-bottom-0">No rows available for this category.</p>
+          {% else %}
+            <table class="stack goals-table margin-top-1">
+              <thead>
+                <tr>
+                  <th>Item</th>
+                  <th>Parameter</th>
+                  <th>Currency</th>
+                  <th>Current</th>
+                  <th>Target</th>
+                  <th>Max</th>
+                  <th>Remaining</th>
+                  <th>Actions</th>
+                </tr>
+              </thead>
+              <tbody>
+                {% for row in section.rows %}
+                  <tr class="{% if row.is_completed %}goal-completed{% endif %}">
+                    <td>{{ row.entity_name }}</td>
+                    <td>{{ row.parameter_name }}</td>
+                    <td>{{ row.currency }}</td>
+                    <td>
+                      {{ row.current_level_display }}
+                      {% if row.current_is_assumed %}
+                        <span class="muted">(assumed)</span>
+                      {% endif %}
+                    </td>
+                    <td>
+                      {% if demo_mode %}
+                        {% if row.target_level %}{{ row.target_level }}{% else %}<span class="muted">—</span>{% endif %}
+                      {% else %}
+                        <form method="post" action="{% url 'core:goals_dashboard' %}" class="inline goals-inline-form">
+                          {% csrf_token %}
+                          <input type="hidden" name="action" value="set_goal" />
+                          <input type="hidden" name="goal_type" value="{{ row.goal_type }}" />
+                          <input type="hidden" name="goal_key" value="{{ row.goal_key }}" />
+                          <input type="hidden" name="next" value="{{ request.get_full_path }}" />
+                          <input type="number" name="target_level" value="{{ row.target_level|default:'' }}" min="1" max="{{ row.max_level }}" class="goals-target-input" />
+                          <input type="text" name="label" value="{{ row.label }}" placeholder="Label (optional)" class="goals-label-input" />
+                          <textarea name="notes" rows="1" placeholder="Notes (optional)" class="goals-notes-input">{{ row.notes }}</textarea>
+                          <button type="submit" class="button tiny margin-0">Save</button>
+                        </form>
+                      {% endif %}
+                    </td>
+                    <td>{{ row.max_level }}</td>
+                    <td>
+                      {% if row.breakdown %}
+                        {{ row.breakdown.total_remaining }} {{ row.currency }}
+                      {% else %}
+                        <span class="muted">—</span>
+                      {% endif %}
+                    </td>
+                    <td>
+                      {% if demo_mode %}
+                        <span class="muted">Demo mode</span>
+                      {% else %}
+                        <form method="post" action="{% url 'core:goals_dashboard' %}" class="inline goals-inline-form">
+                          {% csrf_token %}
+                          <input type="hidden" name="goal_type" value="{{ row.goal_type }}" />
+                          <input type="hidden" name="goal_key" value="{{ row.goal_key }}" />
+                          <input type="hidden" name="next" value="{{ request.get_full_path }}" />
+                          <button type="submit" name="action" value="set_goal_max" class="button secondary tiny margin-0">Set max</button>
+                          <button type="submit" name="action" value="clear_goal" class="button alert tiny margin-0">Clear</button>
+                        </form>
+                      {% endif %}
+                    </td>
+                  </tr>
+                  {% if row.breakdown %}
+                    <tr class="goal-breakdown-row">
+                      <td colspan="8">
+                        <details>
+                          <summary>Per-level breakdown</summary>
+                          {% if row.breakdown.assumptions %}
+                            <p class="muted margin-top-1 margin-bottom-0">
+                              {% for note in row.breakdown.assumptions %}
+                                {{ note }}{% if not forloop.last %}<br />{% endif %}
+                              {% endfor %}
+                            </p>
+                          {% endif %}
+                          {% if row.notes and row.target_level %}
+                            <p class="margin-top-1 margin-bottom-0"><strong>Notes:</strong> {{ row.notes }}</p>
+                          {% endif %}
+                          {% if row.breakdown.per_level %}
+                            <table class="stack margin-top-1">
+                              <thead>
+                                <tr>
+                                  <th>Step</th>
+                                  <th>Cost</th>
+                                </tr>
+                              </thead>
+                              <tbody>
+                                {% for step in row.breakdown.per_level %}
+                                  <tr>
+                                    <td>L{{ step.from_level }} → L{{ step.to_level }}</td>
+                                    <td>
+                                      {% if step.cost_amount is not None %}
+                                        {{ step.cost_amount }} {{ row.currency }}
+                                      {% else %}
+                                        <span class="muted">{{ step.cost_raw }}</span>
+                                      {% endif %}
+                                    </td>
+                                  </tr>
+                                {% endfor %}
+                              </tbody>
+                            </table>
+                          {% else %}
+                            <p class="muted margin-top-1 margin-bottom-0">No per-level rows available.</p>
+                          {% endif %}
+                        </details>
+                      </td>
+                    </tr>
+                  {% endif %}
+                {% endfor %}
+              </tbody>
+            </table>
+          {% endif %}
+        </div>
+      </div>
+    </div>
+  {% endfor %}
+{% endblock %}

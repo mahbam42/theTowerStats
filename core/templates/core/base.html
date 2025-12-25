@@ -37,6 +37,9 @@
               <li class="{% if request.resolver_match.url_name == 'cards' %}is-active{% endif %}">
                 <a href="{% url 'core:cards' %}">Cards</a>
               </li>
+              <li class="{% if request.resolver_match.url_name == 'goals_dashboard' %}is-active{% endif %}">
+                <a href="{% url 'core:goals_dashboard' %}">Goals</a>
+              </li>
               <li class="{% if request.resolver_match.url_name == 'ultimate_weapon_progress' %}is-active{% endif %}">
                 <a href="{% url 'core:ultimate_weapon_progress' %}">Ultimate Weapons</a>
               </li>

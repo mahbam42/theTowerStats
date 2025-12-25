@@ -61,9 +61,12 @@ from core.forms import (
     ChartContextForm,
     CardsFilterForm,
     ComparisonForm,
+    GoalTargetUpdateForm,
+    GoalsFilterForm,
     UpgradeableEntityProgressFilterForm,
     UltimateWeaponProgressFilterForm,
 )
+from core.goals import GoalRow, goal_rows_for_dashboard, goals_widget_rows
 from core.upgradeables import (
     ParameterLevelRow,
     build_upgradeable_parameter_view,
@@ -89,6 +92,8 @@ from player_state.cards import apply_inventory_rollover, derive_card_progress
 from player_state.economy import enforce_and_deduct_gems_if_tracked
 from player_state.models import (
     ChartSnapshot,
+    GoalTarget,
+    GoalType,
     MAX_ACTIVE_GUARDIAN_CHIPS,
     Player,
     PlayerBot,
@@ -2360,6 +2365,8 @@ def ultimate_weapon_progress(request: HttpRequest) -> HttpResponse:
             "uw_snapshot_id": uw_snapshot_id,
             "uw_snapshot_chart_json": uw_snapshot_chart_json,
             "uw_snapshot_name": uw_snapshot_name,
+            "goals_widget_rows": goals_widget_rows(player=player, goal_type=str(GoalType.ULTIMATE_WEAPON)),
+            "goals_widget_goal_type": str(GoalType.ULTIMATE_WEAPON),
         },
     )
 
@@ -2849,6 +2856,8 @@ def guardian_progress(request: HttpRequest) -> HttpResponse:
             "guardian_chips": tiles,
             "activation_limit_reached": activation_limit_reached,
             "active_chip_hero": active_chip_hero,
+            "goals_widget_rows": goals_widget_rows(player=player, goal_type=str(GoalType.GUARDIAN_CHIP)),
+            "goals_widget_goal_type": str(GoalType.GUARDIAN_CHIP),
         },
     )
 
@@ -3269,7 +3278,124 @@ def bots_progress(request: HttpRequest) -> HttpResponse:
     return render(
         request,
         "core/bots_progress.html",
-        {"filter_form": filter_form, "bots": tiles},
+        {
+            "filter_form": filter_form,
+            "bots": tiles,
+            "goals_widget_rows": goals_widget_rows(player=player, goal_type=str(GoalType.BOT)),
+            "goals_widget_goal_type": str(GoalType.BOT),
+        },
+    )
+
+
+@login_required
+def goals_dashboard(request: HttpRequest) -> HttpResponse:
+    """Render the Goals dashboard for upgrade targets."""
+
+    player = _request_player(request)
+    if request.method == "POST" and demo_mode_enabled(request):
+        return _reject_demo_write(request)
+
+    filter_form = GoalsFilterForm(request.GET)
+    filter_form.is_valid()
+    selected_goal_type = str(filter_form.cleaned_data.get("goal_type") or "").strip() or None
+    show_completed = bool(filter_form.cleaned_data.get("show_completed") or False)
+
+    all_rows_by_type = goal_rows_for_dashboard(player=player, goal_type=selected_goal_type, show_completed=True)
+    row_index: dict[tuple[str, str], GoalRow] = {}
+    for rows in all_rows_by_type.values():
+        for row in rows:
+            row_index[(row.goal_type, row.goal_key)] = row
+
+    if request.method == "POST":
+        action = (request.POST.get("action") or "").strip()
+        redirect_response = safe_redirect(
+            request,
+            candidates=[request.POST.get("next"), request.META.get("HTTP_REFERER")],
+            fallback=request.path,
+        )
+
+        if action == "clear_goal":
+            goal_type = (request.POST.get("goal_type") or "").strip()
+            goal_key = (request.POST.get("goal_key") or "").strip()
+            deleted, _ = GoalTarget.objects.filter(
+                player=player,
+                goal_type=goal_type,
+                goal_key=goal_key,
+            ).delete()
+            if deleted:
+                messages.success(request, "Goal cleared.")
+            else:
+                messages.warning(request, "Goal not found.")
+            return redirect_response
+
+        if action in {"set_goal", "set_goal_max"}:
+            goal_type = (request.POST.get("goal_type") or "").strip()
+            goal_key = (request.POST.get("goal_key") or "").strip()
+            selected_row = row_index.get((goal_type, goal_key))
+            if selected_row is None:
+                messages.error(request, "Goal target not found.")
+                return redirect_response
+
+            if action == "set_goal_max":
+                target_level = int(selected_row.max_level or 0)
+                existing = GoalTarget.objects.filter(player=player, goal_type=goal_type, goal_key=goal_key).first()
+                label = existing.label if existing else ""
+                notes = existing.notes if existing else ""
+                if target_level <= 0:
+                    messages.error(request, "Max level is unavailable for that parameter.")
+                    return redirect_response
+            else:
+                form = GoalTargetUpdateForm(request.POST, max_level=int(selected_row.max_level or 0) or None)
+                if not form.is_valid():
+                    messages.error(request, "Unable to save goal. Check target level and try again.")
+                    return redirect_response
+                target_level = int(form.cleaned_data["target_level"])
+                label = str(form.cleaned_data.get("label") or "")
+                notes = str(form.cleaned_data.get("notes") or "")
+
+            is_assumed = bool(getattr(selected_row, "current_is_assumed", False))
+            assumed_current_level = 0 if is_assumed else None
+
+            GoalTarget.objects.update_or_create(
+                player=player,
+                goal_type=goal_type,
+                goal_key=goal_key,
+                defaults={
+                    "target_level": target_level,
+                    "label": label,
+                    "notes": notes,
+                    "assumed_current_level": assumed_current_level,
+                    "is_current_level_assumed": is_assumed,
+                },
+            )
+            messages.success(request, "Goal saved.")
+            return redirect_response
+
+        messages.error(request, "Unknown action.")
+        return redirect_response
+
+    display_rows_by_type = {
+        kind: tuple(rows if show_completed else [row for row in rows if not row.is_completed])
+        for kind, rows in all_rows_by_type.items()
+    }
+    category_labels: dict[str, str] = {
+        str(GoalType.BOT): "Bots",
+        str(GoalType.GUARDIAN_CHIP): "Guardian Chips",
+        str(GoalType.ULTIMATE_WEAPON): "Ultimate Weapons",
+    }
+    sections = [
+        {"kind": kind, "label": category_labels.get(kind, kind), "rows": rows}
+        for kind, rows in display_rows_by_type.items()
+    ]
+
+    return render(
+        request,
+        "core/goals_dashboard.html",
+        {
+            "filter_form": filter_form,
+            "sections": sections,
+            "show_completed": show_completed,
+        },
     )
 
 

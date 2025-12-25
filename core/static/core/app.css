@@ -181,6 +181,36 @@ body {
   font-weight: 600;
 }
 
+.goals-inline-form {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--tts-space-2);
+  align-items: center;
+}
+
+.goals-inline-form .button {
+  margin: 0;
+}
+
+.goals-target-input {
+  width: 6rem;
+  margin: 0;
+}
+
+.goals-label-input {
+  width: 12rem;
+  margin: 0;
+}
+
+.goals-notes-input {
+  width: 16rem;
+  margin: 0;
+}
+
+.goal-breakdown-row details {
+  margin-top: var(--tts-space-2);
+}
+
 .search-dropdown .search-item-subtitle {
   font-size: var(--tts-font-label);
   color: var(--tts-color-text-muted);
