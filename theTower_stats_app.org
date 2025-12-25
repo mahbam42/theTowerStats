@@ -2423,7 +2423,7 @@ CLOSED: [2025-12-22 Mon 15:31]
 - [X] fetch_wiki_data and rebuild_wiki_definitions should have a pretty summary of deltas at the end.
   Especially when using --target all.
 
-*** Bugs/Enhancements [17/21]
+*** Bugs/Enhancements [19/21]
 
 **** DONE [#B] Error Updating Guardian Upgrade Table                 :bug:
 CLOSED: [2025-12-22 Mon 18:51]
@@ -2764,6 +2764,17 @@ CLOSED: [2025-12-25 Thu 13:18]
 
 Charts: default to Event window and add Event navigation, add per-run granularity toggle, add stacked/bar variants for damage breakdowns
 
+**** DONE [#B] In the UW Sync Graph exclude Death Wave from Cumulative Overlap calculation
+CLOSED: [2025-12-25 Thu 13:28]
+
+- State "DONE"       from "TODO"       [2025-12-25 Thu 13:28]
+Since we don't have a duration for Death Wave, the overlap shows a very small percentage. 
+
+**** DONE [#C] In the UW Sync Graph don't show the UWs/Bots at 0
+CLOSED: [2025-12-25 Thu 13:28]
+- State "DONE"       from "TODO"       [2025-12-25 Thu 13:28]
+They don't fire until the first cooldown when a run starts. 
+
 **** TODO [#A] Create a new Goals Dashboard
 
 Create a new dashboard and widgets for players to specify a target upgrade level and calculate the total currancy needed.
@@ -2773,13 +2784,6 @@ A player will select a parameter from UWs/Bots/Guardian Chips and the level they
 The new dashboard will show all tracked parameters. A small widget will show the relevant metrics on the respective dashboards.
 
 The dashboard and widgets will label the currency (stones, bits, medals)
-
-**** TODO [#B] In the UW Sync Graph exclude Death Wave from Cumulative Overlap calculation
-
-Since we don't have a duration for Death Wave, the overlap shows a very small percentage. 
-
-**** TODO [#C] In the UW Sync Graph don't show the UWs/Bots at 0
-They don't fire until the first cooldown when a run starts. 
 
 **** TODO [#A] On Railway run rebuild_wiki_definitions --target cards after deploying v0.3.0
 
