@@ -68,6 +68,7 @@ def render_charts(
     configs: tuple[ChartConfig, ...],
     records: Iterable[object],
     registry: MetricSeriesRegistry,
+    granularity: str,
     moving_average_window: int | None,
     entity_selections: dict[str, str | None],
     patch_boundaries: tuple[date, ...] = (),
@@ -91,6 +92,7 @@ def render_charts(
         cache_key = _chart_cache_key(
             config=config,
             entity_selections=entity_selections,
+            granularity=granularity,
             moving_average_window=moving_average_window,
             patch_boundaries=patch_boundaries,
         )
@@ -99,6 +101,7 @@ def render_charts(
                 config=config,
                 records=records,
                 registry=registry,
+                granularity=granularity,
                 moving_average_window=moving_average_window,
                 entity_selections=entity_selections,
                 patch_boundaries=patch_boundaries,
@@ -112,6 +115,7 @@ def render_chart(
     config: ChartConfig,
     records: Iterable[object],
     registry: MetricSeriesRegistry,
+    granularity: str,
     moving_average_window: int | None,
     entity_selections: dict[str, str | None],
     patch_boundaries: tuple[date, ...] = (),
@@ -144,8 +148,13 @@ def render_chart(
             moving_average_window=moving_average_window,
             entity_selections=entity_selections,
         )
-        derived_labels = sorted({point.battle_date.date().isoformat() for point in derived_points})
-        derived_series = _aggregate_points(derived_points, derived_labels, aggregation="avg")
+        derived_labels = _merge_labels([], [_label_for_point(point, granularity=granularity) for point in derived_points])
+        derived_series = _aggregate_points(
+            derived_points,
+            derived_labels,
+            aggregation="avg",
+            granularity=granularity,
+        )
         unit = _infer_division_unit(config=config, registry=registry) or "derived"
         derived_datasets = [
             _dataset(
@@ -167,6 +176,16 @@ def render_chart(
     labels: list[str] = []
     warnings: list[str] = []
     incomplete_labels = incomplete_run_labels(records)
+
+    if config.chart_type == "bar" and config.stacked and config.semantic_type == "contribution":
+        return _render_stacked_percent_bar_chart(
+            config=config,
+            records=records,
+            registry=registry,
+            granularity=granularity,
+            entity_selections=entity_selections,
+        )
+
     for series_config in config.metric_series:
         spec = registry.get(series_config.metric_key)
         if spec is None:
@@ -182,7 +201,7 @@ def render_chart(
             entity_name=entity_name,
         )
         groups = _group_points(series_result.points, config=config)
-        labels = _merge_labels(labels, [p.battle_date.date().isoformat() for p in series_result.points])
+        labels = _merge_labels(labels, [_label_for_point(p, granularity=granularity) for p in series_result.points])
         if len(labels) > MAX_CHART_LABELS:
             return RenderedChart(
                 config=config,
@@ -196,7 +215,7 @@ def render_chart(
             group_label = _label_for_group(group_key, config=config)
             color = _color_for_group(group_key, config=config)
             aggregation = "avg" if series_config.transform == "rate_per_hour" else spec.aggregation
-            data = _aggregate_points(points, labels, aggregation=aggregation)
+            data = _aggregate_points(points, labels, aggregation=aggregation, granularity=granularity)
             data = _apply_series_transform(
                 data,
                 series_config=series_config,
@@ -239,6 +258,7 @@ def _chart_cache_key(
     *,
     config: ChartConfig,
     entity_selections: dict[str, str | None],
+    granularity: str,
     moving_average_window: int | None,
     patch_boundaries: tuple[date, ...],
 ) -> str:
@@ -252,6 +272,7 @@ def _chart_cache_key(
     payload = {
         "config": _jsonable_config(config),
         "entity_selections": entity_selections,
+        "granularity": granularity,
         "moving_average_window": moving_average_window,
         "patch_boundaries": [d.isoformat() for d in patch_boundaries],
     }
@@ -428,14 +449,29 @@ def _apply_series_transform(
 
     return [round(v, 2) if v is not None else None for v in data]
 
-def _aggregate_points(points: list[MetricPoint], labels: list[str], *, aggregation: str) -> list[float | None]:
-    """Aggregate run points into daily series aligned to label dates."""
+def _label_for_point(point: MetricPoint, *, granularity: str) -> str:
+    """Return the x-axis label for a metric point under the requested granularity."""
+
+    if granularity == "per_run":
+        run_id = point.run_id if point.run_id is not None else "?"
+        return f"{point.battle_date.strftime('%Y-%m-%d %H:%M')} • Run {run_id}"
+    return point.battle_date.date().isoformat()
+
+
+def _aggregate_points(
+    points: list[MetricPoint],
+    labels: list[str],
+    *,
+    aggregation: str,
+    granularity: str,
+) -> list[float | None]:
+    """Aggregate run points into a series aligned to x-axis labels."""
 
     buckets: dict[str, list[float]] = {}
     for point in points:
         if point.value is None:
             continue
-        key = point.battle_date.date().isoformat()
+        key = _label_for_point(point, granularity=granularity)
         buckets.setdefault(key, []).append(point.value)
 
     by_date: dict[str, float] = {}
@@ -517,10 +553,99 @@ def _series_label(
 
 
 def _merge_labels(existing: list[str], new_labels: list[str]) -> list[str]:
-    """Merge ISO date labels into a sorted unique list."""
+    """Merge x-axis labels into a sorted unique list."""
 
     merged = sorted(set(existing).union(new_labels))
     return merged
+
+
+def _render_stacked_percent_bar_chart(
+    *,
+    config: ChartConfig,
+    records: Iterable[object],
+    registry: MetricSeriesRegistry,
+    granularity: str,
+    entity_selections: dict[str, str | None],
+) -> RenderedChart:
+    """Render a 100% stacked bar chart by normalizing values per x-axis label."""
+
+    labels: list[str] = []
+    series_payloads: list[tuple[str, str, dict[str, float]]] = []
+
+    palette = [
+        "#3366CC",
+        "#DC3912",
+        "#FF9900",
+        "#109618",
+        "#990099",
+        "#0099C6",
+        "#DD4477",
+        "#66AA00",
+        "#B82E2E",
+        "#316395",
+        "#994499",
+        "#22AA99",
+    ]
+
+    for series_config in config.metric_series:
+        spec = registry.get(series_config.metric_key)
+        if spec is None:
+            continue
+
+        slice_label = series_config.label or spec.label
+        entity_type, entity_name = _entity_scope_for_series(config, entity_selections)
+        series_result = analyze_metric_series(
+            records,
+            metric_key=series_config.metric_key,
+            transform=_engine_transform(series_config),
+            context=None,
+            entity_type=entity_type,
+            entity_name=entity_name,
+        )
+        labels = _merge_labels(labels, [_label_for_point(p, granularity=granularity) for p in series_result.points])
+        values: dict[str, float] = {}
+        for point in series_result.points:
+            label = _label_for_point(point, granularity=granularity)
+            if point.value is None:
+                continue
+            values[label] = float(point.value)
+        series_payloads.append((series_config.metric_key, slice_label, values))
+
+    if len(labels) > MAX_CHART_LABELS:
+        return RenderedChart(
+            config=config,
+            data={"labels": [], "datasets": []},
+            unit="",
+            error=f"Too many data points to render safely (>{MAX_CHART_LABELS}). Narrow the date range or rolling window.",
+        )
+
+    totals: dict[str, float] = {}
+    for label in labels:
+        totals[label] = sum(values.get(label, 0.0) for _metric_key, _slice_label, values in series_payloads)
+
+    datasets: list[ChartDataset] = []
+    for idx, (metric_key, slice_label, series_values) in enumerate(series_payloads):
+        data: list[float | None] = []
+        for label in labels:
+            total = totals.get(label, 0.0)
+            if total <= 0:
+                data.append(None)
+                continue
+            data.append(round(100.0 * series_values.get(label, 0.0) / total, 2))
+        color = palette[idx % len(palette)]
+        datasets.append(
+            _dataset(
+                label=slice_label,
+                metric_key=metric_key,
+                metric_kind="observed",
+                unit="%",
+                data=data,
+                color=color,
+                series_kind="raw",
+            )
+        )
+
+    return RenderedChart(config=config, data={"labels": labels, "datasets": datasets}, unit="%")
 
 
 def _unit_for_series(base_unit: str, series: ChartSeriesConfig) -> str:

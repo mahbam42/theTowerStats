@@ -2423,7 +2423,7 @@ CLOSED: [2025-12-22 Mon 15:31]
 - [X] fetch_wiki_data and rebuild_wiki_definitions should have a pretty summary of deltas at the end.
   Especially when using --target all.
 
-*** Bugs/Enhancements [5/17]
+*** Bugs/Enhancements [6/21]
 
 **** DONE [#B] Error Updating Guardian Upgrade Table                 :bug:
 CLOSED: [2025-12-22 Mon 18:51]
@@ -2692,7 +2692,9 @@ Optional (if already parsed):
 
 
 
-**** IN PROGRESS [#B] Card Parameter description should replace placeholder unit with current level value :enhancement:
+**** DONE [#B] Card Parameter description should replace placeholder unit with current level value :enhancement:
+CLOSED: [2025-12-25 Thu 12:32]
+- State "DONE"       from "IN PROGRESS" [2025-12-25 Thu 12:32]
 - State "IN PROGRESS" from "TODO"       [2025-12-22 Mon 18:59] \\
   Some work done but not complete
 Instead of showing 'for [x] sec' or 'by #%' the description should reflect the current card level values
@@ -2726,6 +2728,20 @@ Completion criteria:
 
 - Prompt38Validation.yml accurately marked complete
 
+**** TODO Pr 1-3 Tweaks
+- [X] Need to inject Start and End Dates in Context Fields for Charts to display properly on page load
+- [X] Add an 'All' button next to Previous/Last (Range is from first Battle Report to Present)
+- [X] 'More options' shouldn't be muted
+- [X] Previous and Next should show below date range fields
+  The Context Form needs to be arranged like this:
+  Context
+  <start> <end> <granularity> <tier> <preset>
+  <previous> <next> <all>
+  <chart builder> <apply> <clear>
+
+
+Charts: default to Event window and add Event navigation, add per-run granularity toggle, add stacked/bar variants for damage breakdowns
+
 **** TODO [#A] Create a new Goals Dashboard
 
 Create a new dashboard and widgets for players to specify a target upgrade level and calculate the total currancy needed.
@@ -2735,6 +2751,15 @@ A player will select a parameter from UWs/Bots/Guardian Chips and the level they
 The new dashboard will show all tracked parameters. A small widget will show the relevant metrics on the respective dashboards.
 
 The dashboard and widgets will label the currency (stones, bits, medals)
+
+**** TODO [#B] In the UW Sync Graph exclude Death Wave from Cumulative Overlap calculation
+
+Since we don't have a duration for Death Wave, the overlap shows a very small percentage. 
+
+**** TODO [#C] In the UW Sync Graph don't show the UWs/Bots at 0
+They don't fire until the first cooldown when a run starts. 
+
+**** TODO [#A] On Railway run rebuild_wiki_definitions --target cards after deploying v0.3.0
 
 ** Backlog [2/5]
 “Out of Scope”:

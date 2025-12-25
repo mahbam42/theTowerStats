@@ -13,11 +13,13 @@ from datetime import datetime
 from typing import Literal
 
 ChartCategory = Literal[
-    "top_level",
-    "sub_chart",
-    "uw_performance",
-    "guardian_stats",
-    "bot_stats",
+    "economy",
+    "damage",
+    "enemy_destruction",
+    "efficiency",
+    "ultimate_weapons",
+    "guardians",
+    "bots",
     "comparison",
     "derived",
 ]
@@ -27,6 +29,7 @@ ChartDomain = Literal["economy", "damage", "enemy_destruction", "efficiency"]
 ChartSemanticType = Literal["absolute", "distribution", "contribution", "comparative"]
 
 ChartType = Literal["line", "bar", "area", "scatter", "donut"]
+ChartGranularity = Literal["daily", "per_run"]
 
 MetricTransform = Literal["none", "moving_average", "cumulative", "rate_per_hour"]
 
@@ -158,6 +161,8 @@ class ChartConfig:
         derived: Optional derived metric definition (computed from series inputs).
         multi_axis: Whether the chart may display multiple y-axes (comparative charts only).
         donut_value_mode: When chart_type="donut", choose whether the donut uses raw values or percentages.
+        default_granularity: Default x-axis granularity used by the dashboard.
+        stacked: Whether a bar chart renders as stacked bars.
         ui: UI behavior flags (default selection, ordering, etc).
     """
 
@@ -174,4 +179,6 @@ class ChartConfig:
     derived: ChartDerived | None = None
     multi_axis: bool = False
     donut_value_mode: Literal["raw", "percent"] = "raw"
+    default_granularity: ChartGranularity = "daily"
+    stacked: bool = False
     ui: ChartUI = ChartUI(show_by_default=False, selectable=True, order=999)

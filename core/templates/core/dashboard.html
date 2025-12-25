@@ -13,7 +13,9 @@
           <div class="cell auto">
             <p class="muted margin-0">Charts</p>
             <h2 class="margin-0">Dashboard</h2>
-            <p class="muted margin-0">Filters default to December 9, 2025 to focus on recent runs.</p>
+            <p class="muted margin-0">
+              Filters default to the current in-game Event window ({{ event_window_start|date:"Y-m-d" }} to {{ event_window_end|date:"Y-m-d" }}).
+            </p>
           </div>
           <div class="cell shrink text-right">
             <a class="button secondary" href="{% url 'core:battle_history' %}">Battle History</a>
@@ -59,15 +61,33 @@
             </label>
           </div>
           <div class="cell medium-2">
+            <label class="margin-bottom-0">Granularity
+              {{ chart_form.granularity }}
+            </label>
+          </div>
+          <div class="cell medium-2">
             <label class="margin-bottom-0">Tier
               {{ chart_form.tier }}
             </label>
           </div>
-          <div class="cell medium-3">
+          <div class="cell medium-2">
             <label class="margin-bottom-0">Preset
               {{ chart_form.preset }}
             </label>
           </div>
+        </div>
+
+        <div class="grid-x grid-margin-x align-middle margin-top-1">
+          <div class="cell shrink">
+            <div class="button-group">
+              <button class="button secondary" type="submit" name="event_shift" value="-1">Previous</button>
+              <button class="button secondary" type="submit" name="event_shift" value="1">Next</button>
+              <button class="button secondary" type="submit" name="event_shift" value="all">All</button>
+            </div>
+          </div>
+        </div>
+
+        <div class="grid-x grid-margin-x align-middle margin-top-1">
           <div class="cell shrink">
             <button class="button secondary" type="button" id="open-chart-builder">Chart Builder</button>
           </div>
@@ -80,7 +100,7 @@
         </div>
 
         <details class="margin-top-1">
-          <summary class="muted">More options</summary>
+          <summary>More options</summary>
           <div class="grid-x grid-margin-x margin-top-1">
             <div class="cell medium-4">
               <label>Charts
@@ -378,6 +398,7 @@
           charts: selectedCharts.length ? selectedCharts.join(", ") : null,
           start_date: getValue("start_date"),
           end_date: getValue("end_date"),
+          granularity: getValue("granularity"),
           tier: getValue("tier"),
           preset: presetLabel && presetLabel !== "All presets" ? presetLabel : null,
           moving_average_window: getValue("moving_average_window"),
@@ -390,13 +411,14 @@
         const start = context.start_date || "Any start";
         const end = context.end_date || "Any end";
         const charts = context.charts ? `Charts: ${context.charts}` : "Charts: (default)";
+        const granularity = context.granularity === "per_run" ? "By battle log" : "By date";
         const tier = context.tier ? `Tier ${context.tier}` : "All tiers";
         const preset = context.preset ? `Preset: ${context.preset}` : "All presets";
         const ma = context.moving_average_window ? `MA window: ${context.moving_average_window}` : "MA window: default";
         const window = context.window_kind
           ? `${context.window_kind.replace("_", " ")}: ${context.window_n || "?"}`
           : "Rolling window: none";
-        return `${charts} • ${tier} • ${preset} • ${start} → ${end} • ${ma} • ${window}`;
+        return `${charts} • ${granularity} • ${tier} • ${preset} • ${start} → ${end} • ${ma} • ${window}`;
       }
 
       function updateContextSummary() {
@@ -418,7 +440,7 @@
         if (!ctx || labels.length === 0 || datasets.length === 0) return;
         const gridColor = "rgba(0, 0, 0, 0.06)";
         const tickColor = "rgba(0, 0, 0, 0.72)";
-        const { mappedDatasets, scales } = buildAxes(labels, datasets, gridColor, tickColor);
+        const { mappedDatasets, scales } = buildAxes(labels, datasets, gridColor, tickColor, xAxisTitle(), false);
         new Chart(ctx, {
           type: "line",
           data: {
@@ -447,7 +469,7 @@
               },
               tooltip: {
                 callbacks: {
-                  title: (items) => (items && items[0] ? `Date: ${items[0].label}` : ""),
+                  title: (items) => (items && items[0] ? `${xAxisTitle()}: ${items[0].label}` : ""),
                   label: (context) => {
                     const datasetLabel = context.dataset?.label || "Series";
                     const unit = context.dataset?.unit || "";
@@ -482,13 +504,18 @@
         });
       }
 
-      function renderBarChart(canvasId, labels, datasets) {
+      function xAxisTitle() {
+        const context = readChartContextFromDOM();
+        return context.granularity === "per_run" ? "Run" : "Date";
+      }
+
+      function renderBarChart(canvasId, labels, datasets, stacked) {
         const canvas = document.getElementById(canvasId);
         const ctx = canvas ? canvas.getContext("2d") : null;
         if (!ctx || labels.length === 0 || datasets.length === 0) return;
         const gridColor = "rgba(0, 0, 0, 0.06)";
         const tickColor = "rgba(0, 0, 0, 0.72)";
-        const { mappedDatasets, scales } = buildAxes(labels, datasets, gridColor, tickColor);
+        const { mappedDatasets, scales } = buildAxes(labels, datasets, gridColor, tickColor, xAxisTitle(), stacked);
         new Chart(ctx, {
           type: "bar",
           data: {
@@ -502,7 +529,7 @@
               legend: { display: true },
               tooltip: {
                 callbacks: {
-                  title: (items) => (items && items[0] ? `Date: ${items[0].label}` : ""),
+                  title: (items) => (items && items[0] ? `${xAxisTitle()}: ${items[0].label}` : ""),
                 },
               },
             },
@@ -511,7 +538,7 @@
         });
       }
 
-      function buildAxes(labels, datasets, gridColor, tickColor) {
+      function buildAxes(labels, datasets, gridColor, tickColor, xTitle, stacked) {
         const uniqueUnits = [];
         const unitToAxisId = {};
         for (const dataset of datasets) {
@@ -530,7 +557,8 @@
 
         const scales = {
           x: {
-            title: { display: true, text: "Date" },
+            title: { display: true, text: xTitle },
+            stacked: Boolean(stacked),
             grid: { color: gridColor },
             ticks: { maxRotation: 0, autoSkip: true, color: tickColor },
           },
@@ -541,11 +569,16 @@
           const unit = uniqueUnits[idx];
           scales[axisId] = {
             beginAtZero: true,
+            stacked: Boolean(stacked),
             position: idx === 0 ? "left" : "right",
             title: { display: true, text: unit || "Value" },
             grid: idx === 0 ? { color: gridColor } : { drawOnChartArea: false },
             ticks: { callback: (value) => formatCompactNumber(value), color: tickColor },
           };
+          if (Boolean(stacked) && unit === "%" && uniqueUnits.length === 1) {
+            scales[axisId].min = 0;
+            scales[axisId].max = 100;
+          }
         }
 
         return { mappedDatasets, scales };
@@ -587,7 +620,7 @@
         if (panel.chart_type === "donut") {
           renderDonutChart(`chart-${panel.id}`, panel.labels, panel.datasets);
         } else if (panel.chart_type === "bar") {
-          renderBarChart(`chart-${panel.id}`, panel.labels, panel.datasets);
+          renderBarChart(`chart-${panel.id}`, panel.labels, panel.datasets, panel.stacked);
         } else {
           renderLineChart(`chart-${panel.id}`, panel.labels, panel.datasets);
         }

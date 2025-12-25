@@ -5,7 +5,7 @@ Welcome to the documentation hub for **theTowerStats**. Players can explore hist
 Published documentation: <https://mahbam42.github.io/theTowerStats/>
 
 > **Highlight — Charts**
-> The Charts dashboard starts at 2025-12-09 UTC by default and lets you select one or more charts, then filter by date range, tier, and preset labels.
+> The Charts dashboard defaults to the current in-game Event window (14 days) and lets you select one or more charts, then filter by date range, granularity, tier, and preset labels.
 
 > **Highlight — Cards**
 > The Cards dashboard surfaces unlocked slots, preset tags, and player card progress in read-only tables.

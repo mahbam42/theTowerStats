@@ -14,7 +14,7 @@ from typing import Iterable
 from analysis.categories import MetricCategory
 from analysis.series_registry import MetricSeriesRegistry, MetricSeriesSpec
 
-from .schema import ChartConfig, ChartDomain, ChartSemanticType, ComparisonScope
+from .schema import ChartConfig, ChartDomain, ChartSemanticType, ComparisonScope, ChartGranularity
 
 
 @dataclass(frozen=True, slots=True)
@@ -52,11 +52,13 @@ def validate_chart_config(config: ChartConfig, *, registry: MetricSeriesRegistry
         errors.append(f"ChartConfig[{config.id}].metric_series must contain at least one entry.")
 
     allowed_categories = {
-        "top_level",
-        "sub_chart",
-        "uw_performance",
-        "guardian_stats",
-        "bot_stats",
+        "economy",
+        "damage",
+        "enemy_destruction",
+        "efficiency",
+        "ultimate_weapons",
+        "guardians",
+        "bots",
         "comparison",
         "derived",
     }
@@ -74,6 +76,15 @@ def validate_chart_config(config: ChartConfig, *, registry: MetricSeriesRegistry
     allowed_chart_types = {"line", "bar", "area", "scatter", "donut"}
     if config.chart_type not in allowed_chart_types:
         errors.append(f"ChartConfig[{config.id}].chart_type is not a supported value: {config.chart_type!r}.")
+
+    allowed_granularities: set[ChartGranularity] = {"daily", "per_run"}
+    if config.default_granularity not in allowed_granularities:
+        errors.append(
+            f"ChartConfig[{config.id}].default_granularity is not a supported value: {config.default_granularity!r}."
+        )
+
+    if config.stacked and config.chart_type != "bar":
+        errors.append(f"ChartConfig[{config.id}] stacked=True is only allowed for chart_type='bar'.")
 
     if config.chart_type == "donut":
         if config.semantic_type not in ("distribution", "contribution"):

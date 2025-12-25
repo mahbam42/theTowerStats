@@ -332,12 +332,13 @@ Every task must be divided into sequential steps with statuses:
 | Step | Description                | Status  |
 | ---- | -------------------------  | ------- |
 | 1    | Identify module to modify  | pending |
-| 2    | Implement logic            | pending |
-| 3    | Write tests                | pending |
-| 4    | Add docs                   | pending |
-| 5    | Run lint & type checks     | pending |
-| 6    | Run offline + full tests   | pending |
-| 7    | Offer short Commit Message | pending |
+| 2    | Enumerate Tasks to Complete| pending |
+| 3    | Implement logic            | pending |
+| 4    | Write tests                | pending |
+| 5    | Add docs                   | pending |
+| 6    | Run lint & type checks     | pending |
+| 7    | Run offline + full tests   | pending |
+| 8    | Offer short Commit Message | pending |
 
 Rules:
 

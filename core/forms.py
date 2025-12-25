@@ -13,9 +13,10 @@ import re
 
 from django import forms
 
+from analysis.event_windows import event_window_for_date
 from analysis.chart_config_dto import ChartScopeDTO
 from analysis.series_registry import DEFAULT_REGISTRY
-from core.charting.configs import default_selected_chart_ids, list_selectable_chart_configs
+from core.charting.configs import CHART_CONFIG_BY_ID, default_selected_chart_ids, list_selectable_chart_configs
 from core.charting.builder import (
     ChartBuilderSelection,
     build_before_after_scopes,
@@ -105,6 +106,15 @@ class ChartContextForm(forms.Form):
         widget=forms.DateInput(attrs={"type": "date"}),
         label="End date",
     )
+    granularity = forms.ChoiceField(
+        required=False,
+        choices=(
+            ("daily", "By date"),
+            ("per_run", "By battle log"),
+        ),
+        label="Granularity",
+        help_text="Controls whether charts show one point per date or one point per run.",
+    )
     tier = forms.IntegerField(
         required=False,
         min_value=1,
@@ -192,7 +202,9 @@ class ChartContextForm(forms.Form):
         """Initialize the form with dynamic preset choices."""
 
         player: Player | None = kwargs.pop("player", None)
+        today: date | None = kwargs.pop("today", None)
         super().__init__(*args, **kwargs)
+        self._today = today or date.today()
         if player is None:
             self.fields["preset"].queryset = Preset.objects.order_by("name")
         else:
@@ -201,18 +213,55 @@ class ChartContextForm(forms.Form):
         self.fields["guardian_chip"].queryset = GuardianChipDefinition.objects.order_by("name")
         self.fields["bot"].queryset = BotDefinition.objects.order_by("name")
         charts = list_selectable_chart_configs()
-        self.fields["charts"].choices = [
-            (chart.id, f"{chart.title} ({chart.category})") for chart in charts
-        ]
+        category_labels = {
+            "economy": "Economy",
+            "damage": "Damage",
+            "enemy_destruction": "Enemy Destruction",
+            "efficiency": "Efficiency",
+            "ultimate_weapons": "Ultimate Weapons",
+            "guardians": "Guardians",
+            "bots": "Bots",
+            "comparison": "Comparisons",
+            "derived": "Derived",
+        }
+        grouped: dict[str, list[tuple[str, str]]] = {}
+        for chart in charts:
+            group = category_labels.get(chart.category, str(chart.category))
+            grouped.setdefault(group, []).append((chart.id, f"{chart.title} — {chart.chart_type}"))
+        choices: list[tuple[str, list[tuple[str, str]]]] = []
+        for group_name in (
+            "Economy",
+            "Damage",
+            "Enemy Destruction",
+            "Efficiency",
+            "Ultimate Weapons",
+            "Guardians",
+            "Bots",
+            "Comparisons",
+            "Derived",
+        ):
+            if group_name in grouped:
+                choices.append((group_name, grouped[group_name]))
+        self.fields["charts"].choices = choices
 
     def clean(self) -> dict[str, object]:
-        """Apply a default start date to keep charts scoped."""
+        """Apply Event-window defaults and dashboard invariants."""
 
         cleaned = super().clean()
-        if not cleaned.get("start_date"):
-            cleaned["start_date"] = date(2025, 12, 9)
+        if not cleaned.get("start_date") and not cleaned.get("end_date"):
+            window = event_window_for_date(target=self._today, anchor=date(2025, 12, 9))
+            cleaned["start_date"] = window.start
+            cleaned["end_date"] = window.end
         if not cleaned.get("charts"):
             cleaned["charts"] = list(default_selected_chart_ids())
+        if not cleaned.get("granularity"):
+            selected = tuple(str(v) for v in (cleaned.get("charts") or ()))
+            preferred = [
+                CHART_CONFIG_BY_ID[chart_id].default_granularity
+                for chart_id in selected
+                if chart_id in CHART_CONFIG_BY_ID
+            ]
+            cleaned["granularity"] = "per_run" if "per_run" in preferred else "daily"
         window_kind = (cleaned.get("window_kind") or "").strip()
         window_n = cleaned.get("window_n")
         if window_kind and not window_n:

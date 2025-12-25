@@ -16,6 +16,7 @@ from django.conf import settings
 from django.core.exceptions import ValidationError
 from django.db import transaction
 from django.db.models import Case, Count, ExpressionWrapper, F, FloatField, Max, Q, QuerySet, Value, When
+from django.db.models import Min
 from django.http import HttpRequest, HttpResponse, JsonResponse, QueryDict
 from django.shortcuts import redirect, render
 from django.core.paginator import Paginator
@@ -26,6 +27,7 @@ from analysis.chart_config_dto import ChartContextDTO
 from analysis.chart_config_engine import analyze_chart_config_dto
 from analysis.chart_config_validator import validate_chart_config_dto
 from analysis.deltas import delta
+from analysis.event_windows import coerce_window_bounds, event_window_for_date, shift_event_window
 from analysis.engine import analyze_metric_series, analyze_runs
 from analysis.dto import RunAnalysis
 from analysis.series_registry import DEFAULT_REGISTRY
@@ -261,6 +263,56 @@ def dashboard(request: HttpRequest) -> HttpResponse:
     if request.method == "POST" and demo_mode_enabled(request):
         return _reject_demo_write(request)
 
+    if request.method == "GET" and (shift_value := (request.GET.get("event_shift") or "").strip()):
+        if shift_value == "all":
+            redirected = request.GET.copy()
+            redirected.pop("event_shift", None)
+
+            earliest = (
+                BattleReport.objects.filter(player=player)
+                .exclude(run_progress__battle_date__isnull=True)
+                .aggregate(earliest=Min("run_progress__battle_date"))["earliest"]
+            )
+            if earliest is not None:
+                redirected["start_date"] = earliest.date().isoformat()
+                redirected["end_date"] = date.today().isoformat()
+
+            qs = redirected.urlencode()
+            target = reverse("core:dashboard")
+            return redirect(f"{target}?{qs}" if qs else target)
+
+        try:
+            shift = int(shift_value)
+        except ValueError:
+            shift = 0
+        if shift in (-1, 1):
+            parsed_start: date | None = None
+            parsed_end: date | None = None
+            try:
+                if request.GET.get("start_date"):
+                    parsed_start = date.fromisoformat(str(request.GET.get("start_date")))
+            except ValueError:
+                parsed_start = None
+            try:
+                if request.GET.get("end_date"):
+                    parsed_end = date.fromisoformat(str(request.GET.get("end_date")))
+            except ValueError:
+                parsed_end = None
+
+            if parsed_start is None and parsed_end is None:
+                base = event_window_for_date(target=date.today(), anchor=date(2025, 12, 9))
+            else:
+                base = coerce_window_bounds(start=parsed_start, end=parsed_end)
+
+            shifted = shift_event_window(base, shift=shift)
+            redirected = request.GET.copy()
+            redirected.pop("event_shift", None)
+            redirected["start_date"] = shifted.start.isoformat()
+            redirected["end_date"] = shifted.end.isoformat()
+            qs = redirected.urlencode()
+            target = reverse("core:dashboard")
+            return redirect(f"{target}?{qs}" if qs else target)
+
     effective_get: QueryDict | dict[str, object] = request.GET
     snapshot_id = request.GET.get("snapshot_id")
     if snapshot_id:
@@ -310,7 +362,7 @@ def dashboard(request: HttpRequest) -> HttpResponse:
                 return redirect("core:dashboard")
             target = (request.POST.get("snapshot_target") or "charts").strip() or "charts"
 
-            chart_form = ChartContextForm(effective_get, player=player)  # type: ignore[arg-type]
+            chart_form = ChartContextForm(effective_get, player=player, today=date.today())  # type: ignore[arg-type]
             chart_form.is_valid()
             context_runs = _context_filtered_runs(chart_form, player=player)
             builder_form = ChartBuilderForm(request.POST, runs_queryset=context_runs)
@@ -366,12 +418,33 @@ def dashboard(request: HttpRequest) -> HttpResponse:
     else:
         import_form = BattleReportImportForm()
 
-    default_chart_data = request.GET.copy()
-    if "start_date" not in default_chart_data:
-        default_chart_data = default_chart_data.copy()
-        default_chart_data["start_date"] = date(2025, 12, 9).isoformat()
+    defaulted_get = (
+        effective_get.copy()
+        if isinstance(effective_get, QueryDict)
+        else QueryDict("", mutable=True)
+    )
+    if not isinstance(effective_get, QueryDict):
+        for key, value in effective_get.items():
+            defaulted_get[key] = str(value)
 
-    chart_form = ChartContextForm(effective_get or default_chart_data, player=player)  # type: ignore[arg-type]
+    if not defaulted_get.get("start_date") and not defaulted_get.get("end_date"):
+        window = event_window_for_date(target=date.today(), anchor=date(2025, 12, 9))
+        defaulted_get["start_date"] = window.start.isoformat()
+        defaulted_get["end_date"] = window.end.isoformat()
+
+    if not defaulted_get.get("charts"):
+        defaulted_get.setlist("charts", [str(cid) for cid in default_selected_chart_ids()])
+
+    if not defaulted_get.get("granularity"):
+        selected_chart_ids = tuple(defaulted_get.getlist("charts") or ())
+        preferred = [
+            CHART_CONFIG_BY_ID[chart_id].default_granularity
+            for chart_id in selected_chart_ids
+            if chart_id in CHART_CONFIG_BY_ID
+        ]
+        defaulted_get["granularity"] = "per_run" if "per_run" in preferred else "daily"
+
+    chart_form = ChartContextForm(defaulted_get, player=player, today=date.today())  # type: ignore[arg-type]
     chart_form.is_valid()
 
     runs = _filtered_runs(chart_form, player=player)
@@ -522,6 +595,7 @@ def dashboard(request: HttpRequest) -> HttpResponse:
         configs=configs_to_render,
         records=runs,
         registry=DEFAULT_REGISTRY,
+        granularity=str(chart_form.cleaned_data.get("granularity") or "daily"),
         moving_average_window=chart_form.cleaned_data.get("moving_average_window"),
         entity_selections={
             "uw": getattr(chart_form.cleaned_data.get("ultimate_weapon"), "name", None),
@@ -548,6 +622,7 @@ def dashboard(request: HttpRequest) -> HttpResponse:
             {
                 "id": entry.config.id,
                 "chart_type": entry.config.chart_type,
+                "stacked": entry.config.stacked,
                 "labels": entry.data["labels"],
                 "datasets": entry.data["datasets"],
             }
@@ -622,6 +697,8 @@ def dashboard(request: HttpRequest) -> HttpResponse:
         "chart_panels_json": chart_panels_json,
         "chart_context_json": json.dumps(chart_context),
         "chart_empty_state": chart_empty_state,
+        "event_window_start": chart_form.cleaned_data.get("start_date"),
+        "event_window_end": chart_form.cleaned_data.get("end_date"),
     }
     return render(request, "core/dashboard.html", context)
 
@@ -635,7 +712,7 @@ def export_derived_metrics_csv(request: HttpRequest) -> HttpResponse:
     """
 
     player = _request_player(request)
-    chart_form = ChartContextForm(request.GET, player=player)
+    chart_form = ChartContextForm(request.GET, player=player, today=date.today())
     chart_form.is_valid()
     runs = _filtered_runs(chart_form, player=player)
 
@@ -647,6 +724,7 @@ def export_derived_metrics_csv(request: HttpRequest) -> HttpResponse:
         configs=selected_configs,
         records=runs,
         registry=DEFAULT_REGISTRY,
+        granularity=str(chart_form.cleaned_data.get("granularity") or "daily"),
         moving_average_window=chart_form.cleaned_data.get("moving_average_window"),
         entity_selections={
             "uw": getattr(chart_form.cleaned_data.get("ultimate_weapon"), "name", None),
@@ -3206,7 +3284,7 @@ def _filtered_runs(filter_form: ChartContextForm, *, player: Player) -> QuerySet
         "run_guardians__guardian_chip_definition",
         "run_combat_uws__ultimate_weapon_definition",
         "run_utility_uws__ultimate_weapon_definition",
-    ).order_by("run_progress__battle_date")
+    ).order_by("run_progress__battle_date", "id")
     valid = filter_form.is_valid()
     include_tournaments = bool(valid and (filter_form.cleaned_data.get("include_tournaments") or False))
     if not include_tournaments:
@@ -3289,7 +3367,7 @@ def _context_filtered_runs(filter_form: ChartContextForm, *, player: Player) -> 
     runs = BattleReport.objects.filter(player=player).select_related(
         "run_progress",
         "run_progress__preset",
-    ).order_by("run_progress__battle_date")
+    ).order_by("run_progress__battle_date", "id")
     valid = filter_form.is_valid()
     include_tournaments = bool(valid and (filter_form.cleaned_data.get("include_tournaments") or False))
     if not include_tournaments:
@@ -3394,6 +3472,7 @@ def _chart_context_summary(
             "charts": None,
             "start_date": None,
             "end_date": None,
+            "granularity": None,
             "tier": None,
             "preset": None,
             "moving_average_window": None,
@@ -3407,6 +3486,7 @@ def _chart_context_summary(
     selected_display = ", ".join([title for title in selected_titles if title])
     start_date = form.cleaned_data.get("start_date")
     end_date = form.cleaned_data.get("end_date")
+    granularity = form.cleaned_data.get("granularity")
     tier = form.cleaned_data.get("tier")
     preset = form.cleaned_data.get("preset")
     moving_average_window = form.cleaned_data.get("moving_average_window")
@@ -3417,6 +3497,7 @@ def _chart_context_summary(
         "charts": selected_display or None,
         "start_date": start_date.isoformat() if start_date else None,
         "end_date": end_date.isoformat() if end_date else None,
+        "granularity": str(granularity) if granularity else None,
         "tier": str(tier) if tier else None,
         "preset": preset.name if preset else None,
         "moving_average_window": str(moving_average_window) if moving_average_window else None,

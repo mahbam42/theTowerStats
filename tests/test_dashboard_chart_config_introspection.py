@@ -17,8 +17,12 @@ def test_dashboard_form_chart_choices_come_from_chart_configs(auth_client) -> No
     response = auth_client.get("/")
     assert response.status_code == 200
     chart_form = response.context["chart_form"]
-    choices = dict(chart_form.fields["charts"].choices)
-    assert "coins_earned" in choices
+    flat: dict[str, str] = {}
+    for group_label, group_choices in chart_form.fields["charts"].choices:
+        _ = group_label
+        for value, label in group_choices:
+            flat[str(value)] = str(label)
+    assert "coins_earned" in flat
 
 
 @pytest.mark.django_db
@@ -50,4 +54,3 @@ def test_dashboard_renders_derived_formula_chart(auth_client, player) -> None:
     panel = panels["coins_per_wave"]
     assert panel["labels"] == ["2025-12-10"]
     assert panel["datasets"][0]["data"] == [12.0]
-

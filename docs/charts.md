@@ -16,29 +16,31 @@ Charts help you review how your run results change over time using the same valu
 ## How to Use
 
 1. Select **Charts** in the navigation.
-2. In **Context**, select a **Start** and **End** date to limit the time window.
-3. In **Context**, select a **Tier** and **Preset** to narrow the scope.
-4. Select **Apply** to refresh the dashboard.
-5. (Optional) Open **More options** to select one or more items in **Charts**.
-6. (Optional) In **More options**, select a **Rolling window** and **Rolling window size**.
-7. (Optional) In **More options**, select **Ultimate Weapon**, **Guardian Chip**, or **Bot** to narrow the scope to runs where that item appears.
-8. (Optional) In **More options**, select a **Moving average window** to smooth the displayed line.
-9. (Optional) Open **Advanced analysis** to configure **Advice** and **Goal-aware comparison**.
-10. (Optional) In **Advanced analysis**, select **Snapshot A** and an advice comparison mode.
-11. (Optional) In **Advanced analysis**, adjust goal weights when a weighted summary is needed.
-12. (Optional) In **Advanced analysis**, select **Export derived metrics (CSV)** to download a snapshot of derived chart values.
-13. (Optional) Select **Chart Builder** to open the chart builder modal.
-14. In **Chart Builder**, complete **Step 1 — Metrics** and review the constraint messages when present.
-15. In **Chart Builder**, complete **Step 2 — Chart settings** and (optional) **Step 3 — Comparison**.
-16. In **Chart Builder**, select **Apply to dashboard** to add the custom chart to the dashboard.
-17. (Optional) Select **Download PNG** on a chart to save an image of the chart as currently displayed.
-18. (Optional) Open **Compare** to run the separate compare workflow.
-19. (Optional) Open **Quick import** to paste a Battle Report without leaving the Charts page.
-20. (Optional) In **Quick import**, enable **Tournament run** when the run was a tournament round. The app cannot detect tournament runs automatically from pasted text.
+2. In **Context**, review the **Start** and **End** dates. The app defaults to the current in-game Event window (14 days).
+3. (Optional) Select **Previous**, **Next**, or **All** to change the date window.
+4. In **Context**, select **Granularity** to choose **By date** or **By battle log**.
+5. In **Context**, select a **Tier** and **Preset** to narrow the scope.
+6. Select **Apply** to refresh the dashboard.
+7. (Optional) Open **More options** to select one or more items in **Charts**.
+8. (Optional) In **More options**, select a **Rolling window** and **Rolling window size**.
+9. (Optional) In **More options**, select **Ultimate Weapon**, **Guardian Chip**, or **Bot** to narrow the scope to runs where that item appears.
+10. (Optional) In **More options**, select a **Moving average window** to smooth the displayed line.
+11. (Optional) Open **Advanced analysis** to configure **Advice** and **Goal-aware comparison**.
+12. (Optional) In **Advanced analysis**, select **Snapshot A** and an advice comparison mode.
+13. (Optional) In **Advanced analysis**, adjust goal weights when a weighted summary is needed.
+14. (Optional) In **Advanced analysis**, select **Export derived metrics (CSV)** to download a snapshot of derived chart values.
+15. (Optional) Select **Chart Builder** to open the chart builder modal.
+16. In **Chart Builder**, complete **Step 1 — Metrics** and review the constraint messages when present.
+17. In **Chart Builder**, complete **Step 2 — Chart settings** and (optional) **Step 3 — Comparison**.
+18. In **Chart Builder**, select **Apply to dashboard** to add the custom chart to the dashboard.
+19. (Optional) Select **Download PNG** on a chart to save an image of the chart as currently displayed.
+20. (Optional) Open **Compare** to run the separate compare workflow.
+21. (Optional) Open **Quick import** to paste a Battle Report without leaving the Charts page.
+22. (Optional) In **Quick import**, enable **Tournament run** when the run was a tournament round. The app cannot detect tournament runs automatically from pasted text.
 
 ## How to Read the Results
 
-- The x-axis shows dates from your imported runs.
+- The x-axis shows either dates or individual runs, based on the **Granularity** selection.
 - The y-axis shows the value for the selected chart, using the unit shown in the chart title.
 - Charts are grouped by domain:
   - **Economy** shows what your run produced (coins, cash, cells, reroll shards).

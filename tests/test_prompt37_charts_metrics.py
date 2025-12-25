@@ -134,7 +134,7 @@ def test_donut_renders_percent_labels_and_optional_percent_values() -> None:
         id="donut_test",
         title="Donut test",
         description=None,
-        category="top_level",
+        category="economy",
         domain="economy",
         semantic_type="contribution",
         chart_type="donut",
@@ -156,6 +156,7 @@ def test_donut_renders_percent_labels_and_optional_percent_values() -> None:
         config=config,
         records=[record],
         registry=DEFAULT_REGISTRY,
+        granularity="daily",
         moving_average_window=None,
         entity_selections={},
     )

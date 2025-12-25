@@ -84,7 +84,8 @@ def build_runtime_chart_config(selection: ChartBuilderSelection) -> ChartConfig:
     )
 
     comparison: ChartComparison | None = None
-    category: ChartCategory = "top_level"
+    inferred_domain = _infer_domain(selection.metric_keys)
+    category: ChartCategory = inferred_domain
     if selection.comparison != "none":
         category = "comparison"
         if selection.scope_a is not None and selection.scope_b is not None:
@@ -104,7 +105,7 @@ def build_runtime_chart_config(selection: ChartBuilderSelection) -> ChartConfig:
         title="Custom chart",
         description="Chart Builder output (not persisted).",
         category=category,
-        domain=_infer_domain(selection.metric_keys),
+        domain=inferred_domain,
         semantic_type="distribution" if selection.chart_type == "donut" else "absolute",
         chart_type=selection.chart_type,  # type: ignore[arg-type]
         metric_series=metric_series,

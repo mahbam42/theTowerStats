@@ -117,7 +117,7 @@ def test_export_derived_metrics_csv_returns_csv_snapshot(auth_client, player) ->
 
     response = auth_client.get(
         reverse("core:export_derived_metrics_csv"),
-        data={"charts": ["coins_per_wave"]},
+        data={"charts": ["coins_per_wave"], "start_date": "2025-12-09", "end_date": "2025-12-22"},
     )
     assert response.status_code == 200
     assert response["Content-Type"].startswith("text/csv")
