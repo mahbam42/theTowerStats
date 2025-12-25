@@ -18,8 +18,8 @@ def test_uw_sync_timeline_computes_overlap_percent() -> None:
             UWTiming(name="B", cooldown_seconds=10, duration_seconds=5),
             UWTiming(name="C", cooldown_seconds=10, duration_seconds=5),
         ],
-        max_horizon_seconds=9,
+        max_horizon_seconds=1800,
         step_seconds=1,
     )
-    assert timeline.horizon_seconds == 9
-    assert timeline.overlap_percent_cumulative[-1] == 50.0
+    assert timeline.horizon_seconds == 14
+    assert timeline.overlap_percent_cumulative[-1] == 33.33

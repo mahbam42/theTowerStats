@@ -2423,7 +2423,7 @@ CLOSED: [2025-12-22 Mon 15:31]
 - [X] fetch_wiki_data and rebuild_wiki_definitions should have a pretty summary of deltas at the end.
   Especially when using --target all.
 
-*** Bugs/Enhancements [6/21]
+*** Bugs/Enhancements [17/21]
 
 **** DONE [#B] Error Updating Guardian Upgrade Table                 :bug:
 CLOSED: [2025-12-22 Mon 18:51]
@@ -2508,8 +2508,10 @@ CLOSED: [2025-12-23 Tue 13:50]
 - State "DONE"       from "TODO"       [2025-12-23 Tue 13:50]
 Add a block under the presets filter on the left
 
-**** TODO [#A] Chart Taxonomy (Codex-friendly)
+**** DONE [#A] Chart Taxonomy (Codex-friendly)
+CLOSED: [2025-12-25 Thu 13:18]
 
+- State "DONE"       from "TODO"       [2025-12-25 Thu 13:18]
 Think in three axes:
 
 1. What system does this describe?
@@ -2584,17 +2586,23 @@ Reroll Shards Earned per Run
 - Comparative
   Two related metrics side-by-side
   → must share units or be clearly labeled
-**** TODO [#B] On Charts Dashboard, Charts should show by date or by battle log :enhancement:
+**** DONE [#B] On Charts Dashboard, Charts should show by date or by battle log :enhancement:
+CLOSED: [2025-12-25 Thu 13:19]
+- State "DONE"       from "TODO"       [2025-12-25 Thu 13:19]
 Charts would be more clear if they also showed by battle report instead of only daily totals. 
 
-**** TODO [#B] Filter Charts by Event Dates                  :enhancement:
+**** DONE [#B] Filter Charts by Event Dates                  :enhancement:
+CLOSED: [2025-12-25 Thu 13:19]
+- State "DONE"       from "TODO"       [2025-12-25 Thu 13:19]
 Events are 14 Days long. The previous event started on 12/09/2025 to 12/22/2025 and the current event is 12/23/2025 to 01/08/2026.
 
 Charts should have a default date range of the current event start to end, buttons to move backward or forward (to end of current), and preserve the current manual date range fields.
 
 Documentation should be updated to reflect this. And a note should be added to the Date Range controls that they coorispond to the 'In Game Events'
 
-**** TODO [#B] Add Damage Charts/Metrics
+**** DONE [#B] Add Damage Charts/Metrics
+CLOSED: [2025-12-25 Thu 13:19]
+- State "DONE"       from "TODO"       [2025-12-25 Thu 13:19]
 - Total Damage
   take 'damage dealt' as total
 
@@ -2629,12 +2637,18 @@ Use the following metrics from 'Battle Report':
 
 Note that 'Land Mine Damage' and 'Inner Land Mine Damage' are separate metrics, Land Mine is a defense workshop, ILM is a UW. 
 
-**** TODO [#B] % of total damage by source as stacked bar per battle report
+**** DONE [#B] % of total damage by source as stacked bar per battle report
+CLOSED: [2025-12-25 Thu 13:19]
 
-**** TODO [#C] Damage vs Destroyed By stacked bar 
+- State "DONE"       from "TODO"       [2025-12-25 Thu 13:19]
+**** DONE [#C] Damage vs Destroyed By stacked bar 
+CLOSED: [2025-12-25 Thu 13:19]
 
-**** TODO [#C] Orb Effectiveness
+- State "DONE"       from "TODO"       [2025-12-25 Thu 13:19]
+**** DONE [#C] Orb Effectiveness
+CLOSED: [2025-12-25 Thu 13:19]
 
+- State "DONE"       from "TODO"       [2025-12-25 Thu 13:19]
 Composite view:
 
 - Orb Damage
@@ -2643,7 +2657,9 @@ Composite view:
 
 - Enemies Destroyed by Orbs
 
-**** TODO [#B] Add Coins from UWs Charts/Metrics
+**** DONE [#B] Add Coins from UWs Charts/Metrics
+CLOSED: [2025-12-25 Thu 13:19]
+- State "DONE"       from "TODO"       [2025-12-25 Thu 13:19]
 Add a donut chart tracking the following from Battle Reports Utility section. 
 
 - Coins From Death Wave	165.52K
@@ -2654,7 +2670,9 @@ Add a donut chart tracking the following from Battle Reports Utility section.
 
 - Coins From Spotlight	94.30K
 
-**** TODO [#B] Add 'Enemies Destroyed' Donut to Charts/Metrics
+**** DONE [#B] Add 'Enemies Destroyed' Donut to Charts/Metrics
+CLOSED: [2025-12-25 Thu 13:19]
+- State "DONE"       from "TODO"       [2025-12-25 Thu 13:19]
 Add the following from Battle Report Enemies Destroyed
 
 - Basic	150877
@@ -2672,7 +2690,9 @@ Add the following from Battle Report Enemies Destroyed
 
 There is an asymmetry found in the game's reported 'total enemies' and 'total elites' that doesn't align with the summed totals of reported enemy types. Therefore we will ignore those metrics and roll our own to avoid misleading charts. This should be clearly stated in the docs. 
 
-**** TODO Cash Charts
+**** DONE Cash Charts
+CLOSED: [2025-12-25 Thu 13:19]
+- State "DONE"       from "TODO"       [2025-12-25 Thu 13:19]
 Economy → Cash (Definition)
 
 Cash represents in-run purchasing power.
@@ -2728,7 +2748,9 @@ Completion criteria:
 
 - Prompt38Validation.yml accurately marked complete
 
-**** TODO Pr 1-3 Tweaks
+**** DONE Pr 1-3 Tweaks
+CLOSED: [2025-12-25 Thu 13:18]
+- State "DONE"       from "TODO"       [2025-12-25 Thu 13:18]
 - [X] Need to inject Start and End Dates in Context Fields for Charts to display properly on page load
 - [X] Add an 'All' button next to Previous/Last (Range is from first Battle Report to Present)
 - [X] 'More options' shouldn't be muted

@@ -99,7 +99,13 @@ def test_uw_sync_payload_includes_golden_bot_and_overlap_windows(player) -> None
 
     overlap_windows = cast(list[dict[str, str]], chart_data["overlap_windows"])
     assert overlap_windows
-    assert overlap_windows[0] == {"start": "0s", "end": "4s"}
+    assert overlap_windows[0] == {"start": "10s", "end": "14s"}
+
+    for dataset in datasets:
+        if dataset.get("label") in ("All overlap", "Cumulative overlap %"):
+            continue
+        points = cast(list[dict[str, object]], dataset.get("data", []))
+        assert all(cast(list[int], point.get("x", [0, 0]))[0] > 0 for point in points)
 
 
 @pytest.mark.django_db
@@ -169,7 +175,7 @@ def test_uw_sync_payload_allows_death_wave_without_duration(player) -> None:
     payload = build_uw_sync_payload(player=player)
     assert payload is not None
     overlap_windows = cast(list[dict[str, str]], cast(dict[str, object], payload.chart_data)["overlap_windows"])
-    assert overlap_windows == [{"start": "0s", "end": "0s"}, {"start": "10s", "end": "10s"}]
+    assert overlap_windows == [{"start": "10s", "end": "14s"}]
 
 
 @pytest.mark.django_db
@@ -246,4 +252,4 @@ def test_uw_sync_payload_uses_definition_levels_when_effective_values_blank(play
     payload = build_uw_sync_payload(player=player)
     assert payload is not None
     overlap_windows = cast(list[dict[str, str]], cast(dict[str, object], payload.chart_data)["overlap_windows"])
-    assert overlap_windows == [{"start": "0s", "end": "0s"}, {"start": "10s", "end": "10s"}]
+    assert overlap_windows == [{"start": "10s", "end": "14s"}]

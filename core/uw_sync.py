@@ -169,7 +169,12 @@ def build_uw_sync_payload(*, player: Player) -> UWSyncPayload | None:
     if golden_bot_timing is not None:
         timings.append(golden_bot_timing)
 
-    timeline = compute_uw_sync_timeline(timings, max_horizon_seconds=1800, step_seconds=1)
+    timeline = compute_uw_sync_timeline(
+        timings,
+        overlap_excluded_names=frozenset({"Death Wave"}),
+        max_horizon_seconds=1800,
+        step_seconds=1,
+    )
 
     palette = {
         "Golden Tower": "#DC3912",

@@ -54,6 +54,7 @@ def _lcm(a: int, b: int) -> int:
 def compute_uw_sync_timeline(
     timings: Iterable[UWTiming],
     *,
+    overlap_excluded_names: frozenset[str] = frozenset(),
     max_horizon_seconds: int = 1800,
     step_seconds: int = 1,
 ) -> UWSyncTimeline:
@@ -61,6 +62,7 @@ def compute_uw_sync_timeline(
 
     Args:
         timings: Iterable of UWTiming entries (typically 3).
+        overlap_excluded_names: UW names excluded from overlap calculations (e.g. Death Wave).
         max_horizon_seconds: Upper bound for the modeled horizon.
         step_seconds: Step size in seconds for timeline sampling.
 
@@ -86,7 +88,9 @@ def compute_uw_sync_timeline(
         horizon = _lcm(horizon, entry.cooldown_seconds)
     if horizon <= 0:
         horizon = max(entry.cooldown_seconds for entry in entries)
-    horizon = min(horizon, max_horizon_seconds)
+    max_duration = max((entry.duration_seconds for entry in entries), default=0)
+    extension = max(max_duration - 1, 0)
+    horizon = min(horizon + extension, max_horizon_seconds)
     step = max(1, int(step_seconds))
 
     labels: list[str] = []
@@ -100,11 +104,12 @@ def compute_uw_sync_timeline(
         labels.append(f"{t}s")
         states = []
         for entry in entries:
-            active = 1 if (t % entry.cooldown_seconds) < entry.duration_seconds else 0
+            active = 1 if (t >= entry.cooldown_seconds and (t % entry.cooldown_seconds) < entry.duration_seconds) else 0
             active_by_uw[entry.name].append(active)
-            states.append(active)
+            if entry.name not in overlap_excluded_names:
+                states.append(active)
 
-        overlap = 1 if all(states) else 0
+        overlap = 1 if (states and all(states)) else 0
         overlap_all_three.append(overlap)
         overlap_so_far += overlap
         count += 1

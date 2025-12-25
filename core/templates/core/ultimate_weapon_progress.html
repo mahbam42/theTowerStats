@@ -50,7 +50,9 @@
         <p class="muted margin-0">Horizon: {{ uw_sync_summary.horizon_seconds }}s • Cumulative overlap: {{ uw_sync_summary.overlap_percent }}%</p>
       {% endif %}
       <canvas id="uw-sync-chart" width="900" height="280"></canvas>
-      <p class="muted margin-top-1 margin-bottom-0">Death Wave is shown as an activation marker. Its on-map persistence can vary and is not modeled.</p>
+      <p class="muted margin-top-1 margin-bottom-0">
+        Death Wave is shown as an activation marker. Its on-map persistence can vary and is not modeled. Cumulative overlap excludes Death Wave.
+      </p>
     {% else %}
       <h3 class="margin-0">Unavailable</h3>
       <div class="callout warning margin-top-1">
