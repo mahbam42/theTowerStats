@@ -2,9 +2,9 @@
 
 This project follows Semantic Versioning.
 
-## [0.2.2] (in progress)
+## [0.3.0] (in progress)
 
-- Notes: Adds new charts/metrics and UI refinements.
+- Notes: Adds new dashboards, charts/metrics, and documentation updates.
 - Cards dashboard: select multiple cards and apply presets in bulk (assign or create preset tags).
 - Cards dashboard: replace placeholder descriptions with the current level value (bolded) when available (placeholders allowed at level 0).
 - Cards dashboard: rename the Level column to Next Level and add a brief Presets explainer.
@@ -13,6 +13,12 @@ This project follows Semantic Versioning.
 - Charts dashboard: add damage charts (damage by source, percent contribution, and comparative damage vs enemies destroyed; orb effectiveness).
 - Charts dashboard: add enemy destruction charts and derive totals by summing per-type rows (ignores Battle Report “Total Enemies” and “Total Elites” due to asymmetry).
 - Charts dashboard: donut charts include percent labels; comparative charts support multiple y-axes when units differ.
+- Charts dashboard: default chart window to the current Event window and add Event window navigation controls.
+- Charts dashboard: add per-run chart granularity toggle.
+- Charts dashboard: add stacked and bar chart variants for damage breakdowns.
+- Goals dashboard: add goal targets dashboard and goal widgets for upgradeable entities, including cost and delta calculations.
+- Battle Report import: add manual tournament toggle to tag runs when the copied text does not indicate a tournament round.
+- Developer docs: add mkdocstrings pages for analysis, charting, and parsers.
 - Bug fix: tolerate Guardian chip upgrade table cost header drift during `rebuild_wiki_definitions`.
 
 ## [0.1.0]

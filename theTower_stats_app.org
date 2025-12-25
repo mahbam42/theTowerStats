@@ -2807,9 +2807,9 @@ The dashboard and widgets will label the currency (stones, bits, medals)
 **** TODO Add mkdocstrings pages for Analytics/, Core/Charting/, Core/Parsers/
 Add to mkdocs.yml under 'Reference' 
 **** TODO [#A] Update Readme.md, changelog to v0.3.0
-Summarize last few commits. Call out Cards and Charts Enhancements, Goals Dashboard, and Docs additions 
+Summarize last few commits. Call out Cards and Charts Enhancements, Goals Dashboard, and Docs additions. You can run `git log -16` to review progress
 
-Our current changelog is at 0.2.2 (in progress) and published releases on Github are 0.2.1. I think we can safely say we can tag our work as 0.3.0, would you agree? You can run `git log -14` to review progress
+Our current changelog is at 0.2.2 (in progress) and published releases on Github are 0.2.1. I think we can safely say we can tag our work as 0.3.0, would you agree? 
 
 **** TODO [#A] On Railway run rebuild_wiki_definitions --target cards after deploying v0.3.0
 

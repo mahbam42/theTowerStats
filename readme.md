@@ -24,8 +24,14 @@ Battle history can be imported as raw text, then explored through charts and rea
 
 - Coins per hour and other precomputed series (no client-side math)
 - Filter charts by **date range**, **tier**, **preset**, and overlays
-- Default chart window starts on **2025-12-09 UTC** for recent-run focus
+- Default chart window uses the current **Event window**, with navigation controls
+- Optional chart granularity toggle (by date or by battle log)
 - Export derived metrics to CSV and download chart images as PNG snapshots
+
+### 🎯 Goals Dashboard
+
+- Track upgrade targets across bots, guardian chips, and ultimate weapons
+- See level targets, current vs target deltas, and estimated costs
 
 ### 🧮 Analysis Engine (The Core Feature)
 
@@ -80,8 +86,7 @@ This app is about:
 
 ## Current Progress
 
-- Current release: **v0.1.0**
-- v0.2.0 (in progress): UI refinement and release hygiene
+- Current release: **v0.3.0**
 - Changelog: `CHANGELOG.md`
 - Stable: Battle Report import, Battle History, Charts (including snapshots), and collection progress dashboards
 - Multi-user: Each signed-in account has its own isolated dataset
