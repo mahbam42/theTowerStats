@@ -71,10 +71,11 @@ def compute_goal_cost_breakdown(
     N is the price to upgrade from N-1 -> N (matching typical wiki tables).
 
     Args:
-        costs_by_from_level: Mapping of from_level -> cost_raw.
+        costs_by_level: Mapping of resulting level -> cost_raw.
         currency: Currency label (e.g. "stones", "medals", "bits").
         current_level_display: Level to display in UI (may be a fallback).
         current_level_for_calc: Level used for remaining-cost calculation.
+        current_is_assumed: Whether current level is a fallback value.
         target_level: Desired target level.
 
     Returns:
