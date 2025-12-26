@@ -31,6 +31,9 @@ Targets (`--target`): `cards`, `bots`, `guardians`, `ultimate_weapons`, or `all`
 > **Note**
 > When running `rebuild_wiki_definitions` with fetching enabled, the cards fetch step also ingests the slots table so card slot limits can update.
 
+> **Note**
+> Rebuild logic must not depend on `WikiData.raw_row` key order (JSONB backends may reorder keys). If `rebuild_wiki_definitions` raises an “upgrade table drift” error, treat it as a schema mismatch in the scraped table headers or missing columns.
+
 ## Step 3 — Sync player state
 
 Create or refresh Player State rows so dashboards can display ownership:

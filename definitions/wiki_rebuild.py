@@ -35,6 +35,64 @@ from definitions.models import (
 
 _SLUG_RE = re.compile(r"[^a-z0-9]+")
 _PLACEHOLDER_RE = re.compile(r"^(?:-|—|–|null|none)?$", re.IGNORECASE)
+_DEDUP_SUFFIX_RE = re.compile(r"^(?P<base>.+?)(?:__(?P<index>\\d+))?$")
+
+_GUARDIAN_EXPECTED_PARAMETER_KEYS: dict[str, tuple[str, str, str]] = {
+    "ally": (
+        ParameterKey.RECOVERY_AMOUNT.value,
+        ParameterKey.COOLDOWN.value,
+        ParameterKey.MAX_RECOVERY.value,
+    ),
+    "attack": (
+        ParameterKey.PERCENTAGE.value,
+        ParameterKey.COOLDOWN.value,
+        ParameterKey.TARGETS.value,
+    ),
+    "fetch": (
+        ParameterKey.COOLDOWN.value,
+        ParameterKey.FIND_CHANCE.value,
+        ParameterKey.DOUBLE_FIND_CHANCE.value,
+    ),
+    "bounty": (
+        ParameterKey.MULTIPLIER.value,
+        ParameterKey.COOLDOWN.value,
+        ParameterKey.TARGETS.value,
+    ),
+    "summon": (
+        ParameterKey.COOLDOWN.value,
+        ParameterKey.DURATION.value,
+        ParameterKey.CASH_BONUS.value,
+    ),
+}
+
+
+def _dedupe_occurrence(header: str) -> tuple[str, int]:
+    """Return the base header and its occurrence index.
+
+    Table scraping dedupes repeated headers by suffixing `__2`, `__3`, ... while
+    preserving the source table column order. When WikiData is stored in a JSONB
+    backend (e.g., Postgres), key order is not preserved, so rebuild code must
+    not rely on dict ordering to reconstruct (value, cost) column pairs.
+
+    Args:
+        header: Header label possibly suffixed with `__N`.
+
+    Returns:
+        Tuple of (base_header, occurrence_index) where occurrence_index is 1 for
+        unsuffixed headers.
+    """
+
+    match = _DEDUP_SUFFIX_RE.match(header)
+    if not match:
+        return header, 1
+    base = match.group("base") or header
+    index_raw = match.group("index")
+    if not index_raw:
+        return base, 1
+    try:
+        return base, int(index_raw)
+    except ValueError:
+        return base, 1
 
 
 def _slugify(value: str) -> str:
@@ -592,30 +650,57 @@ def _guardian_header_pairs(raw_row: dict, *, slug: str) -> list[tuple[str, str]]
             return True
         return lowered.startswith("cost")
 
-    header_pairs: list[tuple[str, str]] = []
+    expected_keys = _GUARDIAN_EXPECTED_PARAMETER_KEYS.get(slug)
+    if expected_keys is None:
+        raise ValueError(f"Unknown guardian chip slug={slug!r}; cannot infer parameter order.")
+
+    reserved = {"Level", "_wiki_entity_id", "Guardian", "Star", "Description"}
     keys = [str(k) for k in raw_row.keys()]
-    seen_value: set[str] = set()
-    for idx, key in enumerate(keys):
-        if key in {"Level", "_wiki_entity_id", "Guardian"}:
+    cost_headers = [key for key in keys if key not in reserved and not key.startswith("_") and _is_cost_header(key)]
+    value_headers = [
+        key for key in keys if key not in reserved and not key.startswith("_") and not _is_cost_header(key)
+    ]
+
+    def _cost_sort_key(header: str) -> tuple[str, int, str]:
+        base, occurrence = _dedupe_occurrence(header)
+        return (base.casefold(), occurrence, header.casefold())
+
+    ordered_cost_headers = sorted(cost_headers, key=_cost_sort_key)
+    if len(ordered_cost_headers) < len(expected_keys):
+        raise ValueError(
+            f"Guardian upgrade table drift for slug={slug}: missing cost columns; "
+            f"expected={len(expected_keys)}, got={ordered_cost_headers!r}"
+        )
+
+    def _value_preference(header: str) -> tuple[int, int, str]:
+        normalized = header.strip().casefold()
+        has_parens = "(" in normalized or ")" in normalized
+        return (1 if has_parens else 0, len(normalized), normalized)
+
+    by_parameter_key: dict[str, list[str]] = {}
+    for header in value_headers:
+        mapped_key = _guardian_parameter_key(header, slug=slug)
+        if mapped_key == ParameterKey.MULTIPLIER.value and "multiplier" not in header.strip().casefold():
             continue
-        if key.startswith("_"):
+        by_parameter_key.setdefault(mapped_key, []).append(header)
+
+    pairs: list[tuple[str, str]] = []
+    missing: list[str] = []
+    for idx, expected_key in enumerate(expected_keys):
+        candidates = by_parameter_key.get(expected_key, [])
+        if not candidates:
+            missing.append(expected_key)
             continue
-        if _is_cost_header(key):
-            continue
-        if key in seen_value:
-            continue
-        cost = None
-        for j in range(idx + 1, min(idx + 12, len(keys))):
-            candidate = keys[j]
-            if _is_cost_header(candidate):
-                cost = candidate
-                break
-        if cost is None:
-            continue
-        header_pairs.append((key, cost))
-        seen_value.add(key)
-    # Ensure exactly three parameters per chip (Prompt11).
-    return header_pairs[:3]
+        chosen_value_header = sorted(candidates, key=_value_preference)[0]
+        pairs.append((chosen_value_header, ordered_cost_headers[idx]))
+
+    if missing:
+        raise ValueError(
+            f"Guardian upgrade table drift for slug={slug}: missing value columns for keys="
+            f"{missing!r}; value_headers={value_headers!r}; cost_headers={ordered_cost_headers!r}"
+        )
+
+    return pairs
 
 
 def _guardian_parameter_key(value_header: str, *, slug: str) -> str:
