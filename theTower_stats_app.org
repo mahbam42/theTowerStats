@@ -2423,7 +2423,7 @@ CLOSED: [2025-12-22 Mon 15:31]
 - [X] fetch_wiki_data and rebuild_wiki_definitions should have a pretty summary of deltas at the end.
   Especially when using --target all.
 
-*** Bugs/Enhancements [20/23]
+*** Bugs/Enhancements [23/25]
 
 **** DONE [#B] Error Updating Guardian Upgrade Table                 :bug:
 CLOSED: [2025-12-22 Mon 18:51]
@@ -2804,14 +2804,47 @@ The dashboard and widgets will label the currency (stones, bits, medals)
 - [X] In the Add Goal Modal, fix the rows showing no delta (see screenshot)
 - [X] In the Add Goal Modal, the target delta needs to show the increase from current level. Not just +2 for each.
 
-**** TODO Add mkdocstrings pages for Analytics/, Core/Charting/, Core/Parsers/
+**** DONE Add mkdocstrings pages for Analytics/, Core/Charting/, Core/Parsers/
+CLOSED: [2025-12-25 Thu 18:58]
+- State "DONE"       from "TODO"       [2025-12-25 Thu 18:58]
 Add to mkdocs.yml under 'Reference' 
-**** TODO [#A] Update Readme.md, changelog to v0.3.0
+**** DONE [#A] Update Readme.md, changelog to v0.3.0
+CLOSED: [2025-12-25 Thu 18:59]
+- State "DONE"       from "TODO"       [2025-12-25 Thu 18:59]
 Summarize last few commits. Call out Cards and Charts Enhancements, Goals Dashboard, and Docs additions. You can run `git log -16` to review progress
 
 Our current changelog is at 0.2.2 (in progress) and published releases on Github are 0.2.1. I think we can safely say we can tag our work as 0.3.0, would you agree? 
 
-**** TODO [#A] On Railway run rebuild_wiki_definitions --target cards after deploying v0.3.0
+**** DONE [#A] On Railway run rebuild_wiki_definitions --target cards after deploying v0.3.0
+CLOSED: [2025-12-25 Thu 19:26]
+
+- State "DONE"       from "TODO"       [2025-12-25 Thu 19:26]
+
+**** TODO On Cards Dashboard Add a Total Cards Progress Widget under preset tags
+
+| Cards Remaining: | {#} | Total Cards: | {#} |
+| Maxed Cards      | {#} | Progress:    | {%} |
+| Gems Needed      | {#} | Events:      | {#} |
+
+{#} represents calculated values based on app data
+{%} represents precentage calculations
+
+Currently there are 31 Cards and you need to collect 80 copies to max level 7, so Total Cards will equal 2480. Cards Remaining will be calculated by Total Cards minus Card Copies collected.
+
+Maxed Cards will be a count of how many cards are 32/32 Collected
+
+Progress will be calculated by Total Cards minus Cards Remaing divided by Total Cards
+
+Gems Needed will be calculated by Cards Remaining divided by 10 (round up) times 200. Cards are typically purchased 10 at a time for 200 gems.
+
+Events will be calculated by Gems Needed divided by 1600. There is a standard Event Mission to buy 80 Cards, so 200 gems times 8 gives us 1600.
+
+**** TODO On Battle History Dashboard
+Add a Highest Wave table under Filters.
+
+Shows Each Tier with a run logged and the highest wave reached. Below that show the top 3 Tournament Logs.
+
+Note: Currently Tier 21 is the Highest possible. But to avoid clutter we'll base the table on Tiers logged in this app. 
 
 ** Backlog [2/5]
 “Out of Scope”:
@@ -3187,7 +3220,8 @@ Mostly a visual tweak, but adds context and history for the player to interpert 
 - [X] Phase 10 Validation
 - [X] prompt 35 phase 10b
 - [X] prompt 36 phase 11 bug fixes
-- [ ] promt 37 Charts Enhancements
-- [ ] prompt 37 validation
+- [X] promt 37 Charts Enhancements
+- [X] prompt 37 validation
+- [X] prompt38Validation.md
   
 - [ ] version1.0.md 
