@@ -60,9 +60,8 @@ def test_battle_history_filters_by_preset(auth_client, player) -> None:
     response = auth_client.get(reverse("core:battle_history"), data={"preset": farm.id})
     assert response.status_code == 200
 
-    content = response.content.decode("utf-8")
-    assert "111" in content
-    assert "222" not in content
+    waves = [row["run"].run_progress.wave for row in response.context["page_rows"]]
+    assert waves == [111]
 
 
 @pytest.mark.django_db

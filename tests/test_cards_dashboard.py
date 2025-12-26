@@ -196,6 +196,42 @@ def test_cards_dashboard_supports_sorting_and_maxed_filter(auth_client, player) 
 
 
 @pytest.mark.django_db
+def test_cards_dashboard_renders_total_cards_progress_widget(auth_client, player) -> None:
+    """Cards dashboard shows a deterministic total progress widget."""
+
+    alpha = CardDefinition.objects.create(name="Alpha", slug="alpha", rarity="Common")
+    beta = CardDefinition.objects.create(name="Beta", slug="beta", rarity="Rare")
+
+    PlayerCard.objects.create(
+        player=player,
+        card_definition=alpha,
+        card_slug=alpha.slug,
+        stars_unlocked=3,
+        inventory_count=4,
+    )
+    PlayerCard.objects.create(
+        player=player,
+        card_definition=beta,
+        card_slug=beta.slug,
+        stars_unlocked=7,
+        inventory_count=32,
+    )
+
+    url = reverse("core:cards")
+    response = auth_client.get(url, data={"maxed": "maxed"})
+    assert response.status_code == 200
+
+    content = response.content.decode("utf-8")
+    assert "Total Cards Progress" in content
+    assert "Cards Remaining: 73" in content
+    assert "Total Cards: 160" in content
+    assert "Maxed Cards: 1" in content
+    assert "Gems Needed: 1600" in content
+    assert "Events: 1" in content
+    assert "54.4%" in content
+
+
+@pytest.mark.django_db
 def test_cards_dashboard_preserves_filter_state_in_links(auth_client, player) -> None:
     """Sortable headers and preset badges preserve the current filter state."""
 

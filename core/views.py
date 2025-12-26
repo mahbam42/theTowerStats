@@ -94,7 +94,7 @@ from gamedata.models import (
     BattleReportProgress,
 )
 from player_state.card_slots import card_slot_max_slots, next_card_slot_unlock_cost_raw
-from player_state.cards import apply_inventory_rollover, derive_card_progress
+from player_state.cards import apply_inventory_rollover, derive_card_progress, derive_total_cards_progress
 from player_state.economy import enforce_and_deduct_gems_if_tracked
 from player_state.models import (
     ChartSnapshot,
@@ -1118,6 +1118,18 @@ def battle_history(request: HttpRequest) -> HttpResponse:
     filter_form = BattleHistoryFilterForm(request.GET, player=player)
     filter_form.is_valid()
 
+    progress_qs = BattleReportProgress.objects.filter(player=player)
+    highest_wave_by_tier = list(
+        progress_qs.filter(tier__isnull=False, wave__isnull=False)
+        .exclude(is_tournament=True)
+        .values("tier")
+        .annotate(highest_wave=Max("wave"))
+        .order_by("tier")
+    )
+    top_tournament_logs = list(
+        progress_qs.filter(is_tournament=True, wave__isnull=False).order_by("-wave", "-battle_date", "-id")[:3]
+    )
+
     sort_key = filter_form.cleaned_data.get("sort") or "-run_progress__battle_date"
     runs = BattleReport.objects.filter(player=player).select_related("run_progress", "run_progress__preset")
     include_tournaments = bool(filter_form.cleaned_data.get("include_tournaments") or False)
@@ -1240,6 +1252,8 @@ def battle_history(request: HttpRequest) -> HttpResponse:
             "import_form": import_form,
             "filter_form": filter_form,
             "player_presets": Preset.objects.filter(player=player).order_by("name"),
+            "highest_wave_by_tier": highest_wave_by_tier,
+            "top_tournament_logs": top_tournament_logs,
             "page_obj": page_obj,
             "page_rows": page_rows,
             "base_querystring": base_querystring,
@@ -1661,6 +1675,25 @@ def cards(request: HttpRequest) -> HttpResponse:
                 },
             )
 
+    total_cards_progress = None
+    if definitions:
+        cards_by_slug = {
+            card.card_slug: card
+            for card in PlayerCard.objects.filter(player=player).only(
+                "card_slug",
+                "stars_unlocked",
+                "inventory_count",
+            )
+        }
+        card_states = []
+        for definition in definitions:
+            card = cards_by_slug.get(definition.slug)
+            card_states.append((getattr(card, "stars_unlocked", 0) or 0, getattr(card, "inventory_count", 0) or 0))
+        total_cards_progress = derive_total_cards_progress(
+            definition_count=len(definitions),
+            card_states=card_states,
+        )
+
     if request.method == "POST":
         if demo_mode_enabled(request):
             return _reject_demo_write(request)
@@ -1880,6 +1913,7 @@ def cards(request: HttpRequest) -> HttpResponse:
         "core/cards.html",
         {
             "card_slots": card_slots,
+            "total_cards_progress": total_cards_progress,
             "filter_form": filter_form,
             "presets": presets,
             "preset_links": preset_links,

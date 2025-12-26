@@ -87,6 +87,25 @@
           <div class="empty-state" role="status">No presets recorded.</div>
         {% endif %}
       </div>
+
+      <div class="card-shell margin-top-1">
+        <h5>Total Cards Progress</h5>
+        {% if total_cards_progress %}
+          <p class="lead margin-0">
+            Progress:
+            {{ total_cards_progress.progress_percent|floatformat:1 }}%
+          </p>
+          <p class="muted margin-0">
+            Cards Remaining: {{ total_cards_progress.copies_remaining }}
+            / Total Cards: {{ total_cards_progress.total_copies }}
+          </p>
+          <p class="muted margin-0">Maxed Cards: {{ total_cards_progress.maxed_cards }}</p>
+          <p class="muted margin-0">Gems Needed: {{ total_cards_progress.gems_needed }}</p>
+          <p class="muted margin-0">Events: {{ total_cards_progress.events_needed }}</p>
+        {% else %}
+          <div class="empty-state" role="status">No card definitions loaded.</div>
+        {% endif %}
+      </div>
     </div>
     <div class="cell medium-8">
       <div class="card-shell">

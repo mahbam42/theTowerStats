@@ -97,6 +97,63 @@
             <a class="button secondary" href="{% url 'core:battle_history' %}">Reset</a>
           </div>
         </form>
+
+        <div class="margin-top-1">
+          <h5 class="margin-bottom-0">Highest Wave by Tier</h5>
+          <p class="muted margin-top-0 margin-bottom-1">All imported runs. Tournament-tagged runs are excluded.</p>
+          {% if highest_wave_by_tier %}
+            <div class="table-scroll">
+              <table class="stack">
+                <thead>
+                  <tr>
+                    <th scope="col">Tier</th>
+                    <th scope="col">Highest wave</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {% for row in highest_wave_by_tier %}
+                    <tr>
+                      <td>{{ row.tier }}</td>
+                      <td>{{ row.highest_wave }}</td>
+                    </tr>
+                  {% endfor %}
+                </tbody>
+              </table>
+            </div>
+          {% else %}
+            <div class="empty-state" role="status">No tiered runs recorded.</div>
+          {% endif %}
+        </div>
+
+        <div class="margin-top-1">
+          <h5 class="margin-bottom-0">Top 3 Tournament Logs</h5>
+          <p class="muted margin-top-0 margin-bottom-1">All imported runs marked as tournaments during import.</p>
+          {% if top_tournament_logs %}
+            <div class="table-scroll">
+              <table class="stack">
+                <thead>
+                  <tr>
+                    <th scope="col">Battle date</th>
+                    <th scope="col">Highest wave</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {% for entry in top_tournament_logs %}
+                    <tr>
+                      <td>
+                        {% if entry.battle_date %}{{ entry.battle_date }}{% else %}<span class="muted">—</span>{% endif %}
+                      </td>
+                      <td>{{ entry.wave }}</td>
+                    </tr>
+                  {% endfor %}
+                </tbody>
+              </table>
+            </div>
+          {% else %}
+            <div class="empty-state" role="status">No tournament runs recorded.</div>
+          {% endif %}
+        </div>
+
         <div class="callout secondary margin-top-1">
           <p class="margin-0">
             Filters rely on imported data only; values not present in a Battle Report appear as em dashes.

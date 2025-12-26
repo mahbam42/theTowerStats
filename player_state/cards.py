@@ -11,6 +11,7 @@ from dataclasses import dataclass
 
 
 MAX_CARD_LEVEL = 7
+MAX_CARD_INVENTORY = 32
 CARD_LEVEL_THRESHOLDS: dict[int, int] = {
     1: 0,
     2: 3,
@@ -37,6 +38,29 @@ class CardProgress:
     inventory: int
     threshold: int
     is_maxed: bool
+
+
+@dataclass(frozen=True, slots=True)
+class TotalCardsProgress:
+    """Aggregate card progress values for the Cards dashboard.
+
+    Attributes:
+        total_copies: Total copies required to fully max all card definitions.
+        copies_collected: Copies implied by the stored player card state.
+        copies_remaining: Remaining copies to fully max all card definitions.
+        maxed_cards: Number of cards at level 7 and clamped at 32/32.
+        progress_percent: Overall completion percent, from 0.0 to 100.0.
+        gems_needed: Estimated gems required to buy the remaining copies.
+        events_needed: Estimated event missions required to earn `gems_needed`.
+    """
+
+    total_copies: int
+    copies_collected: int
+    copies_remaining: int
+    maxed_cards: int
+    progress_percent: float
+    gems_needed: int
+    events_needed: int
 
 
 def apply_inventory_rollover(*, level: int, inventory: int) -> tuple[int, int]:
@@ -102,4 +126,65 @@ def derive_card_progress(*, stars_unlocked: int, inventory_count: int) -> CardPr
         inventory=normalized_inventory,
         threshold=threshold,
         is_maxed=is_maxed,
+    )
+
+
+def total_copies_for_card_definitions(*, definition_count: int) -> int:
+    """Return total copies required to fully max the given number of cards.
+
+    Args:
+        definition_count: Number of known card definitions.
+
+    Returns:
+        The number of copies required to reach level 7 and inventory 32/32 for
+        every card.
+    """
+
+    per_card = sum(CARD_LEVEL_THRESHOLDS[level] for level in range(1, MAX_CARD_LEVEL)) + MAX_CARD_INVENTORY
+    return max(0, int(definition_count)) * per_card
+
+
+def derive_total_cards_progress(
+    *, definition_count: int, card_states: list[tuple[int, int]]
+) -> TotalCardsProgress:
+    """Derive aggregate Cards dashboard progress from stored card state.
+
+    This treats each entry in `card_states` as a stored `(stars_unlocked, inventory_count)`
+    pair, then normalizes the values using the same rollover/clamp rules as the
+    per-card dashboard table.
+
+    Args:
+        definition_count: Number of known card definitions (used for totals).
+        card_states: Stored card state pairs aligned to known definitions.
+
+    Returns:
+        A TotalCardsProgress DTO for display.
+    """
+
+    total_copies = total_copies_for_card_definitions(definition_count=definition_count)
+
+    copies_collected = 0
+    maxed_cards = 0
+    for stars_unlocked, inventory_count in card_states:
+        progress = derive_card_progress(stars_unlocked=stars_unlocked, inventory_count=inventory_count)
+        copies_collected += sum(CARD_LEVEL_THRESHOLDS[level] for level in range(1, progress.level)) + progress.inventory
+        if progress.is_maxed:
+            maxed_cards += 1
+
+    copies_collected = max(0, min(copies_collected, total_copies)) if total_copies else max(0, copies_collected)
+    copies_remaining = max(0, total_copies - copies_collected)
+    progress_percent = ((copies_collected / total_copies) * 100.0) if total_copies else 0.0
+
+    packs_needed = (copies_remaining + 9) // 10
+    gems_needed = packs_needed * 200
+    events_needed = (gems_needed + 1599) // 1600 if gems_needed else 0
+
+    return TotalCardsProgress(
+        total_copies=total_copies,
+        copies_collected=copies_collected,
+        copies_remaining=copies_remaining,
+        maxed_cards=maxed_cards,
+        progress_percent=progress_percent,
+        gems_needed=gems_needed,
+        events_needed=events_needed,
     )

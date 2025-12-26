@@ -2,6 +2,8 @@
 
 from __future__ import annotations
 
+import re
+
 import pytest
 from django.urls import reverse
 
@@ -230,8 +232,85 @@ def test_battle_history_excludes_manual_tournaments_by_default(auth_client, play
     assert response.status_code == 200
 
     content = response.content.decode("utf-8")
-    assert "3656" not in content
+    assert all((row["run"].run_progress.wave or 0) != 3656 for row in response.context["page_rows"])
+    assert "Top 3 Tournament Logs" in content
+    assert "3656" in content
 
     response = auth_client.get(reverse("core:battle_history"), {"include_tournaments": "on"})
     assert response.status_code == 200
     assert "3656" in response.content.decode("utf-8")
+
+
+def _report(*, battle_date: str, tier: str, wave: int) -> str:
+    """Return a minimal Battle Report string for Battle History summary tests."""
+
+    return "\n".join(
+        [
+            "Battle Report",
+            f"Battle Date: {battle_date}",
+            f"Tier: {tier}",
+            f"Wave: {wave}",
+            "Real Time: 1h 0m 0s",
+            "Killed By: Boss",
+            "Coins Earned: 1.00M",
+        ]
+    )
+
+
+@pytest.mark.django_db
+def test_battle_history_renders_highest_wave_and_tournament_summaries(auth_client, player) -> None:
+    """Battle History summaries ignore active filters and use manual tournament tagging."""
+
+    ingest_battle_report(_report(battle_date="2025-12-01 10:00:00", tier="1", wave=100), player=player)
+    ingest_battle_report(_report(battle_date="2025-12-02 10:00:00", tier="1", wave=200), player=player)
+    ingest_battle_report(_report(battle_date="2025-12-03 10:00:00", tier="2", wave=150), player=player)
+    ingest_battle_report(_report(battle_date="2025-12-04 10:00:00", tier="3+", wave=222), player=player)
+
+    ingest_battle_report(
+        _report(battle_date="2025-12-02 11:00:00", tier="1", wave=400),
+        player=player,
+        is_tournament=True,
+    )
+    ingest_battle_report(
+        _report(battle_date="2025-12-01 11:00:00", tier="1", wave=400),
+        player=player,
+        is_tournament=True,
+    )
+    ingest_battle_report(
+        _report(battle_date="2025-12-01 12:00:00", tier="1", wave=300),
+        player=player,
+        is_tournament=True,
+    )
+    ingest_battle_report(
+        _report(battle_date="2025-12-03 12:00:00", tier="1", wave=200),
+        player=player,
+        is_tournament=True,
+    )
+
+    response = auth_client.get(reverse("core:battle_history"), data={"tier": 99})
+    assert response.status_code == 200
+
+    content = response.content.decode("utf-8")
+    assert "No battle reports match the current filters" in content
+    assert "Highest Wave by Tier" in content
+    assert "Top 3 Tournament Logs" in content
+
+    assert response.context["highest_wave_by_tier"] == [
+        {"tier": 1, "highest_wave": 200},
+        {"tier": 2, "highest_wave": 150},
+    ]
+
+    top_logs = response.context["top_tournament_logs"]
+    assert [entry.wave for entry in top_logs] == [400, 400, 300]
+    assert top_logs[0].battle_date is not None
+    assert top_logs[1].battle_date is not None
+    assert top_logs[0].battle_date > top_logs[1].battle_date
+
+    highest_wave_segment = re.search(
+        r"Highest Wave by Tier.*?</table>",
+        content,
+        flags=re.DOTALL,
+    )
+    assert highest_wave_segment is not None
+    assert "200" in highest_wave_segment.group(0)
+    assert "400" not in highest_wave_segment.group(0)

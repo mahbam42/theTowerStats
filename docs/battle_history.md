@@ -29,12 +29,14 @@ Battle History helps you review your past runs in a table so you can compare res
 
 - **Battle date** and **Tier** come from the report header and help you locate runs in time.
 - **Highest wave** shows the highest wave reached in that run.
+- **Highest Wave by Tier** summarizes the best wave you have reached for each tier across all imported runs.
 - **Killed by** shows the cause of death when it exists in the report.
 - **Killed By (diagnostic)** summarizes how often each **Killed by** label appears across the current filters.
 - **Coins earned**, **Cash earned**, and **Interest earned** match the values shown in the report summary.
 - **Coins/real hour** divides coins earned by the run’s **Real Time** duration as reported by the game.
 - **Gem blocks**, **Cells earned**, and **Reroll shards** show run resources that may be missing in older or incomplete reports.
 - **Preset** is an optional label you can use to group runs for review. The game currently allows 6 presets, and this app lets you save more. Presets do not change any gameplay results.
+- **Top 3 Tournament Logs** shows your three best tournament-marked runs by highest wave.
 - Selecting a column header toggles between ascending and descending order for that column.
 
 ## Notes & Limitations
@@ -47,6 +49,9 @@ Battle History helps you review your past runs in a table so you can compare res
 
 > **Note**
 > Tournament rounds can be marked in-game without appearing in the copied Battle Report text. The app cannot detect tournament runs automatically from pasted text, so use **Tournament run** during import to exclude those runs from charts and history by default.
+
+> **Note**
+> **Highest Wave by Tier** and **Top 3 Tournament Logs** use all imported runs, not the current filter selections. Tournament runs only appear in the tournament summary when you marked them during import.
 
 > **Caution**
 > This app does not invent or infer missing values.

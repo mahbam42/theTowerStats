@@ -30,6 +30,7 @@ Cards help you track your card slot progression and keep an organized view of yo
 14. Select a column header in the cards table to sort the table.
 15. Select the same column header again to reverse the sort order.
 16. Select **Reset Filters** to return to the full list.
+17. Review **Total Cards Progress** to see an overall collection summary across all cards.
 
 ## How to Read the Results
 
@@ -41,6 +42,12 @@ Cards help you track your card slot progression and keep an organized view of yo
 - **(MAX)** indicates the card is fully maxed and can no longer be increased.
 - **Parameters** show the card description with the current level value emphasized when the card is owned.
 - **Presets** are labels that help you filter and group cards (unlocked via Lab Research 'Card Presets'). The Game currently allows for 6 presets to be set, this app allows as many as you'd like. Define and set Presets from the Cards Dashboard.
+- **Total Cards Progress** summarizes overall collection progress across all cards:
+  - **Cards Remaining** shows how many card copies are left until every card is fully maxed.
+  - **Total Cards** shows the total copies required to fully max every card.
+  - **Maxed Cards** shows how many cards are fully maxed.
+  - **Gems Needed** is an estimate based on buying card packs.
+  - **Events** is an estimate of how many event missions it would take to earn the shown gems.
 
     > **Note**
     > Presets can also be assigned to Battle Reports to track card usage over time. 
@@ -70,6 +77,9 @@ Cards help you track your card slot progression and keep an organized view of yo
 
 > **Note**
 > If the app does not have a per-level value available for a card, the Parameters text may be shown without a highlighted current value.
+
+> **Note**
+> **Gems Needed** and **Events** are estimates based on buying 10 cards for 200 gems and a “buy 80 cards” event mission. These values are helpers, not game state.
 
 ## Advanced Usage
 

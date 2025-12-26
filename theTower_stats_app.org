@@ -3223,5 +3223,9 @@ Mostly a visual tweak, but adds context and history for the player to interpert 
 - [X] promt 37 Charts Enhancements
 - [X] prompt 37 validation
 - [X] prompt38Validation.md
+
+- [ ] phase12.md
+
+- [X] prompt39.md Cards Progress and Top Wave Widgets
   
 - [ ] version1.0.md 
