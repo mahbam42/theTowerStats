@@ -34,6 +34,38 @@ class BattleReport(models.Model):
         )
 
 
+class BattleReportDerivedMetrics(models.Model):
+    """Persisted derived metrics parsed from Battle Report raw text."""
+
+    player = models.ForeignKey(Player, on_delete=models.CASCADE, related_name="battle_report_derived_metrics")
+    battle_report = models.OneToOneField(
+        BattleReport, on_delete=models.CASCADE, related_name="derived_metrics"
+    )
+    values = models.JSONField(default=dict, blank=True)
+    raw_values = models.JSONField(default=dict, blank=True)
+
+    class Meta:
+        verbose_name = "Battle Report Derived Metrics"
+        verbose_name_plural = "Battle Report Derived Metrics"
+
+    def __str__(self) -> str:
+        """Return a concise display string for admin/debug usage."""
+
+        return f"BattleReportDerivedMetrics(battle_report_id={self.battle_report_id})"
+
+    def clean(self) -> None:
+        """Enforce that derived metrics remain scoped to a single player."""
+
+        if self.battle_report_id and self.battle_report.player_id != self.player_id:
+            raise ValidationError("BattleReportDerivedMetrics.player must match battle_report.player.")
+
+    def save(self, *args, **kwargs) -> None:
+        """Persist derived metrics after validating ownership."""
+
+        self.full_clean()
+        super().save(*args, **kwargs)
+
+
 class BattleReportProgress(models.Model):
     """Minimal run metadata extracted from a Battle Report.
 

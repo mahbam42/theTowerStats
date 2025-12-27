@@ -73,4 +73,5 @@ nav:
       - Analytics: reference/analytics.md
       - Core Charting: reference/core_charting.md
       - Core Parsers: reference/core_parsers.md
+      - Parameter Keys: parameter_keys.md
       - Public APIs: api.md

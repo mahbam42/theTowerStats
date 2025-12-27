@@ -9,7 +9,8 @@ import pytest
 from django.test import override_settings
 
 from analysis.engine import analyze_runs
-from gamedata.models import BattleReport, BattleReportProgress
+from analysis.raw_text_metrics import extract_raw_text_metrics
+from gamedata.models import BattleReport, BattleReportDerivedMetrics, BattleReportProgress
 from player_state.models import Preset
 
 pytestmark = pytest.mark.integration
@@ -887,6 +888,13 @@ def test_dashboard_view_renders_coins_by_source_donut(auth_client, player) -> No
         tier=11,
         wave=121,
         real_time_seconds=1055,
+    )
+    extracted = extract_raw_text_metrics(raw_text)
+    BattleReportDerivedMetrics.objects.create(
+        battle_report=report,
+        player=player,
+        values={key: parsed.value for key, parsed in extracted.items()},
+        raw_values={key: parsed.raw_value for key, parsed in extracted.items()},
     )
 
     response = auth_client.get("/", {"charts": ["coins_by_source"], "start_date": date(2025, 12, 9)})

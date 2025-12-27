@@ -4,8 +4,9 @@ from __future__ import annotations
 
 from django.core.management.base import BaseCommand, CommandError
 
+from analysis.raw_text_metrics import extract_raw_text_metrics
 from core.parsers.battle_report import parse_battle_report
-from gamedata.models import BattleReport, BattleReportProgress
+from gamedata.models import BattleReport, BattleReportDerivedMetrics, BattleReportProgress
 
 
 class Command(BaseCommand):
@@ -45,7 +46,7 @@ class Command(BaseCommand):
         if not check and not write:
             raise CommandError("Refusing to write without explicit intent; pass --check or --write.")
 
-        queryset = BattleReport.objects.select_related("run_progress").order_by("id")
+        queryset = BattleReport.objects.select_related("run_progress", "derived_metrics").order_by("id")
         if limit is not None:
             queryset = queryset[:limit]
 
@@ -53,12 +54,15 @@ class Command(BaseCommand):
             "processed": 0,
             "created_progress": 0,
             "updated_progress": 0,
+            "created_derived": 0,
+            "updated_derived": 0,
             "no_change": 0,
         }
 
         for report in queryset:
             totals["processed"] += 1
             parsed = parse_battle_report(report.raw_text)
+            derived_payload = _derived_metrics_payload(report.raw_text)
 
             progress = getattr(report, "run_progress", None)
             created = False
@@ -83,19 +87,51 @@ class Command(BaseCommand):
                 "reroll_shards_earned": parsed.reroll_shards_earned,
             }
 
-            changed = created or any(getattr(progress, key) != value for key, value in updated_fields.items())
-            if not changed:
+            progress_changed = created or any(getattr(progress, key) != value for key, value in updated_fields.items())
+            derived = getattr(report, "derived_metrics", None)
+            derived_changed = (
+                derived is None
+                or derived.values != derived_payload["values"]
+                or derived.raw_values != derived_payload["raw_values"]
+            )
+
+            if not progress_changed and not derived_changed:
                 totals["no_change"] += 1
                 continue
 
-            totals["created_progress"] += int(created)
-            totals["updated_progress"] += int(not created)
+            if progress_changed:
+                totals["created_progress"] += int(created)
+                totals["updated_progress"] += int(not created)
 
-            if write:
-                for key, value in updated_fields.items():
-                    setattr(progress, key, value)
-                progress.save()
+                if write:
+                    for key, value in updated_fields.items():
+                        setattr(progress, key, value)
+                    progress.save()
+
+            if derived_changed:
+                totals["created_derived"] += int(derived is None)
+                totals["updated_derived"] += int(derived is not None)
+
+                if write:
+                    BattleReportDerivedMetrics.objects.update_or_create(
+                        battle_report=report,
+                        defaults={
+                            "player": report.player,
+                            "values": derived_payload["values"],
+                            "raw_values": derived_payload["raw_values"],
+                        },
+                    )
 
         mode = "CHECK" if check else "WRITE"
         self.stdout.write(f"[{mode}] {totals}")
         return None
+
+
+def _derived_metrics_payload(raw_text: str) -> dict[str, dict[str, float | str]]:
+    """Return persisted derived metrics payload from Battle Report text."""
+
+    extracted = extract_raw_text_metrics(raw_text)
+    return {
+        "values": {key: parsed.value for key, parsed in extracted.items()},
+        "raw_values": {key: parsed.raw_value for key, parsed in extracted.items()},
+    }

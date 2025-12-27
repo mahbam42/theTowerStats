@@ -14,7 +14,8 @@ pytestmark = pytest.mark.integration
 def test_chart_builder_renders_runtime_chart(auth_client, player) -> None:
     """Render a runtime ChartConfig generated from Chart Builder inputs."""
 
-    from gamedata.models import BattleReport, BattleReportProgress
+    from analysis.raw_text_metrics import extract_raw_text_metrics
+    from gamedata.models import BattleReport, BattleReportDerivedMetrics, BattleReportProgress
 
     report = BattleReport.objects.create(
         player=player,
@@ -29,6 +30,13 @@ def test_chart_builder_renders_runtime_chart(auth_client, player) -> None:
         wave=100,
         real_time_seconds=600,
         coins_earned=1200,
+    )
+    extracted = extract_raw_text_metrics(report.raw_text)
+    BattleReportDerivedMetrics.objects.create(
+        battle_report=report,
+        player=player,
+        values={key: parsed.value for key, parsed in extracted.items()},
+        raw_values={key: parsed.raw_value for key, parsed in extracted.items()},
     )
 
     response = auth_client.get(
