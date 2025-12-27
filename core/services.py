@@ -11,11 +11,13 @@ from django.db import IntegrityError, transaction
 from definitions.models import UltimateWeaponDefinition
 from gamedata.models import (
     BattleReport,
+    BattleReportDerivedMetrics,
     BattleReportProgress,
     RunCombatUltimateWeapon,
     RunUtilityUltimateWeapon,
 )
 from player_state.models import Player, Preset
+from analysis.raw_text_metrics import extract_raw_text_metrics
 from core.parsers.battle_report import extract_ultimate_weapon_usage, parse_battle_report
 
 
@@ -45,6 +47,7 @@ def ingest_battle_report(
                 raw_text=raw_text,
                 checksum=parsed.checksum,
             )
+            _persist_derived_metrics(battle_report=battle_report, player=player, raw_text=raw_text)
             BattleReportProgress.objects.create(
                 battle_report=battle_report,
                 player=player,
@@ -78,6 +81,7 @@ def ingest_battle_report(
                 preset_color_snapshot=preset_snapshot["color"],
                 is_tournament=is_tournament,
             )
+        _persist_derived_metrics(battle_report=battle_report, player=player, raw_text=raw_text)
         _ingest_run_ultimate_weapon_usage(battle_report=battle_report, player=player)
         return battle_report, False
 
@@ -117,6 +121,18 @@ def _preset_snapshot(preset: Preset | None) -> dict[str, str]:
     if preset is None:
         return {"name": "", "color": ""}
     return {"name": preset.name, "color": preset.badge_color()}
+
+
+def _persist_derived_metrics(*, battle_report: BattleReport, player: Player, raw_text: str) -> None:
+    """Persist derived metrics parsed from the Battle Report raw text."""
+
+    extracted = extract_raw_text_metrics(raw_text)
+    values = {key: parsed.value for key, parsed in extracted.items()}
+    raw_values = {key: parsed.raw_value for key, parsed in extracted.items()}
+    BattleReportDerivedMetrics.objects.update_or_create(
+        battle_report=battle_report,
+        defaults={"player": player, "values": values, "raw_values": raw_values},
+    )
 
 
 def _ingest_run_ultimate_weapon_usage(*, battle_report: BattleReport, player: Player) -> None:

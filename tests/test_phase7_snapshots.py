@@ -35,7 +35,8 @@ def test_snapshot_load_applies_builder_and_context(auth_client, player) -> None:
     """Loading a snapshot via snapshot_id pre-fills builder inputs and renders its chart."""
 
     from analysis.chart_config_dto import ChartConfigDTO, ChartContextDTO
-    from gamedata.models import BattleReport, BattleReportProgress
+    from analysis.raw_text_metrics import extract_raw_text_metrics
+    from gamedata.models import BattleReport, BattleReportDerivedMetrics, BattleReportProgress
     from core.charting.snapshot_codec import encode_chart_config_dto
     from player_state.models import ChartSnapshot
 
@@ -52,6 +53,13 @@ def test_snapshot_load_applies_builder_and_context(auth_client, player) -> None:
         wave=100,
         real_time_seconds=600,
         coins_earned=1200,
+    )
+    extracted = extract_raw_text_metrics(report.raw_text)
+    BattleReportDerivedMetrics.objects.create(
+        battle_report=report,
+        player=player,
+        values={key: parsed.value for key, parsed in extracted.items()},
+        raw_values={key: parsed.raw_value for key, parsed in extracted.items()},
     )
 
     dto = ChartConfigDTO(
@@ -80,8 +88,9 @@ def test_snapshot_can_render_on_ultimate_weapons_dashboard(auth_client, player) 
     """Ultimate Weapons dashboard can render snapshots saved with target=ultimate_weapons."""
 
     from analysis.chart_config_dto import ChartConfigDTO, ChartContextDTO
+    from analysis.raw_text_metrics import extract_raw_text_metrics
     from core.charting.snapshot_codec import encode_chart_config_dto
-    from gamedata.models import BattleReport, BattleReportProgress
+    from gamedata.models import BattleReport, BattleReportDerivedMetrics, BattleReportProgress
     from player_state.models import ChartSnapshot
     from tests.test_ultimate_weapon_progress_dashboard import _uw_with_three_parameters
 
@@ -100,6 +109,13 @@ def test_snapshot_can_render_on_ultimate_weapons_dashboard(auth_client, player) 
         wave=100,
         real_time_seconds=600,
         coins_earned=1200,
+    )
+    extracted = extract_raw_text_metrics(report.raw_text)
+    BattleReportDerivedMetrics.objects.create(
+        battle_report=report,
+        player=player,
+        values={key: parsed.value for key, parsed in extracted.items()},
+        raw_values={key: parsed.raw_value for key, parsed in extracted.items()},
     )
 
     dto = ChartConfigDTO(

@@ -7,6 +7,7 @@ from django.db.models import QuerySet
 
 from gamedata.models import (
     BattleReport,
+    BattleReportDerivedMetrics,
     BattleReportProgress,
     RunBot,
     RunCombatUltimateWeapon,
@@ -69,6 +70,13 @@ class BattleReportProgressAdmin(PlayerScopedAdmin):
             base_qs = kwargs.get("queryset") or db_field.remote_field.model._default_manager.all()
             kwargs["queryset"] = base_qs.filter(player=request.user.player)
         return super().formfield_for_foreignkey(db_field, request, **kwargs)
+
+
+@admin.register(BattleReportDerivedMetrics)
+class BattleReportDerivedMetricsAdmin(PlayerScopedAdmin):
+    """Admin configuration for BattleReportDerivedMetrics."""
+
+    list_display = ("player", "battle_report")
 
 
 @admin.register(RunBot)

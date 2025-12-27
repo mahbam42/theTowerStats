@@ -149,6 +149,7 @@ def analyze_metric_series(
         if coins is None:
             coins = _coins_from_raw_text(getattr(record, "raw_text", None))
         cash = _coerce_int(getattr(progress, "cash_earned", None))
+        interest_earned = _coerce_int(getattr(progress, "interest_earned", None))
         cells = _coerce_int(getattr(progress, "cells_earned", None))
         reroll_shards = _coerce_int(getattr(progress, "reroll_shards_earned", None))
         wave = _coerce_int(getattr(progress, "wave", None))
@@ -161,6 +162,7 @@ def analyze_metric_series(
             record=record,
             coins=coins,
             cash=cash,
+            interest_earned=interest_earned,
             cells=cells,
             reroll_shards=reroll_shards,
             wave=wave,

@@ -1043,7 +1043,7 @@ def _runs_for_chart_context_dto(*, player: Player, context: ChartContextDTO) -> 
 
     runs = (
         BattleReport.objects.filter(player=player)
-        .select_related("run_progress", "run_progress__preset")
+        .select_related("run_progress", "run_progress__preset", "derived_metrics")
         .order_by("run_progress__battle_date")
     )
     if not context.include_tournaments:
@@ -1164,7 +1164,9 @@ def battle_history(request: HttpRequest) -> HttpResponse:
     )
 
     sort_key = filter_form.cleaned_data.get("sort") or "-run_progress__battle_date"
-    runs = BattleReport.objects.filter(player=player).select_related("run_progress", "run_progress__preset")
+    runs = BattleReport.objects.filter(player=player).select_related(
+        "run_progress", "run_progress__preset", "derived_metrics"
+    )
     include_tournaments = bool(filter_form.cleaned_data.get("include_tournaments") or False)
     if not include_tournaments:
         runs = runs.exclude(Q(run_progress__tier__isnull=True) | Q(run_progress__is_tournament=True))
@@ -2371,7 +2373,7 @@ def ultimate_weapon_progress(request: HttpRequest) -> HttpResponse:
             if validation.is_valid:
                 runs_qs = (
                     BattleReport.objects.filter(player=player)
-                    .select_related("run_progress", "run_progress__preset")
+                    .select_related("run_progress", "run_progress__preset", "derived_metrics")
                     .order_by("run_progress__battle_date")
                 )
                 if not dto.context.include_tournaments:

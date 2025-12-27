@@ -9,7 +9,7 @@ from __future__ import annotations
 from dataclasses import dataclass
 from typing import Final
 
-from .battle_report_extract import extract_numeric_value
+from .raw_text_metrics import RAW_TEXT_METRIC_SPECS
 from .uw_usage import is_ultimate_weapon_observed_active
 from .categories import MetricCategory
 from .context import ParameterInput, PlayerContextInput
@@ -19,7 +19,6 @@ from .effects import effective_cooldown_seconds_from_parameters
 from .effects import uptime_percent_from_parameters
 from .dto import MetricDefinition
 from .dto import UsedParameter
-from .quantity import UnitType
 from .rates import coins_per_hour
 from .series_registry import DEFAULT_REGISTRY
 
@@ -620,6 +619,7 @@ def compute_metric_value(
     record: object,
     coins: int | None,
     cash: int | None,
+    interest_earned: int | None,
     cells: int | None,
     reroll_shards: int | None,
     wave: int | None,
@@ -636,6 +636,7 @@ def compute_metric_value(
         record: Run-like object used for relationship-based metrics (e.g. usage presence).
         coins: Observed coins for the run.
         cash: Observed cash for the run.
+        interest_earned: Observed interest earned for the run.
         cells: Observed cells for the run.
         reroll_shards: Observed reroll shards for the run.
         wave: Observed wave reached for the run.
@@ -658,11 +659,7 @@ def compute_metric_value(
         return (float(cash) if cash is not None else None, (), ())
 
     if metric_key == "interest_earned":
-        battle_text = getattr(record, "raw_text", None)
-        if not isinstance(battle_text, str):
-            return None, (), ()
-        observed = _compute_observed_from_raw_text(metric_key, battle_text=battle_text)
-        return (observed, (), ()) if observed is not None else (None, (), ())
+        return (float(interest_earned) if interest_earned is not None else None, (), ())
 
     if metric_key == "cells_earned":
         return (float(cells) if cells is not None else None, (), ())
@@ -722,6 +719,8 @@ def compute_metric_value(
                 return 1.0, (), ()
         return 0.0, (), ()
 
+    derived_values = _record_derived_values(record)
+
     if metric_key == "coins_per_hour":
         return (
             compute_observed_coins_per_hour(coins=coins, real_time_seconds=real_time_seconds),
@@ -734,46 +733,38 @@ def compute_metric_value(
             return None, (), ()
         return (float(wave) * 3600.0 / float(real_time_seconds), (), ("waves/hour = waves_reached / real_time_hours.",))
 
+    if metric_key in RAW_TEXT_METRIC_SPECS and metric_key != "interest_earned":
+        persisted = derived_values.get(metric_key)
+        if persisted is None:
+            return None, (), ("Persisted derived metric missing; reparse or reingest the Battle Report.",)
+        return float(persisted), (), ()
+
     if metric_key == "enemies_destroyed_per_hour":
         if real_time_seconds is None or real_time_seconds <= 0:
             return None, (), ()
-        battle_text = getattr(record, "raw_text", None)
-        if not isinstance(battle_text, str):
-            return None, (), ()
-        total = _compute_enemies_destroyed_total(battle_text=battle_text)
+        total = _compute_enemies_destroyed_total_from_values(derived_values)
         if total is None:
             return None, (), ()
         return (float(total) * 3600.0 / float(real_time_seconds), (), ("enemies/hour = enemies_destroyed_total / real_time_hours.",))
 
     if metric_key == "enemies_destroyed_total":
-        battle_text = getattr(record, "raw_text", None)
-        if not isinstance(battle_text, str):
-            return None, (), ()
-        total = _compute_enemies_destroyed_total(battle_text=battle_text)
+        total = _compute_enemies_destroyed_total_from_values(derived_values)
         if total is None:
             return None, (), ()
         return (float(total), (), ("Derived total: sums per-type destroyed counts; ignores game-reported totals.",))
 
     if metric_key == "coins_from_other_sources":
-        battle_text = getattr(record, "raw_text", None)
-        if coins is None or not isinstance(battle_text, str):
+        if coins is None:
             return None, (), ()
-        return _compute_other_coins_from_sources(coins=coins, battle_text=battle_text), (), ()
+        return _compute_other_coins_from_sources(coins=coins, derived_values=derived_values), (), ()
 
     if metric_key == "cash_from_other_sources":
-        battle_text = getattr(record, "raw_text", None)
-        if cash is None or not isinstance(battle_text, str):
+        if cash is None:
             return None, (), ()
-        cash_from_gt = _compute_observed_from_raw_text("cash_from_golden_tower", battle_text=battle_text) or 0.0
-        interest = _compute_observed_from_raw_text("interest_earned", battle_text=battle_text) or 0.0
+        cash_from_gt = derived_values.get("cash_from_golden_tower") or 0.0
+        interest = interest_earned or 0.0
         residual = float(cash) - float(cash_from_gt) - float(interest)
         return residual, (), ("Other cash = cash_earned - cash_from_golden_tower - interest_earned.",)
-
-    battle_text = getattr(record, "raw_text", None)
-    if isinstance(battle_text, str):
-        observed = _compute_observed_from_raw_text(metric_key, battle_text=battle_text)
-        if observed is not None:
-            return observed, (), ()
 
     if context is None:
         return None, (), ("Missing player context; derived metric not computed.",)
@@ -858,120 +849,32 @@ def compute_metric_value(
     return None, (), ("Unknown metric key; no value computed.",)
 
 
-def _compute_observed_from_raw_text(metric_key: str, *, battle_text: str) -> float | None:
-    """Compute Phase 6 observed metrics from raw Battle Report text.
+def _compute_enemies_destroyed_total_from_values(derived_values: dict[str, float]) -> int | None:
+    """Compute enemies destroyed total from persisted derived metrics."""
 
-    Args:
-        metric_key: Metric key to compute.
-        battle_text: Raw Battle Report text.
-
-    Returns:
-        Parsed float when available; otherwise None.
-    """
-
-    mapping: dict[str, tuple[str, UnitType]] = {
-        "coins_from_death_wave": ("Coins From Death Wave", UnitType.coins),
-        "interest_earned": ("Interest earned", UnitType.cash),
-        "cash_from_golden_tower": ("Cash From Golden Tower", UnitType.cash),
-        "coins_from_golden_tower": ("Coins From Golden Tower", UnitType.coins),
-        "coins_from_black_hole": ("Coins From Black Hole", UnitType.coins),
-        "coins_from_spotlight": ("Coins From Spotlight", UnitType.coins),
-        "coins_from_orb": ("Coins From Orb", UnitType.coins),
-        "coins_from_coin_upgrade": ("Coins from Coin Upgrade", UnitType.coins),
-        "coins_from_coin_bonuses": ("Coins from Coin Bonuses", UnitType.coins),
-        "damage_dealt": ("Damage dealt", UnitType.damage),
-        "projectiles_damage": ("Projectiles Damage", UnitType.damage),
-        "thorn_damage": ("Thorn Damage", UnitType.damage),
-        "orb_damage": ("Orb Damage", UnitType.damage),
-        "land_mine_damage": ("Land Mine Damage", UnitType.damage),
-        "inner_land_mine_damage": ("Inner Land Mine Damage", UnitType.damage),
-        "chain_lightning_damage": ("Chain Lightning Damage", UnitType.damage),
-        "death_wave_damage": ("Death Wave Damage", UnitType.damage),
-        "death_ray_damage": ("Death Ray Damage", UnitType.damage),
-        "smart_missile_damage": ("Smart Missile Damage", UnitType.damage),
-        "black_hole_damage": ("Black Hole Damage", UnitType.damage),
-        "swamp_damage": ("Swamp Damage", UnitType.damage),
-        "electrons_damage": ("Electrons Damage", UnitType.damage),
-        "rend_armor_damage": ("Rend Armor Damage", UnitType.damage),
-        "enemies_hit_by_orbs": ("Enemies Hit by Orbs", UnitType.count),
-        "enemies_destroyed_basic": ("Basic", UnitType.count),
-        "enemies_destroyed_fast": ("Fast", UnitType.count),
-        "enemies_destroyed_tank": ("Tank", UnitType.count),
-        "enemies_destroyed_ranged": ("Ranged", UnitType.count),
-        "enemies_destroyed_boss": ("Boss", UnitType.count),
-        "enemies_destroyed_protector": ("Protector", UnitType.count),
-        "enemies_destroyed_vampires": ("Vampires", UnitType.count),
-        "enemies_destroyed_rays": ("Rays", UnitType.count),
-        "enemies_destroyed_scatters": ("Scatters", UnitType.count),
-        "enemies_destroyed_saboteur": ("Saboteur", UnitType.count),
-        "enemies_destroyed_commander": ("Commander", UnitType.count),
-        "enemies_destroyed_overcharge": ("Overcharge", UnitType.count),
-        "enemies_destroyed_by_orbs": ("Destroyed By Orbs", UnitType.count),
-        "enemies_destroyed_by_thorns": ("Destroyed by Thorns", UnitType.count),
-        "enemies_destroyed_by_death_ray": ("Destroyed by Death Ray", UnitType.count),
-        "enemies_destroyed_by_land_mine": ("Destroyed by Land Mine", UnitType.count),
-        "enemies_destroyed_in_spotlight": ("Destroyed in Spotlight", UnitType.count),
-        "enemies_destroyed_in_golden_bot": ("Destroyed in Golden Bot", UnitType.count),
-        "guardian_damage": ("Damage", UnitType.damage),
-        "guardian_summoned_enemies": ("Summoned enemies", UnitType.count),
-        "guardian_coins_stolen": ("Guardian coins stolen", UnitType.coins),
-        "guardian_coins_fetched": ("Coins Fetched", UnitType.coins),
-        "guardian_gems_fetched": ("Gems", UnitType.count),
-        "guardian_medals_fetched": ("Medals", UnitType.count),
-        "guardian_reroll_shards_fetched": ("Reroll Shards", UnitType.count),
-        "guardian_cannon_shards_fetched": ("Cannon Shards", UnitType.count),
-        "guardian_armor_shards_fetched": ("Armor Shards", UnitType.count),
-        "guardian_generator_shards_fetched": ("Generator Shards", UnitType.count),
-        "guardian_core_shards_fetched": ("Core Shards", UnitType.count),
-        "guardian_common_modules_fetched": ("Common Modules", UnitType.count),
-        "guardian_rare_modules_fetched": ("Rare Modules", UnitType.count),
-    }
-
-    spec = mapping.get(metric_key)
-    if spec is None:
-        return None
-
-    label, unit_type = spec
-    extracted = extract_numeric_value(battle_text, label=label, unit_type=unit_type)
-    if extracted is None:
-        return 0.0
-    return extracted.value
-
-
-def _compute_enemies_destroyed_total(*, battle_text: str) -> int | None:
-    """Compute enemies destroyed total by summing per-type rows.
-
-    Args:
-        battle_text: Raw Battle Report text.
-
-    Returns:
-        Sum of base and elite enemy type counts when at least one type is present;
-        otherwise None.
-    """
-
-    labels = (
-        "Basic",
-        "Fast",
-        "Tank",
-        "Ranged",
-        "Boss",
-        "Protector",
-        "Vampires",
-        "Rays",
-        "Scatters",
-        "Saboteur",
-        "Commander",
-        "Overcharge",
+    metric_keys = (
+        "enemies_destroyed_basic",
+        "enemies_destroyed_fast",
+        "enemies_destroyed_tank",
+        "enemies_destroyed_ranged",
+        "enemies_destroyed_boss",
+        "enemies_destroyed_protector",
+        "enemies_destroyed_vampires",
+        "enemies_destroyed_rays",
+        "enemies_destroyed_scatters",
+        "enemies_destroyed_saboteur",
+        "enemies_destroyed_commander",
+        "enemies_destroyed_overcharge",
     )
 
     total = 0.0
     has_any = False
-    for label in labels:
-        extracted = extract_numeric_value(battle_text, label=label, unit_type=UnitType.count)
-        if extracted is None:
+    for key in metric_keys:
+        observed = derived_values.get(key)
+        if observed is None:
             continue
         has_any = True
-        total += float(extracted.value)
+        total += float(observed)
 
     if not has_any:
         return None
@@ -981,16 +884,8 @@ def _compute_enemies_destroyed_total(*, battle_text: str) -> int | None:
         return None
 
 
-def _compute_other_coins_from_sources(*, coins: int, battle_text: str) -> float:
-    """Return residual coins not covered by named sources.
-
-    Args:
-        coins: Total coins earned for the run.
-        battle_text: Raw Battle Report text for extracting known sources.
-
-    Returns:
-        Residual coins value as a float. Missing sources are treated as 0.
-    """
+def _compute_other_coins_from_sources(*, coins: int, derived_values: dict[str, float]) -> float:
+    """Return residual coins not covered by named sources from persisted values."""
 
     known_sources = (
         "coins_from_death_wave",
@@ -1004,12 +899,18 @@ def _compute_other_coins_from_sources(*, coins: int, battle_text: str) -> float:
         "guardian_coins_fetched",
     )
 
-    total_sources = 0.0
-    for key in known_sources:
-        observed = _compute_observed_from_raw_text(key, battle_text=battle_text)
-        if observed is not None:
-            total_sources += observed
+    total_sources = sum(float(derived_values.get(key) or 0.0) for key in known_sources)
     return float(coins) - total_sources
+
+
+def _record_derived_values(record: object) -> dict[str, float]:
+    """Return persisted derived metric values from a record when available."""
+
+    derived = getattr(record, "derived_metrics", None)
+    values = getattr(derived, "values", None)
+    if isinstance(values, dict):
+        return {key: float(value) for key, value in values.items() if value is not None}
+    return {}
 
 
 def category_for_metric(metric_key: str) -> MetricCategory | None:

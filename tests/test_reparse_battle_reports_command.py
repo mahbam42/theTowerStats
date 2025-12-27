@@ -8,7 +8,7 @@ import pytest
 from django.core.management import call_command
 
 from core.parsers.battle_report import compute_battle_report_checksum
-from gamedata.models import BattleReport, BattleReportProgress
+from gamedata.models import BattleReport, BattleReportDerivedMetrics, BattleReportProgress
 
 pytestmark = pytest.mark.integration
 
@@ -28,6 +28,7 @@ def test_reparse_battle_reports_backfills_progress_fields(player) -> None:
             "Coins earned\t17.55M",
             "Cash earned\t$55.90M",
             "Interest earned\t$2.13M",
+            "Coins From Golden Tower\t1.25M",
             "Gem Blocks Tapped\t3",
             "Cells Earned\t346",
             "Reroll Shards Earned\t373",
@@ -62,6 +63,9 @@ def test_reparse_battle_reports_backfills_progress_fields(player) -> None:
     assert progress.gem_blocks_tapped == 3
     assert progress.cells_earned == 346
     assert progress.reroll_shards_earned == 373
+    derived = BattleReportDerivedMetrics.objects.get(battle_report=report)
+    assert derived.values["coins_from_golden_tower"] == 1_250_000
+    assert derived.raw_values["coins_from_golden_tower"] == "1.25M"
 
 
 @pytest.mark.django_db
@@ -92,3 +96,4 @@ def test_reparse_battle_reports_check_does_not_write(player) -> None:
 
     progress = BattleReportProgress.objects.get(battle_report=report)
     assert progress.coins_earned is None
+    assert not BattleReportDerivedMetrics.objects.filter(battle_report=report).exists()

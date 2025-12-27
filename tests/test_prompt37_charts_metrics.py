@@ -8,6 +8,7 @@ from datetime import datetime, timezone
 import pytest
 
 from analysis.engine import analyze_metric_series
+from analysis.raw_text_metrics import extract_raw_text_metrics
 from analysis.series_registry import DEFAULT_REGISTRY
 from core.charting.render import render_chart
 from core.charting.schema import ChartConfig, ChartFilters, ChartSeriesConfig, ChartUI, DateRangeFilterConfig
@@ -32,6 +33,21 @@ class Record:
     raw_text: str
     parsed_at: datetime
     run_progress: Progress
+    derived_metrics: object | None = None
+
+
+def _derived_metrics(raw_text: str) -> object:
+    """Return a derived-metrics stub from raw Battle Report text."""
+
+    extracted = extract_raw_text_metrics(raw_text)
+    return type(
+        "DerivedMetrics",
+        (),
+        {
+            "values": {key: parsed.value for key, parsed in extracted.items()},
+            "raw_values": {key: parsed.raw_value for key, parsed in extracted.items()},
+        },
+    )()
 
 
 def test_enemies_destroyed_total_ignores_battle_report_totals() -> None:
@@ -70,6 +86,7 @@ def test_enemies_destroyed_total_ignores_battle_report_totals() -> None:
             wave=1141,
             real_time_seconds=60,
         ),
+        derived_metrics=_derived_metrics(raw_text),
     )
 
     result = analyze_metric_series([record], metric_key="enemies_destroyed_total")
@@ -99,6 +116,7 @@ def test_cash_residual_derived_from_named_sources() -> None:
             real_time_seconds=60,
             cash_earned=43_250_000,
         ),
+        derived_metrics=_derived_metrics(raw_text),
     )
 
     result = analyze_metric_series([record], metric_key="cash_from_other_sources")
@@ -128,6 +146,7 @@ def test_donut_renders_percent_labels_and_optional_percent_values() -> None:
             wave=1,
             real_time_seconds=60,
         ),
+        derived_metrics=_derived_metrics(raw_text),
     )
 
     config = ChartConfig(
