@@ -436,6 +436,12 @@ Before starting work on **theTowerStats**, agents must confirm:
   * [ ] mkdocs.yml parsing tested
   * [ ] Page hierarchy creation tested
 
+  * Every new/modified test must include exactly one speed marker: `@pytest.mark.unit` or `@pytest.mark.integration`.
+  *  New unit tests must not touch Django or the database; if they need Django/db, they must be `integration`.
+  * Any change to parsers, context selection, advice output, or derived metric summaries must include at least one `@pytest.mark.golden` test (or must update an existing golden test).
+  * Any bug fix must include a `@pytest.mark.regression` test that fails without the fix.
+  * PRs must run (locally or in CI): `pytest -m unit` and `pytest -m integration` (plus `pytest -m golden` when golden tests are affected).
+
 ## **Documentation Tests**
 
 * [ ] New APIs are documented in `docs/`

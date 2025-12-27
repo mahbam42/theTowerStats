@@ -1128,7 +1128,7 @@ A new user can:
 2. View history
 3. Inspect progress
 4. Understand trends …without explanation.
-*** DONE Phase 6 Expansion of Foundation and Context [33%]
+*** DONE Phase 6 Expansion of Foundation and Context [100%]
 CLOSED: [2025-12-18 Thu 14:53]
 - State "DONE"       from              [2025-12-18 Thu 14:53]
 What’s done has been minimal by design. Now we can expand it to feel “real”. Make foundational rates, units, and context provably correct, visibly coherent, and ready to support higher-order comparisons.
@@ -1234,10 +1234,10 @@ Revisit the work from phase 1 and expand it
 
 **Context:**
 Revisit and build on phase 2 work
-- [ ] Preset filtering edge cases
+- [X] Preset filtering edge cases
   - No preset selected
   - Preset selected but no matching runs
-- [ ] Tier + Preset + Date range combinations
+- [X] Tier + Preset + Date range combinations
     Explicit Precedence:
   1. Date Range
   2. Preset
@@ -1259,8 +1259,8 @@ Revisit and build on phase 2 work
       - Predictable empty/non-empty behavior
 
       - No silent fallbacks
-- [ ] Rolling windows (last N runs, last N days)
-- [ ] Add:
+- [X] Rolling windows (last N runs, last N days)
+- [X] Add:
   - One “context matrix” golden test
     - Same metric, same data
     - Different context inputs
@@ -1268,7 +1268,7 @@ Revisit and build on phase 2 work
 
 
 **Effective Value**
-- [ ] Effective Value vs Base Value
+- [X] Effective Value vs Base Value
   
   For each parameter, show:
   
@@ -1294,9 +1294,9 @@ Revisit and build on phase 2 work
 
     - Base value
 
-     - Effective value
+      - Effective value
 
-     - At least one contributing modifier
+      - At least one contributing modifier
 
 
 **Efficiency Metrics**
@@ -1320,7 +1320,7 @@ Revisit and build on phase 2 work
 **Documentation**
 
 - [X] Add Github Action to publish Docs to Github Pages
-- [ ] Phase 6 Concepts” doc:
+- [X] Phase 6 Concepts” doc:
   - Units
   - Effective vs Base
   - Context
@@ -1461,7 +1461,7 @@ CLOSED: [2025-12-19 Fri 12:52]
 - “Insufficient data” degradation
    Implement explicit insufficiency detection (e.g., <N runs per scope, missing values, empty windows) and return a structured advice item that says “Insufficient data” + why; add tests for empty and thin scopes.  
 
-*** DONE Phase 8 Multiple Player Support
+*** DONE Phase 8 Multiple Player Support [100%]
 CLOSED: [2025-12-19 Fri 15:42]
 - State "DONE"       from              [2025-12-19 Fri 15:42]
 Phase 8 is the point where the app stops being “your stats tracker” and becomes a shared system.
@@ -2218,7 +2218,9 @@ B. Replace the giant sidebar with a ****Chart Control Bar****
     - Active context rendered once as breadcrumb
     - Secondary actions moved to overflow menu
 
-***** TODO [#C] Make Charts Dashboard more Mobile Friendly
+***** DONE [#C] Make Charts Dashboard more Mobile Friendly
+CLOSED: [2025-12-26 Fri 15:16]
+- State "DONE"       from "TODO"       [2025-12-26 Fri 15:16]
 On mobile, the primary task is viewing trends, not configuring charts.
 
 - Filters, Advice, Goal Aware Comparison, Compare and Quick Import should be collapsible
@@ -2423,7 +2425,7 @@ CLOSED: [2025-12-22 Mon 15:31]
 - [X] fetch_wiki_data and rebuild_wiki_definitions should have a pretty summary of deltas at the end.
   Especially when using --target all.
 
-*** Bugs/Enhancements [23/25]
+*** Bugs/Enhancements [25/29]
 
 **** DONE [#B] Error Updating Guardian Upgrade Table                 :bug:
 CLOSED: [2025-12-22 Mon 18:51]
@@ -2820,8 +2822,10 @@ CLOSED: [2025-12-25 Thu 19:26]
 
 - State "DONE"       from "TODO"       [2025-12-25 Thu 19:26]
 
-**** TODO On Cards Dashboard Add a Total Cards Progress Widget under preset tags
+**** DONE On Cards Dashboard Add a Total Cards Progress Widget under preset tags
+CLOSED: [2025-12-26 Fri 15:15]
 
+- State "DONE"       from "TODO"       [2025-12-26 Fri 15:15]
 | Cards Remaining: | {#} | Total Cards: | {#} |
 | Maxed Cards      | {#} | Progress:    | {%} |
 | Gems Needed      | {#} | Events:      | {#} |
@@ -2839,12 +2843,61 @@ Gems Needed will be calculated by Cards Remaining divided by 10 (round up) times
 
 Events will be calculated by Gems Needed divided by 1600. There is a standard Event Mission to buy 80 Cards, so 200 gems times 8 gives us 1600.
 
-**** TODO On Battle History Dashboard
+**** DONE On Battle History Dashboard
+CLOSED: [2025-12-26 Fri 15:15]
+- State "DONE"       from "TODO"       [2025-12-26 Fri 15:15]
 Add a Highest Wave table under Filters.
 
 Shows Each Tier with a run logged and the highest wave reached. Below that show the top 3 Tournament Logs.
 
 Note: Currently Tier 21 is the Highest possible. But to avoid clutter we'll base the table on Tiers logged in this app. 
+
+**** TODO [#A] Fix Advice Limits
+Comparison Field only allows a user to select 2 runs and shows "Advice summaries require at least 3 runs per scope. Single-run comparisons can be noisy and are not summarized as advice."
+
+Proposed Solution:
+Replace A and B selectors with a multiselect of runs (cmd click to select multiple) and quick buttons to compare tiers.
+
+Also small UX tweak, the Start and End Datepickers should be side by side. 
+
+**** TODO [#B] Comparison / Scenario View + reusable Snapshots
+
+- “Comparison / Scenario View and Snapshots” (TODO) and notes that snapshots are not yet reusable “anchors” across dashboards.
+
+What appears missing (by the spec in the doc):
+
+- A shared snapshot/context selector that can drive multiple pages consistently (Charts + at least one other dashboard).
+- A clear definition of “reusable across dashboards” with an integration test that proves it.
+
+Suggested acceptance criteria:
+
+- Two pages consume the same snapshot selector and show consistent scope changes.
+- Snapshot DTO round-trips without lossy transforms (save → load → identical config).
+
+**** TODO [#C] Open analysis/context feature gaps
+
+These are framed in `theTower_stats_app.md` as Phase 6 “context” work and may still be incomplete:
+
+- Preset filtering edge cases (no preset, preset with no matching runs).
+- Tier + Preset + Date range precedence rules with predictable empty-state behavior.
+- Rolling windows (“last N runs”, “last N days”).
+- Effective vs base value display everywhere parameters appear (tooltip/expandable is sufficient per the doc).
+
+Suggested acceptance criteria:
+
+- A mandatory “context matrix” golden test that asserts shape/empties across contexts (the doc explicitly calls this out).
+- Explicit empty-state DTOs (typed empties) rather than silent fallbacks.
+
+**** TODO [#C] Test taxonomy and marker enforcement
+
+`theTower_stats_app.md` includes a TODO block to formalize:
+
+- `unit` vs `integration` markers (and optionally `regression`/`golden`),
+- CI enforcement for markers,
+- dev docs explaining the taxonomy,
+- separate CI jobs (fast unit vs full).
+
+This is a process gap (not a feature) but will reduce long-term maintenance cost.
 
 ** Backlog [2/5]
 “Out of Scope”:
