@@ -38,6 +38,7 @@ nav:
   - Home: index.md
   - User Guide:
       - Overview: user_guide.md
+      - App Philosophy: philosophy.md
       - Search: search.md
       - Demo Data: demo_data.md
       - Battle History: battle_history.md
@@ -49,6 +50,8 @@ nav:
       - Bots: bots.md
   - Wiki Population: wiki_population.md
   - Development:
+      - Design Philosophy: design_philosophy.md
+      - Project Structure: project_structure.md
       - Progress: 
           - Phase 1: phase1.md
           - Phase 2: phase2.md
@@ -62,7 +65,6 @@ nav:
           - Phase 9 Summary: phase9.md
           - Phase 10 Summary: phase10.md
       - Deployment (Railway): deployment.md
-      - Project Structure: project_structure.md
       - Testing:
           - Testing: testing.md
           - Manual Testing Guide: manual_testing.md

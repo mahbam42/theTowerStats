@@ -2425,7 +2425,7 @@ CLOSED: [2025-12-22 Mon 15:31]
 - [X] fetch_wiki_data and rebuild_wiki_definitions should have a pretty summary of deltas at the end.
   Especially when using --target all.
 
-*** Bugs/Enhancements [29/31]
+*** Bugs/Enhancements [29/32]
 
 **** DONE [#B] Error Updating Guardian Upgrade Table                 :bug:
 CLOSED: [2025-12-22 Mon 18:51]
@@ -2908,7 +2908,17 @@ CLOSED: [2025-12-27 Sat 12:46]
 This is a process gap (not a feature) but will reduce long-term maintenance cost.
 
 **** TODO Revise Dashboard Docs to be Per Feature
+The docs are getting big and have long numbered lists of possible actions/steps. The information would be better structured if it was broken down by feature on each dashboard.
 
+- Charts:
+  - General
+  - Context
+  - Compare
+  - Analysis
+  - Chart Builder
+
+**** TODO [#B] If Battle Date isn't present in Battle Report fail over to parsed time :bug:
+If a player copies the Battle Report from the end of round screen Battle Date isn't included. This breaks charting for a player. 
 **** TODO [#C] Improve Coverage for core/charting/builder.py: 40%
 
 ** Backlog [2/5]
@@ -3173,7 +3183,7 @@ Follow the documentation standards defined in agents.md.
 If writing a User Guide, prioritize clarity for non-technical users, avoid internal details, and follow the required task-based structure.
 Validate the final document against the Documentation Self-Check Checklist before completing the task.
 
-*** CANCELED [#C] Wmhat-If Scenarios
+*** CANCELED [#C] What-If Scenarios
 CLOSED: [2025-12-22 Mon 09:01]
 
 - State "CANCELED"   from "TODO"       [2025-12-22 Mon 09:01] \\

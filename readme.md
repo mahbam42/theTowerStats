@@ -11,6 +11,22 @@ Battle history can be imported as raw text, then explored through charts and rea
 
 ---
 
+## TL;DR — Product Philosophy
+
+**This app helps you understand your own Tower runs.**
+
+It turns Battle Reports into history, charts, and comparisons so you can see what changed, when it changed, and under what conditions.
+
+* No leaderboards
+* No “best build” claims
+* No hidden math
+* No telling you how to play
+
+All insights are based on *your data*, shown with clear context and explained assumptions.
+If there isn’t enough data to support a conclusion, the app says so.
+
+**It’s a mirror, not a meta.**
+
 ## What This App Does
 
 ### 📥 Import Battle History
