@@ -758,11 +758,16 @@ def compute_metric_value(
     if metric_key == "coins_from_other_sources":
         if coins is None:
             return None, (), ()
-        return _compute_other_coins_from_sources(coins=coins, derived_values=derived_values), (), ()
+        other_coins = _compute_other_coins_from_sources(coins=coins, derived_values=derived_values)
+        if other_coins is None:
+            return None, (), ("Persisted derived metric missing; reparse or reingest the Battle Report.",)
+        return other_coins, (), ()
 
     if metric_key == "cash_from_other_sources":
         if cash is None:
             return None, (), ()
+        if not derived_values:
+            return None, (), ("Persisted derived metric missing; reparse or reingest the Battle Report.",)
         cash_from_gt = derived_values.get("cash_from_golden_tower") or 0.0
         interest = (interest_earned if interest_earned is not None else derived_interest) or 0.0
         residual = float(cash) - float(cash_from_gt) - float(interest)
@@ -886,7 +891,7 @@ def _compute_enemies_destroyed_total_from_values(derived_values: dict[str, float
         return None
 
 
-def _compute_other_coins_from_sources(*, coins: int, derived_values: dict[str, float]) -> float:
+def _compute_other_coins_from_sources(*, coins: int, derived_values: dict[str, float]) -> float | None:
     """Return residual coins not covered by named sources from persisted values."""
 
     known_sources = (
@@ -900,6 +905,9 @@ def _compute_other_coins_from_sources(*, coins: int, derived_values: dict[str, f
         "guardian_coins_stolen",
         "guardian_coins_fetched",
     )
+
+    if not any(key in derived_values for key in known_sources):
+        return None
 
     total_sources = sum(float(derived_values.get(key) or 0.0) for key in known_sources)
     return float(coins) - total_sources
