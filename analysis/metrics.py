@@ -652,6 +652,9 @@ def compute_metric_value(
 
     _ = config
 
+    derived_values = _record_derived_values(record)
+    derived_interest = derived_values.get("interest_earned")
+
     if metric_key == "coins_earned":
         return (float(coins) if coins is not None else None, (), ())
 
@@ -659,7 +662,8 @@ def compute_metric_value(
         return (float(cash) if cash is not None else None, (), ())
 
     if metric_key == "interest_earned":
-        return (float(interest_earned) if interest_earned is not None else None, (), ())
+        interest_value = interest_earned if interest_earned is not None else derived_interest
+        return (float(interest_value) if interest_value is not None else None, (), ())
 
     if metric_key == "cells_earned":
         return (float(cells) if cells is not None else None, (), ())
@@ -719,8 +723,6 @@ def compute_metric_value(
                 return 1.0, (), ()
         return 0.0, (), ()
 
-    derived_values = _record_derived_values(record)
-
     if metric_key == "coins_per_hour":
         return (
             compute_observed_coins_per_hour(coins=coins, real_time_seconds=real_time_seconds),
@@ -762,7 +764,7 @@ def compute_metric_value(
         if cash is None:
             return None, (), ()
         cash_from_gt = derived_values.get("cash_from_golden_tower") or 0.0
-        interest = interest_earned or 0.0
+        interest = (interest_earned if interest_earned is not None else derived_interest) or 0.0
         residual = float(cash) - float(cash_from_gt) - float(interest)
         return residual, (), ("Other cash = cash_earned - cash_from_golden_tower - interest_earned.",)
 

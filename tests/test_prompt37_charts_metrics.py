@@ -94,6 +94,7 @@ def test_enemies_destroyed_total_ignores_battle_report_totals() -> None:
     assert result.points[0].value == 78_876.0
 
 
+@pytest.mark.regression
 def test_cash_residual_derived_from_named_sources() -> None:
     """Compute residual cash as cash earned minus interest and Golden Tower cash."""
 
