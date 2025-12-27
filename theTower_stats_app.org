@@ -2425,7 +2425,7 @@ CLOSED: [2025-12-22 Mon 15:31]
 - [X] fetch_wiki_data and rebuild_wiki_definitions should have a pretty summary of deltas at the end.
   Especially when using --target all.
 
-*** Bugs/Enhancements [25/29]
+*** Bugs/Enhancements [29/30]
 
 **** DONE [#B] Error Updating Guardian Upgrade Table                 :bug:
 CLOSED: [2025-12-22 Mon 18:51]
@@ -2852,7 +2852,9 @@ Shows Each Tier with a run logged and the highest wave reached. Below that show 
 
 Note: Currently Tier 21 is the Highest possible. But to avoid clutter we'll base the table on Tiers logged in this app. 
 
-**** TODO [#A] Fix Advice Limits
+**** DONE [#A] Fix Advice Limits
+CLOSED: [2025-12-27 Sat 12:46]
+- State "DONE"       from "TODO"       [2025-12-27 Sat 12:46]
 Comparison Field only allows a user to select 2 runs and shows "Advice summaries require at least 3 runs per scope. Single-run comparisons can be noisy and are not summarized as advice."
 
 Proposed Solution:
@@ -2860,8 +2862,10 @@ Replace A and B selectors with a multiselect of runs (cmd click to select multip
 
 Also small UX tweak, the Start and End Datepickers should be side by side. 
 
-**** TODO [#B] Comparison / Scenario View + reusable Snapshots
+**** DONE [#B] Comparison / Scenario View + reusable Snapshots
+CLOSED: [2025-12-27 Sat 12:45]
 
+- State "DONE"       from "TODO"       [2025-12-27 Sat 12:45]
 - “Comparison / Scenario View and Snapshots” (TODO) and notes that snapshots are not yet reusable “anchors” across dashboards.
 
 What appears missing (by the spec in the doc):
@@ -2874,8 +2878,10 @@ Suggested acceptance criteria:
 - Two pages consume the same snapshot selector and show consistent scope changes.
 - Snapshot DTO round-trips without lossy transforms (save → load → identical config).
 
-**** TODO [#C] Open analysis/context feature gaps
+**** DONE [#C] Open analysis/context feature gaps
+CLOSED: [2025-12-27 Sat 12:45]
 
+- State "DONE"       from "TODO"       [2025-12-27 Sat 12:45]
 These are framed in `theTower_stats_app.md` as Phase 6 “context” work and may still be incomplete:
 
 - Preset filtering edge cases (no preset, preset with no matching runs).
@@ -2888,8 +2894,10 @@ Suggested acceptance criteria:
 - A mandatory “context matrix” golden test that asserts shape/empties across contexts (the doc explicitly calls this out).
 - Explicit empty-state DTOs (typed empties) rather than silent fallbacks.
 
-**** TODO [#C] Test taxonomy and marker enforcement
+**** DONE [#C] Test taxonomy and marker enforcement
+CLOSED: [2025-12-27 Sat 12:46]
 
+- State "DONE"       from "TODO"       [2025-12-27 Sat 12:46]
 `theTower_stats_app.md` includes a TODO block to formalize:
 
 - `unit` vs `integration` markers (and optionally `regression`/`golden`),
@@ -2898,6 +2906,8 @@ Suggested acceptance criteria:
 - separate CI jobs (fast unit vs full).
 
 This is a process gap (not a feature) but will reduce long-term maintenance cost.
+
+**** TODO Revise Dashboard Docs to be Per Feature
 
 ** Backlog [2/5]
 “Out of Scope”:

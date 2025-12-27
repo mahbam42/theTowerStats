@@ -1,3 +1,5 @@
+# Goals
+
 ## Overview
 
 The Goals Dashboard lets you set target upgrade levels and see the total currency needed to reach each target.

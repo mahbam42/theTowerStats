@@ -17,8 +17,8 @@ Battle History helps you review your past runs in a table so you can compare res
 1. Select **Battle History** in the navigation.
 2. Select **Add Battle Report** to expand the import panel.
 3. Paste your Battle Report text into the import field.
-    A. (Optional) Enter a preset label to group runs by your own intent (presets are unlocked via the in-game Lab Research “Card Presets”).
-    B. (Optional) Enable **Tournament run** when this run was a tournament round.
+4. (Optional) Enter a preset label to group runs by your own intent (presets are unlocked via the in-game Lab Research “Card Presets”).
+5. (Optional) Enable **Tournament run** when this run was a tournament round.
 6. Select **Import Battle Report**.
 7. Select values in **Filters** to narrow the table.
 8. Select a column header to sort the table by that column.

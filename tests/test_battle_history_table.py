@@ -172,6 +172,45 @@ def test_battle_history_includes_killed_by_donut_chart(auth_client, player) -> N
 
 
 @pytest.mark.django_db
+@pytest.mark.regression
+def test_battle_history_sorts_by_coins_per_hour(auth_client, player) -> None:
+    """Coins/hour sorting orders rows using the analysis-derived metric."""
+
+    ingest_battle_report(
+        "\n".join(
+            [
+                "Battle Report",
+                "Battle Date: 2025-12-01 13:45:00",
+                "Tier: 6",
+                "Wave: 111",
+                "Real Time: 1h 0m 0s",
+                "Coins Earned: 1.00M",
+            ]
+        ),
+        player=player,
+    )
+    ingest_battle_report(
+        "\n".join(
+            [
+                "Battle Report",
+                "Battle Date: 2025-12-02 13:45:00",
+                "Tier: 6",
+                "Wave: 222",
+                "Real Time: 4h 0m 0s",
+                "Coins Earned: 2.00M",
+            ]
+        ),
+        player=player,
+    )
+
+    response = auth_client.get(reverse("core:battle_history"), data={"sort": "-coins_per_hour"})
+    assert response.status_code == 200
+
+    waves = [row["run"].run_progress.wave for row in response.context["page_rows"]]
+    assert waves[:2] == [111, 222]
+
+
+@pytest.mark.django_db
 def test_battle_history_excludes_tournaments_by_default_and_can_opt_in(auth_client, player) -> None:
     """Tournament runs are excluded by default and can be explicitly included."""
 

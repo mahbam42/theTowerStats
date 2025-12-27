@@ -15,7 +15,7 @@ from django.contrib.auth.forms import AuthenticationForm, UserCreationForm
 from django.conf import settings
 from django.core.exceptions import ValidationError
 from django.db import transaction
-from django.db.models import Case, Count, ExpressionWrapper, F, FloatField, Max, Q, QuerySet, Value, When
+from django.db.models import Count, Max, Q, QuerySet
 from django.db.models import Min
 from django.http import HttpRequest, HttpResponse, JsonResponse, QueryDict
 from django.shortcuts import redirect, render
@@ -33,6 +33,7 @@ from analysis.engine import analyze_metric_series, analyze_runs
 from analysis.dto import RunAnalysis
 from analysis.metrics import get_metric_definition
 from analysis.quantity import UnitType
+from analysis.rates import coins_per_hour as coins_per_hour_rate
 from analysis.series_registry import DEFAULT_REGISTRY
 from core.demo import DEMO_USERNAME, demo_mode_enabled, get_demo_player, set_demo_mode
 from core.advice import (
@@ -1076,6 +1077,59 @@ def _coins_per_hour_sample(runs: QuerySet[BattleReport]) -> tuple[int, float | N
         return 0, None
     return len(values), sum(values) / len(values)
 
+
+def _order_battle_history_runs(
+    *, runs: QuerySet[BattleReport], sort_key: str
+) -> QuerySet[BattleReport] | list[BattleReport]:
+    """Return ordered BattleReport rows for Battle History.
+
+    This helper keeps ordering logic out of the view body and ensures that
+    computed ordering (coins/hour) is derived via the analysis engine's rate
+    helper rather than view-layer arithmetic.
+
+    Args:
+        runs: Filtered BattleReport queryset, already scoped to the requesting player.
+        sort_key: Validated sort key from the BattleHistoryFilterForm.
+
+    Returns:
+        Either a queryset (for database-orderable fields) or a sorted list
+        (for computed ordering like coins/hour).
+    """
+
+    ordering = [sort_key]
+    if sort_key.lstrip("-") != "parsed_at":
+        ordering.append("-parsed_at")
+
+    if sort_key.lstrip("-") != "coins_per_hour":
+        return runs.order_by(*ordering)
+
+    descending = sort_key.startswith("-")
+    evaluated = list(runs.order_by("-parsed_at", "-id"))
+
+    coins_per_hour_by_id: dict[int, float | None] = {}
+    for run in evaluated:
+        progress = getattr(run, "run_progress", None)
+        if progress is None:
+            coins_per_hour_by_id[run.id] = None
+            continue
+        coins = getattr(progress, "coins_earned", None)
+        real_time_seconds = getattr(progress, "real_time_seconds", None)
+        if coins is None or real_time_seconds is None:
+            coins_per_hour_by_id[run.id] = None
+            continue
+        coins_per_hour_by_id[run.id] = coins_per_hour_rate(coins=coins, real_time_seconds=real_time_seconds)
+
+    def _sort_tuple(run: BattleReport) -> tuple[bool, float, float, int]:
+        metric = coins_per_hour_by_id.get(run.id)
+        metric_value = metric or 0.0
+        # Always keep missing metrics last, regardless of ascending/descending.
+        missing = metric is None
+        primary = -metric_value if descending else metric_value
+        return (missing, primary, -run.parsed_at.timestamp(), -run.id)
+
+    return sorted(evaluated, key=_sort_tuple)
+
+
 @login_required
 def battle_history(request: HttpRequest) -> HttpResponse:
     """Render the Battle History dashboard with filters and pagination."""
@@ -1164,50 +1218,31 @@ def battle_history(request: HttpRequest) -> HttpResponse:
     )
 
     sort_key = filter_form.cleaned_data.get("sort") or "-run_progress__battle_date"
-    runs = BattleReport.objects.filter(player=player).select_related(
+    runs_qs = BattleReport.objects.filter(player=player).select_related(
         "run_progress", "run_progress__preset", "derived_metrics"
     )
     include_tournaments = bool(filter_form.cleaned_data.get("include_tournaments") or False)
     if not include_tournaments:
-        runs = runs.exclude(Q(run_progress__tier__isnull=True) | Q(run_progress__is_tournament=True))
-    if sort_key.lstrip("-") == "coins_per_hour":
-        coins_per_hour_expr = Case(
-            When(
-                run_progress__coins_earned__isnull=False,
-                run_progress__real_time_seconds__gt=0,
-                then=ExpressionWrapper(
-                    F("run_progress__coins_earned") * Value(3600.0) / F("run_progress__real_time_seconds"),
-                    output_field=FloatField(),
-                ),
-            ),
-            default=Value(None),
-            output_field=FloatField(),
-        )
-        runs = runs.annotate(coins_per_hour=coins_per_hour_expr)
-
-    ordering = [sort_key]
-    if sort_key.lstrip("-") != "parsed_at":
-        ordering.append("-parsed_at")
-    runs = runs.order_by(*ordering)
+        runs_qs = runs_qs.exclude(Q(run_progress__tier__isnull=True) | Q(run_progress__is_tournament=True))
 
     tier = filter_form.cleaned_data.get("tier") if filter_form.is_valid() else None
     if tier:
-        runs = runs.filter(run_progress__tier=tier)
+        runs_qs = runs_qs.filter(run_progress__tier=tier)
 
     killed_by = filter_form.cleaned_data.get("killed_by") if filter_form.is_valid() else None
     if killed_by:
-        runs = runs.filter(run_progress__killed_by__icontains=killed_by)
+        runs_qs = runs_qs.filter(run_progress__killed_by__icontains=killed_by)
 
     goal = filter_form.cleaned_data.get("goal") if filter_form.is_valid() else None
     if goal:
-        runs = runs.filter(run_progress__preset__name__icontains=goal)
+        runs_qs = runs_qs.filter(run_progress__preset__name__icontains=goal)
 
     preset = filter_form.cleaned_data.get("preset") if filter_form.is_valid() else None
     if preset:
-        runs = runs.filter(run_progress__preset=preset)
+        runs_qs = runs_qs.filter(run_progress__preset=preset)
 
     killed_by_rows = (
-        runs.values("run_progress__killed_by")
+        runs_qs.values("run_progress__killed_by")
         .annotate(count=Count("id"))
         .order_by("-count")
     )
@@ -1236,7 +1271,8 @@ def battle_history(request: HttpRequest) -> HttpResponse:
         else None
     )
 
-    paginator = Paginator(runs, 12)
+    runs_for_pagination = _order_battle_history_runs(runs=runs_qs, sort_key=sort_key)
+    paginator = Paginator(runs_for_pagination, 12)
     page_number = request.GET.get("page")
     page_obj = paginator.get_page(page_number)
 
@@ -2087,7 +2123,7 @@ def ultimate_weapon_progress(request: HttpRequest) -> HttpResponse:
         if action == "level_up_uw_param":
             player_param_id = int(request.POST.get("param_id") or 0)
             player_param = (
-                PlayerUltimateWeaponParameter.objects.filter(id=player_param_id)
+                PlayerUltimateWeaponParameter.objects.filter(player=player, id=player_param_id)
                 .select_related(
                     "player_ultimate_weapon",
                     "player_ultimate_weapon__ultimate_weapon_definition",
@@ -2154,7 +2190,7 @@ def ultimate_weapon_progress(request: HttpRequest) -> HttpResponse:
         if action == "level_down_uw_param":
             player_param_id = int(request.POST.get("param_id") or 0)
             player_param = (
-                PlayerUltimateWeaponParameter.objects.filter(id=player_param_id)
+                PlayerUltimateWeaponParameter.objects.filter(player=player, id=player_param_id)
                 .select_related(
                     "player_ultimate_weapon",
                     "player_ultimate_weapon__ultimate_weapon_definition",
@@ -2595,7 +2631,7 @@ def guardian_progress(request: HttpRequest) -> HttpResponse:
         if action == "level_up_guardian_param":
             player_param_id = int(request.POST.get("param_id") or 0)
             player_param = (
-                PlayerGuardianChipParameter.objects.filter(id=player_param_id)
+                PlayerGuardianChipParameter.objects.filter(player=player, id=player_param_id)
                 .select_related(
                     "player_guardian_chip",
                     "player_guardian_chip__guardian_chip_definition",
@@ -2663,7 +2699,7 @@ def guardian_progress(request: HttpRequest) -> HttpResponse:
         if action == "level_down_guardian_param":
             player_param_id = int(request.POST.get("param_id") or 0)
             player_param = (
-                PlayerGuardianChipParameter.objects.filter(id=player_param_id)
+                PlayerGuardianChipParameter.objects.filter(player=player, id=player_param_id)
                 .select_related(
                     "player_guardian_chip",
                     "player_guardian_chip__guardian_chip_definition",
@@ -3080,7 +3116,7 @@ def bots_progress(request: HttpRequest) -> HttpResponse:
         if action == "level_up_bot_param":
             player_param_id = int(request.POST.get("param_id") or 0)
             player_param = (
-                PlayerBotParameter.objects.filter(id=player_param_id)
+                PlayerBotParameter.objects.filter(player=player, id=player_param_id)
                 .select_related("player_bot", "player_bot__bot_definition", "parameter_definition")
                 .first()
             )
@@ -3144,7 +3180,7 @@ def bots_progress(request: HttpRequest) -> HttpResponse:
         if action == "level_down_bot_param":
             player_param_id = int(request.POST.get("param_id") or 0)
             player_param = (
-                PlayerBotParameter.objects.filter(id=player_param_id)
+                PlayerBotParameter.objects.filter(player=player, id=player_param_id)
                 .select_related("player_bot", "player_bot__bot_definition", "parameter_definition")
                 .first()
             )
