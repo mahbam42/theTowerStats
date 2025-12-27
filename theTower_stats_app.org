@@ -2425,7 +2425,7 @@ CLOSED: [2025-12-22 Mon 15:31]
 - [X] fetch_wiki_data and rebuild_wiki_definitions should have a pretty summary of deltas at the end.
   Especially when using --target all.
 
-*** Bugs/Enhancements [29/30]
+*** Bugs/Enhancements [29/31]
 
 **** DONE [#B] Error Updating Guardian Upgrade Table                 :bug:
 CLOSED: [2025-12-22 Mon 18:51]
@@ -2908,6 +2908,8 @@ CLOSED: [2025-12-27 Sat 12:46]
 This is a process gap (not a feature) but will reduce long-term maintenance cost.
 
 **** TODO Revise Dashboard Docs to be Per Feature
+
+**** TODO [#C] Improve Coverage for core/charting/builder.py: 40%
 
 ** Backlog [2/5]
 “Out of Scope”:
