@@ -23,6 +23,7 @@
 
 > ⚠️ Note
 > `sync_player_state --player` refers to a username (the owning account), not a standalone Player name.
+> The command requires either `--player` or `--all` plus an explicit `--check` or `--write`.
 
 ## Battle report maintenance
 

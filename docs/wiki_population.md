@@ -38,7 +38,9 @@ Targets (`--target`): `cards`, `bots`, `guardians`, `ultimate_weapons`, or `all`
 
 Create or refresh Player State rows so dashboards can display ownership:
 
-- Apply: `python manage.py sync_player_state --write`
+- Dry run (single user): `python manage.py sync_player_state --player <username> --check`
+- Apply (single user): `python manage.py sync_player_state --player <username> --write`
+- Apply (all users): `python manage.py sync_player_state --all --write`
 
 ## Optional — Purge structured tables
 
