@@ -23,6 +23,7 @@ from django.core.paginator import Paginator
 from django.urls import reverse
 
 from analysis.aggregations import summarize_window
+from analysis.battle_report_extract import extract_numeric_value
 from analysis.chart_config_dto import ChartContextDTO
 from analysis.chart_config_engine import analyze_chart_config_dto
 from analysis.chart_config_validator import validate_chart_config_dto
@@ -30,12 +31,15 @@ from analysis.deltas import delta
 from analysis.event_windows import coerce_window_bounds, event_window_for_date, shift_event_window
 from analysis.engine import analyze_metric_series, analyze_runs
 from analysis.dto import RunAnalysis
+from analysis.metrics import get_metric_definition
+from analysis.quantity import UnitType
 from analysis.series_registry import DEFAULT_REGISTRY
 from core.demo import DEMO_USERNAME, demo_mode_enabled, get_demo_player, set_demo_mode
 from core.advice import (
     AdviceItem,
     GoalScopeSample,
     GoalWeights,
+    MIN_RUNS_FOR_ADVICE,
     SnapshotDeltaInput,
     generate_goal_weighted_advice,
     generate_optimization_advice,
@@ -468,6 +472,7 @@ def dashboard(request: HttpRequest) -> HttpResponse:
     comparison_result = _build_comparison_result(
         comparison_form,
         base_analysis=base_analysis.runs,
+        context_runs=context_runs,
     )
     advice_items = generate_optimization_advice(comparison_result)
 
@@ -479,6 +484,33 @@ def dashboard(request: HttpRequest) -> HttpResponse:
         goal_intent=goal_intent,
         query=effective_get,
     )
+
+    if comparison_result and comparison_result.get("goal_aware_supported"):
+        kind = str(comparison_result.get("kind") or "")
+        has_sufficient_scopes = False
+        if kind == "run_sets":
+            a_count = comparison_result.get("scope_a_run_count")
+            b_count = comparison_result.get("scope_b_run_count")
+            has_sufficient_scopes = isinstance(a_count, int) and isinstance(b_count, int) and a_count >= MIN_RUNS_FOR_ADVICE and b_count >= MIN_RUNS_FOR_ADVICE
+        elif kind == "windows":
+            window_a = comparison_result.get("window_a")
+            window_b = comparison_result.get("window_b")
+            a_count = getattr(window_a, "run_count", None)
+            b_count = getattr(window_b, "run_count", None)
+            has_sufficient_scopes = isinstance(a_count, int) and isinstance(b_count, int) and a_count >= MIN_RUNS_FOR_ADVICE and b_count >= MIN_RUNS_FOR_ADVICE
+
+        if has_sufficient_scopes and comparison_result.get("focus_metrics_sufficient") is not False:
+            baseline_sample = comparison_result.get("goal_baseline")
+            comparison_sample = comparison_result.get("goal_comparison")
+            if isinstance(baseline_sample, GoalScopeSample) and isinstance(comparison_sample, GoalScopeSample):
+                goal_items = generate_goal_weighted_advice(
+                    goal_label=goal_label,
+                    baseline=baseline_sample,
+                    comparison=comparison_sample,
+                    weights=goal_weights,
+                )
+                advice_items = tuple(advice_items) + tuple(goal_items)
+
     snapshot_advice_items: tuple[AdviceItem, ...] = ()
     if advice_snapshot_a:
         snapshot_advice_items = _build_snapshot_delta_advice(
@@ -683,6 +715,7 @@ def dashboard(request: HttpRequest) -> HttpResponse:
         "comparison_form": comparison_form,
         "comparison_result": comparison_result,
         "advice_items": advice_items,
+        "snapshot_id": snapshot_id,
         "advice_snapshot_a": advice_snapshot_a,
         "advice_snapshot_b": advice_snapshot_b,
         "advice_mode": advice_mode,
@@ -2324,7 +2357,7 @@ def ultimate_weapon_progress(request: HttpRequest) -> HttpResponse:
 
     uw_sync = build_uw_sync_payload(player=player)
     uw_snapshots = ChartSnapshot.objects.filter(player=player, target="ultimate_weapons").order_by("-created_at")
-    uw_snapshot_id = request.GET.get("uw_snapshot_id")
+    uw_snapshot_id = request.GET.get("snapshot_id") or request.GET.get("uw_snapshot_id")
     uw_snapshot_chart_json = None
     uw_snapshot_name = None
     if uw_snapshot_id:
@@ -2403,6 +2436,7 @@ def ultimate_weapon_progress(request: HttpRequest) -> HttpResponse:
             "uw_sync_summary": uw_sync.summary if uw_sync else None,
             "uw_snapshots": uw_snapshots,
             "uw_snapshot_id": uw_snapshot_id,
+            "snapshot_id": uw_snapshot_id,
             "uw_snapshot_chart_json": uw_snapshot_chart_json,
             "uw_snapshot_name": uw_snapshot_name,
             "goals_widget_rows": goals_widget_rows(player=player, goal_type=str(GoalType.ULTIMATE_WEAPON)),
@@ -3578,11 +3612,223 @@ def _build_comparison_result(
     form: ComparisonForm,
     *,
     base_analysis: tuple[RunAnalysis, ...],
+    context_runs: QuerySet[BattleReport],
 ) -> dict[str, object] | None:
     """Build a comparison result payload for template rendering."""
 
     if not form.is_valid():
         return None
+
+    focus = str(form.cleaned_data.get("summary_focus") or "economy")
+    goal_aware_supported = focus == "economy"
+
+    raw_text_metric_specs: dict[str, tuple[str, UnitType]] = {
+        "damage_dealt": ("Damage dealt", UnitType.damage),
+        "projectiles_damage": ("Projectiles Damage", UnitType.damage),
+        "orb_damage": ("Orb Damage", UnitType.damage),
+        "land_mine_damage": ("Land Mine Damage", UnitType.damage),
+        "chain_lightning_damage": ("Chain Lightning Damage", UnitType.damage),
+        "death_wave_damage": ("Death Wave Damage", UnitType.damage),
+        "smart_missile_damage": ("Smart Missile Damage", UnitType.damage),
+        "enemies_destroyed_basic": ("Basic", UnitType.count),
+        "enemies_destroyed_fast": ("Fast", UnitType.count),
+        "enemies_destroyed_tank": ("Tank", UnitType.count),
+        "enemies_destroyed_ranged": ("Ranged", UnitType.count),
+        "enemies_destroyed_boss": ("Boss", UnitType.count),
+        "enemies_destroyed_protector": ("Protector", UnitType.count),
+        "enemies_destroyed_by_orbs": ("Destroyed By Orbs", UnitType.count),
+        "enemies_destroyed_by_thorns": ("Destroyed by Thorns", UnitType.count),
+    }
+
+    def _average_metric_value(records: tuple[BattleReport, ...], *, metric_key: str) -> tuple[int, float | None]:
+        """Compute the average metric value and its contributing sample size.
+
+        Args:
+            records: BattleReport records included in the scope.
+            metric_key: Metric key registered in the analysis engine.
+
+        Returns:
+            A `(n, average)` tuple where `n` counts non-missing values and
+            `average` is None when there are no usable points.
+        """
+
+        raw_spec = raw_text_metric_specs.get(metric_key)
+        if raw_spec is not None:
+            label, unit_type = raw_spec
+            values: list[float] = []
+            for record in records:
+                raw_text = getattr(record, "raw_text", None)
+                if not isinstance(raw_text, str):
+                    continue
+                extracted = extract_numeric_value(raw_text, label=label, unit_type=unit_type)
+                if extracted is None:
+                    continue
+                values.append(float(extracted.value))
+            if not values:
+                return 0, None
+            return len(values), float(sum(values) / len(values))
+
+        series = analyze_metric_series(records, metric_key=metric_key)
+        values = [point.value for point in series.points if point.value is not None]
+        if not values:
+            return 0, None
+        return len(values), float(sum(values) / len(values))
+
+    def _metric_summaries_for_focus(
+        *,
+        records_a: tuple[BattleReport, ...],
+        records_b: tuple[BattleReport, ...],
+        metric_keys: tuple[str, ...],
+    ) -> tuple[list[dict[str, object]], tuple[str, ...]]:
+        """Build metric summary rows for the selected focus.
+
+        Args:
+            records_a: Scope A BattleReport records.
+            records_b: Scope B BattleReport records.
+            metric_keys: Ordered metric keys to summarize.
+
+        Returns:
+            A `(rows, limitations)` tuple. Rows include only metrics with at
+            least `MIN_RUNS_FOR_ADVICE` contributing samples in both scopes.
+        """
+
+        rows: list[dict[str, object]] = []
+        limitations: list[str] = []
+
+        for metric_key in metric_keys:
+            n_a, avg_a = _average_metric_value(records_a, metric_key=metric_key)
+            n_b, avg_b = _average_metric_value(records_b, metric_key=metric_key)
+            if n_a < MIN_RUNS_FOR_ADVICE or n_b < MIN_RUNS_FOR_ADVICE:
+                label = get_metric_definition(metric_key).label
+                limitations.append(
+                    f"Metric omitted due to insufficient samples: {label} (A n={n_a}, B n={n_b})."
+                )
+                continue
+            if avg_a is None or avg_b is None:
+                label = get_metric_definition(metric_key).label
+                limitations.append(
+                    f"Metric omitted due to missing values: {label} (A n={n_a}, B n={n_b})."
+                )
+                continue
+
+            spec = get_metric_definition(metric_key)
+            computed = delta(avg_a, avg_b)
+            rows.append(
+                {
+                    "metric_key": metric_key,
+                    "label": spec.label,
+                    "unit": spec.unit,
+                    "baseline_value": avg_a,
+                    "comparison_value": avg_b,
+                    "delta": computed,
+                    "percent_display": computed.percent * 100 if computed.percent is not None else None,
+                    "baseline_n": n_a,
+                    "comparison_n": n_b,
+                }
+            )
+
+        return rows, tuple(limitations)
+
+    def _goal_scope_sample_from_records(label: str, records: tuple[BattleReport, ...]) -> GoalScopeSample:
+        """Build a GoalScopeSample from per-run metric values.
+
+        Args:
+            label: Human-friendly scope label.
+            records: BattleReport records included in the scope.
+
+        Returns:
+            GoalScopeSample used by goal-aware advice scoring.
+        """
+
+        runs_coins_per_hour, coins_per_hour = _average_metric_value(records, metric_key="coins_per_hour")
+        runs_coins_per_wave, coins_per_wave = _average_metric_value(records, metric_key="coins_per_wave")
+        runs_waves_reached, waves_reached = _average_metric_value(records, metric_key="waves_reached")
+
+        return GoalScopeSample(
+            label=label,
+            runs_coins_per_hour=runs_coins_per_hour,
+            runs_coins_per_wave=runs_coins_per_wave,
+            runs_waves_reached=runs_waves_reached,
+            coins_per_hour=coins_per_hour,
+            coins_per_wave=coins_per_wave,
+            waves_reached=waves_reached,
+        )
+
+    focus_metric_keys_by_id: dict[str, tuple[str, ...]] = {
+        "economy": (
+            "coins_per_hour",
+            "coins_per_wave",
+            "coins_earned",
+            "cash_earned",
+            "cells_earned",
+            "reroll_shards_earned",
+            "waves_reached",
+        ),
+        "damage": (
+            "damage_dealt",
+            "projectiles_damage",
+            "orb_damage",
+            "land_mine_damage",
+            "chain_lightning_damage",
+            "death_wave_damage",
+            "smart_missile_damage",
+        ),
+        "enemy_destruction": (
+            "enemies_destroyed_total",
+            "enemies_destroyed_boss",
+            "enemies_destroyed_basic",
+            "enemies_destroyed_fast",
+            "enemies_destroyed_tank",
+            "enemies_destroyed_ranged",
+            "enemies_destroyed_protector",
+            "enemies_destroyed_by_orbs",
+            "enemies_destroyed_by_thorns",
+        ),
+        "efficiency": (
+            "coins_per_hour",
+            "waves_per_hour",
+            "enemies_destroyed_per_hour",
+        ),
+    }
+    focus_metric_keys = focus_metric_keys_by_id.get(focus) or focus_metric_keys_by_id["economy"]
+
+    scope_a_runs = tuple(form.cleaned_data.get("scope_a_runs") or ())
+    scope_b_runs = tuple(form.cleaned_data.get("scope_b_runs") or ())
+    if scope_a_runs and scope_b_runs:
+        headline_n_a, headline_a = _average_metric_value(scope_a_runs, metric_key="coins_per_hour")
+        headline_n_b, headline_b = _average_metric_value(scope_b_runs, metric_key="coins_per_hour")
+        computed = None if headline_a is None or headline_b is None else delta(headline_a, headline_b)
+
+        rows, limitations = _metric_summaries_for_focus(
+            records_a=scope_a_runs,
+            records_b=scope_b_runs,
+            metric_keys=focus_metric_keys,
+        )
+
+        goal_baseline = _goal_scope_sample_from_records("Scope A", scope_a_runs) if goal_aware_supported else None
+        goal_comparison = _goal_scope_sample_from_records("Scope B", scope_b_runs) if goal_aware_supported else None
+
+        return {
+            "kind": "run_sets",
+            "summary_focus": focus,
+            "goal_aware_supported": goal_aware_supported,
+            "focus_metrics_sufficient": bool(rows),
+            "scope_a_run_count": len(scope_a_runs),
+            "scope_b_run_count": len(scope_b_runs),
+            "metric": "coins/hour",
+            "label_a": "Scope A",
+            "label_b": "Scope B",
+            "baseline_value": headline_a,
+            "comparison_value": headline_b,
+            "delta": computed,
+            "percent_display": None if computed is None else computed.percent * 100 if computed.percent is not None else None,
+            "metric_summaries": rows,
+            "metric_limitations": limitations,
+            "goal_baseline": goal_baseline,
+            "goal_comparison": goal_comparison,
+            "headline_n_a": headline_n_a,
+            "headline_n_b": headline_n_b,
+        }
 
     run_a = form.cleaned_data.get("run_a")
     run_b = form.cleaned_data.get("run_b")
@@ -3611,23 +3857,47 @@ def _build_comparison_result(
     if a_start and a_end and b_start and b_end:
         window_a = summarize_window(base_analysis, start_date=a_start, end_date=a_end)
         window_b = summarize_window(base_analysis, start_date=b_start, end_date=b_end)
-        if (
-            window_a.average_coins_per_hour is None
-            or window_b.average_coins_per_hour is None
-        ):
-            return None
-        baseline = window_a.average_coins_per_hour
-        comparison = window_b.average_coins_per_hour
-        computed = delta(baseline, comparison)
+
+        records_a = tuple(
+            context_runs.filter(run_progress__battle_date__date__gte=a_start, run_progress__battle_date__date__lte=a_end)
+        )
+        records_b = tuple(
+            context_runs.filter(run_progress__battle_date__date__gte=b_start, run_progress__battle_date__date__lte=b_end)
+        )
+        headline_n_a, baseline_value = _average_metric_value(records_a, metric_key="coins_per_hour")
+        headline_n_b, comparison_value = _average_metric_value(records_b, metric_key="coins_per_hour")
+        computed = (
+            None
+            if baseline_value is None or comparison_value is None
+            else delta(baseline_value, comparison_value)
+        )
+
+        rows, limitations = _metric_summaries_for_focus(
+            records_a=records_a,
+            records_b=records_b,
+            metric_keys=focus_metric_keys,
+        )
+        goal_baseline = _goal_scope_sample_from_records("Window A", records_a) if goal_aware_supported else None
+        goal_comparison = _goal_scope_sample_from_records("Window B", records_b) if goal_aware_supported else None
+
         return {
             "kind": "windows",
+            "summary_focus": focus,
+            "goal_aware_supported": goal_aware_supported,
+            "focus_metrics_sufficient": bool(rows),
             "metric": "coins/hour",
             "window_a": window_a,
             "window_b": window_b,
-            "baseline_value": baseline,
-            "comparison_value": comparison,
+            "baseline_value": baseline_value,
+            "comparison_value": comparison_value,
             "delta": computed,
-            "percent_display": computed.percent * 100 if computed.percent is not None else None,
+            "percent_display": None if computed is None else computed.percent * 100 if computed.percent is not None else None,
+            "metric_summaries": rows,
+            "metric_limitations": limitations,
+            "goal_baseline": goal_baseline,
+            "goal_comparison": goal_comparison,
+            "headline_n_a": headline_n_a,
+            "headline_n_b": headline_n_b,
         }
 
     return None

@@ -215,31 +215,99 @@
         <div id="active-context" class="muted"></div>
       </div>
 
-      {% if comparison_result %}
-        <div class="callout success">
-          <p class="margin-0"><strong>Deltas ({{ comparison_result.metric }})</strong></p>
-          {% if comparison_result.kind == "runs" %}
-            <p class="margin-0">
-              Baseline: Run A ({{ comparison_result.label_a }}) • Comparison: Run B ({{ comparison_result.label_b }})
-            </p>
-          {% else %}
-            <p class="margin-0">
-              Baseline: Window A ({{ comparison_result.window_a.start_date }} to {{ comparison_result.window_a.end_date }})
-              • Comparison: Window B ({{ comparison_result.window_b.start_date }} to {{ comparison_result.window_b.end_date }})
-            </p>
-          {% endif %}
-          <ul class="margin-bottom-0">
-            <li>Baseline: {{ comparison_result.baseline_value|floatformat:2 }} {{ comparison_result.metric }}</li>
-            <li>Comparison: {{ comparison_result.comparison_value|floatformat:2 }} {{ comparison_result.metric }}</li>
-            <li>Absolute: {{ comparison_result.delta.absolute|floatformat:2 }}</li>
-            {% if comparison_result.percent_display is not None %}
-              <li>Percent: {{ comparison_result.percent_display|floatformat:2 }}%</li>
-            {% else %}
-              <li>Percent: n/a (baseline is 0)</li>
-            {% endif %}
-          </ul>
-        </div>
-      {% endif %}
+	      {% if comparison_result %}
+	        <div class="callout success">
+	          <p class="margin-0"><strong>Deltas ({{ comparison_result.metric }})</strong></p>
+	          {% if comparison_result.kind == "runs" %}
+	            <p class="margin-0">
+	              Baseline: Run A ({{ comparison_result.label_a }}) • Comparison: Run B ({{ comparison_result.label_b }})
+	            </p>
+	          {% elif comparison_result.kind == "run_sets" %}
+	            <p class="margin-0">
+	              Baseline: Scope A (runs={{ comparison_result.scope_a_run_count }}) • Comparison: Scope B (runs={{ comparison_result.scope_b_run_count }})
+	            </p>
+	            <p class="margin-0 muted">Summary focus: {{ comparison_result.summary_focus }}</p>
+	            {% if not comparison_result.goal_aware_supported %}
+	              <p class="margin-0 muted">Goal-aware summary is available only for Economy focus.</p>
+	            {% endif %}
+	          {% else %}
+	            <p class="margin-0">
+	              Baseline: Window A ({{ comparison_result.window_a.start_date }} to {{ comparison_result.window_a.end_date }})
+	              • Comparison: Window B ({{ comparison_result.window_b.start_date }} to {{ comparison_result.window_b.end_date }})
+	            </p>
+	            <p class="margin-0 muted">Summary focus: {{ comparison_result.summary_focus }}</p>
+	          {% endif %}
+	          <ul class="margin-bottom-0">
+	            {% if comparison_result.baseline_value is not None %}
+	              <li>Baseline: {{ comparison_result.baseline_value|floatformat:2 }} {{ comparison_result.metric }}</li>
+	            {% else %}
+	              <li>Baseline: n/a</li>
+	            {% endif %}
+	            {% if comparison_result.comparison_value is not None %}
+	              <li>Comparison: {{ comparison_result.comparison_value|floatformat:2 }} {{ comparison_result.metric }}</li>
+	            {% else %}
+	              <li>Comparison: n/a</li>
+	            {% endif %}
+	            {% if comparison_result.delta %}
+	              <li>Absolute: {{ comparison_result.delta.absolute|floatformat:2 }}</li>
+	              {% if comparison_result.percent_display is not None %}
+	                <li>Percent: {{ comparison_result.percent_display|floatformat:2 }}%</li>
+	              {% else %}
+	                <li>Percent: n/a (baseline is 0)</li>
+	              {% endif %}
+	            {% else %}
+	              <li>Absolute: n/a</li>
+	              <li>Percent: n/a</li>
+	            {% endif %}
+	          </ul>
+
+	          {% if comparison_result.metric_summaries %}
+	            <hr class="margin-top-1 margin-bottom-1">
+	            <p class="margin-0"><strong>Summary metrics</strong></p>
+	            <table class="stack">
+	              <thead>
+	                <tr>
+	                  <th>Metric</th>
+	                  <th>Scope A</th>
+	                  <th>Scope B</th>
+	                  <th>Δ</th>
+	                  <th>%</th>
+	                  <th>N(A)</th>
+	                  <th>N(B)</th>
+	                </tr>
+	              </thead>
+	              <tbody>
+	                {% for row in comparison_result.metric_summaries %}
+	                  <tr>
+	                    <td>{{ row.label }} <span class="muted">({{ row.unit }})</span></td>
+	                    <td>{% if row.baseline_value is not None %}{{ row.baseline_value|floatformat:2 }}{% else %}n/a{% endif %}</td>
+	                    <td>{% if row.comparison_value is not None %}{{ row.comparison_value|floatformat:2 }}{% else %}n/a{% endif %}</td>
+	                    <td>{% if row.delta %}{{ row.delta.absolute|floatformat:2 }}{% else %}n/a{% endif %}</td>
+	                    <td>
+	                      {% if row.percent_display is not None %}
+	                        {{ row.percent_display|floatformat:2 }}%
+	                      {% else %}
+	                        n/a
+	                      {% endif %}
+	                    </td>
+	                    <td>{{ row.baseline_n }}</td>
+	                    <td>{{ row.comparison_n }}</td>
+	                  </tr>
+	                {% endfor %}
+	              </tbody>
+	            </table>
+	          {% endif %}
+
+	          {% if comparison_result.metric_limitations %}
+	            <p class="margin-bottom-0"><strong>Limitations</strong></p>
+	            <ul class="margin-bottom-0">
+	              {% for limitation in comparison_result.metric_limitations %}
+	                <li>{{ limitation }}</li>
+	              {% endfor %}
+	            </ul>
+	          {% endif %}
+	        </div>
+	      {% endif %}
 
       {% if advice_items %}
         <div class="callout">
@@ -300,8 +368,77 @@
       <div class="card-shell">
         <details>
           <summary class="muted">Compare</summary>
-          <form method="get" class="margin-top-1">
-            {{ comparison_form.as_p }}
+          <form method="get" class="margin-top-1" id="compare-form">
+            <p class="help-text">Advice requires at least 3 runs in each scope.</p>
+            <div class="grid-x grid-margin-x">
+              <div class="cell medium-6">
+                <label>{{ comparison_form.summary_focus.label }}
+                  {{ comparison_form.summary_focus }}
+                </label>
+              </div>
+            </div>
+
+            <div class="grid-x grid-margin-x">
+              <div class="cell medium-6">
+                <label>{{ comparison_form.scope_a_runs.label }}
+                  {{ comparison_form.scope_a_runs }}
+                </label>
+                <div class="button-group tiny">
+                  <button type="button" class="button secondary compare-select-last-n" data-select-id="id_scope_a_runs" data-n="3">Last 3</button>
+                  <button type="button" class="button secondary compare-select-last-n" data-select-id="id_scope_a_runs" data-n="10">Last 10</button>
+                  <button type="button" class="button secondary compare-clear" data-select-id="id_scope_a_runs">Clear</button>
+                </div>
+              </div>
+              <div class="cell medium-6">
+                <label>{{ comparison_form.scope_b_runs.label }}
+                  {{ comparison_form.scope_b_runs }}
+                </label>
+                <div class="button-group tiny">
+                  <button type="button" class="button secondary compare-select-last-n" data-select-id="id_scope_b_runs" data-n="3">Last 3</button>
+                  <button type="button" class="button secondary compare-select-last-n" data-select-id="id_scope_b_runs" data-n="10">Last 10</button>
+                  <button type="button" class="button secondary compare-clear" data-select-id="id_scope_b_runs">Clear</button>
+                </div>
+              </div>
+            </div>
+
+            <details class="margin-top-1">
+              <summary class="muted">Window vs window (date ranges)</summary>
+              <div class="grid-x grid-margin-x margin-top-1">
+                <div class="cell medium-6">
+                  <label>{{ comparison_form.window_a_start.label }}
+                    {{ comparison_form.window_a_start }}
+                  </label>
+                  <label>{{ comparison_form.window_a_end.label }}
+                    {{ comparison_form.window_a_end }}
+                  </label>
+                </div>
+                <div class="cell medium-6">
+                  <label>{{ comparison_form.window_b_start.label }}
+                    {{ comparison_form.window_b_start }}
+                  </label>
+                  <label>{{ comparison_form.window_b_end.label }}
+                    {{ comparison_form.window_b_end }}
+                  </label>
+                </div>
+              </div>
+            </details>
+
+            <details class="margin-top-1">
+              <summary class="muted">Run vs run (fallback; advice unavailable)</summary>
+              <div class="grid-x grid-margin-x margin-top-1">
+                <div class="cell medium-6">
+                  <label>{{ comparison_form.run_a.label }}
+                    {{ comparison_form.run_a }}
+                  </label>
+                </div>
+                <div class="cell medium-6">
+                  <label>{{ comparison_form.run_b.label }}
+                    {{ comparison_form.run_b }}
+                  </label>
+                </div>
+              </div>
+            </details>
+
             <button class="button secondary" type="submit">Compare</button>
           </form>
         </details>
@@ -752,20 +889,9 @@
 
           <hr>
 
-          <h5 class="margin-bottom-0">Snapshots</h5>
-          <p class="muted">Snapshots save a Chart Builder configuration and the context filters used at the time of saving.</p>
-
-          <label>Load snapshot
-            <select id="snapshot-select">
-              <option value="">(select)</option>
-              {% for snapshot in chart_snapshots %}
-                <option value="{{ snapshot.id }}">{{ snapshot.name }}</option>
-              {% endfor %}
-            </select>
-          </label>
-          <div class="button-group expanded stack-for-small">
-            <button class="button secondary" type="button" id="load-snapshot">Load snapshot</button>
-          </div>
+	          <h5 class="margin-bottom-0">Snapshots</h5>
+	          <p class="muted">Snapshots save a Chart Builder configuration and the context filters used at the time of saving.</p>
+	          {% include "core/partials/snapshot_selector.html" with label_text="Load snapshot" select_name="snapshot_id" select_id="snapshot-select" snapshots=chart_snapshots selected_id=snapshot_id button_label="Load snapshot" button_id="load-snapshot" button_type="button" %}
 
           {% if demo_mode %}
             <div class="callout warning margin-top-1" role="status">
@@ -904,15 +1030,47 @@
 
         const loadSnapshotBtn = document.getElementById("load-snapshot");
         const snapshotSelect = document.getElementById("snapshot-select");
-        if (loadSnapshotBtn && snapshotSelect) {
-          loadSnapshotBtn.addEventListener("click", function() {
-            const selected = snapshotSelect.value;
-            if (!selected) return;
-            const url = new URL(window.location.href);
-            url.searchParams.set("snapshot_id", selected);
-            window.location.href = url.toString();
-          });
-        }
+	        if (loadSnapshotBtn && snapshotSelect) {
+	          loadSnapshotBtn.addEventListener("click", function() {
+	            const selected = snapshotSelect.value;
+	            if (!selected) return;
+	            const url = new URL(window.location.href);
+	            url.searchParams.set("snapshot_id", selected);
+	            window.location.href = url.toString();
+	          });
+	        }
+
+	        function selectLastNOptions(selectEl, n) {
+	          if (!selectEl || !selectEl.options) return;
+	          const opts = Array.from(selectEl.options).filter((o) => Boolean(o.value));
+	          const last = opts.slice(Math.max(opts.length - n, 0));
+	          for (const option of selectEl.options) option.selected = false;
+	          for (const option of last) option.selected = true;
+	        }
+
+	        function clearOptions(selectEl) {
+	          if (!selectEl || !selectEl.options) return;
+	          for (const option of selectEl.options) option.selected = false;
+	        }
+
+	        for (const btn of document.querySelectorAll(".compare-select-last-n")) {
+	          btn.addEventListener("click", function() {
+	            const selectId = btn.getAttribute("data-select-id");
+	            const n = Number(btn.getAttribute("data-n") || "0");
+	            const selectEl = selectId ? document.getElementById(selectId) : null;
+	            if (!selectEl || !n) return;
+	            selectLastNOptions(selectEl, n);
+	          });
+	        }
+
+	        for (const btn of document.querySelectorAll(".compare-clear")) {
+	          btn.addEventListener("click", function() {
+	            const selectId = btn.getAttribute("data-select-id");
+	            const selectEl = selectId ? document.getElementById(selectId) : null;
+	            if (!selectEl) return;
+	            clearOptions(selectEl);
+	          });
+	        }
 
         const snapshotForm = document.getElementById("snapshot-save-form");
         if (snapshotForm) {

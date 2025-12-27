@@ -473,6 +473,129 @@ def test_dashboard_view_run_delta_comparison(auth_client, player) -> None:
     assert result["percent_display"] == 100.0
 
 
+@pytest.mark.integration
+@pytest.mark.django_db
+def test_dashboard_view_multi_run_scope_compare_defaults_to_economy(auth_client, player) -> None:
+    """Summarize multi-run scopes and include goal-aware advice by default."""
+
+    runs: list[BattleReport] = []
+    for idx, coins in enumerate((1200, 2400, 3600, 2400, 3600, 4800), start=1):
+        report = BattleReport.objects.create(
+            player=player,
+            raw_text=f"Battle Report\nCoins earned    {coins:,}\n",
+            checksum=(f"multirun-{idx}".ljust(64, "x")),
+        )
+        BattleReportProgress.objects.create(
+            battle_report=report,
+            player=player,
+            battle_date=datetime(2025, 12, idx, tzinfo=timezone.utc),
+            tier=1,
+            wave=100,
+            real_time_seconds=600,
+        )
+        runs.append(report)
+
+    response = auth_client.get(
+        "/",
+        {
+            "scope_a_runs": [runs[0].pk, runs[1].pk, runs[2].pk],
+            "scope_b_runs": [runs[3].pk, runs[4].pk, runs[5].pk],
+        },
+    )
+    assert response.status_code == 200
+
+    result = response.context["comparison_result"]
+    assert result["kind"] == "run_sets"
+    assert result["summary_focus"] == "economy"
+    assert result["baseline_value"] == 14400.0
+    assert result["comparison_value"] == 21600.0
+    assert result["delta"].absolute == 7200.0
+    assert result["percent_display"] == 50.0
+    assert any(row["metric_key"] == "coins_per_hour" for row in result["metric_summaries"])
+
+    advice_items = tuple(response.context["advice_items"])
+    assert any("Observed change in coins/hour:" in item.title for item in advice_items)
+    assert any(item.title.startswith("For your selected goal: Hybrid") for item in advice_items)
+
+
+@pytest.mark.integration
+@pytest.mark.django_db
+def test_dashboard_view_multi_run_scope_compare_insufficient(auth_client, player) -> None:
+    """Return a single insufficient-data item when either scope is underfilled."""
+
+    runs: list[BattleReport] = []
+    for idx, coins in enumerate((1200, 2400, 3600, 2400), start=1):
+        report = BattleReport.objects.create(
+            player=player,
+            raw_text=f"Battle Report\nCoins earned    {coins:,}\n",
+            checksum=(f"multirun-thin-{idx}".ljust(64, "y")),
+        )
+        BattleReportProgress.objects.create(
+            battle_report=report,
+            player=player,
+            battle_date=datetime(2025, 12, idx, tzinfo=timezone.utc),
+            tier=1,
+            wave=100,
+            real_time_seconds=600,
+        )
+        runs.append(report)
+
+    response = auth_client.get(
+        "/",
+        {
+            "scope_a_runs": [runs[0].pk, runs[1].pk],
+            "scope_b_runs": [runs[2].pk, runs[3].pk],
+        },
+    )
+    assert response.status_code == 200
+    advice_items = tuple(response.context["advice_items"])
+    assert len(advice_items) == 1
+    assert advice_items[0].title == "Insufficient data to draw a conclusion."
+
+
+@pytest.mark.integration
+@pytest.mark.django_db
+def test_dashboard_view_multi_run_scope_compare_requires_focus_metrics(auth_client, player) -> None:
+    """Degrade to insufficient data when the selected focus has no usable metrics."""
+
+    runs: list[BattleReport] = []
+    for idx, coins in enumerate((1200, 2400, 3600, 2400, 3600, 4800), start=1):
+        report = BattleReport.objects.create(
+            player=player,
+            raw_text=f"Battle Report\nCoins earned    {coins:,}\n",
+            checksum=(f"multirun-focus-{idx}".ljust(64, "z")),
+        )
+        BattleReportProgress.objects.create(
+            battle_report=report,
+            player=player,
+            battle_date=datetime(2025, 12, idx, tzinfo=timezone.utc),
+            tier=1,
+            wave=100,
+            real_time_seconds=600,
+        )
+        runs.append(report)
+
+    response = auth_client.get(
+        "/",
+        {
+            "summary_focus": "damage",
+            "scope_a_runs": [runs[0].pk, runs[1].pk, runs[2].pk],
+            "scope_b_runs": [runs[3].pk, runs[4].pk, runs[5].pk],
+        },
+    )
+    assert response.status_code == 200
+
+    result = response.context["comparison_result"]
+    assert result["kind"] == "run_sets"
+    assert result["summary_focus"] == "damage"
+    assert result["focus_metrics_sufficient"] is False
+    assert result["metric_summaries"] == []
+
+    advice_items = tuple(response.context["advice_items"])
+    assert len(advice_items) == 1
+    assert advice_items[0].title == "Insufficient data to draw a conclusion."
+
+
 @pytest.mark.django_db
 def test_dashboard_view_window_delta_comparison(auth_client, player) -> None:
     """Compute a window-vs-window delta for coins/hour."""

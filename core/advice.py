@@ -71,16 +71,82 @@ def generate_optimization_advice(comparison_result: dict[str, Any] | None) -> tu
         )
         _assert_non_prescriptive(item)
         return (item,)
-    else:
+    if kind == "run_sets":
+        a_count = comparison_result.get("scope_a_run_count")
+        b_count = comparison_result.get("scope_b_run_count")
+        focus = comparison_result.get("summary_focus") or "economy"
+        basis = f"Basis: Scope A runs={a_count}, Scope B runs={b_count}."
+        context = f"Context: Summary focus={focus}."
+        if (
+            not isinstance(a_count, int)
+            or not isinstance(b_count, int)
+            or a_count < MIN_RUNS_FOR_ADVICE
+            or b_count < MIN_RUNS_FOR_ADVICE
+        ):
+            limitations = f"Limitations: Advice summaries require at least {MIN_RUNS_FOR_ADVICE} runs per scope."
+            item = AdviceItem(
+                title=INSUFFICIENT_DATA_MESSAGE,
+                basis=basis,
+                context=context,
+                limitations=limitations,
+            )
+            _assert_non_prescriptive(item)
+            return (item,)
+
+        if comparison_result.get("focus_metrics_sufficient") is False:
+            item = AdviceItem(
+                title=INSUFFICIENT_DATA_MESSAGE,
+                basis=basis,
+                context=context,
+                limitations=(
+                    "Limitations: The selected Summary focus does not have enough usable metric samples "
+                    f"to summarize (need at least {MIN_RUNS_FOR_ADVICE} runs per scope for each metric)."
+                ),
+            )
+            _assert_non_prescriptive(item)
+            return (item,)
+
+        baseline = comparison_result.get("baseline_value")
+        comparison = comparison_result.get("comparison_value")
+        if baseline is None or comparison is None:
+            item = AdviceItem(
+                title=INSUFFICIENT_DATA_MESSAGE,
+                basis=basis,
+                context=context,
+                limitations="Limitations: Missing coins/hour values in one or both scopes.",
+            )
+            _assert_non_prescriptive(item)
+            return (item,)
+
+        baseline_value = float(baseline)
+        comparison_value = float(comparison)
+        delta_value = comparison_value - baseline_value
+        percent = comparison_result.get("percent_display")
+
+        title = f"Observed change in coins/hour: {delta_value:+.2f}"
+        if percent is not None:
+            title = f"{title} ({float(percent):+.2f}%)"
+        item = AdviceItem(
+            title=title,
+            basis=basis,
+            context=context,
+            limitations="Limitations: Results depend on the runs available in each scope and the focus you selected.",
+        )
+        _assert_non_prescriptive(item)
+        return (item,)
+
+    if kind == "windows":
         window_a = comparison_result.get("window_a")
         window_b = comparison_result.get("window_b")
         a_count = getattr(window_a, "run_count", None)
         b_count = getattr(window_b, "run_count", None)
+        focus = comparison_result.get("summary_focus") or "economy"
         basis = f"Basis: Window A runs={a_count}, Window B runs={b_count}."
         context = (
             f"Context: Window A {getattr(window_a, 'start_date', None)} → {getattr(window_a, 'end_date', None)}; "
             f"Window B {getattr(window_b, 'start_date', None)} → {getattr(window_b, 'end_date', None)}."
         )
+        context = f"{context} Summary focus={focus}."
         if (
             not isinstance(a_count, int)
             or not isinstance(b_count, int)
@@ -95,6 +161,19 @@ def generate_optimization_advice(comparison_result: dict[str, Any] | None) -> tu
                 basis=basis,
                 context=context,
                 limitations=limitations,
+            )
+            _assert_non_prescriptive(item)
+            return (item,)
+
+        if comparison_result.get("focus_metrics_sufficient") is False:
+            item = AdviceItem(
+                title=INSUFFICIENT_DATA_MESSAGE,
+                basis=basis,
+                context=context,
+                limitations=(
+                    "Limitations: The selected Summary focus does not have enough usable metric samples "
+                    f"to summarize (need at least {MIN_RUNS_FOR_ADVICE} runs per scope for each metric)."
+                ),
             )
             _assert_non_prescriptive(item)
             return (item,)
@@ -127,6 +206,8 @@ def generate_optimization_advice(comparison_result: dict[str, Any] | None) -> tu
         )
         _assert_non_prescriptive(item)
         return (item,)
+
+    return ()
 
 
 @dataclass(frozen=True, slots=True)

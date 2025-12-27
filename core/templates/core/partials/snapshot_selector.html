@@ -1,0 +1,14 @@
+{# Shared snapshot selector used across dashboards. #}
+<label{% if label_class %} class="{{ label_class }}"{% endif %}>{{ label_text }}
+  <select{% if select_name %} name="{{ select_name }}"{% endif %}{% if select_id %} id="{{ select_id }}"{% endif %}>
+    <option value="">(select)</option>
+    {% for snapshot in snapshots %}
+      <option value="{{ snapshot.id }}"{% if selected_id|default:"" == snapshot.id|stringformat:"s" %} selected{% endif %}>{{ snapshot.name }}</option>
+    {% endfor %}
+  </select>
+</label>
+{% if button_label %}
+  <div class="button-group expanded stack-for-small">
+    <button class="button secondary" type="{{ button_type|default:'button' }}"{% if button_id %} id="{{ button_id }}"{% endif %}>{{ button_label }}</button>
+  </div>
+{% endif %}

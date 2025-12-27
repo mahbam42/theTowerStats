@@ -514,7 +514,40 @@ class GameDataChoiceField(forms.ModelChoiceField):
 
 
 class ComparisonForm(forms.Form):
-    """Validate run vs run and window vs window comparisons."""
+    """Validate run comparisons across multiple comparison modes.
+
+    The Compare workflow supports:
+    - multi-run scope A vs scope B (preferred),
+    - window vs window,
+    - run vs run (fallback, advice-disabled).
+    """
+
+    SUMMARY_FOCUS_CHOICES = (
+        ("economy", "Economy"),
+        ("damage", "Damage"),
+        ("enemy_destruction", "Enemy Destruction"),
+        ("efficiency", "Efficiency"),
+    )
+
+    scope_a_runs = forms.ModelMultipleChoiceField(
+        required=False,
+        queryset=BattleReport.objects.none(),
+        label="Scope A runs",
+        widget=forms.SelectMultiple(attrs={"size": 8}),
+    )
+    scope_b_runs = forms.ModelMultipleChoiceField(
+        required=False,
+        queryset=BattleReport.objects.none(),
+        label="Scope B runs",
+        widget=forms.SelectMultiple(attrs={"size": 8}),
+    )
+
+    summary_focus = forms.ChoiceField(
+        required=False,
+        initial="economy",
+        choices=SUMMARY_FOCUS_CHOICES,
+        label="Summary focus",
+    )
 
     run_a = GameDataChoiceField(required=False, queryset=BattleReport.objects.none(), label="Run A")
     run_b = GameDataChoiceField(required=False, queryset=BattleReport.objects.none(), label="Run B")
@@ -554,8 +587,16 @@ class ComparisonForm(forms.Form):
                 "-run_progress__battle_date", "-parsed_at"
             )
 
+        self.fields["scope_a_runs"].queryset = runs_queryset
+        self.fields["scope_b_runs"].queryset = runs_queryset
         self.fields["run_a"].queryset = runs_queryset
         self.fields["run_b"].queryset = runs_queryset
+
+    def clean_summary_focus(self) -> str:
+        """Default the summary focus to Economy when unspecified."""
+
+        focus = (self.cleaned_data.get("summary_focus") or "").strip()
+        return focus or "economy"
 
 
 class ChartBuilderForm(forms.Form):

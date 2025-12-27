@@ -35,8 +35,11 @@ Charts help you review how your run results change over time using the same valu
 18. In **Chart Builder**, select **Apply to dashboard** to add the custom chart to the dashboard.
 19. (Optional) Select **Download PNG** on a chart to save an image of the chart as currently displayed.
 20. (Optional) Open **Compare** to run the separate compare workflow.
-21. (Optional) Open **Quick import** to paste a Battle Report without leaving the Charts page.
-22. (Optional) In **Quick import**, enable **Tournament run** when the run was a tournament round. The app cannot detect tournament runs automatically from pasted text.
+21. (Optional) In **Compare**, select **Summary focus** to choose what you want the comparison to emphasize.
+22. (Optional) In **Compare**, select multiple runs in **Scope A runs** and **Scope B runs** to compare two groups of runs.
+23. (Optional) Select **Compare** to view the delta summary and any available Advice.
+24. (Optional) Open **Quick import** to paste a Battle Report without leaving the Charts page.
+25. (Optional) In **Quick import**, enable **Tournament run** when the run was a tournament round. The app cannot detect tournament runs automatically from pasted text.
 
 ## How to Read the Results
 
@@ -54,6 +57,7 @@ Charts help you review how your run results change over time using the same valu
 - If a point is flagged, the tooltip includes a short reason that explains the signal.
 - The Advice section summarizes observed differences using the snapshots you selected and the current filters you applied. It describes the basis and limitations and does not recommend actions.
 - The Goal-aware comparison summary is a weighted percent-change index across multiple metrics. A positive value means the selected metrics increased, after applying your selected weights.
+- Compare results summarize two scopes. When you select multiple runs per scope, the Compare output includes a summary table for the selected **Summary focus** and omits metrics that do not have enough samples.
 
 ## Notes & Limitations
 
@@ -94,6 +98,9 @@ Charts help you review how your run results change over time using the same valu
 > Advice summaries require at least 3 runs in each scope. If either scope is thin or empty, the Advice section will show “Insufficient data”.
 
 > **Note**
+> Goal-aware summaries in Compare are available only when the Summary focus is set to **Economy**.
+
+> **Note**
 > Goal-aware summaries use percent changes. If a baseline average is zero, a percent change cannot be calculated for that metric.
 
 > **Caution**
@@ -105,3 +112,7 @@ Charts help you review how your run results change over time using the same valu
 2. Select **Tier** or **Preset** filters only when you want to narrow the comparison set.
 3. Review the legend to confirm which lines correspond to which groups.
 4. Select **Chart Builder**, then select **Load snapshot** to apply a previously saved snapshot.
+5. (Optional) Use **Compare** when you want to compare two groups of runs directly:
+   1. Select a **Summary focus**.
+   2. Select multiple runs in **Scope A runs** and **Scope B runs**.
+   3. Select **Compare** to view deltas and any available Advice.

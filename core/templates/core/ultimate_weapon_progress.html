@@ -3,25 +3,18 @@
 {% block title %}Ultimate Weapon Progress • theTowerStats{% endblock %}
 
 {% block content %}
-  {% if uw_snapshots %}
-    <div class="card-shell margin-top-1">
-      <p class="muted margin-0">Snapshot chart</p>
-      <h3 class="margin-0">Ultimate Weapons snapshot</h3>
-      <form method="get" class="grid-x grid-margin-x align-middle margin-top-1">
-        <div class="cell medium-8">
-          <label class="margin-bottom-0">Select snapshot
-            <select name="uw_snapshot_id">
-              <option value="">(select)</option>
-              {% for snapshot in uw_snapshots %}
-                <option value="{{ snapshot.id }}"{% if uw_snapshot_id|default:"" == snapshot.id|stringformat:"s" %} selected{% endif %}>{{ snapshot.name }}</option>
-              {% endfor %}
-            </select>
-          </label>
-        </div>
-        <div class="cell medium-4">
-          <button class="button expanded margin-bottom-0" type="submit">View snapshot</button>
-        </div>
-      </form>
+	  {% if uw_snapshots %}
+	    <div class="card-shell margin-top-1">
+	      <p class="muted margin-0">Snapshot chart</p>
+	      <h3 class="margin-0">Ultimate Weapons snapshot</h3>
+	      <form method="get" class="grid-x grid-margin-x align-middle margin-top-1">
+	        <div class="cell medium-8">
+	          {% include "core/partials/snapshot_selector.html" with label_text="Select snapshot" label_class="margin-bottom-0" select_name="snapshot_id" select_id="uw-snapshot-select" snapshots=uw_snapshots selected_id=snapshot_id button_label="" %}
+	        </div>
+	        <div class="cell medium-4">
+	          <button class="button expanded margin-bottom-0" type="submit">View snapshot</button>
+	        </div>
+	      </form>
 
       {% if uw_snapshot_chart_json %}
         <p class="muted margin-top-1 margin-bottom-0">Showing: {{ uw_snapshot_name }}</p>
