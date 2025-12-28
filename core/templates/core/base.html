@@ -56,6 +56,11 @@
       <div class="top-bar-right">
         <ul class="dropdown menu" data-dropdown-menu>
           <li><a href="https://mahbam42.github.io/theTowerStats/" target="_blank" rel="noopener noreferrer">Docs</a></li>
+          {% if user.is_authenticated %}
+            <li class="{% if request.resolver_match.url_name == 'getting_started' %}is-active{% endif %}">
+              <a href="{% url 'core:getting_started' %}">Getting started</a>
+            </li>
+          {% endif %}
           {% if user.is_authenticated and user.is_staff or user.is_authenticated and user.is_superuser %}
             <li><a href="/admin/" target="_blank" rel="noreferrer">Admin</a></li>
           {% endif %}

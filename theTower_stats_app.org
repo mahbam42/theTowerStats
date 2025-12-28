@@ -2425,7 +2425,7 @@ CLOSED: [2025-12-22 Mon 15:31]
 - [X] fetch_wiki_data and rebuild_wiki_definitions should have a pretty summary of deltas at the end.
   Especially when using --target all.
 
-*** Bugs/Enhancements [29/32]
+*** Bugs/Enhancements [30/36]
 
 **** DONE [#B] Error Updating Guardian Upgrade Table                 :bug:
 CLOSED: [2025-12-22 Mon 18:51]
@@ -2907,7 +2907,17 @@ CLOSED: [2025-12-27 Sat 12:46]
 
 This is a process gap (not a feature) but will reduce long-term maintenance cost.
 
-**** TODO Revise Dashboard Docs to be Per Feature
+**** DONE [#B] If Battle Date isn't present in Battle Report fail over to parsed time :bug:
+CLOSED: [2025-12-28 Sun 09:01]
+- State "DONE"       from "TODO"       [2025-12-28 Sun 09:01]
+If a player copies the Battle Report from the end of round screen Battle Date isn't included. This breaks charting for a player. 
+**** TODO [#A] First-run onboarding                                   :UX:
+
+One-page “What this app does / doesn’t do”
+
+A single sample chart + explanation
+
+**** TODO [#B] Revise Dashboard Docs to be Per Feature                :UX:
 The docs are getting big and have long numbered lists of possible actions/steps. The information would be better structured if it was broken down by feature on each dashboard.
 
 - Charts:
@@ -2917,11 +2927,38 @@ The docs are getting big and have long numbered lists of possible actions/steps.
   - Analysis
   - Chart Builder
 
-**** TODO [#B] If Battle Date isn't present in Battle Report fail over to parsed time :bug:
-If a player copies the Battle Report from the end of round screen Battle Date isn't included. This breaks charting for a player. 
-**** TODO [#C] Improve Coverage for core/charting/builder.py: 40%
+**** TODO [#B] Confidence cues                                        :UX:
 
-** Backlog [2/5]
+Small “Data completeness” or “Runs in scope” callouts
+
+Explicit “This view excludes tournament runs” style notes
+
+**** TODO [#B] “Why am I seeing this?” panels             :UX:enhancement:
+
+A collapsible explanation under charts:
+
+- What data is included
+
+- What is excluded
+
+- How aggregation works (plain language)
+
+Especially powerful for:
+
+- Derived metrics
+
+- Advice summaries
+
+- Snapshot comparisons
+
+**** TODO [#C] Error Recovery UX                          :UX:enhancement:
+
+“What to do if parsing fails”
+
+Clear “nothing here yet” empty states everywhere
+
+**** TODO [#C] Improve Coverage for core/charting/builder.py: 40%    :ops:
+** Backlog [2/6]
 “Out of Scope”:
 - Cloud sync
 - Real-time scraping
@@ -3183,6 +3220,8 @@ Follow the documentation standards defined in agents.md.
 If writing a User Guide, prioritize clarity for non-technical users, avoid internal details, and follow the required task-based structure.
 Validate the final document against the Documentation Self-Check Checklist before completing the task.
 
+*** TODO [#B] Draft a “This app is done” release note
+Cite philosophy.md and mention k-means as the next big feature
 *** CANCELED [#C] What-If Scenarios
 CLOSED: [2025-12-22 Mon 09:01]
 
@@ -3266,6 +3305,7 @@ definitions/models.py:407
 CLOSED: [2025-12-17 Wed 14:31]
 - State "DONE"       from "TODO"       [2025-12-17 Wed 14:31]
 Mostly a visual tweak, but adds context and history for the player to interpert their performance history. 
+
 ** Codex Tasks
 - [X] prompt 16
 - [X] prompt 17

@@ -215,6 +215,9 @@
         <div id="active-context" class="muted"></div>
       </div>
 
+      {% include "core/partials/scope_summary.html" %}
+      {% include "core/partials/why_panel.html" %}
+
 	      {% if comparison_result %}
 	        <div class="callout success">
 	          <p class="margin-0"><strong>Deltas ({{ comparison_result.metric }})</strong></p>
@@ -324,7 +327,14 @@
       {% endif %}
 
       {% if chart_empty_state %}
-        <div class="empty-state" role="status">{{ chart_empty_state }}</div>
+        <div class="empty-state" role="status">
+          {{ chart_empty_state }}
+          {% if scope_summary and scope_summary.runs_in_scope == 0 and not scope_summary.has_filters %}
+            <div class="margin-top-1">
+              <a href="{% url 'core:getting_started' %}">Getting started</a> can help you preview demo data or import your first Battle Report.
+            </div>
+          {% endif %}
+        </div>
       {% endif %}
 
       <div class="grid-x grid-margin-x" {% if chart_empty_state %}hidden{% endif %}>

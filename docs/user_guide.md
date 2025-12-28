@@ -18,17 +18,18 @@ theTowerStats turns your imported Battle Reports into Battle History tables, Cha
 3. Select **Create account**.
 4. If you already have an account, enter your username and password under **Sign in**.
 5. Select **Sign in**.
-6. Select **Battle History**.
-7. Select **Add Battle Report**.
-8. Paste the Battle Report text from the game.
+6. (Optional) Select **Getting started** to review what the app does and preview demo data.
+7. Select **Battle History**.
+8. Select **Add Battle Report**.
+9. Paste the Battle Report text from the game.
 
     a. (Optional) Enter a preset label to group runs by your own goals.
 
-9. (Optional) Enable **Tournament run** when this run was a tournament round.
-10. Select **Import Battle Report**.
-11. Select **Charts** to view time-series charts based on your imported runs.
-12. Select **Cards**, **Ultimate Weapons**, **Guardians**, or **Bots** to record and review saved progress.
-13. Select **Sign out** to end your session.
+10. (Optional) Enable **Tournament run** when this run was a tournament round.
+11. Select **Import Battle Report**.
+12. Select **Charts** to view time-series charts based on your imported runs.
+13. Select **Cards**, **Ultimate Weapons**, **Guardians**, or **Bots** to record and review saved progress.
+14. Select **Sign out** to end your session.
 
 ## How to Read the Results
 

@@ -13,6 +13,7 @@ def _assert_nav_links(response) -> None:
 
     content = response.content.decode("utf-8")
     assert 'href="https://mahbam42.github.io/theTowerStats/"' in content
+    assert f'href="{reverse("core:getting_started")}"' in content
     expected_hrefs = [
         reverse("core:battle_history"),
         reverse("core:dashboard"),

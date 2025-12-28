@@ -705,16 +705,32 @@ def dashboard(request: HttpRequest) -> HttpResponse:
         chart_panels_json = json.dumps(combined)
 
     chart_context = _chart_context_summary(chart_form, selectable_configs=list_selectable_chart_configs())
+    has_filters = _form_has_filters(chart_form)
+    chartable_points = sum(
+        1
+        for panel in rendered
+        for dataset in panel.data["datasets"]
+        for value in dataset.get("data", [])
+        if value is not None
+    )
     chart_empty_state = _chart_empty_state_message(
         total_filtered_runs=total_filtered_runs,
-        chartable_runs=sum(
-            1
-            for panel in rendered
-            for dataset in panel.data["datasets"]
-            for value in dataset.get("data", [])
-            if value is not None
-        ),
-        has_filters=_form_has_filters(chart_form),
+        chartable_runs=chartable_points,
+        has_filters=has_filters,
+    )
+    scope_summary = _chart_scope_summary_payload(
+        chart_context=chart_context,
+        total_filtered_runs=total_filtered_runs,
+        chartable_points=chartable_points,
+        has_filters=has_filters,
+        chart_empty_state=chart_empty_state,
+    )
+    why_panel = _why_am_i_seeing_this_payload(
+        chart_context=chart_context,
+        total_filtered_runs=total_filtered_runs,
+        chartable_points=chartable_points,
+        has_filters=has_filters,
+        chart_empty_state=chart_empty_state,
     )
 
     context = {
@@ -749,10 +765,31 @@ def dashboard(request: HttpRequest) -> HttpResponse:
         "chart_panels_json": chart_panels_json,
         "chart_context_json": json.dumps(chart_context),
         "chart_empty_state": chart_empty_state,
+        "scope_summary": scope_summary,
+        "why_panel": why_panel,
         "event_window_start": chart_form.cleaned_data.get("start_date"),
         "event_window_end": chart_form.cleaned_data.get("end_date"),
     }
     return render(request, "core/dashboard.html", context)
+
+
+@login_required
+def getting_started(request: HttpRequest) -> HttpResponse:
+    """Render a first-run onboarding page.
+
+    This is a lightweight, user-facing explainer that sets expectations and
+    offers safe entry points (demo mode or import) without prescribing gameplay.
+    """
+
+    player = _request_player(request)
+    has_imported_runs = BattleReport.objects.filter(player=player).exists()
+    return render(
+        request,
+        "core/getting_started.html",
+        {
+            "has_imported_runs": has_imported_runs,
+        },
+    )
 
 
 @login_required
@@ -4064,3 +4101,97 @@ def _chart_empty_state_message(
         return "No runs match the current filters."
 
     return "No chartable runs in the current selection (missing required fields)."
+
+
+def _chart_scope_summary_payload(
+    *,
+    chart_context: dict[str, str | None],
+    total_filtered_runs: int,
+    chartable_points: int,
+    has_filters: bool,
+    chart_empty_state: str | None,
+) -> dict[str, object]:
+    """Return a scope + completeness payload for the Charts dashboard.
+
+    Args:
+        chart_context: Output of `_chart_context_summary` used to display active filters.
+        total_filtered_runs: Count of BattleReport rows in the current scope.
+        chartable_points: Count of non-null datapoints across rendered datasets.
+        has_filters: Whether the context form includes any non-default filters.
+        chart_empty_state: Empty-state message shown when there are no usable datapoints.
+
+    Returns:
+        Dict intended for template rendering.
+    """
+
+    return {
+        "runs_in_scope": total_filtered_runs,
+        "has_filters": has_filters,
+        "chartable_points": chartable_points,
+        "empty_state": chart_empty_state,
+        "context": chart_context,
+    }
+
+
+def _why_am_i_seeing_this_payload(
+    *,
+    chart_context: dict[str, str | None],
+    total_filtered_runs: int,
+    chartable_points: int,
+    has_filters: bool,
+    chart_empty_state: str | None,
+) -> dict[str, tuple[str, ...] | str]:
+    """Return plain-language scope and aggregation notes for the Charts dashboard.
+
+    Args:
+        chart_context: Output of `_chart_context_summary` used to describe the active selection.
+        total_filtered_runs: Count of BattleReport rows in the current scope.
+        chartable_points: Count of non-null datapoints across rendered datasets.
+        has_filters: Whether the context form includes any non-default filters.
+        chart_empty_state: Empty-state message shown when there are no usable datapoints.
+
+    Returns:
+        Dict with stable, template-ready strings.
+    """
+
+    included: list[str] = []
+    excluded: list[str] = []
+    aggregation: list[str] = []
+    limitations: list[str] = []
+
+    if chart_context.get("start_date") or chart_context.get("end_date"):
+        included.append(
+            "Date range: "
+            f"{chart_context.get('start_date') or '…'} to {chart_context.get('end_date') or '…'}"
+        )
+        excluded.append("Runs outside the selected date range.")
+    if chart_context.get("tier"):
+        included.append(f"Tier: {chart_context['tier']}")
+        excluded.append("Runs from other tiers.")
+    if chart_context.get("preset"):
+        included.append(f"Preset: {chart_context['preset']}")
+        excluded.append("Runs with other presets (or no preset).")
+
+    if not included:
+        included.append("All imported runs in the default date window.")
+        if has_filters:
+            included.append("Additional filters may be active in Advanced options.")
+
+    if (granularity := chart_context.get("granularity")):
+        aggregation.append(f"X-axis buckets follow the selected granularity ({granularity}).")
+    aggregation.append(
+        "When multiple runs fall into the same bucket, charts combine values within that bucket."
+    )
+
+    if chart_empty_state:
+        limitations.append(chart_empty_state)
+    if total_filtered_runs > 0 and chartable_points == 0:
+        limitations.append("Some charts require fields that may be missing from your imported Battle Reports.")
+
+    return {
+        "included": tuple(included),
+        "excluded": tuple(excluded),
+        "aggregation": tuple(aggregation),
+        "limitations": tuple(limitations),
+        "title": "Why am I seeing this?",
+    }
