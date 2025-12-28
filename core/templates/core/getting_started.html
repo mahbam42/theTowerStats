@@ -1,0 +1,101 @@
+{% extends "core/base.html" %}
+
+{% block title %}Getting started • theTowerStats{% endblock %}
+
+{% block content %}
+  <div class="grid-x grid-margin-x">
+    <div class="cell">
+      <div class="card-shell">
+        <h2 class="margin-0">Getting started</h2>
+        <p class="muted margin-0">
+          theTowerStats helps you understand your own Battle Reports by turning them into history, charts, and comparisons.
+        </p>
+      </div>
+    </div>
+  </div>
+
+  <div class="grid-x grid-margin-x margin-top-1">
+    <div class="cell large-7">
+      <div class="card-shell">
+        <h4>What this app is</h4>
+        <ul class="margin-bottom-0">
+          <li>A way to import Battle Reports and review your run history over time.</li>
+          <li>A tool for comparing scopes of runs using clear filters (date range, tier, preset, and snapshots).</li>
+          <li>A place to track collection progress for items you choose to record.</li>
+        </ul>
+      </div>
+
+      <div class="card-shell margin-top-1">
+        <h4>What this app is not</h4>
+        <ul class="margin-bottom-0">
+          <li>A leaderboard or ranking system.</li>
+          <li>A “best build” generator.</li>
+          <li>A strategy engine that tells you what to do.</li>
+        </ul>
+      </div>
+
+      <div class="card-shell margin-top-1">
+        <h4>Sample chart (how to read it)</h4>
+        <p class="muted">
+          Charts always reflect your current context. Changing context changes which runs are included, not what a metric means.
+        </p>
+        <div class="onboarding-sample-chart" role="img" aria-label="Sample chart illustration">
+          <svg viewBox="0 0 600 180" preserveAspectRatio="none" class="onboarding-sample-chart-svg" aria-hidden="true">
+            <polyline
+              fill="none"
+              stroke="currentColor"
+              stroke-width="3"
+              points="20,140 120,120 220,135 320,90 420,110 520,70 580,85"
+            />
+            <line x1="20" y1="150" x2="580" y2="150" stroke="currentColor" stroke-opacity="0.2" />
+            <line x1="20" y1="30" x2="20" y2="150" stroke="currentColor" stroke-opacity="0.2" />
+          </svg>
+        </div>
+        <ul class="margin-bottom-0">
+          <li><strong>Included</strong>: only the runs that match your selected date range, tier, and preset.</li>
+          <li><strong>Excluded</strong>: runs outside your current filters.</li>
+          <li><strong>Limits</strong>: missing values show as gaps rather than guessed numbers.</li>
+        </ul>
+      </div>
+    </div>
+
+    <div class="cell large-5">
+      <div class="card-shell">
+        <h4>Start here</h4>
+        <p class="muted">
+          Choose a safe entry point. Demo mode uses sample data and disables imports.
+        </p>
+
+        <div class="button-group expanded stack-for-small">
+          {% if demo_mode %}
+            <a class="button" href="{% url 'core:dashboard' %}">View demo charts</a>
+          {% else %}
+            <form action="{% url 'core:enable_demo_mode' %}" method="post" class="inline-form">
+              {% csrf_token %}
+              <input type="hidden" name="next" value="{% url 'core:dashboard' %}" />
+              <button type="submit" class="button">Try demo data</button>
+            </form>
+          {% endif %}
+          <a class="button secondary" href="{% url 'core:battle_history' %}">Import Battle Reports</a>
+        </div>
+
+        {% if has_imported_runs %}
+          <p class="muted margin-top-1 margin-bottom-0">
+            You already have imported runs. You can go straight to Charts or Battle History.
+          </p>
+          <div class="button-group expanded stack-for-small margin-top-1">
+            <a class="button secondary" href="{% url 'core:dashboard' %}">Go to Charts</a>
+            <a class="button secondary" href="{% url 'core:battle_history' %}">Go to Battle History</a>
+          </div>
+        {% else %}
+          <div class="callout secondary margin-top-1">
+            <p class="margin-0">
+              If you skip imports for now, Charts will show an empty state until you add Battle Reports.
+            </p>
+          </div>
+        {% endif %}
+      </div>
+    </div>
+  </div>
+{% endblock %}
+

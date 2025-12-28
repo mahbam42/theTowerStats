@@ -1,0 +1,18 @@
+{% if scope_summary %}
+  <div class="callout secondary scope-summary" role="status" aria-live="polite">
+    <div class="grid-x grid-margin-x align-middle">
+      <div class="cell auto">
+        <strong>Runs in scope:</strong> {{ scope_summary.runs_in_scope }}
+        {% if scope_summary.chartable_points is not None %}
+          <span class="muted">• Chart datapoints: {{ scope_summary.chartable_points }}</span>
+        {% endif %}
+      </div>
+      <div class="cell shrink">
+        {% if scope_summary.runs_in_scope == 0 and not scope_summary.has_filters %}
+          <a class="button tiny secondary margin-0" href="{% url 'core:getting_started' %}">Getting started</a>
+        {% endif %}
+      </div>
+    </div>
+  </div>
+{% endif %}
+

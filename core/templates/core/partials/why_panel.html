@@ -1,0 +1,39 @@
+{% if why_panel %}
+  <details class="callout secondary why-panel">
+    <summary><strong>{{ why_panel.title }}</strong></summary>
+    <div class="margin-top-1">
+      <h6 class="margin-bottom-0">What is included</h6>
+      <ul class="margin-bottom-1">
+        {% for line in why_panel.included %}
+          <li>{{ line }}</li>
+        {% endfor %}
+      </ul>
+
+      {% if why_panel.excluded %}
+        <h6 class="margin-bottom-0">What is excluded</h6>
+        <ul class="margin-bottom-1">
+          {% for line in why_panel.excluded %}
+            <li>{{ line }}</li>
+          {% endfor %}
+        </ul>
+      {% endif %}
+
+      <h6 class="margin-bottom-0">How values are grouped</h6>
+      <ul class="margin-bottom-1">
+        {% for line in why_panel.aggregation %}
+          <li>{{ line }}</li>
+        {% endfor %}
+      </ul>
+
+      {% if why_panel.limitations %}
+        <h6 class="margin-bottom-0">Notes &amp; limitations</h6>
+        <ul class="margin-bottom-0">
+          {% for line in why_panel.limitations %}
+            <li>{{ line }}</li>
+          {% endfor %}
+        </ul>
+      {% endif %}
+    </div>
+  </details>
+{% endif %}
+
