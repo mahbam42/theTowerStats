@@ -15,8 +15,9 @@ from django.contrib.auth.forms import AuthenticationForm, UserCreationForm
 from django.conf import settings
 from django.core.exceptions import ValidationError
 from django.db import transaction
-from django.db.models import Count, Max, Q, QuerySet
+from django.db.models import Count, DateTimeField, Max, Q, QuerySet
 from django.db.models import Min
+from django.db.models.functions import Coalesce
 from django.http import HttpRequest, HttpResponse, JsonResponse, QueryDict
 from django.shortcuts import redirect, render
 from django.core.paginator import Paginator
@@ -286,8 +287,14 @@ def dashboard(request: HttpRequest) -> HttpResponse:
 
             earliest = (
                 BattleReport.objects.filter(player=player)
-                .exclude(run_progress__battle_date__isnull=True)
-                .aggregate(earliest=Min("run_progress__battle_date"))["earliest"]
+                .annotate(
+                    effective_battle_date=Coalesce(
+                        "run_progress__battle_date",
+                        "parsed_at",
+                        output_field=DateTimeField(),
+                    )
+                )
+                .aggregate(earliest=Min("effective_battle_date"))["earliest"]
             )
             if earliest is not None:
                 redirected["start_date"] = earliest.date().isoformat()
@@ -1042,17 +1049,19 @@ def _runs_for_chart_context_dto(*, player: Player, context: ChartContextDTO) -> 
         QuerySet of BattleReport rows matching the context.
     """
 
-    runs = (
-        BattleReport.objects.filter(player=player)
-        .select_related("run_progress", "run_progress__preset", "derived_metrics")
-        .order_by("run_progress__battle_date")
-    )
+    runs = _with_effective_battle_date(
+        BattleReport.objects.filter(player=player).select_related(
+            "run_progress",
+            "run_progress__preset",
+            "derived_metrics",
+        )
+    ).order_by("effective_battle_date")
     if not context.include_tournaments:
         runs = runs.exclude(Q(run_progress__tier__isnull=True) | Q(run_progress__is_tournament=True))
     if context.start_date:
-        runs = runs.filter(run_progress__battle_date__date__gte=context.start_date)
+        runs = runs.filter(effective_battle_date__date__gte=context.start_date)
     if context.end_date:
-        runs = runs.filter(run_progress__battle_date__date__lte=context.end_date)
+        runs = runs.filter(effective_battle_date__date__lte=context.end_date)
     if context.tier:
         runs = runs.filter(run_progress__tier=context.tier)
     if context.preset_id:
@@ -2407,17 +2416,19 @@ def ultimate_weapon_progress(request: HttpRequest) -> HttpResponse:
             dto = decode_chart_config_dto(dict(snapshot.config))
             validation = validate_chart_config_dto(dto, registry=DEFAULT_REGISTRY)
             if validation.is_valid:
-                runs_qs = (
-                    BattleReport.objects.filter(player=player)
-                    .select_related("run_progress", "run_progress__preset", "derived_metrics")
-                    .order_by("run_progress__battle_date")
-                )
+                runs_qs = _with_effective_battle_date(
+                    BattleReport.objects.filter(player=player).select_related(
+                        "run_progress",
+                        "run_progress__preset",
+                        "derived_metrics",
+                    )
+                ).order_by("effective_battle_date")
                 if not dto.context.include_tournaments:
                     runs_qs = runs_qs.exclude(Q(run_progress__tier__isnull=True) | Q(run_progress__is_tournament=True))
                 if dto.context.start_date:
-                    runs_qs = runs_qs.filter(run_progress__battle_date__date__gte=dto.context.start_date)
+                    runs_qs = runs_qs.filter(effective_battle_date__date__gte=dto.context.start_date)
                 if dto.context.end_date:
-                    runs_qs = runs_qs.filter(run_progress__battle_date__date__lte=dto.context.end_date)
+                    runs_qs = runs_qs.filter(effective_battle_date__date__lte=dto.context.end_date)
                 if dto.context.tier:
                     runs_qs = runs_qs.filter(run_progress__tier=dto.context.tier)
                 if dto.context.preset_id:
@@ -3538,15 +3549,19 @@ def goals_dashboard(request: HttpRequest) -> HttpResponse:
 def _filtered_runs(filter_form: ChartContextForm, *, player: Player) -> QuerySet[BattleReport]:
     """Return a filtered BattleReport queryset based on validated form data."""
 
-    runs = BattleReport.objects.filter(player=player).select_related(
-        "run_progress",
-        "run_progress__preset",
-    ).prefetch_related(
-        "run_bots__bot_definition",
-        "run_guardians__guardian_chip_definition",
-        "run_combat_uws__ultimate_weapon_definition",
-        "run_utility_uws__ultimate_weapon_definition",
-    ).order_by("run_progress__battle_date", "id")
+    runs = _with_effective_battle_date(
+        BattleReport.objects.filter(player=player)
+        .select_related(
+            "run_progress",
+            "run_progress__preset",
+        )
+        .prefetch_related(
+            "run_bots__bot_definition",
+            "run_guardians__guardian_chip_definition",
+            "run_combat_uws__ultimate_weapon_definition",
+            "run_utility_uws__ultimate_weapon_definition",
+        )
+    ).order_by("effective_battle_date", "id")
     valid = filter_form.is_valid()
     include_tournaments = bool(valid and (filter_form.cleaned_data.get("include_tournaments") or False))
     if not include_tournaments:
@@ -3561,9 +3576,9 @@ def _filtered_runs(filter_form: ChartContextForm, *, player: Player) -> QuerySet
     window_kind = filter_form.cleaned_data.get("window_kind")
     window_n = filter_form.cleaned_data.get("window_n")
     if start_date:
-        runs = runs.filter(run_progress__battle_date__date__gte=start_date)
+        runs = runs.filter(effective_battle_date__date__gte=start_date)
     if end_date:
-        runs = runs.filter(run_progress__battle_date__date__lte=end_date)
+        runs = runs.filter(effective_battle_date__date__lte=end_date)
     if tier:
         runs = runs.filter(run_progress__tier=tier)
     if preset:
@@ -3595,26 +3610,25 @@ def _apply_rolling_window(
     if n <= 0:
         return runs
 
-    dated = runs.exclude(run_progress__battle_date__isnull=True)
+    runs = _with_effective_battle_date(runs)
     if kind == "last_runs":
         ids = list(
-            dated.order_by("-run_progress__battle_date")
-            .values_list("id", flat=True)[:n]
+            runs.order_by("-effective_battle_date").values_list("id", flat=True)[:n]
         )
         if not ids:
             return runs.none()
-        return runs.filter(id__in=ids).order_by("run_progress__battle_date")
+        return runs.filter(id__in=ids).order_by("effective_battle_date")
 
     if kind == "last_days":
         if end_date is not None:
             window_end = end_date
         else:
-            latest = dated.aggregate(latest=Max("run_progress__battle_date"))["latest"]
+            latest = runs.aggregate(latest=Max("effective_battle_date"))["latest"]
             if latest is None:
                 return runs.none()
             window_end = latest.date()
         window_start = window_end - timedelta(days=max(n - 1, 0))
-        return runs.filter(run_progress__battle_date__date__gte=window_start)
+        return runs.filter(effective_battle_date__date__gte=window_start)
 
     return runs
 
@@ -3626,10 +3640,12 @@ def _context_filtered_runs(filter_form: ChartContextForm, *, player: Player) -> 
     independent of any chart date filters.
     """
 
-    runs = BattleReport.objects.filter(player=player).select_related(
-        "run_progress",
-        "run_progress__preset",
-    ).order_by("run_progress__battle_date", "id")
+    runs = _with_effective_battle_date(
+        BattleReport.objects.filter(player=player).select_related(
+            "run_progress",
+            "run_progress__preset",
+        )
+    ).order_by("effective_battle_date", "id")
     valid = filter_form.is_valid()
     include_tournaments = bool(valid and (filter_form.cleaned_data.get("include_tournaments") or False))
     if not include_tournaments:
@@ -3644,6 +3660,26 @@ def _context_filtered_runs(filter_form: ChartContextForm, *, player: Player) -> 
     if preset:
         runs = runs.filter(run_progress__preset=preset)
     return runs
+
+
+def _with_effective_battle_date(runs: QuerySet[BattleReport]) -> QuerySet[BattleReport]:
+    """Annotate a queryset with an effective battle date for time-series filtering.
+
+    Args:
+        runs: BattleReport queryset.
+
+    Returns:
+        QuerySet annotated with `effective_battle_date`, using `battle_date` when
+        present and otherwise falling back to the report import time.
+    """
+
+    return runs.annotate(
+        effective_battle_date=Coalesce(
+            "run_progress__battle_date",
+            "parsed_at",
+            output_field=DateTimeField(),
+        )
+    )
 
 
 def _build_comparison_result(
@@ -3897,10 +3933,16 @@ def _build_comparison_result(
         window_b = summarize_window(base_analysis, start_date=b_start, end_date=b_end)
 
         records_a = tuple(
-            context_runs.filter(run_progress__battle_date__date__gte=a_start, run_progress__battle_date__date__lte=a_end)
+            _with_effective_battle_date(context_runs).filter(
+                effective_battle_date__date__gte=a_start,
+                effective_battle_date__date__lte=a_end,
+            )
         )
         records_b = tuple(
-            context_runs.filter(run_progress__battle_date__date__gte=b_start, run_progress__battle_date__date__lte=b_end)
+            _with_effective_battle_date(context_runs).filter(
+                effective_battle_date__date__gte=b_start,
+                effective_battle_date__date__lte=b_end,
+            )
         )
         headline_n_a, baseline_value = _average_metric_value(records_a, metric_key="coins_per_hour")
         headline_n_b, comparison_value = _average_metric_value(records_b, metric_key="coins_per_hour")

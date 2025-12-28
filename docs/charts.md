@@ -65,6 +65,9 @@ Charts help you review how your run results change over time using the same valu
 > Charts use only the data you have imported. If you have not imported runs for a date range, the chart cannot display values for that period.
 
 > **Note**
+> If a Battle Report does not include a Battle Date, charts place the run using the time you imported the report.
+
+> **Note**
 > Exports are snapshots of what you are viewing. They do not update after download.
 
 > **Note**

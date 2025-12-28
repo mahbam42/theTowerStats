@@ -45,7 +45,7 @@ Battle History helps you review your past runs in a table so you can compare res
 > Cells display an em dash (—) when the value does not exist in the imported report.
 
 > **Note**
-> Some Battle Reports do not include a Battle Date. In those cases, Battle History shows an em dash (—) for the date and date-based sorting may place the run later in the list.
+> Some Battle Reports do not include a Battle Date. In those cases, Battle History shows an em dash (—) for the date. Charts use the time you imported the report to place the run on time-based charts.
 
 > **Note**
 > Tournament rounds can be marked in-game without appearing in the copied Battle Report text. The app cannot detect tournament runs automatically from pasted text, so use **Tournament run** during import to exclude those runs from charts and history by default.

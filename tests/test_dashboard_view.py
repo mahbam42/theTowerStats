@@ -230,6 +230,38 @@ def test_dashboard_view_filters_and_plots_from_analysis_engine(auth_client, play
 
 
 @pytest.mark.django_db
+@pytest.mark.regression
+@pytest.mark.golden
+def test_dashboard_view_date_filter_falls_back_to_import_time(auth_client, player) -> None:
+    """Date filters fall back to the import timestamp when Battle Date is missing."""
+
+    report = BattleReport.objects.create(
+        player=player,
+        raw_text="Battle Report\nCoins earned    1,200\n",
+        checksum="z" * 64,
+    )
+    BattleReport.objects.filter(id=report.id).update(parsed_at=datetime(2025, 12, 2, 3, 0, tzinfo=timezone.utc))
+    report.refresh_from_db()
+
+    BattleReportProgress.objects.create(
+        battle_report=report,
+        player=player,
+        battle_date=None,
+        tier=1,
+        wave=100,
+        real_time_seconds=600,
+    )
+
+    response = auth_client.get("/", {"start_date": date(2025, 12, 2), "end_date": date(2025, 12, 2)})
+    assert response.status_code == 200
+
+    panels = {p["id"]: p for p in json.loads(response.context["chart_panels_json"])}
+    panel = panels["coins_per_hour"]
+    assert panel["labels"] == ["2025-12-02"]
+    assert panel["datasets"][0]["data"] == [7200.0]
+
+
+@pytest.mark.django_db
 def test_dashboard_view_filters_by_tier(auth_client, player) -> None:
     """Filter runs by tier and ensure chart data reflects the filtered inputs."""
 
