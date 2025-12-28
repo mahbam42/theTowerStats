@@ -19,13 +19,19 @@ It turns Battle Reports into history, charts, and comparisons so you can see wha
 
 * No leaderboards
 * No “best build” claims
-* No hidden math
+* No hidden assumptions
 * No telling you how to play
 
-All insights are based on *your data*, shown with clear context and explained assumptions.
-If there isn’t enough data to support a conclusion, the app says so.
+Everything is based on *your data*, shown with clear context and stated assumptions.
+If there isn’t enough data to support a conclusion, the app says so explicitly.
 
 **It’s a mirror, not a meta.**
+
+Guiding principles:
+
+* Raw Battle Reports are the source of truth
+* Context defines scope, not meaning
+* Trust and explainability come before cleverness
 
 ## What This App Does
 
@@ -49,14 +55,11 @@ If there isn’t enough data to support a conclusion, the app says so.
 - Track upgrade targets across bots, guardian chips, and ultimate weapons
 - See level targets, current vs target deltas, and estimated costs
 
-### 🧮 Analysis Engine (The Core Feature)
+### 🧮 Analysis (Deterministic, Traceable Outputs)
 
-- Deterministic, testable calculations
-- Computes:
-  - rates (coins/hour, waves/minute)
-  - deltas between runs
-  - derived metrics (EV, effective cooldowns)
-- No strategy preaching — just numbers you can interpret yourself
+- Computes rates, totals, deltas, and comparisons from your imported runs
+- Keeps outputs explainable by showing the scope (filters and included runs)
+- Uses descriptive language for summaries (never “best”, “optimal”, or “you should”)
 
 ### 🧩 Card, UW, Guardian, and Bot Tracking
 
@@ -102,11 +105,12 @@ This app is about:
 
 ## Current Progress
 
-- Current release: **v0.3.0**
+- Current development: **v0.4.0** (in progress)
+- Latest release: **v0.3.0**
 - Changelog: `CHANGELOG.md`
-- Stable: Battle Report import, Battle History, Charts (including snapshots), and collection progress dashboards
+- Stable: Battle Report import, Battle History, Charts (including snapshots and compare scopes), and collection progress dashboards
 - Multi-user: Each signed-in account has its own isolated dataset
-- Adoption features: A read-only demo dataset and lightweight export tools for sharing charts and derived metrics
+- Adoption features: A read-only demo dataset and lightweight export tools (CSV and PNG)
 
 See the User Guide and Development sections in `/docs` ([or the published site](https://mahbam42.github.io/theTowerStats/)) for deeper detail.
 

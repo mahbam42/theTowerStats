@@ -2,7 +2,20 @@
 
 This project follows Semantic Versioning.
 
-## [0.3.0] (in progress)
+## [0.4.0] (in progress)
+
+- Notes: Summary of the most recent development work.
+- Getting started: add a landing page to explain scope and how to begin using the app.
+- Charts: add scope explainers and support multi-run Compare views with summary-focused outputs.
+- Charts: handle missing Battle Date by falling back to import timestamp for charting.
+- Analysis: persist Battle Report derived metrics to support residual coin/cash charts and consistent chart series.
+- Ops: require an explicit target for `sync_player_state` to reduce accidental cross-scope updates.
+- Battle History: move coins/hour sorting into analysis and tighten player-scoped parameter updates.
+- Bug fix: tolerate Guardian chip rebuild failures caused by JSON key reordering.
+- Docs: add product philosophy and developer design principles pages; expand user guide chart explanations.
+- Tests: add coverage for getting started, navigation, sync command behavior, and derived-metrics persistence.
+
+## [0.3.0]
 
 - Notes: Adds new dashboards, charts/metrics, and documentation updates.
 - Cards dashboard: select multiple cards and apply presets in bulk (assign or create preset tags).
