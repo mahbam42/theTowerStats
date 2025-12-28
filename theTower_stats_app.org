@@ -2425,7 +2425,7 @@ CLOSED: [2025-12-22 Mon 15:31]
 - [X] fetch_wiki_data and rebuild_wiki_definitions should have a pretty summary of deltas at the end.
   Especially when using --target all.
 
-*** Bugs/Enhancements [30/36]
+*** Bugs/Enhancements [35/36]
 
 **** DONE [#B] Error Updating Guardian Upgrade Table                 :bug:
 CLOSED: [2025-12-22 Mon 18:51]
@@ -2911,13 +2911,17 @@ This is a process gap (not a feature) but will reduce long-term maintenance cost
 CLOSED: [2025-12-28 Sun 09:01]
 - State "DONE"       from "TODO"       [2025-12-28 Sun 09:01]
 If a player copies the Battle Report from the end of round screen Battle Date isn't included. This breaks charting for a player. 
-**** TODO [#A] First-run onboarding                                   :UX:
+**** DONE [#A] First-run onboarding                                   :UX:
+CLOSED: [2025-12-28 Sun 09:59]
 
+- State "DONE"       from "TODO"       [2025-12-28 Sun 09:59]
 One-page “What this app does / doesn’t do”
 
 A single sample chart + explanation
 
-**** TODO [#B] Revise Dashboard Docs to be Per Feature                :UX:
+**** DONE [#B] Revise Dashboard Docs to be Per Feature                :UX:
+CLOSED: [2025-12-28 Sun 09:59]
+- State "DONE"       from "TODO"       [2025-12-28 Sun 09:59]
 The docs are getting big and have long numbered lists of possible actions/steps. The information would be better structured if it was broken down by feature on each dashboard.
 
 - Charts:
@@ -2927,14 +2931,18 @@ The docs are getting big and have long numbered lists of possible actions/steps.
   - Analysis
   - Chart Builder
 
-**** TODO [#B] Confidence cues                                        :UX:
+**** DONE [#B] Confidence cues                                        :UX:
+CLOSED: [2025-12-28 Sun 09:59]
 
+- State "DONE"       from "TODO"       [2025-12-28 Sun 09:59]
 Small “Data completeness” or “Runs in scope” callouts
 
 Explicit “This view excludes tournament runs” style notes
 
-**** TODO [#B] “Why am I seeing this?” panels             :UX:enhancement:
+**** DONE [#B] “Why am I seeing this?” panels             :UX:enhancement:
+CLOSED: [2025-12-28 Sun 09:59]
 
+- State "DONE"       from "TODO"       [2025-12-28 Sun 09:59]
 A collapsible explanation under charts:
 
 - What data is included
@@ -2951,8 +2959,10 @@ Especially powerful for:
 
 - Snapshot comparisons
 
-**** TODO [#C] Error Recovery UX                          :UX:enhancement:
+**** DONE [#C] Error Recovery UX                          :UX:enhancement:
+CLOSED: [2025-12-28 Sun 09:59]
 
+- State "DONE"       from "TODO"       [2025-12-28 Sun 09:59]
 “What to do if parsing fails”
 
 Clear “nothing here yet” empty states everywhere

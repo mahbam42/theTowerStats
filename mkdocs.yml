@@ -42,7 +42,9 @@ nav:
       - Search: search.md
       - Demo Data: demo_data.md
       - Battle History: battle_history.md
-      - Charts: charts.md
+      - Charts:
+          - Overview: charts.md
+          - Chart Builder: charts/chart_builder.md
       - Goals: goals.md
       - Cards: cards.md
       - Ultimate Weapons: ultimate_weapons.md

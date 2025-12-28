@@ -2,7 +2,7 @@
 
 ## Overview
 
-Charts help you review how your run results change over time using the same values stored from your imported Battle Reports, including custom charts you build from a limited set of options.
+Charts help you review how your run results change over time using the same values stored from your imported Battle Reports, including custom charts you build from a limited set of options. For custom charts, see [Chart Builder](charts/chart_builder.md).
 
 ## When to Use This
 
@@ -30,10 +30,7 @@ Charts help you review how your run results change over time using the same valu
 13. (Optional) In **Advanced analysis**, select **Snapshot A** and an advice comparison mode.
 14. (Optional) In **Advanced analysis**, adjust goal weights when a weighted summary is needed.
 15. (Optional) In **Advanced analysis**, select **Export derived metrics (CSV)** to download a snapshot of derived chart values.
-16. (Optional) Select **Chart Builder** to open the chart builder modal.
-17. In **Chart Builder**, complete **Step 1 — Metrics** and review the constraint messages when present.
-18. In **Chart Builder**, complete **Step 2 — Chart settings** and (optional) **Step 3 — Comparison**.
-19. In **Chart Builder**, select **Apply to dashboard** to add the custom chart to the dashboard.
+16. (Optional) Use **Chart Builder** to create a custom chart and apply it to your dashboard. For the full workflow, see [Chart Builder](charts/chart_builder.md).
 20. (Optional) Select **Download PNG** on a chart to save an image of the chart as currently displayed.
 21. (Optional) Open **Compare** to run the separate compare workflow.
 22. (Optional) In **Compare**, select **Summary focus** to choose what you want the comparison to emphasize.
@@ -117,7 +114,7 @@ Charts help you review how your run results change over time using the same valu
 1. Select a comparison chart (for example, “Coins Earned (Compare Tiers)”).
 2. Select **Tier** or **Preset** filters only when you want to narrow the comparison set.
 3. Review the legend to confirm which lines correspond to which groups.
-4. Select **Chart Builder**, then select **Load snapshot** to apply a previously saved snapshot.
+4. Load a previously saved custom chart snapshot using **Chart Builder**. For steps, see [Chart Builder](charts/chart_builder.md).
 5. (Optional) Use **Compare** when you want to compare two groups of runs directly:
    1. Select a **Summary focus**.
    2. Select multiple runs in **Scope A runs** and **Scope B runs**.
