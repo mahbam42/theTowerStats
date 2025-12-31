@@ -19,25 +19,26 @@ Charts help you review how your run results change over time using the same valu
 2. (Optional) Select **Getting started** when you want to preview demo data or review what the app does.
 3. In **Context**, review the **Start** and **End** dates. The app defaults to the current in-game Event window (14 days).
 4. (Optional) Select **Previous**, **Next**, or **All** to change the date window.
-5. In **Context**, select **Granularity** to choose **By date** or **By battle log**.
+5. In **Context**, review **Granularity**. It defaults to **By battle log**, and you can switch to **By date** when needed.
 6. In **Context**, select a **Tier** and **Preset** to narrow the scope.
-7. Select **Apply** to refresh the dashboard.
-8. (Optional) Open **More options** to select one or more items in **Charts**.
-9. (Optional) In **More options**, select a **Rolling window** and **Rolling window size**.
-10. (Optional) In **More options**, select **Ultimate Weapon**, **Guardian Chip**, or **Bot** to narrow the scope to runs where that item appears.
+7. (Optional) In **Context**, toggle **Include tournaments** to include tournament runs in the charts.
+8. Select **Apply** to refresh the dashboard.
+9. (Optional) Open **More options** to select one or more items in **Charts**. Each chart entry includes a brief description.
+10. (Optional) In **More options**, select a **Rolling window** and **Rolling window size**.
 11. (Optional) In **More options**, select a **Moving average window** to smooth the displayed line.
-12. (Optional) Open **Advanced analysis** to configure **Advice** and **Goal-aware comparison**.
-13. (Optional) In **Advanced analysis**, select **Snapshot A** and an advice comparison mode.
-14. (Optional) In **Advanced analysis**, adjust goal weights when a weighted summary is needed.
-15. (Optional) In **Advanced analysis**, select **Export derived metrics (CSV)** to download a snapshot of derived chart values.
-16. (Optional) Use **Chart Builder** to create a custom chart and apply it to your dashboard. For the full workflow, see [Chart Builder](charts/chart_builder.md).
-20. (Optional) Select **Download PNG** on a chart to save an image of the chart as currently displayed.
-21. (Optional) Open **Compare** to run the separate compare workflow.
-22. (Optional) In **Compare**, select **Summary focus** to choose what you want the comparison to emphasize.
-23. (Optional) In **Compare**, select multiple runs in **Scope A runs** and **Scope B runs** to compare two groups of runs.
-24. (Optional) Select **Compare** to view the delta summary and any available Advice.
-25. (Optional) Open **Quick import** to paste a Battle Report without leaving the Charts page.
-26. (Optional) In **Quick import**, enable **Tournament run** when the run was a tournament round. The app cannot detect tournament runs automatically from pasted text.
+12. (Optional) In **More options**, select **Ultimate Weapon**, **Bot**, or **Guardian Chip** to narrow the scope to runs where that item appears.
+13. (Optional) Open **Advanced analysis** to configure **Advice** and **Goal-aware comparison**.
+14. (Optional) In **Advanced analysis**, select **Snapshot A** and an advice comparison mode.
+15. (Optional) In **Advanced analysis**, adjust goal weights when a weighted summary is needed.
+16. (Optional) In **Advanced analysis**, select **Export derived metrics (CSV)** to download a snapshot of derived chart values.
+17. (Optional) Use **Chart Builder** to create a custom chart and apply it to your dashboard. For the full workflow, see [Chart Builder](charts/chart_builder.md).
+18. (Optional) Select **Download PNG** on a chart to save an image of the chart as currently displayed.
+19. (Optional) Open **Compare** to run the separate compare workflow.
+20. (Optional) In **Compare**, select **Summary focus** to choose what you want the comparison to emphasize.
+21. (Optional) In **Compare**, select multiple runs in **Scope A runs** and **Scope B runs** to compare two groups of runs.
+22. (Optional) Select **Compare** to view the delta summary and any available Advice.
+23. (Optional) Open **Quick import** to paste a Battle Report without leaving the Charts page.
+24. (Optional) In **Quick import**, enable **Tournament run** when the run was a tournament round. The app cannot detect tournament runs automatically from pasted text.
 
 ## How to Read the Results
 

@@ -16,7 +16,7 @@ from django import forms
 from analysis.event_windows import event_window_for_date
 from analysis.chart_config_dto import ChartScopeDTO
 from analysis.series_registry import DEFAULT_REGISTRY
-from core.charting.configs import CHART_CONFIG_BY_ID, default_selected_chart_ids, list_selectable_chart_configs
+from core.charting.configs import default_selected_chart_ids, list_selectable_chart_configs
 from core.charting.builder import (
     ChartBuilderSelection,
     build_before_after_scopes,
@@ -94,7 +94,7 @@ class ChartContextForm(forms.Form):
         choices=(),
         label="Charts",
         help_text="Select one or more charts to display.",
-        widget=forms.SelectMultiple(attrs={"size": 8}),
+        widget=forms.SelectMultiple(attrs={"size": 12}),
     )
     start_date = forms.DateField(
         required=False,
@@ -227,7 +227,10 @@ class ChartContextForm(forms.Form):
         grouped: dict[str, list[tuple[str, str]]] = {}
         for chart in charts:
             group = category_labels.get(chart.category, str(chart.category))
-            grouped.setdefault(group, []).append((chart.id, f"{chart.title} — {chart.chart_type}"))
+            description = (chart.description or f"Chart showing {chart.title}.").strip()
+            grouped.setdefault(group, []).append(
+                (chart.id, f"{chart.title} — {chart.chart_type} — {description}")
+            )
         choices: list[tuple[str, list[tuple[str, str]]]] = []
         for group_name in (
             "Economy",
@@ -243,6 +246,29 @@ class ChartContextForm(forms.Form):
             if group_name in grouped:
                 choices.append((group_name, grouped[group_name]))
         self.fields["charts"].choices = choices
+        self.fields["charts"].widget.attrs["title"] = "Select one or more charts to display."
+        self.fields["include_tournaments"].widget.attrs["title"] = (
+            "Include tournament runs in charts and derived metrics."
+        )
+        self.fields["window_kind"].widget.attrs["title"] = (
+            "Limit the chart scope to the most recent runs or days after other filters."
+        )
+        self.fields["window_n"].widget.attrs["title"] = (
+            "Number of runs or days used by the rolling window."
+        )
+        self.fields["ultimate_weapon"].widget.attrs["title"] = (
+            "Filter to runs where the selected ultimate weapon appears."
+        )
+        self.fields["guardian_chip"].widget.attrs["title"] = (
+            "Filter to runs where the selected guardian chip appears."
+        )
+        self.fields["bot"].widget.attrs["title"] = "Filter to runs where the selected bot appears."
+        self.fields["moving_average_window"].widget.attrs["title"] = (
+            "Smooth charts by averaging over this many points."
+        )
+        self.fields["granularity"].widget.attrs["title"] = (
+            "Choose whether charts show one point per date or per run."
+        )
 
     def clean(self) -> dict[str, object]:
         """Apply Event-window defaults and dashboard invariants."""
@@ -255,13 +281,7 @@ class ChartContextForm(forms.Form):
         if not cleaned.get("charts"):
             cleaned["charts"] = list(default_selected_chart_ids())
         if not cleaned.get("granularity"):
-            selected = tuple(str(v) for v in (cleaned.get("charts") or ()))
-            preferred = [
-                CHART_CONFIG_BY_ID[chart_id].default_granularity
-                for chart_id in selected
-                if chart_id in CHART_CONFIG_BY_ID
-            ]
-            cleaned["granularity"] = "per_run" if "per_run" in preferred else "daily"
+            cleaned["granularity"] = "per_run"
         window_kind = (cleaned.get("window_kind") or "").strip()
         window_n = cleaned.get("window_n")
         if window_kind and not window_n:

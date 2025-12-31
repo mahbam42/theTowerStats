@@ -85,6 +85,12 @@
               <button class="button secondary" type="submit" name="event_shift" value="all">All</button>
             </div>
           </div>
+          <div class="cell shrink">
+            <label class="margin-bottom-0">
+              {{ chart_form.include_tournaments }}
+              {{ chart_form.include_tournaments.label }}
+            </label>
+          </div>
         </div>
 
         <div class="grid-x grid-margin-x align-middle margin-top-1">
@@ -102,17 +108,13 @@
         <details class="margin-top-1">
           <summary>More options</summary>
           <div class="grid-x grid-margin-x margin-top-1">
-            <div class="cell medium-4">
+            <div class="cell medium-6">
               <label>Charts
                 {{ chart_form.charts }}
               </label>
             </div>
-            <div class="cell medium-4">
-              <label>
-                {{ chart_form.include_tournaments }}
-                {{ chart_form.include_tournaments.label }}
-              </label>
-            </div>
+          </div>
+          <div class="grid-x grid-margin-x margin-top-1">
             <div class="cell medium-4">
               <label>Rolling window
                 {{ chart_form.window_kind }}
@@ -124,13 +126,15 @@
               </label>
             </div>
             <div class="cell medium-4">
-              <label>Ultimate Weapon
-                {{ chart_form.ultimate_weapon }}
+              <label>Moving average window
+                {{ chart_form.moving_average_window }}
               </label>
             </div>
+          </div>
+          <div class="grid-x grid-margin-x margin-top-1">
             <div class="cell medium-4">
-              <label>Guardian Chip
-                {{ chart_form.guardian_chip }}
+              <label>Ultimate Weapon
+                {{ chart_form.ultimate_weapon }}
               </label>
             </div>
             <div class="cell medium-4">
@@ -139,8 +143,8 @@
               </label>
             </div>
             <div class="cell medium-4">
-              <label>Moving average window
-                {{ chart_form.moving_average_window }}
+              <label>Guardian Chip
+                {{ chart_form.guardian_chip }}
               </label>
             </div>
           </div>

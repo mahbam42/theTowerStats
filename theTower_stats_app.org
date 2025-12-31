@@ -2425,7 +2425,7 @@ CLOSED: [2025-12-22 Mon 15:31]
 - [X] fetch_wiki_data and rebuild_wiki_definitions should have a pretty summary of deltas at the end.
   Especially when using --target all.
 
-*** Bugs/Enhancements [35/36]
+*** Bugs/Enhancements [35/40]
 
 **** DONE [#B] Error Updating Guardian Upgrade Table                 :bug:
 CLOSED: [2025-12-22 Mon 18:51]
@@ -2968,6 +2968,54 @@ CLOSED: [2025-12-28 Sun 09:59]
 Clear “nothing here yet” empty states everywhere
 
 **** TODO [#C] Improve Coverage for core/charting/builder.py: 40%    :ops:
+
+**** TODO [#B] Change Theme to Dark Mode                              :UX:
+
+**** TODO [#A] Make All Dashboards more Mobile Friendly               :UX:
+Move widgets to the right so that the main area loads first on Mobile
+
+- Battle History
+  - Header Row should show on Mobile
+  - I think it's ok for the table rows to overflow the screen instead of wrapping.
+- Cards
+  - Collapse Parameter and Preset on Mobile
+  - Make Cards Table more compact on Mobile
+- Goals
+- UW, Bots, Guardian Chips
+  - Make Upgradable Entities more compact
+**** TODO [#A] Charts Dashboard Improvements [0/5]
+***** TODO [#A] Change Default Granularity to 'by battle log'        :UX:
+
+***** TODO [#B] Move 'Include Tournaments' up next to date range buttons
+
+***** TODO [#B] Rearrange Controls Under More Options [0/2]
+Layout needs to be as follows:
+[Rolling Window] [Rolling Window Size] [Moving Average Window]
+[UW Select] [Bot Select] [Guardian Chip Select] 
+
+****** TODO Epand Charts Select and add brief descriptions of each chart
+
+****** TODO Add tool tips to controls to explain their purpose
+
+***** TODO [#B] Break up Charts Documentation
+The 'How to Use' section is too long and unclear. Breakout 'More Options,' 'Advanced Analysis,' and 'Compare into separate doc pages nested under charts. 
+
+***** TODO On the Chart Builder Doc add a table listing  all the metrics
+Note the source and how it's calculated 
+
+**** IN PROGRESS Codex Prompt40.md
+- State "IN PROGRESS" from              [2025-12-30 Tue 18:20] \\
+  Codex Broke up the tasks
+
+
+
+- [X] 1. Charts dashboard UI changes (granularity default, control layout, tooltips, chart descriptions)
+- [ ] 2. Mobile dashboard layout tweaks (sidebar/widgets ordering + specific pages)
+- [ ] 3. Dark mode theme
+- [X] 4. Chart Builder docs + charts docs split
+- [ ] 5. Builder coverage improvements
+- [ ] Update Changelog to reflect recent commits/Enhancements.
+  Backtrack to 89a9512 
 ** Backlog [2/6]
 “Out of Scope”:
 - Cloud sync
