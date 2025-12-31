@@ -78,6 +78,45 @@ def test_domain_helpers_handle_mixed_categories() -> None:
     assert _domain_for_category(MetricCategory.utility) == "efficiency"
 
 
+def test_infer_domain_defaults_on_unknown_metric() -> None:
+    """Unknown metrics should fall back to the default economy domain."""
+
+    assert _infer_domain(("unknown_metric",)) == "economy"
+
+
+def test_build_runtime_chart_config_comparison_without_scopes() -> None:
+    """Comparison selections without scopes should still mark comparison category."""
+
+    selection = ChartBuilderSelection(
+        metric_keys=("coins_earned",),
+        chart_type="line",
+        group_by="time",
+        comparison="before_after",
+        smoothing="none",
+    )
+    config = build_runtime_chart_config(selection)
+
+    assert config.category == "comparison"
+    assert config.comparison is None
+
+
+def test_build_runtime_chart_config_group_by_preset() -> None:
+    """Grouping by preset should map to a comparison chart."""
+
+    selection = ChartBuilderSelection(
+        metric_keys=("coins_earned",),
+        chart_type="line",
+        group_by="preset",
+        comparison="none",
+        smoothing="none",
+    )
+    config = build_runtime_chart_config(selection)
+
+    assert config.category == "comparison"
+    assert config.comparison is not None
+    assert config.comparison.mode == "by_preset"
+
+
 def test_build_before_after_scopes() -> None:
     """Before/after scope builders should map dates and labels."""
 
