@@ -52,6 +52,9 @@ The Bots page helps you track which bots are unlocked, how far each upgrade para
 > **Caution**
 > If no Battle Reports have been imported yet, **Runs used** will show “No battles recorded yet”.
 
+> **Note**
+> On smaller screens, the upgrade cards use a more compact layout to keep the details readable.
+
 ## Advanced Usage
 
 1. Select **Unlocked only** to review only the bots you actively track.

@@ -24,7 +24,7 @@
   </div>
 
   <div class="grid-x grid-margin-x margin-top-1">
-    <div class="cell medium-4">
+    <div class="cell medium-4 dashboard-sidebar">
       <div class="card-shell">
         <h4 class="margin-bottom-1">Card slots</h4>
         <p class="lead margin-0">
@@ -107,7 +107,7 @@
         {% endif %}
       </div>
     </div>
-    <div class="cell medium-8">
+    <div class="cell medium-8 dashboard-main">
       <div class="card-shell">
         <div class="grid-x align-justify align-middle margin-bottom-1">
           <div class="cell auto">
@@ -207,8 +207,9 @@
                         Maxed{% if current_sort == "maxed" %} ▲{% elif current_sort == "-maxed" %} ▼{% endif %}
                       </a>
                     </th>
-                    <th scope="col">Parameters</th>
-                    <th scope="col">Presets</th>
+                    <th scope="col" class="card-params-col">Parameters</th>
+                    <th scope="col" class="card-presets-col">Presets</th>
+                    <th scope="col" class="card-mobile-details">Details</th>
                     <th scope="col">Last updated</th>
                   </tr>
                 </thead>
@@ -291,14 +292,14 @@
                           —
                         {% endif %}
                       </td>
-                      <td>
+                      <td class="card-params-col">
                         {% if row.parameters_html %}
                           <div class="pre-line">{{ row.parameters_html }}</div>
                         {% else %}
                           —
                         {% endif %}
                       </td>
-                      <td>
+                      <td class="card-presets-col">
                         <div>
                           {% for preset in row.presets %}
                             <span class="badge preset-badge preset-color-{{ preset.badge_color }}">{{ preset.name }}</span>
@@ -334,6 +335,57 @@
                             </form>
                           </details>
                         {% endif %}
+                      </td>
+                      <td class="card-mobile-details">
+                        <details>
+                          <summary class="muted">Parameters &amp; Presets</summary>
+                          <div class="margin-top-1">
+                            <p class="muted margin-bottom-0">Parameters</p>
+                            {% if row.parameters_html %}
+                              <div class="pre-line">{{ row.parameters_html }}</div>
+                            {% else %}
+                              —
+                            {% endif %}
+                          </div>
+                          <div class="margin-top-1">
+                            <p class="muted margin-bottom-0">Presets</p>
+                            <div>
+                              {% for preset in row.presets %}
+                                <span class="badge preset-badge preset-color-{{ preset.badge_color }}">{{ preset.name }}</span>
+                              {% empty %}
+                                —
+                              {% endfor %}
+                            </div>
+                            {% if not demo_mode %}
+                              <details class="margin-top-1">
+                                <summary class="muted">Edit</summary>
+                                <form method="post" class="margin-top-1">
+                                  {% csrf_token %}
+                                  <input type="hidden" name="action" value="update_presets">
+                                  <input type="hidden" name="next" value="{{ request.get_full_path }}">
+                                  <input type="hidden" name="card_id" value="{{ row.id }}">
+                                  <select name="presets" multiple size="4">
+                                    {% for preset in presets %}
+                                      <option
+                                        value="{{ preset.id }}"
+                                        {% if preset in row.presets %}selected{% endif %}
+                                      >
+                                        {{ preset.name }}
+                                      </option>
+                                    {% endfor %}
+                                  </select>
+                                  <input
+                                    type="text"
+                                    name="new_preset_name"
+                                    placeholder="New preset"
+                                    class="input-short"
+                                  >
+                                  <button class="button tiny" type="submit">Save</button>
+                                </form>
+                              </details>
+                            {% endif %}
+                          </div>
+                        </details>
                       </td>
                       <td>{{ row.updated_at }}</td>
                     </tr>

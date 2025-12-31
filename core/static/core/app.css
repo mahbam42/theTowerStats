@@ -323,6 +323,10 @@ body {
 .cards-table tr.card-maxed { opacity: 0.85; }
 .cards-table tr.card-maxed td { font-weight: 600; }
 
+.card-mobile-details {
+  display: none;
+}
+
 .cards-table .card-icon-small {
   max-width: 6rem;
 }
@@ -355,11 +359,72 @@ body {
 }
 
 @media (max-width: 39.375rem) {
+  .dashboard-sidebar {
+    order: 2;
+  }
+
+  .dashboard-main {
+    order: 1;
+  }
+
   .charts-controls {
     order: 2;
   }
 
   .charts-content {
     order: 1;
+  }
+
+  .battle-history-table thead {
+    display: table-header-group;
+  }
+
+  .battle-history-table th,
+  .battle-history-table td {
+    white-space: nowrap;
+  }
+
+  .cards-table th,
+  .cards-table td {
+    padding: 0.35rem 0.45rem;
+    font-size: 0.8rem;
+  }
+
+  .cards-table th.card-params-col,
+  .cards-table td.card-params-col,
+  .cards-table th.card-presets-col,
+  .cards-table td.card-presets-col {
+    display: none;
+  }
+
+  .cards-table th.card-mobile-details,
+  .cards-table td.card-mobile-details {
+    display: table-cell;
+  }
+
+  .cards-table .inventory-input {
+    max-width: 4.5rem;
+  }
+
+  .entity-tile {
+    padding: var(--tts-space-3);
+  }
+
+  .entity-tile table th,
+  .entity-tile table td {
+    padding: 0.35rem 0.45rem;
+    font-size: 0.8rem;
+  }
+
+  .entity-level-controls {
+    flex-direction: row;
+    align-items: center;
+    gap: var(--tts-space-1);
+  }
+
+  .goals-table th,
+  .goals-table td {
+    padding: 0.35rem 0.45rem;
+    font-size: 0.8rem;
   }
 }

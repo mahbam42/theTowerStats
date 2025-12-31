@@ -68,3 +68,6 @@ Battle History helps you review your past runs in a table so you can compare res
 
 > **Note**
 > Battle Reports can use tabs, colons, or spacing between labels and values. If an import fails, the page shows an error message under the Battle Report field.
+
+> **Note**
+> On smaller screens, the run table appears before the filter and summary panels, and the table scrolls horizontally rather than wrapping columns.

@@ -44,3 +44,6 @@ The Goals Dashboard lets you set target upgrade levels and see the total currenc
 
 > ⚠️ Note
 > Costs are informational and are based on the current level tables available in the app. Values may change when the underlying tables change.
+
+> ⚠️ Note
+> On smaller screens, the goals table uses a compact layout to keep more columns visible at once.

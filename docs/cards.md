@@ -23,14 +23,15 @@ Cards help you track your card slot progression and keep an organized view of yo
 7. Select a card’s **Inventory** value to enter your current progress.
 8. Review the **Inventory** display to confirm the shown threshold for that card level.
 9. Select a card’s **Presets** section to add or remove preset tags.
-10. Select **Preset filter** to show only cards tagged with specific presets.
-    A. (Optional) Select one or more cards using the checkbox column.
-    B. (Optional) Use **Bulk presets** to assign or create presets for the selected cards.
-13. Select **Maxed** to show all cards, only maxed cards, or only unmaxed cards.
-14. Select a column header in the cards table to sort the table.
-15. Select the same column header again to reverse the sort order.
-16. Select **Reset Filters** to return to the full list.
-17. Review **Total Cards Progress** to see an overall collection summary across all cards.
+10. On smaller screens, open **Details** in the table row to review **Parameters** and **Presets**.
+11. Select **Preset filter** to show only cards tagged with specific presets.
+12. (Optional) Select one or more cards using the checkbox column.
+13. (Optional) Use **Bulk presets** to assign or create presets for the selected cards.
+14. Select **Maxed** to show all cards, only maxed cards, or only unmaxed cards.
+15. Select a column header in the cards table to sort the table.
+16. Select the same column header again to reverse the sort order.
+17. Select **Reset Filters** to return to the full list.
+18. Review **Total Cards Progress** to see an overall collection summary across all cards.
 
 ## How to Read the Results
 
@@ -80,6 +81,9 @@ Cards help you track your card slot progression and keep an organized view of yo
 
 > **Note**
 > **Gems Needed** and **Events** are estimates based on buying 10 cards for 200 gems and a “buy 80 cards” event mission. These values are helpers, not game state.
+
+> **Note**
+> On smaller screens, the cards table appears before the summary panels, and **Parameters** and **Presets** are grouped under **Details** in each row.
 
 ## Advanced Usage
 

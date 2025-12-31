@@ -87,6 +87,9 @@ The Ultimate Weapons page helps you track which Ultimate Weapons you have unlock
 > **Note**
 > Ultimate Weapons snapshots are created from the **Charts** page by saving a snapshot and selecting **Ultimate Weapons** as the snapshot target.
 
+> **Note**
+> On smaller screens, the upgrade cards use a more compact layout to keep the details readable.
+
 ## Advanced Usage
 
 1. Select **Unlocked only** to review only the weapons you actively track.
