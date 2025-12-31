@@ -2,7 +2,7 @@
 
 This project follows Semantic Versioning.
 
-## [0.5.0] (in progress)
+## [0.5.1] (in progress)
 
 - UI: add dark theme styling across dashboards, navigation, tables, and callouts.
 - UI: reorder dashboard layouts on mobile so main content loads first, with compact tables on small screens.
@@ -10,6 +10,7 @@ This project follows Semantic Versioning.
 - Charts: move “Include tournaments” into the primary context controls.
 - Charts: compare run selectors display tier, wave, date, and time.
 - Tests: expand chart builder coverage and align demo CSV export test expectations.
+- Fix per-run label rendering and flagging; clarify chart labels in docs
 
 ## [0.4.0]
 
