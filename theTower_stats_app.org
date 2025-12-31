@@ -2425,7 +2425,7 @@ CLOSED: [2025-12-22 Mon 15:31]
 - [X] fetch_wiki_data and rebuild_wiki_definitions should have a pretty summary of deltas at the end.
   Especially when using --target all.
 
-*** Bugs/Enhancements [35/40]
+*** Bugs/Enhancements [39/40]
 
 **** DONE [#B] Error Updating Guardian Upgrade Table                 :bug:
 CLOSED: [2025-12-22 Mon 18:51]
@@ -2967,11 +2967,17 @@ CLOSED: [2025-12-28 Sun 09:59]
 
 Clear “nothing here yet” empty states everywhere
 
-**** TODO [#C] Improve Coverage for core/charting/builder.py: 40%    :ops:
+**** DONE [#C] Improve Coverage for core/charting/builder.py: 40%    :ops:
+CLOSED: [2025-12-30 Tue 20:50]
 
-**** TODO [#B] Change Theme to Dark Mode                              :UX:
+- State "DONE"       from "TODO"       [2025-12-30 Tue 20:50]
+**** DONE [#B] Change Theme to Dark Mode                              :UX:
+CLOSED: [2025-12-30 Tue 20:59]
 
-**** TODO [#A] Make All Dashboards more Mobile Friendly               :UX:
+- State "DONE"       from "TODO"       [2025-12-30 Tue 20:59]
+**** DONE [#A] Make All Dashboards more Mobile Friendly               :UX:
+CLOSED: [2025-12-30 Tue 20:50]
+- State "DONE"       from "TODO"       [2025-12-30 Tue 20:50]
 Move widgets to the right so that the main area loads first on Mobile
 
 - Battle History
@@ -2983,12 +2989,20 @@ Move widgets to the right so that the main area loads first on Mobile
 - Goals
 - UW, Bots, Guardian Chips
   - Make Upgradable Entities more compact
-**** TODO [#A] Charts Dashboard Improvements [0/5]
-***** TODO [#A] Change Default Granularity to 'by battle log'        :UX:
+**** DONE [#A] Charts Dashboard Improvements [5/5]
+CLOSED: [2025-12-30 Tue 20:59]
+- State "DONE"       from "TODO"       [2025-12-30 Tue 20:59]
+***** DONE [#A] Change Default Granularity to 'by battle log'        :UX:
+CLOSED: [2025-12-30 Tue 20:59]
 
-***** TODO [#B] Move 'Include Tournaments' up next to date range buttons
+- State "DONE"       from "TODO"       [2025-12-30 Tue 20:59]
+***** DONE [#B] Move 'Include Tournaments' up next to date range buttons
+CLOSED: [2025-12-30 Tue 20:59]
 
-***** TODO [#B] Rearrange Controls Under More Options [0/2]
+- State "DONE"       from "TODO"       [2025-12-30 Tue 20:59]
+***** DONE [#B] Rearrange Controls Under More Options [0/2]
+CLOSED: [2025-12-30 Tue 20:58]
+- State "DONE"       from "TODO"       [2025-12-30 Tue 20:58]
 Layout needs to be as follows:
 [Rolling Window] [Rolling Window Size] [Moving Average Window]
 [UW Select] [Bot Select] [Guardian Chip Select] 
@@ -2997,11 +3011,15 @@ Layout needs to be as follows:
 
 ****** TODO Add tool tips to controls to explain their purpose
 
-***** TODO [#B] Break up Charts Documentation
+***** DONE [#B] Break up Charts Documentation
+CLOSED: [2025-12-30 Tue 20:58]
+- State "DONE"       from "TODO"       [2025-12-30 Tue 20:58]
 The 'How to Use' section is too long and unclear. Breakout 'More Options,' 'Advanced Analysis,' and 'Compare into separate doc pages nested under charts. 
 
-***** TODO On the Chart Builder Doc add a table listing  all the metrics
-Note the source and how it's calculated 
+***** DONE On the Chart Builder Doc add a table listing  all the metrics
+CLOSED: [2025-12-30 Tue 20:58]
+- State "DONE"       from "TODO"       [2025-12-30 Tue 20:58]
+Note the source for each and how it's calculated 
 
 **** IN PROGRESS Codex Prompt40.md
 - State "IN PROGRESS" from              [2025-12-30 Tue 18:20] \\
@@ -3018,7 +3036,7 @@ Note the source and how it's calculated
   1 failed, 271 passed in 34.57s
 - [X] 6. On Charts Dashboard in Compare, the Scope A and B selects need to show the Tier, Wave, and Date. The 'Battle Report' field is more internal and not helpful to front end players.
 - [X] Revise: Default Granularity
-- [ ] Update Changelog and Readme to reflect recent commits/Enhancements. Add the recent changes as v0.5.0. Run `git log -12 ---oneline' for the changes. 
+- [X] Update Changelog and Readme to reflect recent commits/Enhancements. Add the recent changes as v0.5.0. Run `git log -12 ---oneline' for the changes. 
   Backtrack to 89a9512 
 ** Backlog [2/6]
 “Out of Scope”:

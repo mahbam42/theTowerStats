@@ -23,22 +23,13 @@ Charts help you review how your run results change over time using the same valu
 6. In **Context**, select a **Tier** and **Preset** to narrow the scope.
 7. (Optional) In **Context**, toggle **Include tournaments** to include tournament runs in the charts.
 8. Select **Apply** to refresh the dashboard.
-9. (Optional) Open **More options** to select one or more items in **Charts**. Each chart entry includes a brief description.
-10. (Optional) In **More options**, select a **Rolling window** and **Rolling window size**.
-11. (Optional) In **More options**, select a **Moving average window** to smooth the displayed line.
-12. (Optional) In **More options**, select **Ultimate Weapon**, **Bot**, or **Guardian Chip** to narrow the scope to runs where that item appears.
-13. (Optional) Open **Advanced analysis** to configure **Advice** and **Goal-aware comparison**.
-14. (Optional) In **Advanced analysis**, select **Snapshot A** and an advice comparison mode.
-15. (Optional) In **Advanced analysis**, adjust goal weights when a weighted summary is needed.
-16. (Optional) In **Advanced analysis**, select **Export derived metrics (CSV)** to download a snapshot of derived chart values.
-17. (Optional) Use **Chart Builder** to create a custom chart and apply it to your dashboard. For the full workflow, see [Chart Builder](charts/chart_builder.md).
-18. (Optional) Select **Download PNG** on a chart to save an image of the chart as currently displayed.
-19. (Optional) Open **Compare** to run the separate compare workflow.
-20. (Optional) In **Compare**, select **Summary focus** to choose what you want the comparison to emphasize.
-21. (Optional) In **Compare**, select multiple runs in **Scope A runs** and **Scope B runs**. Each entry shows tier, wave, date, and time to help you identify the run.
-22. (Optional) Select **Compare** to view the delta summary and any available Advice.
-23. (Optional) Open **Quick import** to paste a Battle Report without leaving the Charts page.
-24. (Optional) In **Quick import**, enable **Tournament run** when the run was a tournament round. The app cannot detect tournament runs automatically from pasted text.
+9. (Optional) Open **More options** to refine charts, windowing, and item filters. For details, see [More Options](charts/more_options.md).
+10. (Optional) Open **Advanced analysis** to configure Advice, Goal-aware comparison, or derived metric export. For details, see [Advanced Analysis](charts/advanced_analysis.md).
+11. (Optional) Use **Chart Builder** to create a custom chart and apply it to your dashboard. For the full workflow, see [Chart Builder](charts/chart_builder.md).
+12. (Optional) Select **Download PNG** on a chart to save an image of the chart as currently displayed.
+13. (Optional) Open **Compare** to compare two scopes of runs. For details, see [Compare](charts/compare.md).
+14. (Optional) Open **Quick import** to paste a Battle Report without leaving the Charts page.
+15. (Optional) In **Quick import**, enable **Tournament run** when the run was a tournament round. The app cannot detect tournament runs automatically from pasted text.
 
 ## How to Read the Results
 
@@ -56,8 +47,8 @@ Charts help you review how your run results change over time using the same valu
 - If a value is missing in the underlying Battle Report, the chart may show a gap for that date.
 - For donut charts, each slice represents the total for that value within your current filters, and the label includes the percent of the donut total. A slice named “Other coins” groups any remaining coins that are not listed as a named source.
 - If a point is flagged, the tooltip includes a short reason that explains the signal.
-- The Advice section summarizes observed differences using the snapshots you selected and the current filters you applied. It describes the basis and limitations and does not recommend actions.
-- The Goal-aware comparison summary is a weighted percent-change index across multiple metrics. A positive value means the selected metrics increased, after applying your selected weights.
+- Advanced analysis sections summarize observed differences using the snapshots you selected and the current filters you applied. They describe the basis and limitations and do not recommend actions.
+- Goal-aware comparisons report a weighted percent-change index across multiple metrics. A positive value means the selected metrics increased, after applying your selected weights.
 - Compare results summarize two scopes. When you select multiple runs per scope, the Compare output includes a summary table for the selected **Summary focus** and omits metrics that do not have enough samples.
 
 ## Notes & Limitations
@@ -116,7 +107,4 @@ Charts help you review how your run results change over time using the same valu
 2. Select **Tier** or **Preset** filters only when you want to narrow the comparison set.
 3. Review the legend to confirm which lines correspond to which groups.
 4. Load a previously saved custom chart snapshot using **Chart Builder**. For steps, see [Chart Builder](charts/chart_builder.md).
-5. (Optional) Use **Compare** when you want to compare two groups of runs directly:
-   1. Select a **Summary focus**.
-   2. Select multiple runs in **Scope A runs** and **Scope B runs**.
-   3. Select **Compare** to view deltas and any available Advice.
+5. (Optional) Use **Compare** when you want to compare two groups of runs directly. For steps, see [Compare](charts/compare.md).

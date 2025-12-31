@@ -35,6 +35,7 @@ markdown_extensions:
       permalink: true
 
 nav:
+  - App: https://thetowerstats.up.railway.app/
   - Home: index.md
   - User Guide:
       - Overview: user_guide.md
@@ -45,6 +46,9 @@ nav:
       - Charts:
           - Overview: charts.md
           - Chart Builder: charts/chart_builder.md
+          - More Options: charts/more_options.md
+          - Advanced Analysis: charts/advanced_analysis.md
+          - Compare: charts/compare.md
       - Goals: goals.md
       - Cards: cards.md
       - Ultimate Weapons: ultimate_weapons.md
