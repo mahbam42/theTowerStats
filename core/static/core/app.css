@@ -131,28 +131,50 @@ a:focus {
   color: var(--tts-color-text);
 }
 
+.callout.secondary {
+  background: var(--tts-color-surface-muted) !important;
+  border-color: var(--tts-color-border) !important;
+  color: var(--tts-color-text);
+}
+
 .callout.primary {
   border-left: 4px solid var(--tts-color-accent);
+  background: var(--tts-color-surface-muted) !important;
+  color: var(--tts-color-text);
 }
 
 .callout.success {
-  background: rgba(60, 179, 113, 0.16);
-  border-color: rgba(60, 179, 113, 0.45);
+  background: rgba(60, 179, 113, 0.16) !important;
+  border-color: rgba(60, 179, 113, 0.45) !important;
 }
 
 .callout.warning {
-  background: rgba(245, 177, 76, 0.16);
-  border-color: rgba(245, 177, 76, 0.45);
+  background: rgba(245, 177, 76, 0.16) !important;
+  border-color: rgba(245, 177, 76, 0.45) !important;
 }
 
 .callout.alert {
-  background: rgba(211, 91, 82, 0.2);
-  border-color: rgba(211, 91, 82, 0.45);
+  background: rgba(211, 91, 82, 0.2) !important;
+  border-color: rgba(211, 91, 82, 0.45) !important;
+}
+
+.entity-tile {
+  background: var(--tts-color-surface-muted) !important;
+  border-color: var(--tts-color-border) !important;
+  color: var(--tts-color-text);
+}
+
+.entity-tile.secondary {
+  background: var(--tts-color-surface-muted) !important;
 }
 
 .context-bar {
   border-radius: var(--tts-radius-1);
   margin-bottom: var(--tts-space-4);
+}
+
+.context-bar strong {
+  color: var(--tts-color-text);
 }
 
 .empty-state,
@@ -216,6 +238,7 @@ table {
   background: var(--tts-color-surface);
   color: var(--tts-color-text);
   border: 1px solid var(--tts-color-border);
+  border-collapse: collapse;
 }
 
 table thead {
@@ -229,6 +252,45 @@ table td {
 
 table th {
   color: var(--tts-color-text);
+}
+
+table tbody tr {
+  background: var(--tts-color-surface);
+}
+
+table tbody tr:nth-child(even) {
+  background: var(--tts-color-surface-muted);
+}
+
+.table-scroll {
+  background: var(--tts-color-surface);
+  border: 1px solid var(--tts-color-border);
+}
+
+.table-scroll table {
+  border: 0;
+}
+
+.table-scroll thead {
+  background: var(--tts-color-surface-muted);
+}
+
+.goals-table,
+.goals-table tbody tr,
+.goals-table tbody tr:nth-child(even) {
+  background: var(--tts-color-surface);
+}
+
+.goals-table thead {
+  background: var(--tts-color-surface-muted);
+}
+
+.battle-history-table tbody tr {
+  background: var(--tts-color-surface);
+}
+
+.battle-history-table tbody tr:nth-child(even) {
+  background: var(--tts-color-surface-muted);
 }
 
 table tr:last-child td {
@@ -359,6 +421,7 @@ textarea:focus {
 
 .why-panel summary {
   cursor: pointer;
+  color: var(--tts-color-text);
 }
 
 .onboarding-sample-chart {
