@@ -58,6 +58,9 @@ theTowerStats turns your imported Battle Reports into Battle History tables, Cha
 > ⚠️ Note
 > Coins/real hour uses the Battle Report’s “Real Time” value. Cooldowns and durations in collection pages are shown in seconds and are based on external wiki tables.
 
+> ⚠️ Note
+> The interface uses a dark theme by default.
+
 ## Advanced Usage
 
 1. Select **Comparison** on the Charts page.

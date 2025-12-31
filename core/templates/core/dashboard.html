@@ -506,6 +506,11 @@
       const chartPanels = {{ chart_panels_json|safe }};
       const initialContext = {{ chart_context_json|safe }};
       const chartBuilderMetricMeta = {{ chart_builder_metric_meta_json|safe }};
+      const rootStyles = getComputedStyle(document.documentElement);
+      const themeColor = (name, fallback) => {
+        const value = rootStyles.getPropertyValue(name).trim();
+        return value || fallback;
+      };
 
       function formatCompactNumber(value) {
         const absValue = Math.abs(Number(value));
@@ -589,8 +594,8 @@
         const canvas = document.getElementById(canvasId);
         const ctx = canvas ? canvas.getContext("2d") : null;
         if (!ctx || labels.length === 0 || datasets.length === 0) return;
-        const gridColor = "rgba(0, 0, 0, 0.06)";
-        const tickColor = "rgba(0, 0, 0, 0.72)";
+        const gridColor = themeColor("--tts-color-grid", "rgba(0, 0, 0, 0.06)");
+        const tickColor = themeColor("--tts-color-chart-tick", "rgba(0, 0, 0, 0.72)");
         const { mappedDatasets, scales } = buildAxes(labels, datasets, gridColor, tickColor, xAxisTitle(), false);
         new Chart(ctx, {
           type: "line",
@@ -664,8 +669,8 @@
         const canvas = document.getElementById(canvasId);
         const ctx = canvas ? canvas.getContext("2d") : null;
         if (!ctx || labels.length === 0 || datasets.length === 0) return;
-        const gridColor = "rgba(0, 0, 0, 0.06)";
-        const tickColor = "rgba(0, 0, 0, 0.72)";
+        const gridColor = themeColor("--tts-color-grid", "rgba(0, 0, 0, 0.06)");
+        const tickColor = themeColor("--tts-color-chart-tick", "rgba(0, 0, 0, 0.72)");
         const { mappedDatasets, scales } = buildAxes(labels, datasets, gridColor, tickColor, xAxisTitle(), stacked);
         new Chart(ctx, {
           type: "bar",

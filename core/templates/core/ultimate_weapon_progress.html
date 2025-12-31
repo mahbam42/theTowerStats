@@ -70,8 +70,13 @@
         if (!ctx) return;
         const chartType = payload.chart_type || "line";
         const chartData = { labels: payload.labels || [], datasets: payload.datasets || [] };
-        const gridColor = "rgba(0, 0, 0, 0.06)";
-        const tickColor = "rgba(0, 0, 0, 0.72)";
+        const rootStyles = getComputedStyle(document.documentElement);
+        const themeColor = (name, fallback) => {
+          const value = rootStyles.getPropertyValue(name).trim();
+          return value || fallback;
+        };
+        const gridColor = themeColor("--tts-color-grid", "rgba(0, 0, 0, 0.06)");
+        const tickColor = themeColor("--tts-color-chart-tick", "rgba(0, 0, 0, 0.72)");
 
         const commonOptions = {
           responsive: true,
@@ -183,8 +188,13 @@
         if (!ctx) return;
 
         const chartType = payload.chart_type || "line";
-        const gridColor = "rgba(0, 0, 0, 0.06)";
-        const tickColor = "rgba(0, 0, 0, 0.72)";
+        const rootStyles = getComputedStyle(document.documentElement);
+        const themeColor = (name, fallback) => {
+          const value = rootStyles.getPropertyValue(name).trim();
+          return value || fallback;
+        };
+        const gridColor = themeColor("--tts-color-grid", "rgba(0, 0, 0, 0.06)");
+        const tickColor = themeColor("--tts-color-chart-tick", "rgba(0, 0, 0, 0.72)");
         const config = {
           type: chartType === "donut" ? "doughnut" : chartType,
           data: {
