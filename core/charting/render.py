@@ -13,7 +13,8 @@ from analysis.aggregations import simple_moving_average
 from analysis.derived_formula import evaluate_formula
 from analysis.dto import MetricPoint
 from analysis.engine import analyze_metric_series
-from collections.abc import Iterable
+from collections import Counter
+from collections.abc import Callable, Iterable
 
 from analysis.series_registry import MetricSeriesRegistry
 
@@ -86,6 +87,7 @@ def render_charts(
         RenderedChart entries in the same order as `configs`.
     """
 
+    records = tuple(records)
     rendered: list[RenderedChart] = []
     cache: dict[str, RenderedChart] = {}
     for config in configs:
@@ -133,6 +135,8 @@ def render_chart(
         RenderedChart containing chart labels and datasets.
     """
 
+    labeler = _labeler_for_records(records, granularity=granularity)
+
     if config.chart_type == "donut":
         return _render_donut_chart(
             config=config,
@@ -148,12 +152,12 @@ def render_chart(
             moving_average_window=moving_average_window,
             entity_selections=entity_selections,
         )
-        derived_labels = _merge_labels([], [_label_for_point(point, granularity=granularity) for point in derived_points])
+        derived_labels = _merge_labels([], [labeler(point) for point in derived_points])
         derived_series = _aggregate_points(
             derived_points,
             derived_labels,
             aggregation="avg",
-            granularity=granularity,
+            labeler=labeler,
         )
         unit = _infer_division_unit(config=config, registry=registry) or "derived"
         derived_datasets = [
@@ -201,7 +205,7 @@ def render_chart(
             entity_name=entity_name,
         )
         groups = _group_points(series_result.points, config=config)
-        labels = _merge_labels(labels, [_label_for_point(p, granularity=granularity) for p in series_result.points])
+        labels = _merge_labels(labels, [labeler(p) for p in series_result.points])
         if len(labels) > MAX_CHART_LABELS:
             return RenderedChart(
                 config=config,
@@ -215,7 +219,7 @@ def render_chart(
             group_label = _label_for_group(group_key, config=config)
             color = _color_for_group(group_key, config=config)
             aggregation = "avg" if series_config.transform == "rate_per_hour" else spec.aggregation
-            data = _aggregate_points(points, labels, aggregation=aggregation, granularity=granularity)
+            data = _aggregate_points(points, labels, aggregation=aggregation, labeler=labeler)
             data = _apply_series_transform(
                 data,
                 series_config=series_config,
@@ -449,13 +453,32 @@ def _apply_series_transform(
 
     return [round(v, 2) if v is not None else None for v in data]
 
-def _label_for_point(point: MetricPoint, *, granularity: str) -> str:
-    """Return the x-axis label for a metric point under the requested granularity."""
+def _labeler_for_records(
+    records: Iterable[object],
+    *,
+    granularity: str,
+) -> Callable[[MetricPoint], str]:
+    """Return a point-labeling function aligned to the selected granularity."""
 
-    if granularity == "per_run":
-        run_id = point.run_id if point.run_id is not None else "?"
-        return f"{point.battle_date.strftime('%Y-%m-%d %H:%M')} • Run {run_id}"
-    return point.battle_date.date().isoformat()
+    if granularity != "per_run":
+        return lambda point: point.battle_date.date().isoformat()
+
+    date_counts: Counter[str] = Counter()
+    for record in records:
+        progress = getattr(record, "run_progress", record)
+        battle_date = getattr(progress, "battle_date", None) or getattr(record, "parsed_at", None)
+        if battle_date is None:
+            continue
+        date_counts[battle_date.date().isoformat()] += 1
+
+    def label(point: MetricPoint) -> str:
+        date_label = point.battle_date.date().isoformat()
+        if date_counts.get(date_label, 0) > 1:
+            run_id = point.run_id if point.run_id is not None else "?"
+            return f"{point.battle_date.strftime('%Y-%m-%d %H:%M')} • Run {run_id}"
+        return date_label
+
+    return label
 
 
 def _aggregate_points(
@@ -463,7 +486,7 @@ def _aggregate_points(
     labels: list[str],
     *,
     aggregation: str,
-    granularity: str,
+    labeler: Callable[[MetricPoint], str],
 ) -> list[float | None]:
     """Aggregate run points into a series aligned to x-axis labels."""
 
@@ -471,7 +494,7 @@ def _aggregate_points(
     for point in points:
         if point.value is None:
             continue
-        key = _label_for_point(point, granularity=granularity)
+        key = labeler(point)
         buckets.setdefault(key, []).append(point.value)
 
     by_date: dict[str, float] = {}
@@ -571,6 +594,7 @@ def _render_stacked_percent_bar_chart(
 
     labels: list[str] = []
     series_payloads: list[tuple[str, str, dict[str, float]]] = []
+    labeler = _labeler_for_records(records, granularity=granularity)
 
     palette = [
         "#3366CC",
@@ -602,10 +626,10 @@ def _render_stacked_percent_bar_chart(
             entity_type=entity_type,
             entity_name=entity_name,
         )
-        labels = _merge_labels(labels, [_label_for_point(p, granularity=granularity) for p in series_result.points])
+        labels = _merge_labels(labels, [labeler(p) for p in series_result.points])
         values: dict[str, float] = {}
         for point in series_result.points:
-            label = _label_for_point(point, granularity=granularity)
+            label = labeler(point)
             if point.value is None:
                 continue
             values[label] = float(point.value)

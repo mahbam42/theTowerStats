@@ -60,8 +60,9 @@ def flag_reasons(
     """
 
     reasons: list[list[str]] = [[] for _ in labels]
+    label_dates = [label.split(" ", 1)[0] for label in labels]
 
-    for idx, label in enumerate(labels):
+    for idx, label in enumerate(label_dates):
         if label in incomplete_labels:
             reasons[idx].append(INCOMPLETE_RUN.description)
 
@@ -69,9 +70,8 @@ def flag_reasons(
         if flagged:
             reasons[idx].append(ROLLING_MEDIAN_DEVIATION.description)
 
-    for idx, flagged in enumerate(apply_patch_boundaries(labels, boundary_dates=patch_boundaries)):
+    for idx, flagged in enumerate(apply_patch_boundaries(label_dates, boundary_dates=patch_boundaries)):
         if flagged:
             reasons[idx].append(PATCH_BOUNDARY.description)
 
     return ["; ".join(items) if items else None for items in reasons]
-
