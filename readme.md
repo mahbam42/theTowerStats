@@ -47,7 +47,7 @@ Guiding principles:
 - Coins per hour and other precomputed series (no client-side math)
 - Filter charts by **date range**, **tier**, **preset**, and overlays
 - Default chart window uses the current **Event window**, with navigation controls
-- Optional chart granularity toggle (by date or by battle log)
+- Default chart granularity is **By battle log**, with an optional switch to **By date**
 - Export derived metrics to CSV and download chart images as PNG snapshots
 
 ### 🎯 Goals Dashboard
@@ -75,6 +75,7 @@ Guiding principles:
 
 ### 🌙 Foundation-powered UI
 
+- Dark theme UI with consistent tables, callouts, and navigation styling
 - Shared dashboard shell with top navigation, global search, and consistent callouts
 - Foundation grid/forms for Battle History, Charts, and progress dashboards
 - Clear charts designed to answer real questions quickly
@@ -105,7 +106,7 @@ This app is about:
 
 ## Current Progress
 
-- Current development: **v0.4.0** (in progress)
+- Current development: **v0.5.0** (in progress)
 - Latest release: **v0.3.0**
 - Changelog: `CHANGELOG.md`
 - Stable: Battle Report import, Battle History, Charts (including snapshots and compare scopes), and collection progress dashboards

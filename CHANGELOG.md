@@ -2,7 +2,16 @@
 
 This project follows Semantic Versioning.
 
-## [0.4.0] (in progress)
+## [0.5.0] (in progress)
+
+- UI: add dark theme styling across dashboards, navigation, tables, and callouts.
+- UI: reorder dashboard layouts on mobile so main content loads first, with compact tables on small screens.
+- Charts: default granularity to By battle log and reorganize dashboard controls with chart descriptions/tooltips.
+- Charts: move “Include tournaments” into the primary context controls.
+- Charts: compare run selectors display tier, wave, date, and time.
+- Tests: expand chart builder coverage and align demo CSV export test expectations.
+
+## [0.4.0]
 
 - Notes: Summary of the most recent development work.
 - Getting started: add a landing page to explain scope and how to begin using the app.

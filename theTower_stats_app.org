@@ -3018,7 +3018,7 @@ Note the source and how it's calculated
   1 failed, 271 passed in 34.57s
 - [X] 6. On Charts Dashboard in Compare, the Scope A and B selects need to show the Tier, Wave, and Date. The 'Battle Report' field is more internal and not helpful to front end players.
 - [X] Revise: Default Granularity
-- [ ] Update Changelog and Readme to reflect recent commits/Enhancements.
+- [ ] Update Changelog and Readme to reflect recent commits/Enhancements. Add the recent changes as v0.5.0. Run `git log -12 ---oneline' for the changes. 
   Backtrack to 89a9512 
 ** Backlog [2/6]
 “Out of Scope”:
