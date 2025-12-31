@@ -459,13 +459,7 @@ def dashboard(request: HttpRequest) -> HttpResponse:
         defaulted_get.setlist("charts", [str(cid) for cid in default_selected_chart_ids()])
 
     if not defaulted_get.get("granularity"):
-        selected_chart_ids = tuple(defaulted_get.getlist("charts") or ())
-        preferred = [
-            CHART_CONFIG_BY_ID[chart_id].default_granularity
-            for chart_id in selected_chart_ids
-            if chart_id in CHART_CONFIG_BY_ID
-        ]
-        defaulted_get["granularity"] = "per_run" if "per_run" in preferred else "daily"
+        defaulted_get["granularity"] = "per_run"
 
     chart_form = ChartContextForm(defaulted_get, player=player, today=date.today())  # type: ignore[arg-type]
     chart_form.is_valid()

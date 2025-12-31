@@ -528,11 +528,14 @@ class GameDataChoiceField(forms.ModelChoiceField):
         tier = getattr(progress, "tier", None)
         wave = getattr(progress, "wave", None)
         date_label = getattr(battle_date, "date", lambda: None)()
+        time_label = getattr(battle_date, "strftime", lambda _fmt: None)("%H:%M:%S")
         tier_label = f"T{tier}" if tier is not None else "T?"
         wave_label = f"W{wave}" if wave is not None else "W?"
         if date_label is None:
             date_label = obj.parsed_at.date()
-        return f"{tier_label} • {wave_label} • {date_label.isoformat()}"
+        if time_label is None:
+            time_label = obj.parsed_at.strftime("%H:%M:%S")
+        return f"{tier_label} • {wave_label} • {date_label.isoformat()} {time_label}"
 
 
 class GameDataMultipleChoiceField(forms.ModelMultipleChoiceField):
@@ -546,11 +549,14 @@ class GameDataMultipleChoiceField(forms.ModelMultipleChoiceField):
         tier = getattr(progress, "tier", None)
         wave = getattr(progress, "wave", None)
         date_label = getattr(battle_date, "date", lambda: None)()
+        time_label = getattr(battle_date, "strftime", lambda _fmt: None)("%H:%M:%S")
         tier_label = f"T{tier}" if tier is not None else "T?"
         wave_label = f"W{wave}" if wave is not None else "W?"
         if date_label is None:
             date_label = obj.parsed_at.date()
-        return f"{tier_label} • {wave_label} • {date_label.isoformat()}"
+        if time_label is None:
+            time_label = obj.parsed_at.strftime("%H:%M:%S")
+        return f"{tier_label} • {wave_label} • {date_label.isoformat()} {time_label}"
 
 
 class ComparisonForm(forms.Form):

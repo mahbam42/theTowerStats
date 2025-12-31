@@ -35,7 +35,7 @@ Charts help you review how your run results change over time using the same valu
 18. (Optional) Select **Download PNG** on a chart to save an image of the chart as currently displayed.
 19. (Optional) Open **Compare** to run the separate compare workflow.
 20. (Optional) In **Compare**, select **Summary focus** to choose what you want the comparison to emphasize.
-21. (Optional) In **Compare**, select multiple runs in **Scope A runs** and **Scope B runs**. Each entry shows tier, wave, and date to help you identify the run.
+21. (Optional) In **Compare**, select multiple runs in **Scope A runs** and **Scope B runs**. Each entry shows tier, wave, date, and time to help you identify the run.
 22. (Optional) Select **Compare** to view the delta summary and any available Advice.
 23. (Optional) Open **Quick import** to paste a Battle Report without leaving the Charts page.
 24. (Optional) In **Quick import**, enable **Tournament run** when the run was a tournament round. The app cannot detect tournament runs automatically from pasted text.
