@@ -526,11 +526,31 @@ class GameDataChoiceField(forms.ModelChoiceField):
         progress = getattr(obj, "run_progress", None)
         battle_date = getattr(progress, "battle_date", None)
         tier = getattr(progress, "tier", None)
+        wave = getattr(progress, "wave", None)
         date_label = getattr(battle_date, "date", lambda: None)()
         tier_label = f"T{tier}" if tier is not None else "T?"
+        wave_label = f"W{wave}" if wave is not None else "W?"
         if date_label is None:
-            return f"{tier_label} • imported {obj.parsed_at.date().isoformat()} • {obj.checksum[:10]}…"
-        return f"{tier_label} • {date_label.isoformat()} • {obj.checksum[:10]}…"
+            date_label = obj.parsed_at.date()
+        return f"{tier_label} • {wave_label} • {date_label.isoformat()}"
+
+
+class GameDataMultipleChoiceField(forms.ModelMultipleChoiceField):
+    """A ModelMultipleChoiceField with a human-readable label for imported runs."""
+
+    def label_from_instance(self, obj) -> str:  # type: ignore[override]
+        """Render the choice label using run metadata when available."""
+
+        progress = getattr(obj, "run_progress", None)
+        battle_date = getattr(progress, "battle_date", None)
+        tier = getattr(progress, "tier", None)
+        wave = getattr(progress, "wave", None)
+        date_label = getattr(battle_date, "date", lambda: None)()
+        tier_label = f"T{tier}" if tier is not None else "T?"
+        wave_label = f"W{wave}" if wave is not None else "W?"
+        if date_label is None:
+            date_label = obj.parsed_at.date()
+        return f"{tier_label} • {wave_label} • {date_label.isoformat()}"
 
 
 class ComparisonForm(forms.Form):
@@ -549,13 +569,13 @@ class ComparisonForm(forms.Form):
         ("efficiency", "Efficiency"),
     )
 
-    scope_a_runs = forms.ModelMultipleChoiceField(
+    scope_a_runs = GameDataMultipleChoiceField(
         required=False,
         queryset=BattleReport.objects.none(),
         label="Scope A runs",
         widget=forms.SelectMultiple(attrs={"size": 8}),
     )
-    scope_b_runs = forms.ModelMultipleChoiceField(
+    scope_b_runs = GameDataMultipleChoiceField(
         required=False,
         queryset=BattleReport.objects.none(),
         label="Scope B runs",

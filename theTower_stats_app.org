@@ -3013,11 +3013,11 @@ Note the source and how it's calculated
 - [X] 2. Mobile dashboard layout tweaks (sidebar/widgets ordering + specific pages)
 - [X] 3. Dark mode theme
 - [X] 4. Chart Builder docs + charts docs split
-- [ ] 5. Builder coverage improvements
-- [ ] fix test failure: FAILED tests/test_phase8_pillar3_demo_export.py::test_export_derived_metrics_csv_returns_csv_snapshot - AssertionError: assert {'2025-12-10 ...3:45 • Run 2'} == {'2025-12-10', '2025-12-11'}
+- [X] 5. Builder coverage improvements
+- [X] fix test failure: FAILED tests/test_phase8_pillar3_demo_export.py::test_export_derived_metrics_csv_returns_csv_snapshot - AssertionError: assert {'2025-12-10 ...3:45 • Run 2'} == {'2025-12-10', '2025-12-11'}
   1 failed, 271 passed in 34.57s
-- [ ] 6. On Charts Dashboard in Compare, the Scope A and B selects need to show the Tier, Wave, and Date. The 'Battle Report' field is more internal and not helpful to front end players.
-- [ ] Revise: Default Granularity
+- [X] 6. On Charts Dashboard in Compare, the Scope A and B selects need to show the Tier, Wave, and Date. The 'Battle Report' field is more internal and not helpful to front end players.
+- [X] Revise: Default Granularity
 - [ ] Update Changelog to reflect recent commits/Enhancements.
   Backtrack to 89a9512 
 ** Backlog [2/6]
