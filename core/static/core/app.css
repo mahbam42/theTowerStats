@@ -332,8 +332,18 @@ input[type="date"]:focus,
 input[type="datetime-local"]:focus,
 input[type="password"]:focus,
 select:focus,
-textarea:focus {
+textarea:focus,
+input[type="text"]:active,
+input[type="search"]:active,
+input[type="number"]:active,
+input[type="date"]:active,
+input[type="datetime-local"]:active,
+input[type="password"]:active,
+select:active,
+textarea:active {
+  background: var(--tts-color-surface);
   border-color: var(--tts-color-link);
+  color: var(--tts-color-text);
   box-shadow: 0 0 0 2px rgba(122, 183, 255, 0.2);
 }
 
