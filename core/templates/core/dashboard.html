@@ -511,6 +511,18 @@
         const value = rootStyles.getPropertyValue(name).trim();
         return value || fallback;
       };
+      const legendLabelColor = themeColor("--tts-color-text", "#e6e8ee");
+      const tooltipBackgroundColor = themeColor("--tts-color-surface", "#17181c");
+      const tooltipBorderColor = themeColor("--tts-color-border", "#2b2e36");
+      const tooltipTitleColor = themeColor("--tts-color-text", "#e6e8ee");
+      const tooltipBodyColor = themeColor("--tts-color-text", "#e6e8ee");
+      const baseTooltip = {
+        backgroundColor: tooltipBackgroundColor,
+        borderColor: tooltipBorderColor,
+        borderWidth: 1,
+        titleColor: tooltipTitleColor,
+        bodyColor: tooltipBodyColor,
+      };
 
       function formatCompactNumber(value) {
         const absValue = Math.abs(Number(value));
@@ -613,7 +625,7 @@
             plugins: {
               legend: {
                 display: true,
-                labels: { usePointStyle: true },
+                labels: { usePointStyle: true, color: legendLabelColor },
                 onClick: (_event, legendItem, legend) => {
                   const datasetIndex = legendItem?.datasetIndex;
                   if (typeof datasetIndex !== "number") return;
@@ -624,6 +636,7 @@
                 },
               },
               tooltip: {
+                ...baseTooltip,
                 callbacks: {
                   title: (items) => (items && items[0] ? `${xAxisTitle()}: ${items[0].label}` : ""),
                   label: (context) => {
@@ -682,8 +695,9 @@
             responsive: true,
             datasets: { bar: { borderWidth: 1 } },
             plugins: {
-              legend: { display: true },
+              legend: { display: true, labels: { color: legendLabelColor } },
               tooltip: {
+                ...baseTooltip,
                 callbacks: {
                   title: (items) => (items && items[0] ? `${xAxisTitle()}: ${items[0].label}` : ""),
                 },
@@ -755,8 +769,9 @@
           options: {
             responsive: true,
             plugins: {
-              legend: { display: true, position: "right" },
+              legend: { display: true, position: "right", labels: { color: legendLabelColor } },
               tooltip: {
+                ...baseTooltip,
                 callbacks: {
                   title: (items) => (items && items[0] ? items[0].label : ""),
                   label: (context) => {

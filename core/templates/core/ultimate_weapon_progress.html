@@ -77,11 +77,23 @@
         };
         const gridColor = themeColor("--tts-color-grid", "rgba(0, 0, 0, 0.06)");
         const tickColor = themeColor("--tts-color-chart-tick", "rgba(0, 0, 0, 0.72)");
+        const legendLabelColor = themeColor("--tts-color-text", "#e6e8ee");
+        const tooltipBackgroundColor = themeColor("--tts-color-surface", "#17181c");
+        const tooltipBorderColor = themeColor("--tts-color-border", "#2b2e36");
+        const tooltipTitleColor = themeColor("--tts-color-text", "#e6e8ee");
+        const tooltipBodyColor = themeColor("--tts-color-text", "#e6e8ee");
+        const tooltipColors = {
+          backgroundColor: tooltipBackgroundColor,
+          borderColor: tooltipBorderColor,
+          borderWidth: 1,
+          titleColor: tooltipTitleColor,
+          bodyColor: tooltipBodyColor,
+        };
 
         const commonOptions = {
           responsive: true,
           interaction: { mode: "nearest", intersect: false },
-          plugins: { legend: { display: true } },
+          plugins: { legend: { display: true, labels: { color: legendLabelColor } }, tooltip: { ...tooltipColors } },
         };
 
         if (chartType === "bar") {
@@ -147,6 +159,7 @@
             plugins: {
               ...commonOptions.plugins,
               tooltip: {
+                ...tooltipColors,
                 callbacks: {
                   title: (items) => (items && items[0] ? `t=${items[0].label}` : ""),
                 },
@@ -195,6 +208,18 @@
         };
         const gridColor = themeColor("--tts-color-grid", "rgba(0, 0, 0, 0.06)");
         const tickColor = themeColor("--tts-color-chart-tick", "rgba(0, 0, 0, 0.72)");
+        const legendLabelColor = themeColor("--tts-color-text", "#e6e8ee");
+        const tooltipBackgroundColor = themeColor("--tts-color-surface", "#17181c");
+        const tooltipBorderColor = themeColor("--tts-color-border", "#2b2e36");
+        const tooltipTitleColor = themeColor("--tts-color-text", "#e6e8ee");
+        const tooltipBodyColor = themeColor("--tts-color-text", "#e6e8ee");
+        const tooltipColors = {
+          backgroundColor: tooltipBackgroundColor,
+          borderColor: tooltipBorderColor,
+          borderWidth: 1,
+          titleColor: tooltipTitleColor,
+          bodyColor: tooltipBodyColor,
+        };
         const config = {
           type: chartType === "donut" ? "doughnut" : chartType,
           data: {
@@ -205,8 +230,9 @@
             responsive: true,
             interaction: { mode: "nearest", intersect: false },
             plugins: {
-              legend: { display: true },
+              legend: { display: true, labels: { color: legendLabelColor } },
               tooltip: {
+                ...tooltipColors,
                 callbacks: {
                   label: (item) => {
                     const dataset = item.dataset || {};

@@ -280,14 +280,29 @@
         const canvas = document.getElementById("killed-by-donut");
         const ctx = canvas ? canvas.getContext("2d") : null;
         if (!ctx) return;
+        const rootStyles = getComputedStyle(document.documentElement);
+        const themeColor = (name, fallback) => {
+          const value = rootStyles.getPropertyValue(name).trim();
+          return value || fallback;
+        };
+        const legendLabelColor = themeColor("--tts-color-text", "#e6e8ee");
+        const tooltipBackgroundColor = themeColor("--tts-color-surface", "#17181c");
+        const tooltipBorderColor = themeColor("--tts-color-border", "#2b2e36");
+        const tooltipTitleColor = themeColor("--tts-color-text", "#e6e8ee");
+        const tooltipBodyColor = themeColor("--tts-color-text", "#e6e8ee");
         new Chart(ctx, {
           type: "doughnut",
           data: payload,
           options: {
             responsive: true,
             plugins: {
-              legend: { display: true, position: "right" },
+              legend: { display: true, position: "right", labels: { color: legendLabelColor } },
               tooltip: {
+                backgroundColor: tooltipBackgroundColor,
+                borderColor: tooltipBorderColor,
+                borderWidth: 1,
+                titleColor: tooltipTitleColor,
+                bodyColor: tooltipBodyColor,
                 callbacks: {
                   title: (items) => (items && items[0] ? items[0].label : ""),
                 },
