@@ -58,6 +58,7 @@ nav:
   - Development:
       - Design Philosophy: design_philosophy.md
       - Project Structure: project_structure.md
+      - Admin Panel: admin_panel.md
       - Progress: 
           - Phase 1: phase1.md
           - Phase 2: phase2.md

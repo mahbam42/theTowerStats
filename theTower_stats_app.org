@@ -2425,7 +2425,7 @@ CLOSED: [2025-12-22 Mon 15:31]
 - [X] fetch_wiki_data and rebuild_wiki_definitions should have a pretty summary of deltas at the end.
   Especially when using --target all.
 
-*** Bugs/Enhancements [40/40]
+*** Bugs/Enhancements [40/42]
 
 **** DONE [#B] Error Updating Guardian Upgrade Table                 :bug:
 CLOSED: [2025-12-22 Mon 18:51]
@@ -3040,6 +3040,29 @@ CLOSED: [2025-12-31 Wed 10:20]
 - [X] Revise: Default Granularity
 - [X] Update Changelog and Readme to reflect recent commits/Enhancements. Add the recent changes as v0.5.0. Run `git log -12 ---oneline' for the changes. 
   Backtrack to 89a9512 
+
+**** TODO [#A] Fix Styling on Headers
+Override the rules from Foundation's _base.scss
+
+#+BEGIN_SRC scss
+// Headings
+  h1, .h1,
+  h2, .h2,
+  h3, .h3,
+  h4, .h4,
+  h5, .h5,
+  h6, .h6 {
+    font-family: $header-font-family;
+    font-style: $header-font-style;
+    font-weight: $header-font-weight;
+    color: $header-color;
+    text-rendering: $header-text-rendering;
+
+#+END_SRC
+
+**** TODO [#B] Add a metric and chart for Free Upgrades by Run
+Add to chart builder.
+Stacked bar chart by type (attack, defense, utility, and total) 
 ** Backlog [2/6]
 “Out of Scope”:
 - Cloud sync
