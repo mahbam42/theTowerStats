@@ -50,6 +50,44 @@ def _derived_metrics(raw_text: str) -> object:
     )()
 
 
+@pytest.mark.golden
+def test_free_upgrades_metrics_extract_and_total() -> None:
+    """Extract free upgrade metrics and derive the total."""
+
+    raw_text = "\n".join(
+        [
+            "Battle Report",
+            "Battle Date\tDec 14, 2025 01:39",
+            "Real Time\t17m 35s",
+            "Utility",
+            "Free Attack Upgrade\t55",
+            "Free Defense Upgrade\t68",
+            "Free Utility Upgrade\t68",
+            "",
+        ]
+    )
+    record = Record(
+        raw_text=raw_text,
+        parsed_at=datetime(2025, 12, 14, 1, 40, tzinfo=timezone.utc),
+        run_progress=Progress(
+            battle_date=datetime(2025, 12, 14, 1, 39, tzinfo=timezone.utc),
+            wave=1,
+            real_time_seconds=60,
+        ),
+        derived_metrics=_derived_metrics(raw_text),
+    )
+
+    attack = analyze_metric_series([record], metric_key="free_attack_upgrades")
+    defense = analyze_metric_series([record], metric_key="free_defense_upgrades")
+    utility = analyze_metric_series([record], metric_key="free_utility_upgrades")
+    total = analyze_metric_series([record], metric_key="free_upgrades_total")
+
+    assert attack.points[0].value == 55.0
+    assert defense.points[0].value == 68.0
+    assert utility.points[0].value == 68.0
+    assert total.points[0].value == 191.0
+
+
 def test_enemies_destroyed_total_ignores_battle_report_totals() -> None:
     """Derive enemies destroyed by summing per-type rows (ignoring Total Enemies/Elites)."""
 

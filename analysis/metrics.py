@@ -196,6 +196,34 @@ METRICS: Final[dict[str, MetricDefinition]] = {
         category=MetricCategory.economy,
         kind="observed",
     ),
+    "free_attack_upgrades": MetricDefinition(
+        key="free_attack_upgrades",
+        label="Free Attack Upgrade",
+        unit="upgrades",
+        category=MetricCategory.economy,
+        kind="observed",
+    ),
+    "free_defense_upgrades": MetricDefinition(
+        key="free_defense_upgrades",
+        label="Free Defense Upgrade",
+        unit="upgrades",
+        category=MetricCategory.economy,
+        kind="observed",
+    ),
+    "free_utility_upgrades": MetricDefinition(
+        key="free_utility_upgrades",
+        label="Free Utility Upgrade",
+        unit="upgrades",
+        category=MetricCategory.economy,
+        kind="observed",
+    ),
+    "free_upgrades_total": MetricDefinition(
+        key="free_upgrades_total",
+        label="Free Upgrades (Total)",
+        unit="upgrades",
+        category=MetricCategory.economy,
+        kind="derived",
+    ),
     "coins_from_other_sources": MetricDefinition(
         key="coins_from_other_sources",
         label="Other coins",
@@ -734,6 +762,13 @@ def compute_metric_value(
         if wave is None or real_time_seconds is None or real_time_seconds <= 0:
             return None, (), ()
         return (float(wave) * 3600.0 / float(real_time_seconds), (), ("waves/hour = waves_reached / real_time_hours.",))
+
+    if metric_key == "free_upgrades_total":
+        keys = ("free_attack_upgrades", "free_defense_upgrades", "free_utility_upgrades")
+        if not any(key in derived_values for key in keys):
+            return None, (), ()
+        upgrade_total = sum(float(derived_values.get(key) or 0.0) for key in keys)
+        return upgrade_total, (), ()
 
     if metric_key in RAW_TEXT_METRIC_SPECS and metric_key != "interest_earned":
         persisted = derived_values.get(metric_key)

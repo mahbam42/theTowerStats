@@ -55,6 +55,10 @@ This table lists the metrics available in Chart Builder along with their sources
 | coins_from_spotlight | Coins From Spotlight | BattleReport (observed) | sum of coins_from_spotlight | Battle Report utility breakdown: coins earned from Spotlight. |
 | coins_per_hour | Coins/hour | BattleReport (observed) | avg of coins_per_hour | Observed coins earned divided by real time (hours). |
 | coins_per_wave | Coins per wave | BattleReport (derived) | avg of coins_earned / wave | Computed as coins earned divided by waves reached. |
+| free_attack_upgrades | Free Attack Upgrade | BattleReport (observed) | sum of free_attack_upgrades | Battle Report utility breakdown: free attack upgrades. |
+| free_defense_upgrades | Free Defense Upgrade | BattleReport (observed) | sum of free_defense_upgrades | Battle Report utility breakdown: free defense upgrades. |
+| free_utility_upgrades | Free Utility Upgrade | BattleReport (observed) | sum of free_utility_upgrades | Battle Report utility breakdown: free utility upgrades. |
+| free_upgrades_total | Free Upgrades (Total) | BattleReport (derived) | sum of free_attack_upgrades + free_defense_upgrades + free_utility_upgrades | Derived total across free upgrade types. |
 | cooldown_reduction_effective | Effective cooldown | RunCombat (derived) | avg of effective_cooldown_seconds | Entity-scoped effective cooldown in seconds (placeholder for future reduction modeling). |
 | damage_dealt | Damage dealt | BattleReport (observed) | sum of damage_dealt | Total damage dealt from Battle Reports. |
 | death_ray_damage | Death Ray Damage | BattleReport (observed) | sum of death_ray_damage |  |
