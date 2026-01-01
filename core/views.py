@@ -670,6 +670,7 @@ def dashboard(request: HttpRequest) -> HttpResponse:
                 "stacked": entry.config.stacked,
                 "labels": entry.data["labels"],
                 "datasets": entry.data["datasets"],
+                "run_ids": entry.data.get("run_ids"),
             }
             for entry in rendered
         ]
@@ -1170,6 +1171,91 @@ def _order_battle_history_runs(
     return sorted(evaluated, key=_sort_tuple)
 
 
+def _ordered_battle_report_ids(runs: QuerySet[BattleReport] | list[BattleReport]) -> list[int]:
+    """Return BattleReport ids in the same order as the Battle History list."""
+
+    if isinstance(runs, QuerySet):
+        return list(runs.values_list("id", flat=True))
+    return [run.id for run in runs]
+
+
+def _battle_report_modal_metrics(progress: BattleReportProgress | None) -> list[dict[str, str | None]]:
+    """Build metric rows for the Battle Report modal with optional chart links."""
+
+    if progress is None:
+        return []
+
+    chart_links = {
+        "coins_earned": "coins_earned",
+        "coins_per_hour": "coins_per_hour",
+        "cash_earned": "cash_earned",
+        "interest_earned": "cash_by_source",
+        "cells_earned": "cells_earned",
+        "reroll_shards_earned": "reroll_shards_earned",
+    }
+
+    def _format_int(value: int | None) -> str | None:
+        if value is None:
+            return None
+        return f"{value:,}"
+
+    coins_per_hour_value: str | None = None
+    if progress.coins_earned is not None and progress.real_time_seconds:
+        coins_per_hour_value = f"{coins_per_hour_rate(coins=progress.coins_earned, real_time_seconds=progress.real_time_seconds):,.2f}"
+
+    def _display(value: str | None) -> str:
+        if value is None or value == "":
+            return "—"
+        return value
+
+    metrics: list[dict[str, str | None]] = [
+        {
+            "key": "coins_earned",
+            "label": "Coins earned",
+            "value": _display(progress.coins_earned_raw),
+            "chart_id": chart_links.get("coins_earned"),
+        },
+        {
+            "key": "coins_per_hour",
+            "label": "Coins per real hour",
+            "value": _display(coins_per_hour_value),
+            "chart_id": chart_links.get("coins_per_hour"),
+        },
+        {
+            "key": "cash_earned",
+            "label": "Cash earned",
+            "value": _display(progress.cash_earned_raw),
+            "chart_id": chart_links.get("cash_earned"),
+        },
+        {
+            "key": "interest_earned",
+            "label": "Interest earned",
+            "value": _display(progress.interest_earned_raw),
+            "chart_id": chart_links.get("interest_earned"),
+        },
+        {
+            "key": "gem_blocks_tapped",
+            "label": "Gem blocks",
+            "value": _display(_format_int(progress.gem_blocks_tapped)),
+            "chart_id": None,
+        },
+        {
+            "key": "cells_earned",
+            "label": "Cells earned",
+            "value": _display(_format_int(progress.cells_earned)),
+            "chart_id": chart_links.get("cells_earned"),
+        },
+        {
+            "key": "reroll_shards_earned",
+            "label": "Reroll shards",
+            "value": _display(_format_int(progress.reroll_shards_earned)),
+            "chart_id": chart_links.get("reroll_shards_earned"),
+        },
+    ]
+
+    return metrics
+
+
 @login_required
 def battle_history(request: HttpRequest) -> HttpResponse:
     """Render the Battle History dashboard with filters and pagination."""
@@ -1355,6 +1441,7 @@ def battle_history(request: HttpRequest) -> HttpResponse:
     if "page" in querystring:
         querystring.pop("page")
     base_querystring = querystring.urlencode()
+    battle_report_order_json = json.dumps(_ordered_battle_report_ids(runs_for_pagination))
 
     return render(
         request,
@@ -1371,8 +1458,38 @@ def battle_history(request: HttpRequest) -> HttpResponse:
             "sort_querystrings": sort_querystrings,
             "current_sort": sort_key,
             "killed_by_donut_json": killed_by_donut_json,
+            "battle_report_order_json": battle_report_order_json,
         },
     )
+
+
+@login_required
+def battle_report_modal(request: HttpRequest, report_id: int) -> JsonResponse:
+    """Return Battle Report modal payload scoped to the requesting player."""
+
+    if request.method != "GET":
+        return JsonResponse({"ok": False, "error": "Method not allowed."}, status=405)
+
+    player = _request_player(request)
+    try:
+        report = BattleReport.objects.select_related("run_progress").get(id=report_id, player=player)
+    except BattleReport.DoesNotExist:
+        return JsonResponse({"ok": False, "error": "Battle Report not found."}, status=404)
+
+    progress = getattr(report, "run_progress", None)
+    payload = {
+        "ok": True,
+        "report": {
+            "id": report.id,
+            "raw_text": report.raw_text,
+            "battle_date": progress.battle_date.isoformat() if progress and progress.battle_date else None,
+            "parsed_at": report.parsed_at.isoformat() if report.parsed_at else None,
+            "tier": progress.tier if progress else None,
+            "is_tournament": bool(progress.is_tournament) if progress else False,
+            "metrics": _battle_report_modal_metrics(progress),
+        },
+    }
+    return JsonResponse(payload)
 
 
 def _build_sort_querystrings(

@@ -67,3 +67,5 @@ def test_dashboard_per_run_granularity_emits_distinct_labels(auth_client, player
     values = panel["datasets"][0]["data"]
     assert sorted(v for v in values if v is not None) == [1200.0, 2400.0]
 
+    run_ids = panel["run_ids"]
+    assert sorted(run_id for run_id in run_ids if run_id is not None) == sorted([report_a.id, report_b.id])

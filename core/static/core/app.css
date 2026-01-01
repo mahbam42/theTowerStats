@@ -622,6 +622,46 @@ textarea:active {
   cursor: pointer;
 }
 
+.battle-report-row {
+  cursor: pointer;
+}
+
+.battle-report-row:focus {
+  outline: 2px solid var(--tts-color-highlight);
+  outline-offset: -2px;
+}
+
+.battle-report-metrics {
+  display: grid;
+  gap: var(--tts-space-2);
+}
+
+.battle-report-metric-row {
+  display: flex;
+  justify-content: space-between;
+  gap: var(--tts-space-2);
+  border-bottom: 1px solid var(--tts-color-border);
+  padding-bottom: var(--tts-space-1);
+}
+
+.battle-report-metric-link {
+  font-weight: 600;
+}
+
+.battle-report-metric-value {
+  color: var(--tts-color-text-muted);
+}
+
+.battle-report-raw {
+  white-space: pre;
+  overflow-x: auto;
+  background: var(--tts-color-bg);
+  border: 1px solid var(--tts-color-border);
+  border-radius: var(--tts-radius-2);
+  padding: var(--tts-space-2);
+  font-size: 0.9rem;
+}
+
 .battle-history-import textarea {
   min-height: 6rem;
 }

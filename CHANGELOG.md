@@ -11,6 +11,8 @@ This project follows Semantic Versioning.
 - Charts: compare run selectors display tier, wave, date, and time.
 - Tests: expand chart builder coverage and align demo CSV export test expectations.
 - Fix per-run label rendering and flagging; clarify chart labels in docs
+- Docs: add Admin Panel documentation.
+- Docs: add master prompts 41 and 42 to archive.
 
 ## [0.4.0]
 

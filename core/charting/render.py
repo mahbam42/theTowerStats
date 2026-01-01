@@ -43,11 +43,12 @@ class ChartDataset(TypedDict, total=False):
     flagReasons: list[str | None]
 
 
-class ChartData(TypedDict):
+class ChartData(TypedDict, total=False):
     """The full Chart.js payload (labels + datasets) for a chart panel."""
 
     labels: list[str]
     datasets: list[ChartDataset]
+    run_ids: list[int | None]
 
 
 @dataclass(frozen=True, slots=True)
@@ -170,15 +171,20 @@ def render_chart(
                 color="#3366CC",
             )
         ]
+        run_ids = _run_ids_for_labels(derived_points, labeler, derived_labels) if granularity == "per_run" else None
+        derived_data: ChartData = {"labels": derived_labels, "datasets": derived_datasets}
+        if run_ids is not None:
+            derived_data["run_ids"] = run_ids
         return RenderedChart(
             config=config,
-            data={"labels": derived_labels, "datasets": derived_datasets},
+            data=derived_data,
             unit=unit,
         )
 
     datasets: list[ChartDataset] = []
     labels: list[str] = []
     warnings: list[str] = []
+    all_points: list[MetricPoint] = []
     incomplete_labels = incomplete_run_labels(records)
 
     if config.chart_type == "bar" and config.stacked and config.semantic_type == "contribution":
@@ -204,6 +210,7 @@ def render_chart(
             entity_type=entity_type,
             entity_name=entity_name,
         )
+        all_points.extend(series_result.points)
         groups = _group_points(series_result.points, config=config)
         labels = _merge_labels(labels, [labeler(p) for p in series_result.points])
         if len(labels) > MAX_CHART_LABELS:
@@ -250,9 +257,13 @@ def render_chart(
                 warnings.append("Comparison scope contains fewer than 3 runs; interpret deltas cautiously.")
 
     panel_unit = datasets[0]["unit"] if datasets else ""
+    run_ids = _run_ids_for_labels(all_points, labeler, labels) if granularity == "per_run" else None
+    panel_data: ChartData = {"labels": labels, "datasets": datasets}
+    if run_ids is not None:
+        panel_data["run_ids"] = run_ids
     return RenderedChart(
         config=config,
-        data={"labels": labels, "datasets": datasets},
+        data=panel_data,
         unit=panel_unit,
         warnings=tuple(warnings),
     )
@@ -479,6 +490,19 @@ def _labeler_for_records(
         return date_label
 
     return label
+
+
+def _run_ids_for_labels(
+    points: Iterable[MetricPoint], labeler: Callable[[MetricPoint], str], labels: list[str]
+) -> list[int | None]:
+    """Align run IDs to chart labels for per-run tooltip interactions."""
+
+    run_id_by_label: dict[str, int | None] = {}
+    for point in points:
+        label = labeler(point)
+        if label not in run_id_by_label:
+            run_id_by_label[label] = point.run_id
+    return [run_id_by_label.get(label) for label in labels]
 
 
 def _aggregate_points(

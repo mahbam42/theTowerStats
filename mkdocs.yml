@@ -42,7 +42,9 @@ nav:
       - App Philosophy: philosophy.md
       - Search: search.md
       - Demo Data: demo_data.md
-      - Battle History: battle_history.md
+      - Battle History:
+          - Overview: battle_history.md
+          - Battle Report Modal: battle_report_modal.md
       - Charts:
           - Overview: charts.md
           - Chart Builder: charts/chart_builder.md

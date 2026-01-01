@@ -184,7 +184,14 @@
               </thead>
               <tbody>
                 {% for row in page_rows %}
-                  <tr class="{% if row.is_tournament %}tournament-row{% endif %}">
+                  <tr
+                    class="battle-report-row {% if row.is_tournament %}tournament-row{% endif %}"
+                    data-run-id="{{ row.run.id }}"
+                    tabindex="0"
+                    role="button"
+                    aria-haspopup="dialog"
+                    aria-label="Open Battle Report modal"
+                  >
                     <td>{{ row.run.run_progress.battle_date|default:"—" }}</td>
                     <td>
                       {% if row.is_tournament %}
@@ -313,4 +320,40 @@
       })();
     </script>
   {% endif %}
+
+  <script type="application/json" id="battle-report-order">{{ battle_report_order_json|safe }}</script>
+
+  <div
+    class="modal-backdrop"
+    id="battle-report-modal"
+    aria-hidden="true"
+    data-endpoint-template="{% url 'core:battle_report_modal' 0 %}"
+    data-charts-url="{% url 'core:dashboard' %}"
+  >
+    <div class="modal-shell" role="dialog" aria-modal="true" aria-label="Battle Report">
+      <div class="grid-x grid-margin-x align-middle">
+        <div class="cell auto">
+          <h4 class="margin-0" id="battle-report-modal-title">Battle Report</h4>
+          <p class="muted margin-0" id="battle-report-order-note"></p>
+        </div>
+        <div class="cell shrink">
+          <div class="button-group">
+            <button class="button secondary" type="button" id="battle-report-prev">Previous</button>
+            <button class="button secondary" type="button" id="battle-report-next">Next</button>
+            <button class="button secondary" type="button" id="battle-report-close">Close</button>
+          </div>
+        </div>
+      </div>
+
+      <div class="margin-top-1">
+        <h5 class="margin-bottom-0">Metrics</h5>
+        <div class="battle-report-metrics" id="battle-report-metrics"></div>
+      </div>
+
+      <div class="margin-top-1">
+        <h5 class="margin-bottom-0">Raw Battle Report</h5>
+        <pre class="battle-report-raw" id="battle-report-raw"></pre>
+      </div>
+    </div>
+  </div>
 {% endblock %}

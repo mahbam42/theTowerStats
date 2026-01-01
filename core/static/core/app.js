@@ -152,12 +152,241 @@
     });
   }
 
+  function initializeBattleReportModal() {
+    const modal = document.getElementById("battle-report-modal");
+    if (!modal) return;
+
+    const endpointTemplate = modal.dataset.endpointTemplate;
+    const chartsUrl = modal.dataset.chartsUrl;
+    if (!endpointTemplate) return;
+
+    const titleEl = document.getElementById("battle-report-modal-title");
+    const rawEl = document.getElementById("battle-report-raw");
+    const metricsEl = document.getElementById("battle-report-metrics");
+    const noteEl = document.getElementById("battle-report-order-note");
+    const prevBtn = document.getElementById("battle-report-prev");
+    const nextBtn = document.getElementById("battle-report-next");
+    const closeBtn = document.getElementById("battle-report-close");
+
+    const state = {
+      order: [],
+      index: -1,
+      contextNote: "",
+    };
+
+    function buildEndpoint(runId) {
+      return endpointTemplate.replace("/0/", `/${runId}/`);
+    }
+
+    function buildChartUrl(chartId) {
+      if (!chartsUrl) return null;
+      const url = new URL(chartsUrl, window.location.origin);
+      const form = document.getElementById("chart-context-form");
+      const getFormValue = (name) => {
+        if (!form || !form.elements[name]) return null;
+        const value = form.elements[name].value;
+        return value === "" ? null : value;
+      };
+      url.searchParams.set("charts", chartId);
+      url.searchParams.set("event_shift", "all");
+      const granularity = getFormValue("granularity");
+      const tier = getFormValue("tier");
+      const preset = getFormValue("preset");
+      const includeTournaments = form && form.elements["include_tournaments"] ? form.elements["include_tournaments"].checked : null;
+      const windowKind = getFormValue("window_kind");
+      const windowN = getFormValue("window_n");
+      const movingAverage = getFormValue("moving_average_window");
+      if (granularity) url.searchParams.set("granularity", granularity);
+      if (tier) url.searchParams.set("tier", tier);
+      if (preset) url.searchParams.set("preset", preset);
+      if (includeTournaments) url.searchParams.set("include_tournaments", "on");
+      if (windowKind) url.searchParams.set("window_kind", windowKind);
+      if (windowN) url.searchParams.set("window_n", windowN);
+      if (movingAverage) url.searchParams.set("moving_average_window", movingAverage);
+      return url.toString();
+    }
+
+    function openModal() {
+      modal.classList.add("is-open");
+      modal.setAttribute("aria-hidden", "false");
+      document.body.style.overflow = "hidden";
+    }
+
+    function closeModal() {
+      modal.classList.remove("is-open");
+      modal.setAttribute("aria-hidden", "true");
+      document.body.style.overflow = "";
+    }
+
+    function setNavState() {
+      if (!prevBtn || !nextBtn) return;
+      prevBtn.disabled = state.index <= 0;
+      nextBtn.disabled = state.index < 0 || state.index >= state.order.length - 1;
+    }
+
+    function setLoading() {
+      if (titleEl) titleEl.textContent = "Battle Report";
+      if (rawEl) rawEl.textContent = "Loading...";
+      if (metricsEl) metricsEl.innerHTML = "";
+    }
+
+    function setError(message) {
+      if (rawEl) rawEl.textContent = message;
+    }
+
+    function renderMetrics(metrics) {
+      if (!metricsEl) return;
+      metricsEl.innerHTML = "";
+      for (const metric of metrics || []) {
+        const row = document.createElement("div");
+        row.className = "battle-report-metric-row";
+
+        const label = document.createElement("span");
+        const value = document.createElement("span");
+        value.className = "battle-report-metric-value";
+        value.textContent = metric.value || "—";
+
+        if (metric.chart_id) {
+          const link = document.createElement("a");
+          const href = buildChartUrl(metric.chart_id);
+          link.href = href || "#";
+          link.textContent = metric.label || "";
+          link.className = "battle-report-metric-link";
+          label.appendChild(link);
+        } else {
+          label.textContent = metric.label || "";
+        }
+
+        row.appendChild(label);
+        row.appendChild(value);
+        metricsEl.appendChild(row);
+      }
+    }
+
+    async function loadRun(runId) {
+      setLoading();
+      try {
+        const resp = await fetch(buildEndpoint(runId), {
+          method: "GET",
+          credentials: "same-origin",
+          headers: { "X-Requested-With": "XMLHttpRequest" },
+        });
+        if (!resp.ok) {
+          setError("Unable to load this Battle Report.");
+          return;
+        }
+        const payload = await resp.json();
+        if (!payload || !payload.ok || !payload.report) {
+          setError("Unable to load this Battle Report.");
+          return;
+        }
+        const report = payload.report;
+        const titleParts = [];
+        if (report.battle_date) {
+          titleParts.push(new Date(report.battle_date).toLocaleString());
+        } else if (report.parsed_at) {
+          titleParts.push(new Date(report.parsed_at).toLocaleString());
+        }
+        titleParts.push(`Run ${report.id}`);
+        if (titleEl) titleEl.textContent = titleParts.join(" • ");
+        if (rawEl) rawEl.textContent = report.raw_text || "";
+        renderMetrics(report.metrics || []);
+        if (noteEl) noteEl.textContent = state.contextNote || "";
+      } catch (_err) {
+        setError("Unable to load this Battle Report.");
+      }
+    }
+
+    function setOrder(order, runId) {
+      const cleaned = Array.isArray(order) ? order.filter((id) => Number.isInteger(id)) : [];
+      state.order = cleaned;
+      state.index = cleaned.indexOf(runId);
+      if (state.index < 0) {
+        state.order = [runId];
+        state.index = 0;
+      }
+      setNavState();
+    }
+
+    function openForRun(runId, order, contextNote) {
+      state.contextNote = contextNote || "";
+      setOrder(order, runId);
+      openModal();
+      loadRun(runId);
+    }
+
+    if (closeBtn) closeBtn.addEventListener("click", closeModal);
+    if (modal) {
+      modal.addEventListener("click", (event) => {
+        if (event.target === modal) closeModal();
+      });
+    }
+    document.addEventListener("keydown", (event) => {
+      if (modal.getAttribute("aria-hidden") === "true") return;
+      if (event.key === "Escape") closeModal();
+    });
+
+    if (prevBtn) {
+      prevBtn.addEventListener("click", () => {
+        if (state.index <= 0) return;
+        state.index -= 1;
+        setNavState();
+        loadRun(state.order[state.index]);
+      });
+    }
+    if (nextBtn) {
+      nextBtn.addEventListener("click", () => {
+        if (state.index < 0 || state.index >= state.order.length - 1) return;
+        state.index += 1;
+        setNavState();
+        loadRun(state.order[state.index]);
+      });
+    }
+
+    function readJsonScript(id) {
+      const node = document.getElementById(id);
+      if (!node) return null;
+      try {
+        return JSON.parse(node.textContent || "null");
+      } catch (_err) {
+        return null;
+      }
+    }
+
+    const battleHistoryOrder = readJsonScript("battle-report-order");
+    const battleHistoryNote = "Navigation follows the current Battle History sorting and filters.";
+    const rows = document.querySelectorAll(".battle-report-row");
+    for (const row of rows) {
+      const runId = Number(row.dataset.runId);
+      if (!Number.isInteger(runId)) continue;
+
+      function shouldIgnore(target) {
+        return Boolean(target.closest("a, button, input, select, textarea, label"));
+      }
+
+      row.addEventListener("click", (event) => {
+        if (shouldIgnore(event.target)) return;
+        openForRun(runId, battleHistoryOrder || [], battleHistoryNote);
+      });
+
+      row.addEventListener("keydown", (event) => {
+        if (event.key !== "Enter" && event.key !== " ") return;
+        if (shouldIgnore(event.target)) return;
+        event.preventDefault();
+        openForRun(runId, battleHistoryOrder || [], battleHistoryNote);
+      });
+    }
+
+    window.openBattleReportModal = openForRun;
+  }
+
   if (document.readyState === "loading") {
     document.addEventListener(
       "DOMContentLoaded",
       () => {
         initializeFoundation();
         initializeGlobalSearch();
+        initializeBattleReportModal();
       },
       { once: true }
     );
@@ -166,4 +395,5 @@
 
   initializeFoundation();
   initializeGlobalSearch();
+  initializeBattleReportModal();
 })();

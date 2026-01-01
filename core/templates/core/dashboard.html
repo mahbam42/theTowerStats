@@ -516,6 +516,7 @@
       const tooltipBorderColor = themeColor("--tts-color-border", "#2b2e36");
       const tooltipTitleColor = themeColor("--tts-color-text", "#e6e8ee");
       const tooltipBodyColor = themeColor("--tts-color-text", "#e6e8ee");
+      const chartOrderNote = "Navigation follows the current chart order and filters.";
       const baseTooltip = {
         backgroundColor: tooltipBackgroundColor,
         borderColor: tooltipBorderColor,
@@ -602,14 +603,22 @@
         chartContextForm.addEventListener("change", updateContextSummary);
       }
 
-      function renderLineChart(canvasId, labels, datasets) {
+      function runIdFromElements(elements, runIds) {
+        if (!Array.isArray(elements) || !elements.length) return null;
+        const index = elements[0].index;
+        const runId = runIds[index];
+        return Number.isInteger(runId) ? runId : null;
+      }
+
+      function renderLineChart(canvasId, labels, datasets, runIds) {
         const canvas = document.getElementById(canvasId);
         const ctx = canvas ? canvas.getContext("2d") : null;
         if (!ctx || labels.length === 0 || datasets.length === 0) return;
         const gridColor = themeColor("--tts-color-grid", "rgba(0, 0, 0, 0.06)");
         const tickColor = themeColor("--tts-color-chart-tick", "rgba(0, 0, 0, 0.72)");
         const { mappedDatasets, scales } = buildAxes(labels, datasets, gridColor, tickColor, xAxisTitle(), false);
-        new Chart(ctx, {
+        const hasRunIds = Array.isArray(runIds) && runIds.length;
+        const chart = new Chart(ctx, {
           type: "line",
           data: {
             labels,
@@ -621,6 +630,16 @@
             elements: {
               line: { borderWidth: 2 },
               point: { radius: 2, hoverRadius: 4 },
+            },
+            onHover: (event, elements) => {
+              if (!hasRunIds || !event?.native?.target) return;
+              event.native.target.style.cursor = elements.length ? "pointer" : "default";
+            },
+            onClick: (event, elements) => {
+              if (!hasRunIds || typeof window.openBattleReportModal !== "function") return;
+              const runId = runIdFromElements(elements, runIds);
+              if (!runId) return;
+              window.openBattleReportModal(runId, runIds, chartOrderNote);
             },
             plugins: {
               legend: {
@@ -678,14 +697,15 @@
         return context.granularity === "per_run" ? "Run" : "Date";
       }
 
-      function renderBarChart(canvasId, labels, datasets, stacked) {
+      function renderBarChart(canvasId, labels, datasets, stacked, runIds) {
         const canvas = document.getElementById(canvasId);
         const ctx = canvas ? canvas.getContext("2d") : null;
         if (!ctx || labels.length === 0 || datasets.length === 0) return;
         const gridColor = themeColor("--tts-color-grid", "rgba(0, 0, 0, 0.06)");
         const tickColor = themeColor("--tts-color-chart-tick", "rgba(0, 0, 0, 0.72)");
         const { mappedDatasets, scales } = buildAxes(labels, datasets, gridColor, tickColor, xAxisTitle(), stacked);
-        new Chart(ctx, {
+        const hasRunIds = Array.isArray(runIds) && runIds.length;
+        const chart = new Chart(ctx, {
           type: "bar",
           data: {
             labels,
@@ -694,6 +714,16 @@
           options: {
             responsive: true,
             datasets: { bar: { borderWidth: 1 } },
+            onHover: (event, elements) => {
+              if (!hasRunIds || !event?.native?.target) return;
+              event.native.target.style.cursor = elements.length ? "pointer" : "default";
+            },
+            onClick: (event, elements) => {
+              if (!hasRunIds || typeof window.openBattleReportModal !== "function") return;
+              const runId = runIdFromElements(elements, runIds);
+              if (!runId) return;
+              window.openBattleReportModal(runId, runIds, chartOrderNote);
+            },
             plugins: {
               legend: { display: true, labels: { color: legendLabelColor } },
               tooltip: {
@@ -791,9 +821,9 @@
         if (panel.chart_type === "donut") {
           renderDonutChart(`chart-${panel.id}`, panel.labels, panel.datasets);
         } else if (panel.chart_type === "bar") {
-          renderBarChart(`chart-${panel.id}`, panel.labels, panel.datasets, panel.stacked);
+          renderBarChart(`chart-${panel.id}`, panel.labels, panel.datasets, panel.stacked, panel.run_ids);
         } else {
-          renderLineChart(`chart-${panel.id}`, panel.labels, panel.datasets);
+          renderLineChart(`chart-${panel.id}`, panel.labels, panel.datasets, panel.run_ids);
         }
       }
 
@@ -958,6 +988,40 @@
               <button class="button expanded" type="submit">Save snapshot</button>
             </form>
           {% endif %}
+        </div>
+      </div>
+    </div>
+
+    <div
+      class="modal-backdrop"
+      id="battle-report-modal"
+      aria-hidden="true"
+      data-endpoint-template="{% url 'core:battle_report_modal' 0 %}"
+      data-charts-url="{% url 'core:dashboard' %}"
+    >
+      <div class="modal-shell" role="dialog" aria-modal="true" aria-label="Battle Report">
+        <div class="grid-x grid-margin-x align-middle">
+          <div class="cell auto">
+            <h4 class="margin-0" id="battle-report-modal-title">Battle Report</h4>
+            <p class="muted margin-0" id="battle-report-order-note"></p>
+          </div>
+          <div class="cell shrink">
+            <div class="button-group">
+              <button class="button secondary" type="button" id="battle-report-prev">Previous</button>
+              <button class="button secondary" type="button" id="battle-report-next">Next</button>
+              <button class="button secondary" type="button" id="battle-report-close">Close</button>
+            </div>
+          </div>
+        </div>
+
+        <div class="margin-top-1">
+          <h5 class="margin-bottom-0">Metrics</h5>
+          <div class="battle-report-metrics" id="battle-report-metrics"></div>
+        </div>
+
+        <div class="margin-top-1">
+          <h5 class="margin-bottom-0">Raw Battle Report</h5>
+          <pre class="battle-report-raw" id="battle-report-raw"></pre>
         </div>
       </div>
     </div>

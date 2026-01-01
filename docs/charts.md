@@ -27,9 +27,10 @@ Charts help you review how your run results change over time using the same valu
 10. (Optional) Open **Advanced analysis** to configure Advice, Goal-aware comparison, or derived metric export. For details, see [Advanced Analysis](charts/advanced_analysis.md).
 11. (Optional) Use **Chart Builder** to create a custom chart and apply it to your dashboard. For the full workflow, see [Chart Builder](charts/chart_builder.md).
 12. (Optional) Select **Download PNG** on a chart to save an image of the chart as currently displayed.
-13. (Optional) Open **Compare** to compare two scopes of runs. For details, see [Compare](charts/compare.md).
-14. (Optional) Open **Quick import** to paste a Battle Report without leaving the Charts page.
-15. (Optional) In **Quick import**, enable **Tournament run** when the run was a tournament round. The app cannot detect tournament runs automatically from pasted text.
+13. (Optional) Select a chart tooltip to open the Battle Report Modal for that run. The linked chart opens with the full date range and preserves your current filters so you can see data immediately. For details, see [Battle Report Modal](battle_report_modal.md).
+14. (Optional) Open **Compare** to compare two scopes of runs. For details, see [Compare](charts/compare.md).
+15. (Optional) Open **Quick import** to paste a Battle Report without leaving the Charts page.
+16. (Optional) In **Quick import**, enable **Tournament run** when the run was a tournament round. The app cannot detect tournament runs automatically from pasted text.
 
 ## How to Read the Results
 
