@@ -148,8 +148,9 @@ Agents must assume a local development environment using:
 - Python (project-specified version)
 - Django
 - sqlite (default dev database)
-- pytest, pytest-django
-- ruff and mypy
+- .venv/bin
+  - pytest, pytest-django
+  - ruff and mypy
 
 ### **Branch Workflow**
 
@@ -420,11 +421,11 @@ Before starting work on **theTowerStats**, agents must confirm:
 * **Type Enforcement**
 
   * [ ] All functions have type hints
-  * [ ] `mypy` passes
+  * [ ] `.venv/mypy` passes
 
 * **Lint Enforcement**
 
-  * [ ] `ruff` passes
+  * [ ] `.venv/ruff` passes
   * [ ] Code autoformatted where possible
 
 ## **Testing Suite Enforcement**
