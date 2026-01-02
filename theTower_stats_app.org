@@ -2425,7 +2425,7 @@ CLOSED: [2025-12-22 Mon 15:31]
 - [X] fetch_wiki_data and rebuild_wiki_definitions should have a pretty summary of deltas at the end.
   Especially when using --target all.
 
-*** Bugs/Enhancements [42/44]
+*** Bugs/Enhancements [44/47]
 
 **** DONE [#B] Error Updating Guardian Upgrade Table                 :bug:
 CLOSED: [2025-12-22 Mon 18:51]
@@ -3069,7 +3069,9 @@ CLOSED: [2026-01-01 Thu 13:58]
 Add to chart builder under Economy
 Stacked bar chart by type (attack, defense, utility, and total) 
 
-**** IN PROGRESS [#B] On Battle History clicking on a Battle Report Row opens a modal of the raw input
+**** DONE [#B] On Battle History clicking on a Battle Report Row opens a modal of the raw input
+CLOSED: [2026-01-02 Fri 10:14]
+- State "DONE"       from "IN PROGRESS" [2026-01-02 Fri 10:14]
 - State "IN PROGRESS" from "TODO"       [2026-01-01 Thu 13:58]
 Allow an end user to see their full run data from the front end.
 
@@ -3082,7 +3084,34 @@ Allow an end user to see their full run data from the front end.
   - Do not create new metrics (yet)
 - Update documentation to explain the feature
 
-**** TODO On Charts Dashboard Datapoint "Run:" needs to be clickable and open the Battle Report Modal
+**** DONE On Charts Dashboard Datapoint "Run:" needs to be clickable and open the Battle Report Modal
+CLOSED: [2026-01-02 Fri 10:14]
+- State "DONE"       from "TODO"       [2026-01-02 Fri 10:14]
+
+**** TODO Redesign Charts Dashboard 
+- Move Coins Earned and Coins per Hour to be side by side
+- Below that add 4 Charts:
+  - Coins by Source
+  - Damage by Source
+  - Free Upgrades by Run (also fix the colors so there's visual separation.
+  - Open to suggestions/even possibly a new chart
+**** TODO Make Getting Started the default homepage 
+
+- Remove 'Getting Started' from the Top Nav
+- In Start Here If a user is not signed in have a small sign in widget and CTA to create account (can just link to the login page) 
+- Below 'Start Here' add a section linking to the Github repo with brief guidance that users can fork/clone the repo and self host. 
+- Sample Chart should be replaced with a live chart using demo data.
+- Link topics/features to documentation wherever possible.
+  - 'What this app is' and 'What this app is not' should link to philosophy.md
+  - 'Charts' should link to Charts.md
+  - Add callout for Chart Builder
+  - Ensure strong SEO on the public facing landing page. 
+**** TODO Improve Demo Data 
+Minimum of 6 Battle Reports, dates spread to fall into 3 event windows.
+- 2 Early Game Runs (Low Values)
+- 2 Mid Tier (approximately mahbam42's data)
+- 2 Late Game, High Tier, Coins in the mid billions
+- Ensure that Mid and Late Game battle reports have suffiecient data to demonstrate all features. 
 ** Backlog [2/6]
 “Out of Scope”:
 - Cloud sync
