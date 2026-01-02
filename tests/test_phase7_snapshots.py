@@ -77,7 +77,7 @@ def test_snapshot_load_applies_builder_and_context(auth_client, player) -> None:
         config=encode_chart_config_dto(dto),
     )
 
-    response = auth_client.get("/", {"snapshot_id": snapshot.id})
+    response = auth_client.get(reverse("core:dashboard"), {"snapshot_id": snapshot.id})
     assert response.status_code == 200
     panels = {p["id"]: p for p in json.loads(response.context["chart_panels_json"])}
     assert "chart_builder_custom" in panels

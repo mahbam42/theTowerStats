@@ -7,6 +7,7 @@ from datetime import date, datetime, timezone
 from typing import Any
 
 import pytest
+from django.urls import reverse
 
 from gamedata.models import BattleReport, BattleReportProgress
 from player_state.models import Preset
@@ -59,7 +60,7 @@ def test_phase6_context_matrix_schema_is_stable_across_contexts(auth_client, pla
 
     panels = []
     for params in contexts:
-        response = auth_client.get("/", params)
+        response = auth_client.get(reverse("core:dashboard"), params)
         assert response.status_code == 200
         panels.append(_panel(response, chart_id="coins_earned"))
 
@@ -94,8 +95,7 @@ def test_phase6_context_edge_case_preset_with_no_runs_does_not_fallback(auth_cli
         preset_color_snapshot=farming.badge_color(),
     )
 
-    response = auth_client.get(
-        "/",
+    response = auth_client.get(reverse("core:dashboard"),
         {
             "charts": ["coins_earned"],
             "start_date": date(2025, 12, 9),

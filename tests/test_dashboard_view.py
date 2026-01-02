@@ -7,6 +7,7 @@ from datetime import date, datetime, timezone
 
 import pytest
 from django.test import override_settings
+from django.urls import reverse
 
 from analysis.engine import analyze_runs
 from analysis.raw_text_metrics import extract_raw_text_metrics
@@ -36,7 +37,7 @@ def test_dashboard_view_renders(auth_client, player) -> None:
         real_time_seconds=600,
     )
 
-    response = auth_client.get("/", {"start_date": FILTER_START})
+    response = auth_client.get(reverse("core:dashboard"), {"start_date": FILTER_START})
     assert response.status_code == 200
 
 
@@ -44,7 +45,7 @@ def test_dashboard_view_renders(auth_client, player) -> None:
 def test_dashboard_view_renders_with_no_data(auth_client) -> None:
     """Render the dashboard with no imported runs and show a neutral empty state."""
 
-    response = auth_client.get("/", {"start_date": FILTER_START})
+    response = auth_client.get(reverse("core:dashboard"), {"start_date": FILTER_START})
     assert response.status_code == 200
     assert response.context["chart_empty_state"] == "No runs match the current filters."
 
@@ -63,7 +64,7 @@ def test_dashboard_quick_import_accepts_space_separated_headers(auth_client, pla
             "Coins earned  16.89M",
         ]
     )
-    response = auth_client.post("/", data={"raw_text": raw_text}, follow=True)
+    response = auth_client.post(reverse("core:dashboard"), data={"raw_text": raw_text}, follow=True)
     assert response.status_code == 200
 
     assert BattleReport.objects.filter(player=player).count() == 1
@@ -85,7 +86,7 @@ def test_dashboard_quick_import_allows_missing_battle_date(auth_client, player) 
             "Coins earned\t17.29M",
         ]
     )
-    response = auth_client.post("/", data={"raw_text": raw_text}, follow=True)
+    response = auth_client.post(reverse("core:dashboard"), data={"raw_text": raw_text}, follow=True)
     assert response.status_code == 200
 
     report = BattleReport.objects.get(player=player)
@@ -108,7 +109,7 @@ def test_dashboard_quick_import_accepts_single_space_separators(auth_client, pla
             "Coins earned 17.29M",
         ]
     )
-    response = auth_client.post("/", data={"raw_text": raw_text}, follow=True)
+    response = auth_client.post(reverse("core:dashboard"), data={"raw_text": raw_text}, follow=True)
     assert response.status_code == 200
 
     report = BattleReport.objects.get(player=player)
@@ -129,7 +130,7 @@ def test_dashboard_quick_import_accepts_crlf_newlines(auth_client, player) -> No
             "Wave\t3656",
         ]
     )
-    response = auth_client.post("/", data={"raw_text": raw_text}, follow=True)
+    response = auth_client.post(reverse("core:dashboard"), data={"raw_text": raw_text}, follow=True)
     assert response.status_code == 200
 
     report = BattleReport.objects.get(player=player)
@@ -150,11 +151,11 @@ def test_dashboard_quick_import_tournament_override_excludes_from_charts_by_defa
             "Coins earned\t17.29M",
         ]
     )
-    response = auth_client.post("/", data={"raw_text": raw_text, "is_tournament": "on"}, follow=True)
+    response = auth_client.post(reverse("core:dashboard"), data={"raw_text": raw_text, "is_tournament": "on"}, follow=True)
     assert response.status_code == 200
     assert response.context["chart_empty_state"] == "No runs match the current filters."
 
-    response = auth_client.get("/", {"include_tournaments": "on", "start_date": FILTER_START})
+    response = auth_client.get(reverse("core:dashboard"), {"include_tournaments": "on", "start_date": FILTER_START})
     assert response.status_code == 200
     assert response.context["chart_empty_state"] != "No runs match the current filters."
 
@@ -168,7 +169,7 @@ def test_dashboard_import_exception_shows_user_error(auth_client, monkeypatch) -
         raise RuntimeError("boom")
 
     monkeypatch.setattr("core.views.ingest_battle_report", _boom)
-    response = auth_client.post("/", data={"raw_text": "Battle Report\nTier 1\nWave 1\nReal Time 1m\n"}, follow=True)
+    response = auth_client.post(reverse("core:dashboard"), data={"raw_text": "Battle Report\nTier 1\nWave 1\nReal Time 1m\n"}, follow=True)
     assert response.status_code == 200
     content = response.content.decode("utf-8")
     assert "Could not import Battle Report." in content
@@ -207,7 +208,7 @@ def test_dashboard_view_filters_and_plots_from_analysis_engine(auth_client, play
         real_time_seconds=1200,
     )
 
-    response = auth_client.get("/", {"start_date": date(2025, 12, 2)})
+    response = auth_client.get(reverse("core:dashboard"), {"start_date": date(2025, 12, 2)})
     assert response.status_code == 200
 
     panels = {p["id"]: p for p in json.loads(response.context["chart_panels_json"])}
@@ -252,7 +253,7 @@ def test_dashboard_view_date_filter_falls_back_to_import_time(auth_client, playe
         real_time_seconds=600,
     )
 
-    response = auth_client.get("/", {"start_date": date(2025, 12, 2), "end_date": date(2025, 12, 2)})
+    response = auth_client.get(reverse("core:dashboard"), {"start_date": date(2025, 12, 2), "end_date": date(2025, 12, 2)})
     assert response.status_code == 200
 
     panels = {p["id"]: p for p in json.loads(response.context["chart_panels_json"])}
@@ -293,7 +294,7 @@ def test_dashboard_view_filters_by_tier(auth_client, player) -> None:
         real_time_seconds=600,
     )
 
-    response = auth_client.get("/", {"tier": 2, "start_date": FILTER_START})
+    response = auth_client.get(reverse("core:dashboard"), {"tier": 2, "start_date": FILTER_START})
     assert response.status_code == 200
 
     panels = {p["id"]: p for p in json.loads(response.context["chart_panels_json"])}
@@ -339,7 +340,7 @@ def test_dashboard_view_filters_by_preset(auth_client, player) -> None:
         real_time_seconds=600,
     )
 
-    response = auth_client.get("/", {"preset": preset.pk, "start_date": FILTER_START})
+    response = auth_client.get(reverse("core:dashboard"), {"preset": preset.pk, "start_date": FILTER_START})
     assert response.status_code == 200
 
     panels = {p["id"]: p for p in json.loads(response.context["chart_panels_json"])}
@@ -382,7 +383,7 @@ def test_dashboard_view_comparison_chart_by_tier(auth_client, player) -> None:
         real_time_seconds=600,
     )
 
-    response = auth_client.get("/", {"charts": ["coins_earned_by_tier"], "start_date": FILTER_START})
+    response = auth_client.get(reverse("core:dashboard"), {"charts": ["coins_earned_by_tier"], "start_date": FILTER_START})
     assert response.status_code == 200
 
     panels = {p["id"]: p for p in json.loads(response.context["chart_panels_json"])}
@@ -423,8 +424,7 @@ def test_dashboard_view_series_includes_moving_average_transform(auth_client, pl
         real_time_seconds=600,
     )
 
-    response = auth_client.get(
-        "/",
+    response = auth_client.get(reverse("core:dashboard"),
         {
             "charts": ["coins_per_hour_moving_average"],
             "moving_average_window": 2,
@@ -457,7 +457,7 @@ def test_dashboard_view_includes_legend_toggle_handler(auth_client, player) -> N
         real_time_seconds=600,
     )
 
-    response = auth_client.get("/", {"start_date": FILTER_START})
+    response = auth_client.get(reverse("core:dashboard"), {"start_date": FILTER_START})
     assert response.status_code == 200
     assert b"setDatasetVisibility" in response.content
 
@@ -494,7 +494,7 @@ def test_dashboard_view_run_delta_comparison(auth_client, player) -> None:
         real_time_seconds=600,
     )
 
-    response = auth_client.get("/", {"run_a": first.pk, "run_b": second.pk, "start_date": FILTER_START})
+    response = auth_client.get(reverse("core:dashboard"), {"run_a": first.pk, "run_b": second.pk, "start_date": FILTER_START})
     assert response.status_code == 200
 
     result = response.context["comparison_result"]
@@ -528,8 +528,7 @@ def test_dashboard_view_multi_run_scope_compare_defaults_to_economy(auth_client,
         )
         runs.append(report)
 
-    response = auth_client.get(
-        "/",
+    response = auth_client.get(reverse("core:dashboard"),
         {
             "scope_a_runs": [runs[0].pk, runs[1].pk, runs[2].pk],
             "scope_b_runs": [runs[3].pk, runs[4].pk, runs[5].pk],
@@ -573,8 +572,7 @@ def test_dashboard_view_multi_run_scope_compare_insufficient(auth_client, player
         )
         runs.append(report)
 
-    response = auth_client.get(
-        "/",
+    response = auth_client.get(reverse("core:dashboard"),
         {
             "scope_a_runs": [runs[0].pk, runs[1].pk],
             "scope_b_runs": [runs[2].pk, runs[3].pk],
@@ -608,8 +606,7 @@ def test_dashboard_view_multi_run_scope_compare_requires_focus_metrics(auth_clie
         )
         runs.append(report)
 
-    response = auth_client.get(
-        "/",
+    response = auth_client.get(reverse("core:dashboard"),
         {
             "summary_focus": "damage",
             "scope_a_runs": [runs[0].pk, runs[1].pk, runs[2].pk],
@@ -661,8 +658,7 @@ def test_dashboard_view_window_delta_comparison(auth_client, player) -> None:
         real_time_seconds=600,
     )
 
-    response = auth_client.get(
-        "/",
+    response = auth_client.get(reverse("core:dashboard"),
         {
             "window_a_start": date(2025, 12, 1),
             "window_a_end": date(2025, 12, 2),
@@ -712,8 +708,7 @@ def test_dashboard_view_window_delta_ignores_chart_date_filters(auth_client, pla
         real_time_seconds=600,
     )
 
-    response = auth_client.get(
-        "/",
+    response = auth_client.get(reverse("core:dashboard"),
         {
             "start_date": date(2025, 12, 9),
             "window_a_start": date(2025, 12, 1),
@@ -796,8 +791,7 @@ def test_dashboard_view_window_delta_respects_tier_filter(auth_client, player) -
     # With tier=2, the comparison should use only the tier 2 runs:
     # - Window A avg: 3,600/600*3600 = 21,600
     # - Window B avg: 1,800/600*3600 = 10,800
-    response = auth_client.get(
-        "/",
+    response = auth_client.get(reverse("core:dashboard"),
         {
             "tier": 2,
             "window_a_start": date(2025, 12, 1),
@@ -866,8 +860,7 @@ def test_dashboard_view_window_delta_respects_preset_filter(auth_client, player)
         preset=farming,
     )
 
-    response = auth_client.get(
-        "/",
+    response = auth_client.get(reverse("core:dashboard"),
         {
             "preset": farming.pk,
             "window_a_start": date(2025, 12, 1),
@@ -929,7 +922,7 @@ def test_dashboard_view_renders_coins_by_source_donut(auth_client, player) -> No
         raw_values={key: parsed.raw_value for key, parsed in extracted.items()},
     )
 
-    response = auth_client.get("/", {"charts": ["coins_by_source"], "start_date": date(2025, 12, 9)})
+    response = auth_client.get(reverse("core:dashboard"), {"charts": ["coins_by_source"], "start_date": date(2025, 12, 9)})
     assert response.status_code == 200
 
     panels = {p["id"]: p for p in json.loads(response.context["chart_panels_json"])}
@@ -949,7 +942,7 @@ def test_dashboard_view_renders_coins_by_source_donut(auth_client, player) -> No
 def test_dashboard_view_renders_empty_donut_with_typed_none_values(auth_client) -> None:
     """Render donut charts with no runs as typed-but-empty (None-valued) slices."""
 
-    response = auth_client.get("/", {"charts": ["coins_by_source"], "start_date": date(2025, 12, 9)})
+    response = auth_client.get(reverse("core:dashboard"), {"charts": ["coins_by_source"], "start_date": date(2025, 12, 9)})
     assert response.status_code == 200
     assert response.context["chart_empty_state"] == "No runs match the current filters."
 
@@ -979,7 +972,7 @@ def test_dashboard_view_renders_area_chart(auth_client, player) -> None:
         real_time_seconds=1200,
     )
 
-    response = auth_client.get("/", {"charts": ["coins_earned_over_time"], "start_date": date(2025, 12, 9)})
+    response = auth_client.get(reverse("core:dashboard"), {"charts": ["coins_earned_over_time"], "start_date": date(2025, 12, 9)})
     assert response.status_code == 200
 
     panels = {p["id"]: p for p in json.loads(response.context["chart_panels_json"])}
@@ -1008,7 +1001,7 @@ def test_dashboard_view_renders_scatter_chart(auth_client, player) -> None:
             real_time_seconds=seconds,
         )
 
-    response = auth_client.get("/", {"charts": ["run_duration_vs_coins_earned"], "start_date": date(2025, 12, 9)})
+    response = auth_client.get(reverse("core:dashboard"), {"charts": ["run_duration_vs_coins_earned"], "start_date": date(2025, 12, 9)})
     assert response.status_code == 200
 
     panels = {p["id"]: p for p in json.loads(response.context["chart_panels_json"])}
@@ -1044,8 +1037,7 @@ def test_dashboard_view_applies_rolling_window_last_runs(auth_client, player) ->
             real_time_seconds=10,
         )
 
-    response = auth_client.get(
-        "/",
+    response = auth_client.get(reverse("core:dashboard"),
         {
             "charts": ["coins_earned"],
             "start_date": FILTER_START,
@@ -1079,8 +1071,7 @@ def test_dashboard_view_applies_rolling_window_last_days(auth_client, player) ->
             real_time_seconds=10,
         )
 
-    response = auth_client.get(
-        "/",
+    response = auth_client.get(reverse("core:dashboard"),
         {
             "charts": ["coins_earned"],
             "start_date": FILTER_START,

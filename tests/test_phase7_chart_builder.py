@@ -6,6 +6,7 @@ import json
 from datetime import datetime, timezone
 
 import pytest
+from django.urls import reverse
 
 pytestmark = pytest.mark.integration
 
@@ -39,8 +40,7 @@ def test_chart_builder_renders_runtime_chart(auth_client, player) -> None:
         raw_values={key: parsed.raw_value for key, parsed in extracted.items()},
     )
 
-    response = auth_client.get(
-        "/",
+    response = auth_client.get(reverse("core:dashboard"),
         {
             "builder": "1",
             "title": "Custom coins",

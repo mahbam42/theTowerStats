@@ -5,6 +5,7 @@ from __future__ import annotations
 from datetime import datetime, timedelta, timezone
 
 import pytest
+from django.urls import reverse
 
 pytestmark = pytest.mark.integration
 
@@ -44,7 +45,7 @@ def test_chart_guardrail_limits_data_points(auth_client, player) -> None:
     )
     BattleReportProgress.objects.bulk_create(progresses)
 
-    response = auth_client.get("/", {"charts": ["coins_earned"], "start_date": "2025-01-01"})
+    response = auth_client.get(reverse("core:dashboard"), {"charts": ["coins_earned"], "start_date": "2025-01-01"})
     assert response.status_code == 200
 
     panel = next(p for p in response.context["chart_panels"] if p["id"] == "coins_earned")

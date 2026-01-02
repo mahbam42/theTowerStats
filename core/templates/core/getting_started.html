@@ -1,23 +1,44 @@
 {% extends "core/base.html" %}
 
-{% block title %}Getting started • theTowerStats{% endblock %}
+{% block title %}theTowerStats - Battle Report insights{% endblock %}
+
+{% block head %}
+  <meta
+    name="description"
+    content="theTowerStats turns The Tower Battle Reports into clear history, charts, and comparisons without changing your raw data."
+  />
+  <meta property="og:title" content="theTowerStats" />
+  <meta
+    property="og:description"
+    content="Track Battle Reports with history, charts, and read-only progress dashboards."
+  />
+{% endblock %}
 
 {% block content %}
-  <div class="grid-x grid-margin-x">
+  <div class="grid-x grid-margin-x landing-hero">
     <div class="cell">
-      <div class="card-shell">
-        <h2 class="margin-0">Getting started</h2>
-        <p class="muted margin-0">
-          theTowerStats helps you understand your own Battle Reports by turning them into history, charts, and comparisons.
+      <div class="card-shell landing-hero-card">
+        <p class="muted landing-kicker">Battle Report analytics for The Tower</p>
+        <h1 class="margin-0">theTowerStats</h1>
+        <p class="landing-lede margin-0">
+          Turn raw Battle Reports into history, charts, and comparisons without changing the data you imported.
         </p>
       </div>
     </div>
   </div>
 
-  <div class="grid-x grid-margin-x margin-top-1">
+  <div class="grid-x grid-margin-x margin-top-1 landing-content">
     <div class="cell large-7">
       <div class="card-shell">
-        <h4>What this app is</h4>
+        <div class="landing-section-header">
+          <h4 class="margin-0">What this app is</h4>
+          <a
+            class="muted landing-inline-link"
+            href="https://mahbam42.github.io/theTowerStats/philosophy/"
+            target="_blank"
+            rel="noopener noreferrer"
+          >Read the philosophy</a>
+        </div>
         <ul class="margin-bottom-0">
           <li>A way to import Battle Reports and review your run history over time.</li>
           <li>A tool for comparing scopes of runs using clear filters (date range, tier, preset, and snapshots).</li>
@@ -26,7 +47,15 @@
       </div>
 
       <div class="card-shell margin-top-1">
-        <h4>What this app is not</h4>
+        <div class="landing-section-header">
+          <h4 class="margin-0">What this app is not</h4>
+          <a
+            class="muted landing-inline-link"
+            href="https://mahbam42.github.io/theTowerStats/philosophy/"
+            target="_blank"
+            rel="noopener noreferrer"
+          >See the boundaries</a>
+        </div>
         <ul class="margin-bottom-0">
           <li>A leaderboard or ranking system.</li>
           <li>A “best build” generator.</li>
@@ -35,67 +64,168 @@
       </div>
 
       <div class="card-shell margin-top-1">
-        <h4>Sample chart (how to read it)</h4>
+        <div class="landing-section-header">
+          <h4 class="margin-0">Demo chart (how to read it)</h4>
+          <a
+            class="muted landing-inline-link"
+            href="https://mahbam42.github.io/theTowerStats/charts/"
+            target="_blank"
+            rel="noopener noreferrer"
+          >Charts guide</a>
+        </div>
         <p class="muted">
           Charts always reflect your current context. Changing context changes which runs are included, not what a metric means.
         </p>
-        <div class="onboarding-sample-chart" role="img" aria-label="Sample chart illustration">
-          <svg viewBox="0 0 600 180" preserveAspectRatio="none" class="onboarding-sample-chart-svg" aria-hidden="true">
-            <polyline
-              fill="none"
-              stroke="currentColor"
-              stroke-width="3"
-              points="20,140 120,120 220,135 320,90 420,110 520,70 580,85"
-            />
-            <line x1="20" y1="150" x2="580" y2="150" stroke="currentColor" stroke-opacity="0.2" />
-            <line x1="20" y1="30" x2="20" y2="150" stroke="currentColor" stroke-opacity="0.2" />
-          </svg>
-        </div>
+        {% if demo_chart_json %}
+          <div class="landing-demo-chart" role="img" aria-label="Demo chart preview">
+            <canvas id="landing-demo-chart" width="900" height="260"></canvas>
+          </div>
+        {% else %}
+          <div class="empty-state">
+            Demo chart data is not available yet.
+          </div>
+        {% endif %}
         <ul class="margin-bottom-0">
           <li><strong>Included</strong>: only the runs that match your selected date range, tier, and preset.</li>
           <li><strong>Excluded</strong>: runs outside your current filters.</li>
           <li><strong>Limits</strong>: missing values show as gaps rather than guessed numbers.</li>
         </ul>
+        <p class="muted margin-top-1 margin-bottom-0">
+          Want to build a custom view? See <a href="https://mahbam42.github.io/theTowerStats/charts/chart_builder/" target="_blank" rel="noopener noreferrer">Chart Builder</a>.
+        </p>
       </div>
     </div>
 
     <div class="cell large-5">
-      <div class="card-shell">
+      {% if not user.is_authenticated %}
+        <div class="card-shell landing-signup-card">
+          <h4>Create your account</h4>
+          <p class="muted">
+            Save your run history, keep your filters, and compare scopes across time.
+          </p>
+          <a class="button expanded" href="{% url 'login' %}">Create an account</a>
+          <p class="muted margin-top-1 margin-bottom-0">
+            Already have one? Sign in to continue.
+          </p>
+        </div>
+      {% endif %}
+
+      <div class="card-shell margin-top-1">
         <h4>Start here</h4>
         <p class="muted">
           Choose a safe entry point. Demo mode uses sample data and disables imports.
         </p>
 
-        <div class="button-group expanded stack-for-small">
-          {% if demo_mode %}
-            <a class="button" href="{% url 'core:dashboard' %}">View demo charts</a>
-          {% else %}
-            <form action="{% url 'core:enable_demo_mode' %}" method="post" class="inline-form">
-              {% csrf_token %}
-              <input type="hidden" name="next" value="{% url 'core:dashboard' %}" />
-              <button type="submit" class="button">Try demo data</button>
-            </form>
-          {% endif %}
-          <a class="button secondary" href="{% url 'core:battle_history' %}">Import Battle Reports</a>
-        </div>
-
-        {% if has_imported_runs %}
-          <p class="muted margin-top-1 margin-bottom-0">
-            You already have imported runs. You can go straight to Charts or Battle History.
-          </p>
-          <div class="button-group expanded stack-for-small margin-top-1">
-            <a class="button secondary" href="{% url 'core:dashboard' %}">Go to Charts</a>
-            <a class="button secondary" href="{% url 'core:battle_history' %}">Go to Battle History</a>
+        {% if user.is_authenticated %}
+          <div class="button-group expanded stack-for-small">
+            {% if demo_mode %}
+              <a class="button" href="{% url 'core:dashboard' %}">View demo charts</a>
+            {% else %}
+              <form action="{% url 'core:enable_demo_mode' %}" method="post" class="inline-form">
+                {% csrf_token %}
+                <input type="hidden" name="next" value="{% url 'core:dashboard' %}" />
+                <button type="submit" class="button">Try demo data</button>
+              </form>
+            {% endif %}
+            <a class="button secondary" href="{% url 'core:battle_history' %}">Import Battle Reports</a>
           </div>
+
+          {% if has_imported_runs %}
+            <p class="muted margin-top-1 margin-bottom-0">
+              You already have imported runs. You can go straight to Charts or Battle History.
+            </p>
+            <div class="button-group expanded stack-for-small margin-top-1">
+              <a class="button secondary" href="{% url 'core:dashboard' %}">Go to Charts</a>
+              <a class="button secondary" href="{% url 'core:battle_history' %}">Go to Battle History</a>
+            </div>
+          {% else %}
+            <div class="callout secondary margin-top-1">
+              <p class="margin-0">
+                If you skip imports for now, Charts will show an empty state until you add Battle Reports.
+              </p>
+            </div>
+          {% endif %}
         {% else %}
           <div class="callout secondary margin-top-1">
             <p class="margin-0">
-              If you skip imports for now, Charts will show an empty state until you add Battle Reports.
+              Sign in to enable demo mode or import your Battle Reports.
             </p>
           </div>
         {% endif %}
+      </div>
+
+      <div class="card-shell margin-top-1">
+        <h4>GitHub</h4>
+        <p class="muted">
+          Open-source by design. Fork it, explore the docs, or self-host with your own data.
+        </p>
+        <div class="button-group expanded stack-for-small">
+          <a class="button secondary" href="https://github.com/mahbam42/theTowerStats" target="_blank" rel="noopener noreferrer">Fork on GitHub</a>
+          <a class="button" href="https://mahbam42.github.io/theTowerStats/" target="_blank" rel="noopener noreferrer">Read the docs</a>
+        </div>
+        <p class="muted margin-top-1 margin-bottom-0">
+          Want to run it locally? See <a href="https://mahbam42.github.io/theTowerStats/clone_start_locally/" target="_blank" rel="noopener noreferrer">Clone &amp; start locally</a>.
+        </p>
       </div>
     </div>
   </div>
 {% endblock %}
 
+{% block extra_scripts %}
+  {% if demo_chart_json %}
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <script>
+      (() => {
+        const payload = {{ demo_chart_json|safe }};
+        const canvas = document.getElementById("landing-demo-chart");
+        if (!canvas || !payload) return;
+
+        const themeColor = (name, fallback) => {
+          const value = getComputedStyle(document.documentElement).getPropertyValue(name);
+          return value ? value.trim() : fallback;
+        };
+
+        const ctx = canvas.getContext("2d");
+        const gridColor = themeColor("--tts-color-grid", "rgba(0, 0, 0, 0.06)");
+        const tickColor = themeColor("--tts-color-chart-tick", "rgba(0, 0, 0, 0.72)");
+        const textColor = themeColor("--tts-color-text", "#e6e8ee");
+        const surfaceColor = themeColor("--tts-color-surface", "#17181c");
+        const borderColor = themeColor("--tts-color-border", "#2b2e36");
+
+        new Chart(ctx, {
+          type: payload.chart_type || "line",
+          data: {
+            labels: payload.labels || [],
+            datasets: payload.datasets || [],
+          },
+          options: {
+            responsive: true,
+            maintainAspectRatio: false,
+            plugins: {
+              legend: {
+                labels: { color: textColor },
+              },
+              tooltip: {
+                backgroundColor: surfaceColor,
+                borderColor,
+                titleColor: textColor,
+                bodyColor: textColor,
+                borderWidth: 1,
+              },
+            },
+            scales: {
+              x: {
+                grid: { color: gridColor },
+                ticks: { color: tickColor },
+              },
+              y: {
+                grid: { color: gridColor },
+                ticks: { color: tickColor },
+              },
+            },
+          },
+        });
+      })();
+    </script>
+  {% endif %}
+{% endblock %}

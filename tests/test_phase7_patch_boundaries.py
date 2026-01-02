@@ -6,6 +6,7 @@ import json
 from datetime import datetime, timezone
 
 import pytest
+from django.urls import reverse
 
 pytestmark = pytest.mark.integration
 
@@ -34,7 +35,7 @@ def test_patch_boundary_dates_are_flagged_in_charts(auth_client, player) -> None
         coins_earned=1200,
     )
 
-    response = auth_client.get("/", {"charts": ["coins_earned"], "start_date": "2025-12-09"})
+    response = auth_client.get(reverse("core:dashboard"), {"charts": ["coins_earned"], "start_date": "2025-12-09"})
     assert response.status_code == 200
 
     panels = {p["id"]: p for p in json.loads(response.context["chart_panels_json"])}

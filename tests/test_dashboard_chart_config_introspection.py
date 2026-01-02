@@ -6,6 +6,7 @@ import json
 from datetime import datetime
 
 import pytest
+from django.urls import reverse
 
 pytestmark = pytest.mark.integration
 
@@ -14,7 +15,7 @@ pytestmark = pytest.mark.integration
 def test_dashboard_form_chart_choices_come_from_chart_configs(auth_client) -> None:
     """Populate the charts multiselect from ChartConfig introspection."""
 
-    response = auth_client.get("/")
+    response = auth_client.get(reverse("core:dashboard"))
     assert response.status_code == 200
     chart_form = response.context["chart_form"]
     flat: dict[str, str] = {}
@@ -47,7 +48,7 @@ def test_dashboard_renders_derived_formula_chart(auth_client, player) -> None:
         real_time_seconds=600,
     )
 
-    response = auth_client.get("/", {"charts": ["coins_per_wave"], "start_date": date_type(2025, 12, 9)})
+    response = auth_client.get(reverse("core:dashboard"), {"charts": ["coins_per_wave"], "start_date": date_type(2025, 12, 9)})
     assert response.status_code == 200
 
     panels = {p["id"]: p for p in json.loads(response.context["chart_panels_json"])}

@@ -122,6 +122,58 @@ a:focus {
   padding: var(--tts-space-6) 0;
 }
 
+.landing-hero-card {
+  background: linear-gradient(135deg, rgba(43, 125, 233, 0.2), rgba(23, 24, 28, 0.95));
+  border-color: rgba(43, 125, 233, 0.35);
+}
+
+.landing-kicker {
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  font-size: 0.75rem;
+  margin-bottom: var(--tts-space-2);
+}
+
+.landing-lede {
+  font-size: 1.05rem;
+  color: var(--tts-color-text-muted);
+}
+
+.landing-section-header {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: var(--tts-space-3);
+  margin-bottom: var(--tts-space-3);
+}
+
+.landing-inline-link {
+  font-size: 0.85rem;
+}
+
+.landing-demo-chart {
+  height: 220px;
+  border-radius: var(--tts-radius-1);
+  border: 1px solid var(--tts-color-border);
+  background: var(--tts-color-surface-muted);
+  padding: var(--tts-space-3);
+  margin-bottom: var(--tts-space-3);
+}
+
+.landing-demo-chart canvas {
+  width: 100%;
+  height: 100%;
+}
+
+.landing-signup-card {
+  border-color: rgba(122, 183, 255, 0.4);
+  background: linear-gradient(160deg, rgba(122, 183, 255, 0.12), rgba(23, 24, 28, 0.95));
+}
+
+.landing-signup-card .button {
+  margin-bottom: 0;
+}
+
 .muted {
   color: var(--tts-color-text-muted);
 }
@@ -755,6 +807,15 @@ textarea:active {
 }
 
 @media (max-width: 39.375rem) {
+  .landing-section-header {
+    flex-direction: column;
+    align-items: flex-start;
+  }
+
+  .landing-demo-chart {
+    height: 200px;
+  }
+
   .dashboard-sidebar {
     order: 2;
   }

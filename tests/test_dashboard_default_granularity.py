@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import pytest
+from django.urls import reverse
 
 pytestmark = pytest.mark.integration
 
@@ -11,7 +12,7 @@ pytestmark = pytest.mark.integration
 def test_dashboard_defaults_to_per_run_granularity(auth_client, player) -> None:
     """Charts dashboard should default to per-run granularity."""
 
-    response = auth_client.get("/")
+    response = auth_client.get(reverse("core:dashboard"))
     assert response.status_code == 200
 
     chart_form = response.context["chart_form"]

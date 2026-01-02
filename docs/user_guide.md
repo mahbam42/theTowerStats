@@ -18,7 +18,7 @@ theTowerStats turns your imported Battle Reports into Battle History tables, Cha
 3. Select **Create account**.
 4. If you already have an account, enter your username and password under **Sign in**.
 5. Select **Sign in**.
-6. (Optional) Select **Getting started** to review what the app does and preview demo data.
+6. (Optional) Review the landing page overview and demo chart to confirm what the app does.
 7. Select **Battle History**.
 8. Select **Add Battle Report**.
 9. Paste the Battle Report text from the game.

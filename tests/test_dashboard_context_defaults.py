@@ -6,6 +6,7 @@ import re
 from datetime import datetime, timezone
 
 import pytest
+from django.urls import reverse
 
 from gamedata.models import BattleReport, BattleReportProgress
 
@@ -16,7 +17,7 @@ pytestmark = pytest.mark.integration
 def test_dashboard_renders_start_and_end_values_on_initial_load(auth_client) -> None:
     """Start/end inputs should include values even when omitted from the URL."""
 
-    response = auth_client.get("/")
+    response = auth_client.get(reverse("core:dashboard"))
     assert response.status_code == 200
     content = response.content.decode("utf-8")
     assert re.search(r'name="start_date"[^>]*value="[^"]+"', content)
@@ -42,7 +43,7 @@ def test_dashboard_all_button_redirects_to_first_run_through_today(auth_client, 
         coins_earned=1200,
     )
 
-    response = auth_client.get("/", {"event_shift": "all"})
+    response = auth_client.get(reverse("core:dashboard"), {"event_shift": "all"})
     assert response.status_code == 302
     location = response["Location"]
     assert "start_date=2025-12-10" in location
@@ -53,7 +54,7 @@ def test_dashboard_all_button_redirects_to_first_run_through_today(auth_client, 
 def test_dashboard_context_buttons_are_in_requested_order(auth_client) -> None:
     """Arrange the Context controls as fields, nav buttons, then actions."""
 
-    response = auth_client.get("/")
+    response = auth_client.get(reverse("core:dashboard"))
     assert response.status_code == 200
     content = response.content.decode("utf-8")
     end_idx = content.index('name="end_date"')

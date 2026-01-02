@@ -772,21 +772,59 @@ def dashboard(request: HttpRequest) -> HttpResponse:
     return render(request, "core/dashboard.html", context)
 
 
-@login_required
-def getting_started(request: HttpRequest) -> HttpResponse:
-    """Render a first-run onboarding page.
+def _landing_page_demo_chart_payload() -> dict[str, object] | None:
+    """Return a demo chart payload for the landing page.
 
-    This is a lightweight, user-facing explainer that sets expectations and
-    offers safe entry points (demo mode or import) without prescribing gameplay.
+    Returns:
+        Chart.js payload dictionary or None when no demo data is available.
     """
 
-    player = _request_player(request)
-    has_imported_runs = BattleReport.objects.filter(player=player).exists()
+    config = CHART_CONFIG_BY_ID.get("coins_earned")
+    if config is None:
+        return None
+    demo_player = get_demo_player()
+    runs = _with_effective_battle_date(
+        BattleReport.objects.filter(player=demo_player).select_related(
+            "run_progress",
+            "run_progress__preset",
+            "derived_metrics",
+        )
+    ).order_by("effective_battle_date")
+    rendered = render_charts(
+        configs=(config,),
+        records=runs,
+        registry=DEFAULT_REGISTRY,
+        granularity="daily",
+        moving_average_window=None,
+        entity_selections={"uw": None, "guardian": None, "bot": None},
+        patch_boundaries=tuple(PatchBoundary.objects.values_list("boundary_date", flat=True)),
+    )
+    if not rendered:
+        return None
+    entry = rendered[0]
+    if not entry.data.get("labels"):
+        return None
+    return {
+        "chart_type": entry.config.chart_type,
+        "labels": entry.data["labels"],
+        "datasets": entry.data["datasets"],
+    }
+
+
+def getting_started(request: HttpRequest) -> HttpResponse:
+    """Render the public landing page and onboarding summary."""
+
+    has_imported_runs = False
+    if request.user.is_authenticated:
+        player = _request_player(request)
+        has_imported_runs = BattleReport.objects.filter(player=player).exists()
+    demo_chart_payload = _landing_page_demo_chart_payload()
     return render(
         request,
         "core/getting_started.html",
         {
             "has_imported_runs": has_imported_runs,
+            "demo_chart_json": json.dumps(demo_chart_payload) if demo_chart_payload else None,
         },
     )
 

@@ -2425,7 +2425,7 @@ CLOSED: [2025-12-22 Mon 15:31]
 - [X] fetch_wiki_data and rebuild_wiki_definitions should have a pretty summary of deltas at the end.
   Especially when using --target all.
 
-*** Bugs/Enhancements [44/49]
+*** Bugs/Enhancements [45/49]
 
 **** DONE [#B] Error Updating Guardian Upgrade Table                 :bug:
 CLOSED: [2025-12-22 Mon 18:51]
@@ -3088,7 +3088,9 @@ Allow an end user to see their full run data from the front end.
 CLOSED: [2026-01-02 Fri 10:14]
 - State "DONE"       from "TODO"       [2026-01-02 Fri 10:14]
 
-**** TODO Redesign Charts Dashboard 
+**** DONE Redesign Charts Dashboard 
+CLOSED: [2026-01-02 Fri 15:46]
+- State "DONE"       from "TODO"       [2026-01-02 Fri 15:46]
 - Move Coins Earned and Coins per Hour to be side by side
 - Below that add 4 Charts:
   - Coins by Source
@@ -3112,7 +3114,17 @@ Minimum of 6 Battle Reports, dates spread to fall into 3 event windows.
 - 2 Mid Tier (approximately mahbam42's data)
 - 2 Late Game, High Tier, Coins in the mid billions
 - Ensure that Mid and Late Game battle reports have suffiecient data to demonstrate all features. 
-**** TODO Free Upgrades vs Coins Earned (scatter)
+**** IN PROGRESS prompt43.md
+- State "IN PROGRESS" from              [2026-01-02 Fri 14:52]
+
+
+- [X] Charts Dashboard Layout
+- [ ] Landing Page
+- [ ] Demo Data
+- [ ] Guided Walkthrough
+- [ ] Changelog Updates everything since 2cb639c
+  git log -15 --oneline
+**** TODO [#A] Free Upgrades vs Coins Earned (scatter)
 Correlation chart; no new data types; visually distinct.
 
 The Chart Builder only allows line, bar, and donut, and it always plots metrics against time (not metric‑vs‑metric). A correlation scatter like “Free Upgrades vs Coins Earned” isn’t supported in the builder right now.
@@ -3125,16 +3137,6 @@ forms.py (Chart Builder chart_type validation)
 - Extend Chart Builder to support Scatter Chart Types and to select more than just 'over time'
 - Use 'Free Upgrades vs. Coins Earned (scatter)' as an example with tutorial in Chart Builder Docs.
 - Add 1 or 2 more Example Use Cases for Chart Builder to Docs. 
-**** IN PROGRESS prompt43.md
-- State "IN PROGRESS" from              [2026-01-02 Fri 14:52]
-
-
-- [ ] Charts Dashboard Layout
-- [ ] Landing Page
-- [ ] Demo Data
-- [ ] Guided Walkthrough
-- [ ] Changelog Updates everything since 2cb639c
-  git log -15 --oneline
 ** Backlog [2/6]
 “Out of Scope”:
 - Cloud sync

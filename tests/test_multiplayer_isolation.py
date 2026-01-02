@@ -55,7 +55,7 @@ def test_dashboard_and_battle_history_are_player_scoped(client) -> None:
     )
 
     client.force_login(user_a)
-    dashboard = client.get("/", {"start_date": date(2025, 12, 9)})
+    dashboard = client.get(reverse("core:dashboard"), {"start_date": date(2025, 12, 9)})
     assert dashboard.status_code == 200
 
     panels = {p["id"]: p for p in json.loads(dashboard.context["chart_panels_json"])}

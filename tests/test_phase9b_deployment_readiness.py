@@ -8,6 +8,7 @@ import sys
 from pathlib import Path
 
 import pytest
+from django.urls import reverse
 
 pytestmark = pytest.mark.integration
 
@@ -51,7 +52,7 @@ def _run_manage_check_deploy(*, env: dict[str, str]) -> subprocess.CompletedProc
 def test_base_template_uses_local_static_assets(auth_client) -> None:
     """Render a typical page and ensure local static assets are referenced."""
 
-    response = auth_client.get("/")
+    response = auth_client.get(reverse("core:dashboard"))
     assert response.status_code == 200
     assert "/static/core/app.css" in response.content.decode("utf-8")
     assert "/static/core/app.js" in response.content.decode("utf-8")

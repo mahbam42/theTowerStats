@@ -6,6 +6,7 @@ import json
 from datetime import datetime, timezone
 
 import pytest
+from django.urls import reverse
 
 from gamedata.models import BattleReport, BattleReportProgress
 
@@ -46,8 +47,7 @@ def test_dashboard_per_run_granularity_emits_distinct_labels(auth_client, player
         coins_earned=2400,
     )
 
-    response = auth_client.get(
-        "/",
+    response = auth_client.get(reverse("core:dashboard"),
         {
             "charts": ["coins_earned"],
             "start_date": "2025-12-09",

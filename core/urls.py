@@ -9,8 +9,8 @@ from core import views
 app_name = "core"
 
 urlpatterns = [
-    path("", views.dashboard, name="dashboard"),
-    path("charts/", views.dashboard, name="charts"),
+    path("", views.getting_started, name="home"),
+    path("charts/", views.dashboard, name="dashboard"),
     path("getting-started/", views.getting_started, name="getting_started"),
     path("charts/export-derived.csv", views.export_derived_metrics_csv, name="export_derived_metrics_csv"),
     path("search/", views.search, name="search"),
