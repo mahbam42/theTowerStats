@@ -16,21 +16,22 @@ Charts help you review how your run results change over time using the same valu
 ## How to Use
 
 1. Select **Charts** in the navigation.
-2. (Optional) Select **Getting started** when you want to preview demo data or review what the app does.
-3. In **Context**, review the **Start** and **End** dates. The app defaults to the current in-game Event window (14 days).
-4. (Optional) Select **Previous**, **Next**, or **All** to change the date window.
-5. In **Context**, review **Granularity**. It defaults to **By battle log**, and you can switch to **By date** when needed.
-6. In **Context**, select a **Tier** and **Preset** to narrow the scope.
-7. (Optional) In **Context**, toggle **Include tournaments** to include tournament runs in the charts.
-8. Select **Apply** to refresh the dashboard.
-9. (Optional) Open **More options** to refine charts, windowing, and item filters. For details, see [More Options](charts/more_options.md).
-10. (Optional) Open **Advanced analysis** to configure Advice, Goal-aware comparison, or derived metric export. For details, see [Advanced Analysis](charts/advanced_analysis.md).
-11. (Optional) Use **Chart Builder** to create a custom chart and apply it to your dashboard. For the full workflow, see [Chart Builder](charts/chart_builder.md).
-12. (Optional) Select **Download PNG** on a chart to save an image of the chart as currently displayed.
-13. (Optional) Select a chart tooltip to open the Battle Report Modal for that run. The linked chart opens with the full date range and preserves your current filters so you can see data immediately. For details, see [Battle Report Modal](battle_report_modal.md).
-14. (Optional) Open **Compare** to compare two scopes of runs. For details, see [Compare](charts/compare.md).
-15. (Optional) Open **Quick import** to paste a Battle Report without leaving the Charts page.
-16. (Optional) In **Quick import**, enable **Tournament run** when the run was a tournament round. The app cannot detect tournament runs automatically from pasted text.
+2. In **Context**, review the **Start** and **End** dates. The app defaults to the current in-game Event window (14 days).
+  A. Select **Previous**, **Next**, or **All** to change the date window.
+3. In **Context**, review **Granularity**. It defaults to **By battle log**, and you can switch to **By date** when needed.
+4. In **Context**, select a **Tier** and **Preset** to narrow the scope.
+  A. In **Context**, toggle **Include tournaments** to include tournament runs in the charts.
+5. Select **Apply** to refresh the dashboard.
+
+
+* Open **More options** to refine charts, windowing, and item filters. For details, see [More Options](charts/more_options.md).
+* Open **Advanced analysis** to configure Advice, Goal-aware comparison, or derived metric export. For details, see [Advanced Analysis](charts/advanced_analysis.md).
+* Use **Chart Builder** to create a custom chart and apply it to your dashboard. For the full workflow, see [Chart Builder](charts/chart_builder.md).
+* Select **Download PNG** on a chart to save an image of the chart as currently displayed.
+* Select a chart tooltip to open the Battle Report Modal for that run. The linked chart opens with the full date range and preserves your current filters so you can see data immediately. For details, see [Battle Report Modal](battle_report_modal.md).
+* Open **Compare** to compare two scopes of runs. For details, see [Compare](charts/compare.md).
+* Open **Quick import** to paste a Battle Report without leaving the Charts page.
+  * In **Quick import**, enable **Tournament run** when the run was a tournament round. The app cannot detect tournament runs automatically from pasted text.
 
 ## How to Read the Results
 
@@ -109,4 +110,4 @@ Charts help you review how your run results change over time using the same valu
 2. Select **Tier** or **Preset** filters only when you want to narrow the comparison set.
 3. Review the legend to confirm which lines correspond to which groups.
 4. Load a previously saved custom chart snapshot using **Chart Builder**. For steps, see [Chart Builder](charts/chart_builder.md).
-5. (Optional) Use **Compare** when you want to compare two groups of runs directly. For steps, see [Compare](charts/compare.md).
+5.  Use **Compare** when you want to compare two groups of runs directly. For steps, see [Compare](charts/compare.md).
