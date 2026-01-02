@@ -98,6 +98,14 @@ def validate_chart_config(config: ChartConfig, *, registry: MetricSeriesRegistry
         if len(config.metric_series) < 2:
             errors.append(f"ChartConfig[{config.id}] donut charts must contain at least two metric series.")
 
+    if config.chart_type == "scatter":
+        if len(config.metric_series) != 2:
+            errors.append(f"ChartConfig[{config.id}] scatter charts must contain exactly two metric series.")
+        if config.derived is not None:
+            errors.append(f"ChartConfig[{config.id}] scatter charts cannot declare derived formulas.")
+        if config.comparison is not None and config.comparison.mode != "none":
+            errors.append(f"ChartConfig[{config.id}] scatter charts cannot use comparison modes.")
+
     resolved_specs = []
     for idx, series in enumerate(config.metric_series):
         spec = registry.get(series.metric_key)
@@ -274,6 +282,9 @@ def _validate_units_and_categories(
     if config.derived is not None:
         return
 
+    if config.chart_type == "scatter":
+        return
+
     if config.semantic_type == "comparative" and config.multi_axis:
         return
 
@@ -308,6 +319,9 @@ def _validate_domain_exclusivity(
     """
 
     if config.derived is not None:
+        return
+
+    if config.chart_type == "scatter":
         return
 
     domains = {_domain_for_category(spec.category) for _, _, spec in resolved_specs}

@@ -27,6 +27,7 @@ Charts help you review how your run results change over time using the same valu
 * Open **More options** to refine charts, windowing, and item filters. For details, see [More Options](charts/more_options.md).
 * Open **Advanced analysis** to configure Advice, Goal-aware comparison, or derived metric export. For details, see [Advanced Analysis](charts/advanced_analysis.md).
 * Use **Chart Builder** to create a custom chart and apply it to your dashboard. For the full workflow, see [Chart Builder](charts/chart_builder.md).
+* Select **Full screen** to view a single chart in a larger, focused modal.
 * Select **Download PNG** on a chart to save an image of the chart as currently displayed.
 * Select a chart tooltip to open the Battle Report Modal for that run. The linked chart opens with the full date range and preserves your current filters so you can see data immediately. For details, see [Battle Report Modal](battle_report_modal.md).
 * Open **Compare** to compare two scopes of runs. For details, see [Compare](charts/compare.md).
@@ -48,6 +49,8 @@ Charts help you review how your run results change over time using the same valu
 - For per-hour charts (such as coins/real hour), the rate uses the run’s **Real Time** duration as reported in the Battle Report.
 - When a chart includes multiple lines, each line label tells you what group it represents (for example, a tier or a preset label).
 - If a value is missing in the underlying Battle Report, the chart may show a gap for that date.
+- Scatter charts compare two values per run. Each dot represents a single run in your current filters.
+- Area charts emphasize momentum over time by shading the space under the line.
 - For donut charts, each slice represents the total for that value within your current filters, and the label includes the percent of the donut total. A slice named “Other coins” groups any remaining coins that are not listed as a named source.
 - If a point is flagged, the tooltip includes a short reason that explains the signal.
 - Advanced analysis sections summarize observed differences using the snapshots you selected and the current filters you applied. They describe the basis and limitations and do not recommend actions.

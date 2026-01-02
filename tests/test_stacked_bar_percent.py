@@ -106,7 +106,7 @@ def test_stacked_percent_bar_sums_to_100(monkeypatch: pytest.MonkeyPatch) -> Non
         values: list[float] = []
         for dataset in datasets:
             value = dataset["data"][idx]
-            if value is None:
+            if value is None or isinstance(value, dict):
                 continue
             values.append(float(value))
         total = sum(values)

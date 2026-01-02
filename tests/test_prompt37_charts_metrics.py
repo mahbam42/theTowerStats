@@ -224,4 +224,4 @@ def test_donut_renders_percent_labels_and_optional_percent_values() -> None:
     assert all(label.endswith("%)") for label in labels)
     dataset = rendered.data["datasets"][0]
     values = dataset["data"]
-    assert sum(v for v in values if v is not None) == pytest.approx(100.0)
+    assert sum(v for v in values if isinstance(v, (int, float))) == pytest.approx(100.0)

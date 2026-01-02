@@ -119,6 +119,13 @@ METRICS: Final[dict[str, MetricDefinition]] = {
         category=MetricCategory.efficiency,
         kind="observed",
     ),
+    "real_time_hours": MetricDefinition(
+        key="real_time_hours",
+        label="Run duration (hours)",
+        unit="hours",
+        category=MetricCategory.efficiency,
+        kind="derived",
+    ),
     "waves_per_hour": MetricDefinition(
         key="waves_per_hour",
         label="Waves/hour",
@@ -757,6 +764,11 @@ def compute_metric_value(
             (),
             (),
         )
+
+    if metric_key == "real_time_hours":
+        if real_time_seconds is None or real_time_seconds <= 0:
+            return None, (), ()
+        return (float(real_time_seconds) / 3600.0, (), ("real_time_hours = real_time_seconds / 3600.",))
 
     if metric_key == "waves_per_hour":
         if wave is None or real_time_seconds is None or real_time_seconds <= 0:

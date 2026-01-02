@@ -17,7 +17,7 @@ Chart Builder lets you create a custom chart from the available metrics and appl
 2. Select **Chart Builder**.
 3. In **Step 1 — Metrics**, select one or more metrics to chart.
 4. Review any constraint or availability messages shown for the metric selections.
-5. In **Step 2 — Chart settings**, select the chart style and any available display options.
+5. In **Step 2 — Chart settings**, select the chart style (Line, Area, Bar, or Donut) and any available display options.
 6. (Optional) In **Step 3 — Comparison**, select a comparison mode when you want an additional line or grouping.
 7. Select **Apply to dashboard** to add the custom chart to the dashboard.
 8. (Optional) Select **Save snapshot** to save the current builder selections under a name.
@@ -54,6 +54,7 @@ This table lists the metrics available in Chart Builder along with their sources
 | coins_from_other_sources | Other coins | BattleReport (observed) | sum of coins_from_other_sources | Residual coins not covered by named sources; ensures sources sum to total coins earned. |
 | coins_from_spotlight | Coins From Spotlight | BattleReport (observed) | sum of coins_from_spotlight | Battle Report utility breakdown: coins earned from Spotlight. |
 | coins_per_hour | Coins/hour | BattleReport (observed) | avg of coins_per_hour | Observed coins earned divided by real time (hours). |
+| real_time_hours | Run duration (hours) | BattleReport (derived) | avg of real_time_seconds / 3600 | Real-time run duration converted to hours. |
 | coins_per_wave | Coins per wave | BattleReport (derived) | avg of coins_earned / wave | Computed as coins earned divided by waves reached. |
 | free_attack_upgrades | Free Attack Upgrade | BattleReport (observed) | sum of free_attack_upgrades | Battle Report utility breakdown: free attack upgrades. |
 | free_defense_upgrades | Free Defense Upgrade | BattleReport (observed) | sum of free_defense_upgrades | Battle Report utility breakdown: free defense upgrades. |

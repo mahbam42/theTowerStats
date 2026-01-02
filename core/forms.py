@@ -661,7 +661,7 @@ class ChartBuilderForm(forms.Form):
     )
     chart_type = forms.ChoiceField(
         required=True,
-        choices=(("line", "Line"), ("bar", "Bar"), ("donut", "Donut")),
+        choices=(("line", "Line"), ("area", "Area"), ("bar", "Bar"), ("donut", "Donut")),
         label="Chart type",
     )
     group_by = forms.ChoiceField(

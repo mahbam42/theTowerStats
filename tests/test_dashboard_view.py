@@ -962,6 +962,70 @@ def test_dashboard_view_renders_empty_donut_with_typed_none_values(auth_client) 
 
 
 @pytest.mark.django_db
+def test_dashboard_view_renders_area_chart(auth_client, player) -> None:
+    """Render the Coins Earned Over Time area chart."""
+
+    report = BattleReport.objects.create(
+        player=player,
+        raw_text="Battle Report\nCoins earned    1,200\n",
+        checksum="area".ljust(64, "a"),
+    )
+    BattleReportProgress.objects.create(
+        battle_report=report,
+        player=player,
+        battle_date=datetime(2025, 12, 12, tzinfo=timezone.utc),
+        tier=1,
+        wave=50,
+        real_time_seconds=1200,
+    )
+
+    response = auth_client.get("/", {"charts": ["coins_earned_over_time"], "start_date": date(2025, 12, 9)})
+    assert response.status_code == 200
+
+    panels = {p["id"]: p for p in json.loads(response.context["chart_panels_json"])}
+    panel = panels["coins_earned_over_time"]
+    assert panel["chart_type"] == "area"
+    assert panel["labels"] == ["2025-12-12"]
+    assert panel["datasets"][0]["data"] == [1200.0]
+
+
+@pytest.mark.django_db
+def test_dashboard_view_renders_scatter_chart(auth_client, player) -> None:
+    """Render the Run Duration vs Coins Earned scatter chart."""
+
+    for idx, seconds in enumerate([3600, 5400], start=1):
+        report = BattleReport.objects.create(
+            player=player,
+            raw_text=f"Battle Report\nCoins earned    {idx * 1000}\n",
+            checksum=f"scatter{idx}".ljust(64, "s"),
+        )
+        BattleReportProgress.objects.create(
+            battle_report=report,
+            player=player,
+            battle_date=datetime(2025, 12, 15 + idx, tzinfo=timezone.utc),
+            tier=1,
+            wave=100,
+            real_time_seconds=seconds,
+        )
+
+    response = auth_client.get("/", {"charts": ["run_duration_vs_coins_earned"], "start_date": date(2025, 12, 9)})
+    assert response.status_code == 200
+
+    panels = {p["id"]: p for p in json.loads(response.context["chart_panels_json"])}
+    panel = panels["run_duration_vs_coins_earned"]
+    assert panel["chart_type"] == "scatter"
+    assert panel["x_label"] == "Run duration"
+    assert panel["y_label"] == "Coins earned"
+    assert panel["x_unit"] == "hours"
+    assert panel["y_unit"] == "coins"
+    data_points = panel["datasets"][0]["data"]
+    assert len(data_points) == 2
+    assert data_points[0]["x"] == 1.0
+    assert data_points[0]["y"] == 1000.0
+    assert len(panel["run_ids"]) == 2
+
+
+@pytest.mark.django_db
 def test_dashboard_view_applies_rolling_window_last_runs(auth_client, player) -> None:
     """Apply the rolling window after date filtering."""
 

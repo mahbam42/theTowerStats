@@ -2425,7 +2425,7 @@ CLOSED: [2025-12-22 Mon 15:31]
 - [X] fetch_wiki_data and rebuild_wiki_definitions should have a pretty summary of deltas at the end.
   Especially when using --target all.
 
-*** Bugs/Enhancements [44/47]
+*** Bugs/Enhancements [44/49]
 
 **** DONE [#B] Error Updating Guardian Upgrade Table                 :bug:
 CLOSED: [2025-12-22 Mon 18:51]
@@ -3112,6 +3112,29 @@ Minimum of 6 Battle Reports, dates spread to fall into 3 event windows.
 - 2 Mid Tier (approximately mahbam42's data)
 - 2 Late Game, High Tier, Coins in the mid billions
 - Ensure that Mid and Late Game battle reports have suffiecient data to demonstrate all features. 
+**** TODO Free Upgrades vs Coins Earned (scatter)
+Correlation chart; no new data types; visually distinct.
+
+The Chart Builder only allows line, bar, and donut, and it always plots metrics against time (not metric‑vs‑metric). A correlation scatter like “Free Upgrades vs Coins Earned” isn’t supported in the builder right now.
+
+Relevant refs:
+
+builder.py (ChartBuilderChartType and runtime config construction)
+forms.py (Chart Builder chart_type validation)
+
+- Extend Chart Builder to support Scatter Chart Types and to select more than just 'over time'
+- Use 'Free Upgrades vs. Coins Earned (scatter)' as an example with tutorial in Chart Builder Docs.
+- Add 1 or 2 more Example Use Cases for Chart Builder to Docs. 
+**** IN PROGRESS prompt43.md
+- State "IN PROGRESS" from              [2026-01-02 Fri 14:52]
+
+
+- [ ] Charts Dashboard Layout
+- [ ] Landing Page
+- [ ] Demo Data
+- [ ] Guided Walkthrough
+- [ ] Changelog Updates everything since 2cb639c
+  git log -15 --oneline
 ** Backlog [2/6]
 “Out of Scope”:
 - Cloud sync

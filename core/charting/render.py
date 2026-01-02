@@ -7,7 +7,7 @@ from dataclasses import dataclass
 from dataclasses import asdict
 from datetime import date
 from hashlib import sha256
-from typing import TypedDict
+from typing import Sequence, TypedDict
 
 from analysis.aggregations import simple_moving_average
 from analysis.derived_formula import evaluate_formula
@@ -30,7 +30,7 @@ class ChartDataset(TypedDict, total=False):
     metricKind: str
     unit: str
     seriesKind: str
-    data: list[float | None]
+    data: Sequence[float | None | dict[str, float | int | None]]
     borderColor: str
     backgroundColor: str | list[str]
     spanGaps: bool
@@ -49,6 +49,10 @@ class ChartData(TypedDict, total=False):
     labels: list[str]
     datasets: list[ChartDataset]
     run_ids: list[int | None]
+    x_label: str
+    x_unit: str
+    y_label: str
+    y_unit: str
 
 
 @dataclass(frozen=True, slots=True)
@@ -63,6 +67,20 @@ class RenderedChart:
 
 
 MAX_CHART_LABELS = 400
+STACKED_SERIES_PALETTE = [
+    "#3366CC",
+    "#DC3912",
+    "#FF9900",
+    "#109618",
+    "#990099",
+    "#0099C6",
+    "#DD4477",
+    "#66AA00",
+    "#B82E2E",
+    "#316395",
+    "#994499",
+    "#22AA99",
+]
 
 
 def render_charts(
@@ -146,6 +164,14 @@ def render_chart(
             entity_selections=entity_selections,
         )
 
+    if config.chart_type == "scatter":
+        return _render_scatter_chart(
+            config=config,
+            records=records,
+            registry=registry,
+            entity_selections=entity_selections,
+        )
+
     if config.derived is not None:
         derived_points = _compute_derived_points(
             config=config,
@@ -196,7 +222,13 @@ def render_chart(
             entity_selections=entity_selections,
         )
 
-    for series_config in config.metric_series:
+    use_series_palette = (
+        config.chart_type == "bar"
+        and config.stacked
+        and (config.comparison is None or config.comparison.mode == "none")
+        and config.semantic_type != "contribution"
+    )
+    for series_index, series_config in enumerate(config.metric_series):
         spec = registry.get(series_config.metric_key)
         if spec is None:
             continue
@@ -224,7 +256,10 @@ def render_chart(
         unit = _unit_for_series(spec.unit, series_config)
         for group_key, points in groups.items():
             group_label = _label_for_group(group_key, config=config)
-            color = _color_for_group(group_key, config=config)
+            if use_series_palette:
+                color = STACKED_SERIES_PALETTE[series_index % len(STACKED_SERIES_PALETTE)]
+            else:
+                color = _color_for_group(group_key, config=config)
             aggregation = "avg" if series_config.transform == "rate_per_hour" else spec.aggregation
             data = _aggregate_points(points, labels, aggregation=aggregation, labeler=labeler)
             data = _apply_series_transform(
@@ -411,6 +446,86 @@ def _render_donut_chart(
         "backgroundColor": slice_colors,
     }
     return RenderedChart(config=config, data={"labels": slice_labels, "datasets": [dataset]}, unit=unit)
+
+
+def _render_scatter_chart(
+    *,
+    config: ChartConfig,
+    records: Iterable[object],
+    registry: MetricSeriesRegistry,
+    entity_selections: dict[str, str | None],
+) -> RenderedChart:
+    """Render a scatter chart using two metric series as x/y axes."""
+
+    if len(config.metric_series) < 2:
+        return RenderedChart(
+            config=config,
+            data={"labels": [], "datasets": []},
+            unit="",
+            error="Scatter charts require two metric series.",
+        )
+
+    x_series = config.metric_series[0]
+    y_series = config.metric_series[1]
+    x_spec = registry.get(x_series.metric_key)
+    y_spec = registry.get(y_series.metric_key)
+    if x_spec is None or y_spec is None:
+        return RenderedChart(
+            config=config,
+            data={"labels": [], "datasets": []},
+            unit="",
+            error="Scatter chart metric series are not registered.",
+        )
+
+    entity_type, entity_name = _entity_scope_for_series(config, entity_selections)
+    x_result = analyze_metric_series(
+        records,
+        metric_key=x_series.metric_key,
+        transform=_engine_transform(x_series),
+        context=None,
+        entity_type=entity_type,
+        entity_name=entity_name,
+    )
+    y_result = analyze_metric_series(
+        records,
+        metric_key=y_series.metric_key,
+        transform=_engine_transform(y_series),
+        context=None,
+        entity_type=entity_type,
+        entity_name=entity_name,
+    )
+
+    points: list[dict[str, float | int | None]] = []
+    run_ids: list[int | None] = []
+    for x_point, y_point in zip(x_result.points, y_result.points, strict=False):
+        if x_point.value is None or y_point.value is None:
+            continue
+        run_id = x_point.run_id if x_point.run_id is not None else y_point.run_id
+        points.append({"x": float(x_point.value), "y": float(y_point.value), "runId": run_id})
+        run_ids.append(run_id)
+
+    dataset: ChartDataset = {
+        "label": config.title,
+        "metricKey": y_series.metric_key,
+        "metricKind": y_spec.kind,
+        "unit": y_spec.unit,
+        "seriesKind": "scatter",
+        "data": points,
+        "borderColor": "#3366CC",
+        "backgroundColor": "#3366CC",
+        "pointRadius": 4,
+        "pointHoverRadius": 6,
+    }
+    data: ChartData = {
+        "labels": [],
+        "datasets": [dataset],
+        "run_ids": run_ids,
+        "x_label": x_series.label or x_spec.label,
+        "x_unit": x_spec.unit,
+        "y_label": y_series.label or y_spec.label,
+        "y_unit": y_spec.unit,
+    }
+    return RenderedChart(config=config, data=data, unit=y_spec.unit)
 
 
 def _iterable_has_any(records: Iterable[object]) -> bool:
@@ -620,21 +735,6 @@ def _render_stacked_percent_bar_chart(
     series_payloads: list[tuple[str, str, dict[str, float]]] = []
     labeler = _labeler_for_records(records, granularity=granularity)
 
-    palette = [
-        "#3366CC",
-        "#DC3912",
-        "#FF9900",
-        "#109618",
-        "#990099",
-        "#0099C6",
-        "#DD4477",
-        "#66AA00",
-        "#B82E2E",
-        "#316395",
-        "#994499",
-        "#22AA99",
-    ]
-
     for series_config in config.metric_series:
         spec = registry.get(series_config.metric_key)
         if spec is None:
@@ -680,7 +780,7 @@ def _render_stacked_percent_bar_chart(
                 data.append(None)
                 continue
             data.append(round(100.0 * series_values.get(label, 0.0) / total, 2))
-        color = palette[idx % len(palette)]
+        color = STACKED_SERIES_PALETTE[idx % len(STACKED_SERIES_PALETTE)]
         datasets.append(
             _dataset(
                 label=slice_label,

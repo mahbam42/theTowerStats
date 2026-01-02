@@ -671,6 +671,10 @@ def dashboard(request: HttpRequest) -> HttpResponse:
                 "labels": entry.data["labels"],
                 "datasets": entry.data["datasets"],
                 "run_ids": entry.data.get("run_ids"),
+                "x_label": entry.data.get("x_label"),
+                "x_unit": entry.data.get("x_unit"),
+                "y_label": entry.data.get("y_label"),
+                "y_unit": entry.data.get("y_unit"),
             }
             for entry in rendered
         ]
@@ -827,7 +831,13 @@ def export_derived_metrics_csv(request: HttpRequest) -> HttpResponse:
             if dataset.get("metricKind") != "derived":
                 continue
             series = list(dataset.get("data") or [])
-            label_to_value = {labels[idx]: series[idx] if idx < len(series) else None for idx in range(len(labels))}
+            label_to_value: dict[str, float | None] = {}
+            for idx, label in enumerate(labels):
+                value = series[idx] if idx < len(series) else None
+                if isinstance(value, (int, float)):
+                    label_to_value[label] = float(value)
+                else:
+                    label_to_value[label] = None
             header = f"{entry.config.id}:{dataset.get('label') or entry.config.title}"
             columns.append((header, label_to_value))
             all_labels.update(label_to_value.keys())

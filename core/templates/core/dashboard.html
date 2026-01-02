@@ -341,9 +341,9 @@
         </div>
       {% endif %}
 
-      <div class="grid-x grid-margin-x" {% if chart_empty_state %}hidden{% endif %}>
+      <div class="grid-x grid-margin-x charts-grid" {% if chart_empty_state %}hidden{% endif %}>
         {% for panel in chart_panels %}
-          <div class="cell">
+          <div class="cell medium-6 chart-cell" data-chart-id="{{ panel.id }}">
             <div class="chart-shell margin-bottom-1">
               <div class="grid-x align-justify align-middle">
                 <div class="cell auto">
@@ -368,10 +368,13 @@
                   {% endif %}
                 </div>
                 <div class="cell shrink">
-                  <button type="button" class="button tiny secondary download-chart-png" data-chart-id="{{ panel.id }}">Download PNG</button>
+                  <div class="button-group">
+                    <button type="button" class="button tiny secondary open-chart-modal" data-chart-id="{{ panel.id }}">Full screen</button>
+                    <button type="button" class="button tiny secondary download-chart-png" data-chart-id="{{ panel.id }}">Download PNG</button>
+                  </div>
                 </div>
               </div>
-              <canvas id="chart-{{ panel.id }}" width="900" height="350"></canvas>
+              <canvas id="chart-{{ panel.id }}" width="900" height="260"></canvas>
             </div>
           </div>
         {% endfor %}
@@ -503,6 +506,7 @@
 {% block extra_scripts %}
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
     <script>
+      document.addEventListener("DOMContentLoaded", () => {
       const chartPanels = {{ chart_panels_json|safe }};
       const initialContext = {{ chart_context_json|safe }};
       const chartBuilderMetricMeta = {{ chart_builder_metric_meta_json|safe }};
@@ -538,6 +542,31 @@
         const num = Number(value);
         if (!Number.isFinite(num)) return String(value);
         return new Intl.NumberFormat(undefined, { maximumFractionDigits: 2 }).format(num);
+      }
+
+      function colorWithAlpha(color, alpha) {
+        if (!color) return color;
+        if (color.startsWith("rgba")) return color;
+        if (color.startsWith("rgb(")) return color.replace("rgb(", "rgba(").replace(")", `, ${alpha})`);
+        if (color.startsWith("hsl(")) return color.replace("hsl(", "hsla(").replace(")", `, ${alpha})`);
+        if (color.startsWith("#")) {
+          const hex = color.replace("#", "");
+          const full = hex.length === 3 ? hex.split("").map((c) => c + c).join("") : hex;
+          if (full.length === 6) {
+            const r = parseInt(full.slice(0, 2), 16);
+            const g = parseInt(full.slice(2, 4), 16);
+            const b = parseInt(full.slice(4, 6), 16);
+            return `rgba(${r}, ${g}, ${b}, ${alpha})`;
+          }
+        }
+        return color;
+      }
+
+      function applyAreaStyle(datasets) {
+        return datasets.map((dataset) => {
+          const background = colorWithAlpha(dataset.backgroundColor || dataset.borderColor || "#3366CC", 0.2);
+          return Object.assign({}, dataset, { fill: true, backgroundColor: background });
+        });
       }
 
       function readChartContextFromDOM() {
@@ -610,19 +639,20 @@
         return Number.isInteger(runId) ? runId : null;
       }
 
-      function renderLineChart(canvasId, labels, datasets, runIds) {
+      function renderLineChart(canvasId, labels, datasets, runIds, chartType = "line") {
         const canvas = document.getElementById(canvasId);
         const ctx = canvas ? canvas.getContext("2d") : null;
         if (!ctx || labels.length === 0 || datasets.length === 0) return;
         const gridColor = themeColor("--tts-color-grid", "rgba(0, 0, 0, 0.06)");
         const tickColor = themeColor("--tts-color-chart-tick", "rgba(0, 0, 0, 0.72)");
         const { mappedDatasets, scales } = buildAxes(labels, datasets, gridColor, tickColor, xAxisTitle(), false);
+        const chartDatasets = chartType === "area" ? applyAreaStyle(mappedDatasets) : mappedDatasets;
         const hasRunIds = Array.isArray(runIds) && runIds.length;
         const chart = new Chart(ctx, {
           type: "line",
           data: {
             labels,
-            datasets: mappedDatasets,
+            datasets: chartDatasets,
           },
           options: {
             responsive: true,
@@ -690,6 +720,7 @@
             scales,
           },
         });
+        return chart;
       }
 
       function xAxisTitle() {
@@ -736,6 +767,7 @@
             scales,
           },
         });
+        return chart;
       }
 
       function buildAxes(labels, datasets, gridColor, tickColor, xTitle, stacked) {
@@ -790,7 +822,7 @@
         if (!ctx || labels.length === 0 || datasets.length === 0) return;
 
         const unit = datasets[0]?.unit || "";
-        new Chart(ctx, {
+        const chart = new Chart(ctx, {
           type: "doughnut",
           data: {
             labels,
@@ -814,17 +846,101 @@
             },
           },
         });
+        return chart;
+      }
+
+      function renderScatterChart(canvasId, datasets, runIds, xLabel, xUnit, yLabel, yUnit) {
+        const canvas = document.getElementById(canvasId);
+        const ctx = canvas ? canvas.getContext("2d") : null;
+        if (!ctx || datasets.length === 0) return;
+        const gridColor = themeColor("--tts-color-grid", "rgba(0, 0, 0, 0.06)");
+        const tickColor = themeColor("--tts-color-chart-tick", "rgba(0, 0, 0, 0.72)");
+        const xTitle = xLabel ? `${xLabel}${xUnit ? ` (${xUnit})` : ""}` : "X";
+        const yTitle = yLabel ? `${yLabel}${yUnit ? ` (${yUnit})` : ""}` : "Y";
+        const hasRunIds = Array.isArray(runIds) && runIds.length;
+        const chart = new Chart(ctx, {
+          type: "scatter",
+          data: {
+            datasets,
+          },
+          options: {
+            responsive: true,
+            interaction: { mode: "nearest", intersect: true },
+            onHover: (event, elements) => {
+              if (!hasRunIds || !event?.native?.target) return;
+              event.native.target.style.cursor = elements.length ? "pointer" : "default";
+            },
+            onClick: (event, elements) => {
+              if (!hasRunIds || typeof window.openBattleReportModal !== "function") return;
+              const runId = runIdFromElements(elements, runIds);
+              if (!runId) return;
+              window.openBattleReportModal(runId, runIds, chartOrderNote);
+            },
+            plugins: {
+              legend: { display: false },
+              tooltip: {
+                ...baseTooltip,
+                callbacks: {
+                  title: (items) => {
+                    if (!items || !items[0]) return "";
+                    const value = items[0].parsed?.x;
+                    const unitLabel = xUnit ? ` ${xUnit}` : "";
+                    return `${xTitle}: ${formatExactNumber(value)}${unitLabel}`;
+                  },
+                  label: (context) => {
+                    const value = context.parsed?.y;
+                    const unitLabel = yUnit ? ` ${yUnit}` : "";
+                    return `${yTitle}: ${formatExactNumber(value)}${unitLabel}`;
+                  },
+                },
+              },
+            },
+            scales: {
+              x: {
+                type: "linear",
+                title: { display: true, text: xTitle },
+                grid: { color: gridColor },
+                ticks: { color: tickColor },
+              },
+              y: {
+                beginAtZero: true,
+                title: { display: true, text: yTitle },
+                grid: { color: gridColor },
+                ticks: { callback: (value) => formatCompactNumber(value), color: tickColor },
+              },
+            },
+          },
+        });
+        return chart;
       }
 
       // Empty state is rendered server-side.
-      for (const panel of chartPanels) {
+      function renderChartPanel(panel, canvasId) {
         if (panel.chart_type === "donut") {
-          renderDonutChart(`chart-${panel.id}`, panel.labels, panel.datasets);
-        } else if (panel.chart_type === "bar") {
-          renderBarChart(`chart-${panel.id}`, panel.labels, panel.datasets, panel.stacked, panel.run_ids);
-        } else {
-          renderLineChart(`chart-${panel.id}`, panel.labels, panel.datasets, panel.run_ids);
+          return renderDonutChart(canvasId, panel.labels, panel.datasets);
         }
+        if (panel.chart_type === "bar") {
+          return renderBarChart(canvasId, panel.labels, panel.datasets, panel.stacked, panel.run_ids);
+        }
+        if (panel.chart_type === "scatter") {
+          return renderScatterChart(
+            canvasId,
+            panel.datasets,
+            panel.run_ids,
+            panel.x_label,
+            panel.x_unit,
+            panel.y_label,
+            panel.y_unit
+          );
+        }
+        if (panel.chart_type === "area") {
+          return renderLineChart(canvasId, panel.labels, panel.datasets, panel.run_ids, "area");
+        }
+        return renderLineChart(canvasId, panel.labels, panel.datasets, panel.run_ids);
+      }
+
+      for (const panel of chartPanels) {
+        renderChartPanel(panel, `chart-${panel.id}`);
       }
 
       function downloadChartPng(chartId) {
@@ -843,6 +959,55 @@
           downloadChartPng(btn.dataset.chartId);
         });
       }
+
+      const chartModal = document.getElementById("chart-modal");
+      const chartModalTitle = document.getElementById("chart-modal-title");
+      const chartModalDescription = document.getElementById("chart-modal-description");
+      const chartModalClose = document.getElementById("chart-modal-close");
+      let chartModalInstance = null;
+
+      function openChartModal(panel) {
+        if (!chartModal) return;
+        if (chartModalInstance && typeof chartModalInstance.destroy === "function") {
+          chartModalInstance.destroy();
+        }
+        chartModalInstance = renderChartPanel(panel, "chart-modal-canvas");
+        if (chartModalTitle) chartModalTitle.textContent = panel.title || "Chart";
+        if (chartModalDescription) chartModalDescription.textContent = panel.description || "";
+        chartModal.classList.add("is-open");
+        chartModal.setAttribute("aria-hidden", "false");
+      }
+
+      function closeChartModal() {
+        if (!chartModal) return;
+        if (chartModalInstance && typeof chartModalInstance.destroy === "function") {
+          chartModalInstance.destroy();
+          chartModalInstance = null;
+        }
+        chartModal.classList.remove("is-open");
+        chartModal.setAttribute("aria-hidden", "true");
+      }
+
+      if (chartModalClose) chartModalClose.addEventListener("click", closeChartModal);
+      if (chartModal) {
+        chartModal.addEventListener("click", (event) => {
+          if (event.target === chartModal) closeChartModal();
+        });
+      }
+      document.addEventListener("keydown", (event) => {
+        if (!chartModal || chartModal.getAttribute("aria-hidden") === "true") return;
+        if (event.key === "Escape") closeChartModal();
+      });
+
+      for (const btn of document.querySelectorAll(".open-chart-modal")) {
+        btn.addEventListener("click", function () {
+          const panelId = btn.dataset.chartId;
+          const panel = chartPanels.find((entry) => entry.id === panelId);
+          if (!panel) return;
+          openChartModal(panel);
+        });
+      }
+      });
     </script>
 
     <div class="modal-backdrop" id="chart-builder-modal" aria-hidden="true">
@@ -988,6 +1153,23 @@
               <button class="button expanded" type="submit">Save snapshot</button>
             </form>
           {% endif %}
+        </div>
+      </div>
+    </div>
+
+    <div class="modal-backdrop chart-modal" id="chart-modal" aria-hidden="true">
+      <div class="modal-shell chart-modal-shell" role="dialog" aria-modal="true" aria-label="Chart">
+        <div class="grid-x grid-margin-x align-middle">
+          <div class="cell auto">
+            <h4 class="margin-0" id="chart-modal-title">Chart</h4>
+            <p class="muted margin-0" id="chart-modal-description"></p>
+          </div>
+          <div class="cell shrink">
+            <button class="button secondary" type="button" id="chart-modal-close">Close</button>
+          </div>
+        </div>
+        <div class="margin-top-1">
+          <canvas id="chart-modal-canvas" width="1200" height="560"></canvas>
         </div>
       </div>
     </div>

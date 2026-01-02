@@ -14,7 +14,7 @@ from datetime import date
 from typing import Literal
 
 
-ChartType = Literal["line", "bar", "donut"]
+ChartType = Literal["line", "bar", "area", "donut"]
 GroupBy = Literal["time", "tier", "preset"]
 ComparisonMode = Literal["none", "before_after", "run_vs_run"]
 SmoothingMode = Literal["none", "rolling_avg"]

@@ -29,7 +29,7 @@ from .schema import (
 )
 
 
-ChartBuilderChartType = Literal["line", "bar", "donut"]
+ChartBuilderChartType = Literal["line", "bar", "area", "donut"]
 ChartBuilderGroupBy = Literal["time", "tier", "preset"]
 ChartBuilderComparison = Literal["none", "before_after", "run_vs_run"]
 ChartBuilderSmoothing = Literal["none", "rolling_avg"]

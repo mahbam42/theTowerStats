@@ -57,6 +57,22 @@ CHART_CONFIGS: Final[tuple[ChartConfig, ...]] = (
         ui=ChartUI(show_by_default=True, selectable=True, order=2),
     ),
     ChartConfig(
+        id="coins_earned_over_time",
+        title="Coins Earned Over Time",
+        description="Area view of coins earned across the current filters.",
+        category="economy",
+        domain="economy",
+        semantic_type="absolute",
+        chart_type="area",
+        metric_series=(ChartSeriesConfig(metric_key="coins_earned"),),
+        filters=ChartFilters(
+            date_range=DateRangeFilterConfig(enabled=True, default_start=DEFAULT_START),
+            tier=SimpleFilterConfig(enabled=True),
+            preset=SimpleFilterConfig(enabled=True),
+        ),
+        ui=ChartUI(show_by_default=False, selectable=True, order=8),
+    ),
+    ChartConfig(
         id="coins_by_source",
         title="Coins Earned by Source",
         description="Breakdown of observed coin sources from Battle Reports (aggregated within the current filters).",
@@ -81,7 +97,7 @@ CHART_CONFIGS: Final[tuple[ChartConfig, ...]] = (
             tier=SimpleFilterConfig(enabled=True),
             preset=SimpleFilterConfig(enabled=True),
         ),
-        ui=ChartUI(show_by_default=False, selectable=True, order=3),
+        ui=ChartUI(show_by_default=True, selectable=True, order=3),
     ),
     ChartConfig(
         id="coins_from_ultimate_weapons",
@@ -133,7 +149,7 @@ CHART_CONFIGS: Final[tuple[ChartConfig, ...]] = (
             tier=SimpleFilterConfig(enabled=True),
             preset=SimpleFilterConfig(enabled=True),
         ),
-        ui=ChartUI(show_by_default=False, selectable=True, order=5),
+        ui=ChartUI(show_by_default=True, selectable=True, order=5),
     ),
     ChartConfig(
         id="damage_percent_by_source",
@@ -228,7 +244,27 @@ CHART_CONFIGS: Final[tuple[ChartConfig, ...]] = (
             tier=SimpleFilterConfig(enabled=True),
             preset=SimpleFilterConfig(enabled=True),
         ),
-        ui=ChartUI(show_by_default=False, selectable=True, order=9),
+        ui=ChartUI(show_by_default=True, selectable=True, order=6),
+    ),
+    ChartConfig(
+        id="run_duration_vs_coins_earned",
+        title="Run Duration vs Coins Earned",
+        description="Scatter of real-time run duration against total coins earned.",
+        category="efficiency",
+        domain="efficiency",
+        semantic_type="comparative",
+        chart_type="scatter",
+        default_granularity="per_run",
+        metric_series=(
+            ChartSeriesConfig(metric_key="real_time_hours", label="Run duration"),
+            ChartSeriesConfig(metric_key="coins_earned", label="Coins earned"),
+        ),
+        filters=ChartFilters(
+            date_range=DateRangeFilterConfig(enabled=True, default_start=DEFAULT_START),
+            tier=SimpleFilterConfig(enabled=True),
+            preset=SimpleFilterConfig(enabled=True),
+        ),
+        ui=ChartUI(show_by_default=True, selectable=True, order=7),
     ),
     ChartConfig(
         id="cash_earned",
@@ -605,5 +641,6 @@ def list_selectable_chart_configs() -> tuple[ChartConfig, ...]:
 def default_selected_chart_ids() -> tuple[str, ...]:
     """Return default selected chart IDs for the multiselect control."""
 
-    defaults = [config.id for config in CHART_CONFIGS if config.ui.show_by_default and config.ui.selectable]
-    return tuple(sorted(defaults))
+    defaults = [config for config in CHART_CONFIGS if config.ui.show_by_default and config.ui.selectable]
+    ordered = sorted(defaults, key=lambda c: (c.ui.order, c.title.lower(), c.id))
+    return tuple(config.id for config in ordered)

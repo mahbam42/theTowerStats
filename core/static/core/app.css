@@ -603,6 +603,14 @@ textarea:active {
   padding: var(--tts-space-4);
 }
 
+.modal-backdrop.chart-modal {
+  z-index: 9998;
+}
+
+#battle-report-modal.modal-backdrop {
+  z-index: 10000;
+}
+
 .modal-backdrop.is-open {
   display: flex;
 }
@@ -616,6 +624,14 @@ textarea:active {
   border: 1px solid var(--tts-color-border);
   box-shadow: 0 10px 40px var(--tts-color-shadow-strong);
   padding: var(--tts-space-4);
+}
+
+.chart-modal-shell {
+  width: min(1200px, 100%);
+}
+
+.chart-modal-shell canvas {
+  max-width: 100%;
 }
 
 .battle-history-import details > summary {
@@ -718,6 +734,22 @@ textarea:active {
   gap: var(--tts-space-4);
 }
 
+.charts-grid {
+  display: flex;
+  flex-wrap: wrap;
+}
+
+.charts-grid .chart-cell {
+  order: 50;
+}
+
+.charts-grid .chart-cell[data-chart-id="coins_earned"] { order: 1; }
+.charts-grid .chart-cell[data-chart-id="coins_per_hour"] { order: 2; }
+.charts-grid .chart-cell[data-chart-id="coins_by_source"] { order: 3; }
+.charts-grid .chart-cell[data-chart-id="damage_by_source"] { order: 4; }
+.charts-grid .chart-cell[data-chart-id="free_upgrades_by_run"] { order: 5; }
+.charts-grid .chart-cell[data-chart-id="run_duration_vs_coins_earned"] { order: 6; }
+
 .charts-controls summary {
   cursor: pointer;
 }
@@ -737,6 +769,10 @@ textarea:active {
 
   .charts-content {
     order: 1;
+  }
+
+  .charts-grid .chart-cell {
+    order: 0;
   }
 
   .battle-history-table thead {

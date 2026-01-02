@@ -75,6 +75,32 @@ def test_chart_config_validation_rejects_unknown_formula_identifiers() -> None:
     assert any("unknown identifiers" in error for error in result.errors)
 
 
+def test_chart_config_validation_allows_scatter_with_two_metrics() -> None:
+    """Allow scatter charts to pair two metrics with distinct units."""
+
+    config = ChartConfig(
+        id="scatter_test",
+        title="Run duration vs coins",
+        description=None,
+        category="efficiency",
+        domain="efficiency",
+        semantic_type="comparative",
+        chart_type="scatter",
+        metric_series=(
+            ChartSeriesConfig(metric_key="real_time_hours"),
+            ChartSeriesConfig(metric_key="coins_earned"),
+        ),
+        filters=ChartFilters(
+            date_range=DateRangeFilterConfig(enabled=True, default_start=datetime(2025, 12, 9, tzinfo=UTC)),
+            tier=SimpleFilterConfig(enabled=True),
+            preset=SimpleFilterConfig(enabled=True),
+        ),
+        ui=ChartUI(show_by_default=False, selectable=True, order=999),
+    )
+    result = validate_chart_config(config, registry=DEFAULT_REGISTRY)
+    assert result.is_valid is True
+
+
 def test_chart_config_validation_requires_comparison_dimension_support() -> None:
     """Require all series to support the comparison dimension (tier/preset/entity)."""
 
