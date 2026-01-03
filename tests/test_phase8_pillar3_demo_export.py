@@ -4,12 +4,13 @@ from __future__ import annotations
 
 import csv
 import io
+from datetime import date
 
 import pytest
 from django.contrib.auth import get_user_model
 from django.urls import reverse
 
-from core.demo import DEMO_SESSION_KEY
+from core.demo import DEMO_SESSION_KEY, get_demo_player
 from core.services import ingest_battle_report
 from gamedata.models import BattleReport
 from player_state.models import Player
@@ -65,7 +66,7 @@ def test_demo_mode_scopes_views_to_demo_player(auth_client, player) -> None:
     assert response.status_code == 200
     content = response.content.decode("utf-8")
     assert "Demo mode" in content
-    assert "111" in content
+    assert "10899" in content
     assert "222" not in content
 
 
@@ -88,6 +89,7 @@ def test_demo_mode_rejects_writes(auth_client, player) -> None:
     session[DEMO_SESSION_KEY] = True
     session.save()
 
+    get_demo_player()
     before = BattleReport.objects.count()
     response = auth_client.post(
         reverse("core:dashboard"),
@@ -155,3 +157,56 @@ def test_signup_rejects_reserved_demo_username(client) -> None:
     )
     assert response.status_code == 200
     assert "reserved" in response.content.decode("utf-8").lower()
+
+
+@pytest.mark.django_db
+def test_demo_seed_data_spans_expected_windows() -> None:
+    """Demo seed data includes early, mid, and late-game windows."""
+
+    user_model = get_user_model()
+    demo_user = user_model.objects.create(username="__demo__")
+    demo_user.set_unusable_password()
+    demo_user.save(update_fields=["password"])
+    demo_player, _ = Player.objects.get_or_create(user=demo_user, defaults={"display_name": "Demo Player"})
+    ingest_battle_report(
+        _battle_report_text(battle_date="2025-12-01 13:45:00", wave=222, coins="1.00M"),
+        player=demo_player,
+        preset_name="Demo",
+    )
+
+    demo_player = get_demo_player()
+    reports = (
+        BattleReport.objects.filter(player=demo_player)
+        .select_related("run_progress")
+        .order_by("run_progress__battle_date")
+    )
+    assert reports.count() == 6
+
+    dates = [report.run_progress.battle_date.date() for report in reports if report.run_progress.battle_date]
+    assert len(dates) == 6
+
+    early_start = date(2025, 11, 11)
+    early_end = date(2025, 12, 8)
+    mid_start = date(2025, 12, 9)
+    mid_end = date(2025, 12, 22)
+    late_start = date(2025, 12, 23)
+    late_end = date(2026, 1, 5)
+
+    assert sum(1 for day in dates if early_start <= day <= early_end) == 2
+    assert sum(1 for day in dates if mid_start <= day <= mid_end) == 2
+    assert sum(1 for day in dates if late_start <= day <= late_end) == 2
+
+
+@pytest.mark.django_db
+def test_demo_mode_defaults_to_mid_window(auth_client) -> None:
+    """Demo mode defaults chart windows to the mid-tier range."""
+
+    session = auth_client.session
+    session[DEMO_SESSION_KEY] = True
+    session.save()
+
+    get_demo_player()
+    response = auth_client.get(reverse("core:dashboard"))
+    assert response.status_code == 200
+    assert response.context["event_window_start"] == date(2025, 12, 9)
+    assert response.context["event_window_end"] == date(2025, 12, 22)

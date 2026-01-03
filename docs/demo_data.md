@@ -2,7 +2,7 @@
 
 ## Overview
 
-Demo Data lets you explore the app using a small set of sample runs, without importing your own Battle Reports.
+Demo Data lets you explore the app using a small set of sample runs that include early, mid, and late-game examples, without importing your own Battle Reports.
 
 ## When to Use This
 
@@ -21,6 +21,8 @@ Demo Data lets you explore the app using a small set of sample runs, without imp
 ## How to Read the Results
 
 - Demo Data is a fixed sample dataset and does not represent your account or your game progress.
+- Demo Data includes a small set of runs grouped into early, mid, and late-game windows so filters and comparisons have visible changes.
+- Charts default to the mid-game demo window (Dec 9–Dec 22, 2025) so the first view includes results.
 - Values shown in Demo Data are intended for navigation and feature discovery, not for strategy guidance.
 - When you exit demo mode, the app returns to showing only your own imported runs and progress.
 
@@ -28,6 +30,9 @@ Demo Data lets you explore the app using a small set of sample runs, without imp
 
 > **Note**
 > Demo Data is read-only. Importing Battle Reports, editing progress values, and saving snapshots are disabled while demo mode is active.
+
+> **Note**
+> Demo Data can refresh when the sample dataset is updated, so values may change between releases.
 
 > **Note**
 > Demo Data can include fewer runs than a real account. Some charts or dashboards may show limited results.

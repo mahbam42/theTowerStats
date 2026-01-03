@@ -451,9 +451,13 @@ def dashboard(request: HttpRequest) -> HttpResponse:
             defaulted_get[key] = str(value)
 
     if not defaulted_get.get("start_date") and not defaulted_get.get("end_date"):
-        window = event_window_for_date(target=date.today(), anchor=date(2025, 12, 9))
-        defaulted_get["start_date"] = window.start.isoformat()
-        defaulted_get["end_date"] = window.end.isoformat()
+        if demo_mode_enabled(request):
+            defaulted_get["start_date"] = date(2025, 12, 9).isoformat()
+            defaulted_get["end_date"] = date(2025, 12, 22).isoformat()
+        else:
+            window = event_window_for_date(target=date.today(), anchor=date(2025, 12, 9))
+            defaulted_get["start_date"] = window.start.isoformat()
+            defaulted_get["end_date"] = window.end.isoformat()
 
     if not defaulted_get.get("charts"):
         defaulted_get.setlist("charts", [str(cid) for cid in default_selected_chart_ids()])
