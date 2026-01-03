@@ -380,6 +380,280 @@
     window.openBattleReportModal = openForRun;
   }
 
+  function initializeGuidedWalkthrough() {
+    const container = document.getElementById("guided-walkthrough");
+    if (!container) return;
+
+    const trigger = document.getElementById("walkthrough-trigger");
+    const overlay = container.querySelector(".walkthrough-overlay");
+    const panel = container.querySelector(".walkthrough-panel");
+    const progressEl = document.getElementById("walkthrough-progress");
+    const titleEl = document.getElementById("walkthrough-title");
+    const bodyEl = document.getElementById("walkthrough-body");
+    const linkEl = document.getElementById("walkthrough-link");
+    const backBtn = document.getElementById("walkthrough-back");
+    const nextBtn = document.getElementById("walkthrough-next");
+    const skipBtn = document.getElementById("walkthrough-skip");
+    const dismissBtn = document.getElementById("walkthrough-dismiss");
+
+    if (!trigger || !overlay || !panel || !progressEl || !titleEl || !bodyEl || !linkEl || !backBtn || !nextBtn || !skipBtn || !dismissBtn) {
+      return;
+    }
+
+    const walkthroughEnabled = container.dataset.walkthroughEnabled === "true";
+    const demoMode = container.dataset.demoMode === "true";
+    const changelogUrl = container.dataset.changelogUrl || "";
+    const dismissedKey = "tts_walkthrough_dismissed";
+    const completedKey = "tts_walkthrough_completed_at";
+
+    const steps = [
+      {
+        id: "charts-header",
+        title: "Charts dashboard",
+        body: "This dashboard shows how your runs change over time using your selected filters.",
+        target: "[data-walkthrough-target='charts-header']",
+      },
+      {
+        id: "context-menu",
+        title: "More options",
+        body: "More options lets you refine chart scope, grouping, and filters for focused views.",
+        target: "[data-walkthrough-target='context-menu']",
+        openDetails: "#charts-more-options",
+      },
+      {
+        id: "demo-nav",
+        title: "Demo windows",
+        body: "These buttons switch between early, mid, and late demo windows so you can compare sample runs.",
+        target: "[data-walkthrough-target='demo-nav']",
+        requiresDemo: true,
+      },
+      {
+        id: "top-nav",
+        title: "Top navigation",
+        body: "Use the top navigation to move between Battle History, Goals, and collection dashboards.",
+        target: "[data-walkthrough-target='top-nav']",
+      },
+      {
+        id: "docs-link",
+        title: "Changelog",
+        body: "View the Changelog to see what changed in recent updates.",
+        target: "[data-walkthrough-target='docs-link']",
+        linkUrl: changelogUrl,
+        linkLabel: "Open Changelog",
+      },
+    ];
+
+    const activeSteps = steps.filter((step) => {
+      if (step.requiresDemo && !demoMode) return false;
+      return Boolean(document.querySelector(step.target));
+    });
+
+    if (!walkthroughEnabled || activeSteps.length === 0) {
+      trigger.hidden = true;
+      return;
+    }
+
+    function readStorageFlag(key) {
+      try {
+        return window.localStorage.getItem(key) === "true";
+      } catch (_err) {
+        return false;
+      }
+    }
+
+    function writeStorageFlag(key, value) {
+      try {
+        window.localStorage.setItem(key, value ? "true" : "false");
+      } catch (_err) {
+        return;
+      }
+    }
+
+    function writeStorageValue(key, value) {
+      try {
+        window.localStorage.setItem(key, value);
+      } catch (_err) {
+        return;
+      }
+    }
+
+    if (readStorageFlag(dismissedKey)) {
+      trigger.hidden = true;
+      return;
+    }
+
+    trigger.hidden = false;
+
+    const state = {
+      index: 0,
+      steps: activeSteps,
+      activeTarget: null,
+      openDetails: null,
+    };
+
+    function clearHighlight() {
+      if (state.activeTarget) {
+        state.activeTarget.classList.remove("walkthrough-target");
+      }
+      state.activeTarget = null;
+    }
+
+    function restoreDetails() {
+      if (!state.openDetails) return;
+      if (!state.openDetails.wasOpen) {
+        state.openDetails.node.removeAttribute("open");
+      }
+      state.openDetails = null;
+    }
+
+    function setActiveTarget(target) {
+      clearHighlight();
+      state.activeTarget = target;
+      if (state.activeTarget) {
+        state.activeTarget.classList.add("walkthrough-target");
+      }
+    }
+
+    function positionPanel(target) {
+      const margin = 12;
+      const rect = target.getBoundingClientRect();
+      const panelRect = panel.getBoundingClientRect();
+      const viewportWidth = window.innerWidth;
+      const viewportHeight = window.innerHeight;
+      const spaces = {
+        top: rect.top - margin,
+        bottom: viewportHeight - rect.bottom - margin,
+        left: rect.left - margin,
+        right: viewportWidth - rect.right - margin,
+      };
+      const candidates = [
+        {
+          name: "right",
+          fits: spaces.right >= panelRect.width,
+          top: rect.top + (rect.height - panelRect.height) / 2,
+          left: rect.right + margin,
+        },
+        {
+          name: "left",
+          fits: spaces.left >= panelRect.width,
+          top: rect.top + (rect.height - panelRect.height) / 2,
+          left: rect.left - panelRect.width - margin,
+        },
+        {
+          name: "bottom",
+          fits: spaces.bottom >= panelRect.height,
+          top: rect.bottom + margin,
+          left: rect.left + (rect.width - panelRect.width) / 2,
+        },
+        {
+          name: "top",
+          fits: spaces.top >= panelRect.height,
+          top: rect.top - panelRect.height - margin,
+          left: rect.left + (rect.width - panelRect.width) / 2,
+        },
+      ];
+      const ordered = candidates.sort((a, b) => Number(b.fits) - Number(a.fits));
+      const choice = ordered.find((item) => item.fits) || ordered[0];
+
+      let top = choice.top;
+      let left = choice.left;
+      if (top + panelRect.height > viewportHeight - margin) {
+        top = viewportHeight - panelRect.height - margin;
+      }
+      if (top < margin) top = margin;
+      if (left + panelRect.width > viewportWidth - margin) {
+        left = viewportWidth - panelRect.width - margin;
+      }
+      if (left < margin) left = margin;
+      panel.style.top = `${Math.round(top)}px`;
+      panel.style.left = `${Math.round(left)}px`;
+    }
+
+    function updateNavigation() {
+      backBtn.disabled = state.index <= 0;
+      nextBtn.textContent = state.index >= state.steps.length - 1 ? "Finish" : "Next";
+      progressEl.textContent = `Step ${state.index + 1} of ${state.steps.length}`;
+    }
+
+    function showStep(index) {
+      const step = state.steps[index];
+      if (!step) return;
+      state.index = index;
+
+      restoreDetails();
+      const target = document.querySelector(step.target);
+      if (!target) return;
+
+      if (step.openDetails) {
+        const details = document.querySelector(step.openDetails);
+        if (details) {
+          const wasOpen = details.hasAttribute("open");
+          details.setAttribute("open", "");
+          state.openDetails = { node: details, wasOpen };
+        }
+      }
+
+      target.scrollIntoView({ behavior: "smooth", block: "center" });
+      setActiveTarget(target);
+      titleEl.textContent = step.title;
+      bodyEl.textContent = step.body;
+
+      if (step.linkUrl) {
+        linkEl.href = step.linkUrl;
+        linkEl.textContent = step.linkLabel || "Open";
+        linkEl.hidden = false;
+      } else {
+        linkEl.hidden = true;
+      }
+
+      updateNavigation();
+      window.requestAnimationFrame(() => positionPanel(target));
+    }
+
+    function openWalkthrough() {
+      container.classList.add("is-active");
+      container.setAttribute("aria-hidden", "false");
+      showStep(0);
+    }
+
+    function closeWalkthrough() {
+      container.classList.remove("is-active");
+      container.setAttribute("aria-hidden", "true");
+      clearHighlight();
+      restoreDetails();
+    }
+
+    trigger.addEventListener("click", openWalkthrough);
+    overlay.addEventListener("click", closeWalkthrough);
+
+    backBtn.addEventListener("click", () => {
+      if (state.index <= 0) return;
+      showStep(state.index - 1);
+    });
+
+    nextBtn.addEventListener("click", () => {
+      if (state.index >= state.steps.length - 1) {
+        writeStorageValue(completedKey, new Date().toISOString());
+        closeWalkthrough();
+        return;
+      }
+      showStep(state.index + 1);
+    });
+
+    skipBtn.addEventListener("click", closeWalkthrough);
+
+    dismissBtn.addEventListener("click", () => {
+      writeStorageFlag(dismissedKey, true);
+      closeWalkthrough();
+      trigger.hidden = true;
+    });
+
+    window.addEventListener("resize", () => {
+      if (!state.activeTarget || !container.classList.contains("is-active")) return;
+      positionPanel(state.activeTarget);
+    });
+  }
+
   if (document.readyState === "loading") {
     document.addEventListener(
       "DOMContentLoaded",
@@ -387,6 +661,7 @@
         initializeFoundation();
         initializeGlobalSearch();
         initializeBattleReportModal();
+        initializeGuidedWalkthrough();
       },
       { once: true }
     );
@@ -396,4 +671,5 @@
   initializeFoundation();
   initializeGlobalSearch();
   initializeBattleReportModal();
+  initializeGuidedWalkthrough();
 })();

@@ -21,7 +21,7 @@
     {% block head %}{% endblock %}
   </head>
   <body>
-    <div class="top-bar" role="banner">
+    <div class="top-bar" role="banner" data-walkthrough-target="top-nav">
       <div class="top-bar-left">
         <ul class="dropdown menu" data-dropdown-menu>
           <li class="menu-text">theTowerStats</li>
@@ -55,7 +55,11 @@
       </div>
       <div class="top-bar-right">
         <ul class="dropdown menu" data-dropdown-menu>
-          <li><a href="https://mahbam42.github.io/theTowerStats/" target="_blank" rel="noopener noreferrer">Docs</a></li>
+          <li>
+            <a href="https://mahbam42.github.io/theTowerStats/" target="_blank" rel="noopener noreferrer" data-walkthrough-target="docs-link">
+              Docs
+            </a>
+          </li>
           {% if user.is_authenticated and user.is_staff or user.is_authenticated and user.is_superuser %}
             <li><a href="/admin/" target="_blank" rel="noreferrer">Admin</a></li>
           {% endif %}

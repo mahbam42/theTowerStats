@@ -36,6 +36,8 @@ Testing conventions, markers, and running instructions are documented on the ded
 
 See: [Testing](testing.md)
 
+Guided Walkthrough testing note: if the walkthrough does not appear in demo mode, clear local storage keys `tts_walkthrough_dismissed` and `tts_walkthrough_completed_at` via DevTools → Application → Local Storage for the current site.
+
 ## Migrations
 
 If Django reports conflicting migrations (multiple leaf nodes in an app), create a merge migration and commit it.

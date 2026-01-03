@@ -16,12 +16,13 @@ Charts help you review how your run results change over time using the same valu
 ## How to Use
 
 1. Select **Charts** in the navigation.
-2. In **Context**, review the **Start** and **End** dates. The app defaults to the current in-game Event window (14 days).
+2. (Optional) Select **Show walkthrough** when available to see a guided tour of the dashboard.
+3. In **Context**, review the **Start** and **End** dates. The app defaults to the current in-game Event window (14 days).
   A. Select **Previous**, **Next**, or **All** to change the date window.
-3. In **Context**, review **Granularity**. It defaults to **By battle log**, and you can switch to **By date** when needed.
-4. In **Context**, select a **Tier** and **Preset** to narrow the scope.
+4. In **Context**, review **Granularity**. It defaults to **By battle log**, and you can switch to **By date** when needed.
+5. In **Context**, select a **Tier** and **Preset** to narrow the scope.
   A. In **Context**, toggle **Include tournaments** to include tournament runs in the charts.
-5. Select **Apply** to refresh the dashboard.
+6. Select **Apply** to refresh the dashboard.
 
 
 * Open **More options** to refine charts, windowing, and item filters. For details, see [More Options](charts/more_options.md).
@@ -76,6 +77,9 @@ Charts help you review how your run results change over time using the same valu
 
 > **Caution**
 > Some charts require additional selections. For example, “Runs Using Selected UW” needs an Ultimate Weapon selection.
+
+> **Note**
+> The walkthrough button appears only during demo mode or on your first login. Selecting “Don’t show again” hides it for this browser.
 
 > **Note**
 > Moving averages change what you see on the chart, but they do not change your stored data.

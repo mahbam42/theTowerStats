@@ -117,12 +117,15 @@ from player_state.models import (
     PlayerUltimateWeaponParameter,
     Preset,
 )
-from core.services import ingest_battle_report
 from core.tournament import is_tournament, tournament_bracket
 from core.search import build_search_items
 from core.uw_sync import build_uw_sync_payload
 from core.uw_usage import count_observed_uw_runs
 from core.redirects import safe_redirect
+from core.services import ingest_battle_report
+
+WALKTHROUGH_FIRST_LOGIN_SESSION_KEY = "tts_walkthrough_first_login"
+WALKTHROUGH_CHANGELOG_URL = "https://github.com/mahbam42/theTowerStats/blob/main/CHANGELOG.md"
 
 
 def _request_player(request: HttpRequest) -> Player:
@@ -245,6 +248,7 @@ def login_view(request: HttpRequest) -> HttpResponse:
                         },
                     )
                 user = signup_form.save()
+                request.session[WALKTHROUGH_FIRST_LOGIN_SESSION_KEY] = True
                 auth_login(request, user)
                 return safe_redirect(
                     request,
@@ -254,7 +258,12 @@ def login_view(request: HttpRequest) -> HttpResponse:
         else:
             login_form = AuthenticationForm(request, data=request.POST)
             if login_form.is_valid():
-                auth_login(request, login_form.get_user())
+                user = login_form.get_user()
+                if user.last_login is None:
+                    request.session[WALKTHROUGH_FIRST_LOGIN_SESSION_KEY] = True
+                else:
+                    request.session.pop(WALKTHROUGH_FIRST_LOGIN_SESSION_KEY, None)
+                auth_login(request, user)
                 return safe_redirect(
                     request,
                     candidates=[request.POST.get("next"), request.GET.get("next")],
@@ -277,6 +286,8 @@ def dashboard(request: HttpRequest) -> HttpResponse:
     """Render the Charts dashboard driven by ChartConfig definitions."""
 
     player = _request_player(request)
+    walkthrough_first_login = bool(request.session.pop(WALKTHROUGH_FIRST_LOGIN_SESSION_KEY, False))
+    walkthrough_enabled = demo_mode_enabled(request) or walkthrough_first_login
     if request.method == "POST" and demo_mode_enabled(request):
         return _reject_demo_write(request)
 
@@ -772,6 +783,8 @@ def dashboard(request: HttpRequest) -> HttpResponse:
         "why_panel": why_panel,
         "event_window_start": chart_form.cleaned_data.get("start_date"),
         "event_window_end": chart_form.cleaned_data.get("end_date"),
+        "walkthrough_enabled": walkthrough_enabled,
+        "walkthrough_changelog_url": WALKTHROUGH_CHANGELOG_URL,
     }
     return render(request, "core/dashboard.html", context)
 

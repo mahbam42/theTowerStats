@@ -13,6 +13,7 @@ from analysis.engine import analyze_runs
 from analysis.raw_text_metrics import extract_raw_text_metrics
 from gamedata.models import BattleReport, BattleReportDerivedMetrics, BattleReportProgress
 from player_state.models import Preset
+from core.views import WALKTHROUGH_FIRST_LOGIN_SESSION_KEY
 
 pytestmark = pytest.mark.integration
 
@@ -39,6 +40,23 @@ def test_dashboard_view_renders(auth_client, player) -> None:
 
     response = auth_client.get(reverse("core:dashboard"), {"start_date": FILTER_START})
     assert response.status_code == 200
+
+
+@pytest.mark.django_db
+def test_dashboard_walkthrough_is_available_on_first_login(auth_client) -> None:
+    """Walkthrough eligibility is surfaced once for the first login session."""
+
+    session = auth_client.session
+    session[WALKTHROUGH_FIRST_LOGIN_SESSION_KEY] = True
+    session.save()
+
+    response = auth_client.get(reverse("core:dashboard"), {"start_date": FILTER_START})
+    content = response.content.decode("utf-8")
+    assert 'data-walkthrough-enabled="true"' in content
+
+    response = auth_client.get(reverse("core:dashboard"), {"start_date": FILTER_START})
+    content = response.content.decode("utf-8")
+    assert 'data-walkthrough-enabled="true"' not in content
 
 
 @pytest.mark.django_db

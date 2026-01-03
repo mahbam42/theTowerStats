@@ -8,7 +8,7 @@
 {% block content %}
   <div class="grid-x grid-margin-x">
     <div class="cell">
-      <div class="card-shell">
+      <div class="card-shell" data-walkthrough-target="charts-header">
         <div class="grid-x grid-margin-x align-middle">
           <div class="cell auto">
             <p class="muted margin-0">Charts</p>
@@ -18,6 +18,9 @@
             </p>
           </div>
           <div class="cell shrink text-right">
+            <button class="button secondary" type="button" id="walkthrough-trigger" data-walkthrough-trigger hidden>
+              Show walkthrough
+            </button>
             <a class="button secondary" href="{% url 'core:battle_history' %}">Battle History</a>
             <p class="muted text-right margin-0">Battle History includes Battle Report import and run browsing.</p>
           </div>
@@ -79,7 +82,7 @@
 
         <div class="grid-x grid-margin-x align-middle margin-top-1">
           <div class="cell shrink">
-            <div class="button-group">
+            <div class="button-group" data-walkthrough-target="demo-nav">
               <button class="button secondary" type="submit" name="event_shift" value="-1">Previous</button>
               <button class="button secondary" type="submit" name="event_shift" value="1">Next</button>
               <button class="button secondary" type="submit" name="event_shift" value="all">All</button>
@@ -105,8 +108,8 @@
           </div>
         </div>
 
-        <details class="margin-top-1">
-          <summary>More options</summary>
+        <details class="margin-top-1" id="charts-more-options">
+          <summary data-walkthrough-target="context-menu">More options</summary>
           <div class="grid-x grid-margin-x margin-top-1">
             <div class="cell medium-6">
               <label>Charts
@@ -499,6 +502,28 @@
           </details>
         </div>
       {% endif %}
+    </div>
+  </div>
+
+  <div
+    id="guided-walkthrough"
+    data-walkthrough-enabled="{{ walkthrough_enabled|yesno:'true,false' }}"
+    data-demo-mode="{{ demo_mode|yesno:'true,false' }}"
+    data-changelog-url="{{ walkthrough_changelog_url }}"
+    aria-hidden="true"
+  >
+    <div class="walkthrough-overlay" role="presentation"></div>
+    <div class="walkthrough-panel" role="dialog" aria-modal="true" aria-labelledby="walkthrough-title">
+      <p class="walkthrough-progress" id="walkthrough-progress"></p>
+      <h4 class="margin-top-0" id="walkthrough-title"></h4>
+      <p class="walkthrough-body" id="walkthrough-body"></p>
+      <a class="button tiny secondary walkthrough-link" id="walkthrough-link" href="#" target="_blank" rel="noopener noreferrer" hidden>Open Changelog</a>
+      <div class="button-group margin-top-1">
+        <button class="button tiny secondary" type="button" id="walkthrough-back">Back</button>
+        <button class="button tiny" type="button" id="walkthrough-next">Next</button>
+        <button class="button tiny secondary" type="button" id="walkthrough-skip">Skip</button>
+        <button class="button tiny secondary" type="button" id="walkthrough-dismiss">Don't show again</button>
+      </div>
     </div>
   </div>
 {% endblock %}

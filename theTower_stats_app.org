@@ -3121,7 +3121,7 @@ Minimum of 6 Battle Reports, dates spread to fall into 3 event windows.
 - [X] Charts Dashboard Layout
 - [X] Landing Page
 - [X] Demo Data
-- [ ] Guided Walkthrough
+- [X] Guided Walkthrough
 - [ ] Remove 'total' line from 'Free Upgrades by Run' stacked chart. We need to show the total (sum of Attack, Defense, and Utility) somewhere on the Chart. 
 - [ ] Changelog Updates everything since 2cb639c
   git log -15 --oneline

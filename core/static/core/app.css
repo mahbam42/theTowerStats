@@ -889,3 +889,67 @@ textarea:active {
     font-size: 0.8rem;
   }
 }
+
+.walkthrough-overlay {
+  position: fixed;
+  inset: 0;
+  background: rgba(0, 0, 0, 0.6);
+  opacity: 0;
+  pointer-events: none;
+  transition: opacity 150ms ease-in-out;
+  z-index: 1000;
+}
+
+#guided-walkthrough.is-active .walkthrough-overlay {
+  opacity: 1;
+  pointer-events: auto;
+}
+
+.walkthrough-panel {
+  position: fixed;
+  max-width: 340px;
+  width: calc(100% - 2rem);
+  background: var(--tts-color-surface);
+  border: 1px solid var(--tts-color-border);
+  border-radius: var(--tts-radius-2);
+  padding: var(--tts-space-4);
+  box-shadow: 0 10px 30px var(--tts-color-shadow-strong);
+  z-index: 1002;
+  opacity: 0;
+  transform: translateY(6px);
+  transition: opacity 150ms ease-in-out, transform 150ms ease-in-out;
+}
+
+#guided-walkthrough.is-active .walkthrough-panel {
+  opacity: 1;
+  transform: translateY(0);
+}
+
+.walkthrough-progress {
+  color: var(--tts-color-text-muted);
+  font-size: 0.85rem;
+  margin-bottom: var(--tts-space-2);
+}
+
+.walkthrough-body {
+  color: var(--tts-color-text-muted);
+}
+
+.walkthrough-link {
+  margin-bottom: 0;
+}
+
+.walkthrough-target {
+  position: relative;
+  z-index: 1001;
+  box-shadow: 0 0 0 3px var(--tts-color-accent);
+  border-radius: var(--tts-radius-2);
+}
+
+@media (max-width: 640px) {
+  .walkthrough-panel {
+    left: 1rem !important;
+    right: 1rem !important;
+    max-width: none;
+  }
+}
