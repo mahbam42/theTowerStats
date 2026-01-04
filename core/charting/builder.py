@@ -29,10 +29,11 @@ from .schema import (
 )
 
 
-ChartBuilderChartType = Literal["line", "bar", "area", "donut"]
+ChartBuilderChartType = Literal["line", "bar", "area", "scatter", "donut"]
 ChartBuilderGroupBy = Literal["time", "tier", "preset"]
 ChartBuilderComparison = Literal["none", "before_after", "run_vs_run"]
 ChartBuilderSmoothing = Literal["none", "rolling_avg"]
+ChartBuilderXAxis = Literal["time", "metric"]
 
 
 @dataclass(frozen=True, slots=True)
@@ -45,6 +46,7 @@ class ChartBuilderSelection:
         group_by: Grouping control for splitting the chart (tier/preset).
         comparison: Optional two-scope comparison mode.
         smoothing: Optional smoothing control (rolling average).
+        x_axis: X-axis mode ("time" or "metric").
         scope_a: Scope A when `comparison` is enabled.
         scope_b: Scope B when `comparison` is enabled.
     """
@@ -54,6 +56,7 @@ class ChartBuilderSelection:
     group_by: ChartBuilderGroupBy
     comparison: ChartBuilderComparison
     smoothing: ChartBuilderSmoothing
+    x_axis: ChartBuilderXAxis
     scope_a: ComparisonScope | None = None
     scope_b: ComparisonScope | None = None
 

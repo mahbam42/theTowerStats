@@ -345,6 +345,8 @@ class BattleHistoryFilterForm(forms.Form):
             ("run_progress__tier", "Tier (low → high)"),
             ("-run_progress__wave", "Wave (high → low)"),
             ("run_progress__wave", "Wave (low → high)"),
+            ("-run_progress__real_time_seconds", "Real time (high → low)"),
+            ("run_progress__real_time_seconds", "Real time (low → high)"),
             ("run_progress__killed_by", "Killed by (A → Z)"),
             ("-run_progress__killed_by", "Killed by (Z → A)"),
             ("-run_progress__coins_earned", "Coins earned (high → low)"),
@@ -645,6 +647,31 @@ class ComparisonForm(forms.Form):
         return focus or "economy"
 
 
+class BattleHistoryColumnPreferenceForm(forms.Form):
+    """Validate Battle History column visibility selections."""
+
+    columns = forms.MultipleChoiceField(
+        required=False,
+        choices=(),
+        widget=forms.CheckboxSelectMultiple,
+        label="Visible columns",
+    )
+
+    def __init__(self, *args, column_choices: tuple[tuple[str, str], ...], **kwargs) -> None:
+        """Initialize with the available column choices."""
+
+        super().__init__(*args, **kwargs)
+        self.fields["columns"].choices = column_choices
+
+    def clean_columns(self) -> tuple[str, ...]:
+        """Require at least one visible column."""
+
+        selected = tuple(self.cleaned_data.get("columns") or ())
+        if not selected:
+            raise forms.ValidationError("Select at least one column.")
+        return selected
+
+
 class ChartBuilderForm(forms.Form):
     """Validate constrained Chart Builder selections.
 
@@ -657,12 +684,17 @@ class ChartBuilderForm(forms.Form):
         choices=(),
         label="Metrics",
         widget=forms.SelectMultiple(attrs={"size": 10}),
-        help_text="Select one or more metrics. Metrics must share units and category.",
+        help_text="Select metrics for the chart. Time-based charts require matching units and category.",
     )
     chart_type = forms.ChoiceField(
         required=True,
-        choices=(("line", "Line"), ("area", "Area"), ("bar", "Bar"), ("donut", "Donut")),
+        choices=(("line", "Line"), ("area", "Area"), ("bar", "Bar"), ("scatter", "Scatter"), ("donut", "Donut")),
         label="Chart type",
+    )
+    x_axis = forms.ChoiceField(
+        required=True,
+        choices=(("time", "Time"), ("metric", "Metric vs metric")),
+        label="X axis",
     )
     group_by = forms.ChoiceField(
         required=True,
@@ -697,6 +729,7 @@ class ChartBuilderForm(forms.Form):
         self.fields["metric_keys"].choices = [
             (spec.key, f"{spec.label} ({spec.unit})") for spec in DEFAULT_REGISTRY.list()
         ]
+        self.fields["x_axis"].initial = "time"
 
         if runs_queryset is None:
             runs_queryset = BattleReport.objects.select_related("run_progress").order_by(
@@ -712,6 +745,7 @@ class ChartBuilderForm(forms.Form):
 
         metric_keys = tuple(cleaned.get("metric_keys") or ())
         chart_type = str(cleaned.get("chart_type") or "line")
+        x_axis = str(cleaned.get("x_axis") or "time")
         group_by = str(cleaned.get("group_by") or "time")
         comparison = str(cleaned.get("comparison") or "none")
         smoothing = str(cleaned.get("smoothing") or "none")
@@ -724,6 +758,21 @@ class ChartBuilderForm(forms.Form):
 
         if chart_type == "donut" and comparison != "none":
             self.add_error("comparison", "Donut charts do not support comparisons.")
+
+        if chart_type == "scatter" and x_axis != "metric":
+            self.add_error("x_axis", "Scatter charts require metric-vs-metric plotting.")
+
+        if x_axis == "metric":
+            if chart_type == "donut":
+                self.add_error("x_axis", "Metric-vs-metric plotting does not support donut charts.")
+            if len(metric_keys) != 2:
+                self.add_error("metric_keys", "Metric-vs-metric plotting requires exactly two metrics.")
+            if group_by != "time":
+                self.add_error("group_by", "Metric-vs-metric plotting does not support grouping.")
+            if comparison != "none":
+                self.add_error("comparison", "Metric-vs-metric plotting does not support comparisons.")
+            if smoothing != "none":
+                self.add_error("smoothing", "Metric-vs-metric plotting does not support smoothing.")
 
         if comparison != "none" and group_by != "time":
             self.add_error("group_by", "Two-scope comparisons require group_by=Time.")
@@ -771,6 +820,7 @@ class ChartBuilderForm(forms.Form):
 
         metric_keys = tuple(self.cleaned_data.get("metric_keys") or ())
         chart_type = str(self.cleaned_data.get("chart_type") or "line")
+        x_axis = str(self.cleaned_data.get("x_axis") or "time")
         group_by = str(self.cleaned_data.get("group_by") or "time")
         comparison = str(self.cleaned_data.get("comparison") or "none")
         smoothing = str(self.cleaned_data.get("smoothing") or "none")
@@ -800,6 +850,7 @@ class ChartBuilderForm(forms.Form):
             group_by=group_by,  # type: ignore[arg-type]
             comparison=comparison,  # type: ignore[arg-type]
             smoothing=smoothing,  # type: ignore[arg-type]
+            x_axis=x_axis,  # type: ignore[arg-type]
             scope_a=scope_a,
             scope_b=scope_b,
         )

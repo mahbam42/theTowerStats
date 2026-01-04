@@ -26,6 +26,7 @@ Charts help you review how your run results change over time using the same valu
 
 
 * Open **More options** to refine charts, windowing, and item filters. For details, see [More Options](charts/more_options.md).
+* In **More options**, hold **Ctrl** (Windows) or **Cmd** (Mac) to select multiple charts in the chart list.
 * Open **Advanced analysis** to configure Advice, Goal-aware comparison, or derived metric export. For details, see [Advanced Analysis](charts/advanced_analysis.md).
 * Use **Chart Builder** to create a custom chart and apply it to your dashboard. For the full workflow, see [Chart Builder](charts/chart_builder.md).
 * Select **Full screen** to view a single chart in a larger, focused modal.
@@ -53,7 +54,8 @@ Charts help you review how your run results change over time using the same valu
 - Scatter charts compare two values per run. Each dot represents a single run in your current filters.
 - Area charts emphasize momentum over time by shading the space under the line.
 - For donut charts, each slice represents the total for that value within your current filters, and the label includes the percent of the donut total. A slice named “Other coins” groups any remaining coins that are not listed as a named source.
-- For **Free Upgrades by Run**, hover a bar to see the total of Attack, Defense, and Utility upgrades for that run.
+- For **Free Upgrades by Run**, the **Total** badge confirms that hovering a bar shows the total of Attack, Defense, and Utility upgrades.
+- **Free Upgrades vs Coins Earned** compares total free upgrades to coins earned for each run.
 - If a point is flagged, the tooltip includes a short reason that explains the signal.
 - Advanced analysis sections summarize observed differences using the snapshots you selected and the current filters you applied. They describe the basis and limitations and do not recommend actions.
 - Goal-aware comparisons report a weighted percent-change index across multiple metrics. A positive value means the selected metrics increased, after applying your selected weights.

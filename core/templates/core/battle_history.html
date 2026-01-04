@@ -99,6 +99,29 @@
         </form>
 
         <div class="margin-top-1">
+          <details>
+            <summary class="muted">Columns</summary>
+            <div class="margin-top-1">
+              <form method="post" class="stacked">
+                {% csrf_token %}
+                <input type="hidden" name="action" value="update_column_preferences">
+                <input type="hidden" name="next" value="{{ request.get_full_path }}">
+                {{ preference_form.columns }}
+                <div class="button-group expanded stack-for-small margin-top-1">
+                  <button class="button secondary" type="submit">Save columns</button>
+                </div>
+              </form>
+              <form method="post" class="margin-top-1">
+                {% csrf_token %}
+                <input type="hidden" name="action" value="reset_column_preferences">
+                <input type="hidden" name="next" value="{{ request.get_full_path }}">
+                <button class="button secondary expanded" type="submit">Reset to defaults</button>
+              </form>
+            </div>
+          </details>
+        </div>
+
+        <div class="margin-top-1">
           <h5 class="margin-bottom-0">Highest Wave by Tier</h5>
           <p class="muted margin-top-0 margin-bottom-1">All imported runs. Tournament-tagged runs are excluded.</p>
           {% if highest_wave_by_tier %}
@@ -168,18 +191,15 @@
             <table class="stack battle-history-table">
               <thead>
                 <tr>
-                  <th scope="col"><a href="?{{ sort_querystrings.battle_date }}">Battle date</a></th>
-                  <th scope="col"><a href="?{{ sort_querystrings.tier }}">Tier</a></th>
-                  <th scope="col"><a href="?{{ sort_querystrings.wave }}">Highest wave</a></th>
-                  <th scope="col"><a href="?{{ sort_querystrings.killed_by }}">Killed by</a></th>
-                  <th scope="col"><a href="?{{ sort_querystrings.coins_earned }}">Coins earned</a></th>
-                  <th scope="col"><a href="?{{ sort_querystrings.coins_per_hour }}">Coins/real hour</a></th>
-                  <th scope="col"><a href="?{{ sort_querystrings.cash_earned }}">Cash earned</a></th>
-                  <th scope="col"><a href="?{{ sort_querystrings.interest_earned }}">Interest earned</a></th>
-                  <th scope="col"><a href="?{{ sort_querystrings.gem_blocks }}">Gem blocks</a></th>
-                  <th scope="col"><a href="?{{ sort_querystrings.cells_earned }}">Cells earned</a></th>
-                  <th scope="col"><a href="?{{ sort_querystrings.reroll_shards }}">Reroll shards</a></th>
-                  <th scope="col"><a href="?{{ sort_querystrings.preset }}">Preset</a></th>
+                  {% for column in visible_column_views %}
+                    <th scope="col">
+                      {% if column.sort_querystring %}
+                        <a href="?{{ column.sort_querystring }}">{{ column.label }}</a>
+                      {% else %}
+                        {{ column.label }}
+                      {% endif %}
+                    </th>
+                  {% endfor %}
                 </tr>
               </thead>
               <tbody>
@@ -192,54 +212,81 @@
                     aria-haspopup="dialog"
                     aria-label="Open Battle Report modal"
                   >
-                    <td>{{ row.run.run_progress.battle_date|default:"—" }}</td>
-                    <td>
-                      {% if row.is_tournament %}
-                        <span class="badge warning tournament-badge">Tournament{% if row.tournament_bracket %}: {{ row.tournament_bracket }}{% endif %}</span>
-                      {% else %}
-                        {{ row.run.run_progress.tier|default:"—" }}
-                      {% endif %}
-                    </td>
-                    <td>{{ row.run.run_progress.wave|default:"—" }}</td>
-                    <td>{{ row.run.run_progress.killed_by|default:"—" }}</td>
-                    <td>{{ row.run.run_progress.coins_earned_raw|default:"—" }}</td>
-                    <td>{% if row.metric %}{{ row.metric.coins_per_hour|floatformat:2 }}{% else %}<span class="muted">—</span>{% endif %}</td>
-                    <td>{{ row.run.run_progress.cash_earned_raw|default:"—" }}</td>
-                    <td>{{ row.run.run_progress.interest_earned_raw|default:"—" }}</td>
-                    <td>{{ row.run.run_progress.gem_blocks_tapped|default:"—" }}</td>
-                    <td>{{ row.run.run_progress.cells_earned|default:"—" }}</td>
-                    <td>{{ row.run.run_progress.reroll_shards_earned|default:"—" }}</td>
-                    <td>
-                      {% if row.run.run_progress.preset %}
-                        <a
-                          class="badge preset-badge preset-color-{{ row.run.run_progress.preset.badge_color }}"
-                          href="?preset={{ row.run.run_progress.preset.id }}"
-                        >
-                          {{ row.run.run_progress.preset.name }}
-                        </a>
-                      {% elif row.run.run_progress.preset_name_snapshot %}
-                        <span class="badge secondary preset-badge">{{ row.run.run_progress.preset_name_snapshot }}</span>
-                      {% else %}
-                        <span class="muted">—</span>
-                      {% endif %}
+                    {% for column in visible_column_views %}
+                      <td>
+                        {% if column.key == "run_number" %}
+                          {{ row.run_number|default:"—" }}
+                        {% elif column.key == "battle_date" %}
+                          {{ row.run.run_progress.battle_date|default:"—" }}
+                        {% elif column.key == "tier" %}
+                          {% if row.is_tournament %}
+                            <span class="badge warning tournament-badge">Tournament{% if row.tournament_bracket %}: {{ row.tournament_bracket }}{% endif %}</span>
+                          {% else %}
+                            {{ row.run.run_progress.tier|default:"—" }}
+                          {% endif %}
+                        {% elif column.key == "tournament" %}
+                          {% if row.is_tournament %}
+                            <span class="badge warning">Yes</span>
+                          {% else %}
+                            <span class="muted">No</span>
+                          {% endif %}
+                        {% elif column.key == "wave" %}
+                          {{ row.run.run_progress.wave|default:"—" }}
+                        {% elif column.key == "real_time" %}
+                          {{ row.real_time_display }}
+                        {% elif column.key == "killed_by" %}
+                          {{ row.run.run_progress.killed_by|default:"—" }}
+                        {% elif column.key == "coins_earned" %}
+                          {{ row.run.run_progress.coins_earned_raw|default:"—" }}
+                        {% elif column.key == "coins_per_hour" %}
+                          {% if row.metric %}
+                            {{ row.metric.coins_per_hour|floatformat:2 }}
+                          {% else %}
+                            <span class="muted">—</span>
+                          {% endif %}
+                        {% elif column.key == "cash_earned" %}
+                          {{ row.run.run_progress.cash_earned_raw|default:"—" }}
+                        {% elif column.key == "interest_earned" %}
+                          {{ row.run.run_progress.interest_earned_raw|default:"—" }}
+                        {% elif column.key == "gem_blocks" %}
+                          {{ row.run.run_progress.gem_blocks_tapped|default:"—" }}
+                        {% elif column.key == "cells_earned" %}
+                          {{ row.run.run_progress.cells_earned|default:"—" }}
+                        {% elif column.key == "reroll_shards" %}
+                          {{ row.run.run_progress.reroll_shards_earned|default:"—" }}
+                        {% elif column.key == "preset" %}
+                          {% if row.run.run_progress.preset %}
+                            <a
+                              class="badge preset-badge preset-color-{{ row.run.run_progress.preset.badge_color }}"
+                              href="?preset={{ row.run.run_progress.preset.id }}"
+                            >
+                              {{ row.run.run_progress.preset.name }}
+                            </a>
+                          {% elif row.run.run_progress.preset_name_snapshot %}
+                            <span class="badge secondary preset-badge">{{ row.run.run_progress.preset_name_snapshot }}</span>
+                          {% else %}
+                            <span class="muted">—</span>
+                          {% endif %}
 
-                      {% if not demo_mode %}
-                        <form method="post" class="margin-top-1">
-                          {% csrf_token %}
-                          <input type="hidden" name="action" value="update_run_preset">
-                          <input type="hidden" name="progress_id" value="{{ row.run.run_progress.id }}">
-                          <input type="hidden" name="next" value="{{ request.get_full_path }}">
-                          <select name="preset" class="preset-select" aria-label="Run preset selector" onchange="this.form.submit()">
-                            <option value="" {% if not row.run.run_progress.preset %}selected{% endif %}>No preset</option>
-                            {% for preset in player_presets %}
-                              <option value="{{ preset.id }}" {% if row.run.run_progress.preset and preset.id == row.run.run_progress.preset.id %}selected{% endif %}>
-                                {{ preset.name }}
-                              </option>
-                            {% endfor %}
-                          </select>
-                        </form>
-                      {% endif %}
-                    </td>
+                          {% if not demo_mode %}
+                            <form method="post" class="margin-top-1">
+                              {% csrf_token %}
+                              <input type="hidden" name="action" value="update_run_preset">
+                              <input type="hidden" name="progress_id" value="{{ row.run.run_progress.id }}">
+                              <input type="hidden" name="next" value="{{ request.get_full_path }}">
+                              <select name="preset" class="preset-select" aria-label="Run preset selector" onchange="this.form.submit()">
+                                <option value="" {% if not row.run.run_progress.preset %}selected{% endif %}>No preset</option>
+                                {% for preset in player_presets %}
+                                  <option value="{{ preset.id }}" {% if row.run.run_progress.preset and preset.id == row.run.run_progress.preset.id %}selected{% endif %}>
+                                    {{ preset.name }}
+                                  </option>
+                                {% endfor %}
+                              </select>
+                            </form>
+                          {% endif %}
+                        {% endif %}
+                      </td>
+                    {% endfor %}
                   </tr>
                 {% endfor %}
               </tbody>

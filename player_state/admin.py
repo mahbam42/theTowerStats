@@ -6,6 +6,7 @@ from django.contrib import admin
 from django.db.models import QuerySet
 
 from player_state.models import (
+    BattleHistoryColumnPreference,
     ChartSnapshot,
     Player,
     PlayerBot,
@@ -96,6 +97,14 @@ class ChartSnapshotAdmin(PlayerScopedAdmin):
     list_display = ("player", "name", "target", "created_at")
     list_filter = ("player",)
     search_fields = ("name",)
+
+
+@admin.register(BattleHistoryColumnPreference)
+class BattleHistoryColumnPreferenceAdmin(PlayerScopedAdmin):
+    """Admin configuration for BattleHistoryColumnPreference."""
+
+    list_display = ("player", "updated_at")
+    list_filter = ("player",)
 
 
 @admin.register(PlayerCard)

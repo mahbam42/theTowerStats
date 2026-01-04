@@ -21,13 +21,15 @@ Battle History helps you review your past runs in a table so you can compare res
 5. (Optional) Enable **Tournament run** when this run was a tournament round.
 6. Select **Import Battle Report**.
 7. Select values in **Filters** to narrow the table.
-8. Select a column header to sort the table by that column.
-9. Select a run row to open the Battle Report Modal. For details, see [Battle Report Modal](battle_report_modal.md).
-10. To change a run’s preset later, select a value in the **Preset** selector inside that row.
-11. To filter by a preset, select a value in **Preset** under **Filters**, or select a preset badge in the table.
+8. Select **Columns** to choose which columns appear, then select **Save columns**.
+9. Select a column header to sort the table by that column.
+10. Select a run row to open the Battle Report Modal. For details, see [Battle Report Modal](battle_report_modal.md).
+11. To change a run’s preset later, select a value in the **Preset** selector inside that row.
+12. To filter by a preset, select a value in **Preset** under **Filters**, or select a preset badge in the table.
 
 ## How to Read the Results
 
+- **Run #** shows the chronological order of your runs by battle date and time.
 - **Battle date** and **Tier** come from the report header and help you locate runs in time.
 - **Highest wave** shows the highest wave reached in that run.
 - **Highest Wave by Tier** summarizes the best wave you have reached for each tier across all imported runs.
@@ -35,6 +37,7 @@ Battle History helps you review your past runs in a table so you can compare res
 - **Killed By (diagnostic)** summarizes how often each **Killed by** label appears across the current filters.
 - **Coins earned**, **Cash earned**, and **Interest earned** match the values shown in the report summary.
 - **Coins/real hour** divides coins earned by the run’s **Real Time** duration as reported by the game.
+- **Real time** shows the run duration as reported by the game.
 - **Gem blocks**, **Cells earned**, and **Reroll shards** show run resources that may be missing in older or incomplete reports.
 - **Preset** is an optional label you can use to group runs for review. The game currently allows 6 presets, and this app lets you save more. Presets do not change any gameplay results.
 - **Top 3 Tournament Logs** shows your three best tournament-marked runs by highest wave.
@@ -69,6 +72,9 @@ Battle History helps you review your past runs in a table so you can compare res
 
 > **Note**
 > Battle Reports can use tabs, colons, or spacing between labels and values. If an import fails, the page shows an error message under the Battle Report field.
+
+> **Note**
+> Column selections are saved to your account and apply across devices.
 
 > **Note**
 > On smaller screens, the run table appears before the filter and summary panels, and the table scrolls horizontally rather than wrapping columns.

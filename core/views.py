@@ -5,8 +5,9 @@ from __future__ import annotations
 import json
 import csv
 import io
+from dataclasses import dataclass
 from datetime import date, timedelta
-from typing import Any
+from typing import Any, cast
 
 from django.contrib import messages
 from django.contrib.auth import login as auth_login
@@ -57,6 +58,7 @@ from core.charting.flagging import flag_reasons, incomplete_run_labels
 from core.charting.render import render_charts
 from core.charting.snapshot_codec import decode_chart_config_dto, encode_chart_config_dto
 from core.forms import (
+    BattleHistoryColumnPreferenceForm,
     BattleHistoryFilterForm,
     BattleHistoryPresetUpdateForm,
     BattleReportImportForm,
@@ -103,6 +105,7 @@ from player_state.card_slots import card_slot_max_slots, next_card_slot_unlock_c
 from player_state.cards import apply_inventory_rollover, derive_card_progress, derive_total_cards_progress
 from player_state.economy import enforce_and_deduct_gems_if_tracked
 from player_state.models import (
+    BattleHistoryColumnPreference,
     ChartSnapshot,
     GoalTarget,
     GoalType,
@@ -362,6 +365,7 @@ def dashboard(request: HttpRequest) -> HttpResponse:
                 merged["group_by"] = config_dto.group_by
                 merged["comparison"] = config_dto.comparison
                 merged["smoothing"] = config_dto.smoothing
+                merged["x_axis"] = config_dto.x_axis
                 if config_dto.scopes is not None:
                     merged["run_a"] = str(config_dto.scopes[0].run_id or "")
                     merged["run_b"] = str(config_dto.scopes[1].run_id or "")
@@ -383,6 +387,8 @@ def dashboard(request: HttpRequest) -> HttpResponse:
                         merged.setlist("metric_keys", [str(v) for v in value])
                     else:
                         merged[key] = str(value) if value is not None else ""
+                if "x_axis" not in builder_payload:
+                    merged["x_axis"] = "time"
                 for key, value in context_payload.items():
                     merged[key] = str(value) if value is not None else ""
 
@@ -601,23 +607,58 @@ def dashboard(request: HttpRequest) -> HttpResponse:
                         "chart_type": "donut",
                         "labels": analyzed.labels,
                         "datasets": datasets,
+                        "x_axis": analyzed.x_axis,
+                    }
+                elif analyzed.x_axis == "metric":
+                    for idx, ds in enumerate(analyzed.datasets):
+                        color = palette[idx % len(palette)]
+                        metric_dataset = {
+                            "label": ds.label,
+                            "metricKey": ds.metric_key,
+                            "metricKind": "observed",
+                            "unit": ds.unit,
+                            "seriesKind": "metric",
+                            "data": ds.values,
+                            "borderColor": color,
+                            "backgroundColor": color,
+                            "pointRadius": 4,
+                            "pointHoverRadius": 6,
+                            "borderWidth": 2,
+                        }
+                        datasets.append(metric_dataset)
+                    unit = analyzed.datasets[0].unit if analyzed.datasets else ""
+                    builder_panel = {
+                        "id": "chart_builder_custom",
+                        "title": "Chart Builder",
+                        "description": "Runtime chart (not persisted).",
+                        "unit": unit,
+                        "chart_type": analyzed.chart_type,
+                        "labels": analyzed.labels,
+                        "datasets": datasets,
+                        "run_ids": analyzed.run_ids,
+                        "x_label": analyzed.x_label,
+                        "x_unit": analyzed.x_unit,
+                        "y_label": analyzed.y_label,
+                        "y_unit": analyzed.y_unit,
+                        "x_axis": analyzed.x_axis,
                     }
                 else:
                     for idx, ds in enumerate(analyzed.datasets):
                         color = palette[idx % len(palette)]
+                        values = cast(list[float | None], ds.values)
                         reasons = flag_reasons(
                             analyzed.labels,
-                            values=ds.values,
+                            values=values,
                             incomplete_labels=incomplete_labels,
                             patch_boundaries=patch_boundaries,
                         )
-                        dataset = {
+                        chart_dataset: dict[str, Any] = {
                             "label": ds.label,
                             "metricKey": ds.metric_key,
                             "metricKind": "observed",
                             "unit": ds.unit,
                             "seriesKind": "raw",
-                            "data": ds.values,
+                            "data": values,
                             "borderColor": color,
                             "backgroundColor": color,
                             "spanGaps": False,
@@ -628,7 +669,7 @@ def dashboard(request: HttpRequest) -> HttpResponse:
                             "tension": 0.15,
                             "flagReasons": reasons,
                         }
-                        datasets.append(dataset)
+                        datasets.append(chart_dataset)
                     unit = analyzed.datasets[0].unit if analyzed.datasets else ""
                     builder_panel = {
                         "id": "chart_builder_custom",
@@ -638,6 +679,7 @@ def dashboard(request: HttpRequest) -> HttpResponse:
                         "chart_type": analyzed.chart_type,
                         "labels": analyzed.labels,
                         "datasets": datasets,
+                        "x_axis": analyzed.x_axis,
                     }
             else:
                 builder_errors = validation.errors
@@ -690,6 +732,7 @@ def dashboard(request: HttpRequest) -> HttpResponse:
                 "x_unit": entry.data.get("x_unit"),
                 "y_label": entry.data.get("y_label"),
                 "y_unit": entry.data.get("y_unit"),
+                "x_axis": "metric" if entry.config.chart_type == "scatter" else "time",
             }
             for entry in rendered
         ]
@@ -713,6 +756,12 @@ def dashboard(request: HttpRequest) -> HttpResponse:
                 "chart_type": builder_panel["chart_type"],
                 "labels": builder_panel["labels"],
                 "datasets": builder_panel["datasets"],
+                "run_ids": builder_panel.get("run_ids"),
+                "x_label": builder_panel.get("x_label"),
+                "x_unit": builder_panel.get("x_unit"),
+                "y_label": builder_panel.get("y_label"),
+                "y_unit": builder_panel.get("y_unit"),
+                "x_axis": builder_panel.get("x_axis"),
             }
         )
         combined = [json.loads(builder_json)] + json.loads(chart_panels_json)
@@ -1184,6 +1233,77 @@ def _coins_per_hour_sample(runs: QuerySet[BattleReport]) -> tuple[int, float | N
     return len(values), sum(values) / len(values)
 
 
+@dataclass(frozen=True, slots=True)
+class BattleHistoryColumn:
+    """Battle History column definition used for rendering and preferences."""
+
+    key: str
+    label: str
+    sort_key: str | None = None
+    default_visible: bool = False
+
+
+def _battle_history_columns() -> tuple[BattleHistoryColumn, ...]:
+    """Return the supported Battle History columns in display order."""
+
+    return (
+        BattleHistoryColumn("run_number", "Run #", default_visible=True),
+        BattleHistoryColumn("battle_date", "Battle date", sort_key="run_progress__battle_date", default_visible=True),
+        BattleHistoryColumn("tier", "Tier", sort_key="run_progress__tier", default_visible=True),
+        BattleHistoryColumn("tournament", "Tournament"),
+        BattleHistoryColumn("wave", "Highest wave", sort_key="run_progress__wave", default_visible=True),
+        BattleHistoryColumn("real_time", "Real time", sort_key="run_progress__real_time_seconds"),
+        BattleHistoryColumn("killed_by", "Killed by", sort_key="run_progress__killed_by", default_visible=True),
+        BattleHistoryColumn("coins_earned", "Coins earned", sort_key="run_progress__coins_earned", default_visible=True),
+        BattleHistoryColumn("coins_per_hour", "Coins/real hour", sort_key="coins_per_hour", default_visible=True),
+        BattleHistoryColumn("cash_earned", "Cash earned", sort_key="run_progress__cash_earned", default_visible=True),
+        BattleHistoryColumn("interest_earned", "Interest earned", sort_key="run_progress__interest_earned", default_visible=True),
+        BattleHistoryColumn("gem_blocks", "Gem blocks", sort_key="run_progress__gem_blocks_tapped", default_visible=True),
+        BattleHistoryColumn("cells_earned", "Cells earned", sort_key="run_progress__cells_earned", default_visible=True),
+        BattleHistoryColumn("reroll_shards", "Reroll shards", sort_key="run_progress__reroll_shards_earned", default_visible=True),
+        BattleHistoryColumn("preset", "Preset", sort_key="run_progress__preset__name", default_visible=True),
+    )
+
+
+def _battle_history_visible_columns(
+    *,
+    player: Player,
+    columns: tuple[BattleHistoryColumn, ...],
+) -> tuple[str, ...]:
+    """Return the active column keys for a player's Battle History table."""
+
+    default_keys = tuple(col.key for col in columns if col.default_visible)
+    stored = BattleHistoryColumnPreference.objects.filter(player=player).first()
+    if stored is None:
+        return default_keys
+    selected = [key for key in stored.columns if key in {col.key for col in columns}]
+    return tuple(selected) if selected else default_keys
+
+
+def _run_numbers_by_report_id(*, player: Player) -> dict[int, int]:
+    """Return chronological run numbers for a player's Battle Reports."""
+
+    runs = _with_effective_battle_date(
+        BattleReport.objects.filter(player=player).select_related("run_progress")
+    ).order_by("effective_battle_date", "id")
+    return {run.id: idx + 1 for idx, run in enumerate(runs)}
+
+
+def _format_real_time(seconds: int | None) -> str:
+    """Render a human-friendly real-time duration from seconds."""
+
+    if seconds is None:
+        return "—"
+    remaining = max(int(seconds), 0)
+    hours, remaining = divmod(remaining, 3600)
+    minutes, secs = divmod(remaining, 60)
+    if hours:
+        return f"{hours}h {minutes}m {secs}s"
+    if minutes:
+        return f"{minutes}m {secs}s"
+    return f"{secs}s"
+
+
 def _order_battle_history_runs(
     *, runs: QuerySet[BattleReport], sort_key: str
 ) -> QuerySet[BattleReport] | list[BattleReport]:
@@ -1326,11 +1446,39 @@ def battle_history(request: HttpRequest) -> HttpResponse:
     """Render the Battle History dashboard with filters and pagination."""
 
     player = _request_player(request)
+    column_definitions = _battle_history_columns()
+    column_choices = tuple((column.key, column.label) for column in column_definitions)
     if request.method == "POST" and demo_mode_enabled(request):
         return _reject_demo_write(request)
 
     if request.method == "POST":
         action = (request.POST.get("action") or "").strip()
+        if action == "update_column_preferences":
+            preference_form = BattleHistoryColumnPreferenceForm(
+                request.POST,
+                column_choices=column_choices,
+            )
+            if preference_form.is_valid():
+                BattleHistoryColumnPreference.objects.update_or_create(
+                    player=player,
+                    defaults={"columns": list(preference_form.cleaned_data["columns"])},
+                )
+                messages.success(request, "Saved column preferences.")
+            else:
+                messages.error(request, "Could not save column preferences.")
+            return safe_redirect(
+                request,
+                candidates=[request.POST.get("next")],
+                fallback=reverse("core:battle_history"),
+            )
+        if action == "reset_column_preferences":
+            BattleHistoryColumnPreference.objects.filter(player=player).delete()
+            messages.success(request, "Restored default columns.")
+            return safe_redirect(
+                request,
+                candidates=[request.POST.get("next")],
+                fallback=reverse("core:battle_history"),
+            )
         if action == "update_run_preset":
             update_form = BattleHistoryPresetUpdateForm(request.POST, player=player)
             if not update_form.is_valid():
@@ -1395,6 +1543,15 @@ def battle_history(request: HttpRequest) -> HttpResponse:
 
     filter_form = BattleHistoryFilterForm(request.GET, player=player)
     filter_form.is_valid()
+    visible_columns = _battle_history_visible_columns(player=player, columns=column_definitions)
+    columns_by_key = {column.key: column for column in column_definitions}
+    visible_column_definitions = [
+        columns_by_key[key] for key in visible_columns if key in columns_by_key
+    ]
+    preference_form = BattleHistoryColumnPreferenceForm(
+        column_choices=column_choices,
+        initial={"columns": visible_columns},
+    )
 
     progress_qs = BattleReportProgress.objects.filter(player=player)
     highest_wave_by_tier = list(
@@ -1467,6 +1624,7 @@ def battle_history(request: HttpRequest) -> HttpResponse:
     page_number = request.GET.get("page")
     page_obj = paginator.get_page(page_number)
 
+    run_numbers = _run_numbers_by_report_id(player=player)
     analyzed_runs = analyze_runs(page_obj.object_list).runs
     run_metrics = {entry.run_id: entry for entry in analyzed_runs}
     page_rows: list[dict[str, object]] = []
@@ -1477,6 +1635,10 @@ def battle_history(request: HttpRequest) -> HttpResponse:
             {
                 "run": run,
                 "metric": metric,
+                "run_number": run_numbers.get(run.id),
+                "real_time_display": _format_real_time(
+                    getattr(getattr(run, "run_progress", None), "real_time_seconds", None)
+                ),
                 "is_tournament": manual_tournament or is_tournament(run),
                 "tournament_bracket": tournament_bracket(run),
             }
@@ -1490,6 +1652,7 @@ def battle_history(request: HttpRequest) -> HttpResponse:
             "tier": "run_progress__tier",
             "wave": "run_progress__wave",
             "killed_by": "run_progress__killed_by",
+            "real_time": "run_progress__real_time_seconds",
             "coins_earned": "run_progress__coins_earned",
             "coins_per_hour": "coins_per_hour",
             "cash_earned": "run_progress__cash_earned",
@@ -1501,6 +1664,14 @@ def battle_history(request: HttpRequest) -> HttpResponse:
             "imported": "parsed_at",
         },
     )
+    visible_column_views = [
+        {
+            "key": column.key,
+            "label": column.label,
+            "sort_querystring": sort_querystrings.get(column.key),
+        }
+        for column in visible_column_definitions
+    ]
 
     querystring = request.GET.copy()
     if "page" in querystring:
@@ -1514,6 +1685,11 @@ def battle_history(request: HttpRequest) -> HttpResponse:
         {
             "import_form": import_form,
             "filter_form": filter_form,
+            "preference_form": preference_form,
+            "column_definitions": column_definitions,
+            "visible_columns": visible_columns,
+            "visible_column_definitions": visible_column_definitions,
+            "visible_column_views": visible_column_views,
             "player_presets": Preset.objects.filter(player=player).order_by("name"),
             "highest_wave_by_tier": highest_wave_by_tier,
             "top_tournament_logs": top_tournament_logs,

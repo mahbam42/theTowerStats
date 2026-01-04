@@ -23,6 +23,7 @@ def test_chart_config_dto_validation_rejects_mixed_units() -> None:
         group_by="time",
         comparison="none",
         smoothing="none",
+        x_axis="time",
         context=ChartContextDTO(start_date=None, end_date=None),
     )
     result = validate_chart_config_dto(dto, registry=DEFAULT_REGISTRY)
@@ -60,6 +61,7 @@ def test_chart_config_dto_analysis_returns_dtos_only(player) -> None:
         group_by="time",
         comparison="none",
         smoothing="none",
+        x_axis="time",
         context=ChartContextDTO(start_date=date(2025, 12, 9), end_date=None),
     )
 
@@ -76,3 +78,24 @@ def test_chart_config_dto_analysis_returns_dtos_only(player) -> None:
     assert chart.labels == ["2025-12-10"]
     assert chart.datasets
     assert chart.datasets[0].values == [1200.0]
+
+
+@pytest.mark.django_db
+def test_chart_config_dto_allows_mixed_units_for_metric_axis() -> None:
+    """Metric-vs-metric charts may combine different units."""
+
+    from analysis.chart_config_dto import ChartConfigDTO, ChartContextDTO
+    from analysis.chart_config_validator import validate_chart_config_dto
+    from analysis.series_registry import DEFAULT_REGISTRY
+
+    dto = ChartConfigDTO(
+        metrics=("coins_earned", "waves_reached"),
+        chart_type="scatter",
+        group_by="time",
+        comparison="none",
+        smoothing="none",
+        x_axis="metric",
+        context=ChartContextDTO(start_date=None, end_date=None),
+    )
+    result = validate_chart_config_dto(dto, registry=DEFAULT_REGISTRY)
+    assert result.is_valid is True

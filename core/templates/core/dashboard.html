@@ -35,6 +35,7 @@
       <form method="get" id="chart-context-form">
         <input type="hidden" name="builder" id="builder-flag" value="{% if chart_builder_form.is_bound %}1{% endif %}">
         <input type="hidden" name="chart_type" id="builder-chart-type-hidden" value="{{ chart_builder_form.chart_type.value|default_if_none:'' }}">
+        <input type="hidden" name="x_axis" id="builder-x-axis-hidden" value="{{ chart_builder_form.x_axis.value|default_if_none:'' }}">
         <input type="hidden" name="group_by" id="builder-group-by-hidden" value="{{ chart_builder_form.group_by.value|default_if_none:'' }}">
         <input type="hidden" name="comparison" id="builder-comparison-hidden" value="{{ chart_builder_form.comparison.value|default_if_none:'' }}">
         <input type="hidden" name="smoothing" id="builder-smoothing-hidden" value="{{ chart_builder_form.smoothing.value|default_if_none:'' }}">
@@ -115,6 +116,7 @@
               <label>Charts
                 {{ chart_form.charts }}
               </label>
+              <p class="help-text muted charts-multi-select-note">Tip: Hold Ctrl (Windows) or Cmd (Mac) to select multiple charts.</p>
             </div>
           </div>
           <div class="grid-x grid-margin-x margin-top-1">
@@ -350,7 +352,12 @@
             <div class="chart-shell margin-bottom-1">
               <div class="grid-x align-justify align-middle">
                 <div class="cell auto">
-                  <h4 class="margin-0">{{ panel.title }}{% if panel.unit %} <span class="muted">({{ panel.unit }})</span>{% endif %}</h4>
+                  <h4 class="margin-0">
+                    {{ panel.title }}{% if panel.unit %} <span class="muted">({{ panel.unit }})</span>{% endif %}
+                    {% if panel.id == "free_upgrades_by_run" %}
+                      <span class="badge chart-total-badge">Total</span>
+                    {% endif %}
+                  </h4>
                   {% if panel.description %}
                     <p class="muted margin-0">{{ panel.description }}</p>
                   {% endif %}
@@ -880,7 +887,7 @@
         return chart;
       }
 
-      function renderScatterChart(canvasId, datasets, runIds, xLabel, xUnit, yLabel, yUnit) {
+      function renderMetricChart(canvasId, datasets, runIds, xLabel, xUnit, yLabel, yUnit, chartType = "scatter") {
         const canvas = document.getElementById(canvasId);
         const ctx = canvas ? canvas.getContext("2d") : null;
         if (!ctx || datasets.length === 0) return;
@@ -889,10 +896,13 @@
         const xTitle = xLabel ? `${xLabel}${xUnit ? ` (${xUnit})` : ""}` : "X";
         const yTitle = yLabel ? `${yLabel}${yUnit ? ` (${yUnit})` : ""}` : "Y";
         const hasRunIds = Array.isArray(runIds) && runIds.length;
+        const chartKind = chartType === "area" ? "line" : chartType;
+        const showLegend = chartType !== "scatter";
+        const chartDatasets = chartType === "area" ? applyAreaStyle(datasets) : datasets;
         const chart = new Chart(ctx, {
-          type: "scatter",
+          type: chartKind,
           data: {
-            datasets,
+            datasets: chartDatasets,
           },
           options: {
             responsive: true,
@@ -908,7 +918,7 @@
               window.openBattleReportModal(runId, runIds, chartOrderNote);
             },
             plugins: {
-              legend: { display: false },
+              legend: { display: showLegend, labels: { color: legendLabelColor } },
               tooltip: {
                 ...baseTooltip,
                 callbacks: {
@@ -950,19 +960,20 @@
         if (panel.chart_type === "donut") {
           return renderDonutChart(canvasId, panel.labels, panel.datasets);
         }
-        if (panel.chart_type === "bar") {
-          return renderBarChart(canvasId, panel.labels, panel.datasets, panel.stacked, panel.run_ids, panel.id);
-        }
-        if (panel.chart_type === "scatter") {
-          return renderScatterChart(
+        if (panel.x_axis === "metric") {
+          return renderMetricChart(
             canvasId,
             panel.datasets,
             panel.run_ids,
             panel.x_label,
             panel.x_unit,
             panel.y_label,
-            panel.y_unit
+            panel.y_unit,
+            panel.chart_type
           );
+        }
+        if (panel.chart_type === "bar") {
+          return renderBarChart(canvasId, panel.labels, panel.datasets, panel.stacked, panel.run_ids, panel.id);
         }
         if (panel.chart_type === "area") {
           return renderLineChart(canvasId, panel.labels, panel.datasets, panel.run_ids, "area");
@@ -1080,17 +1091,22 @@
             <h5 class="margin-bottom-0">Step 2 — Chart settings</h5>
             <p class="muted margin-top-0">Chart type and grouping apply to the selected metrics.</p>
             <div class="grid-x grid-margin-x">
-              <div class="cell medium-4">
+              <div class="cell medium-3">
                 <label>{{ chart_builder_form.chart_type.label }}
                   {{ chart_builder_form.chart_type }}
                 </label>
               </div>
-              <div class="cell medium-4">
+              <div class="cell medium-3">
+                <label>{{ chart_builder_form.x_axis.label }}
+                  {{ chart_builder_form.x_axis }}
+                </label>
+              </div>
+              <div class="cell medium-3">
                 <label>{{ chart_builder_form.group_by.label }}
                   {{ chart_builder_form.group_by }}
                 </label>
               </div>
-              <div class="cell medium-4">
+              <div class="cell medium-3">
                 <label>{{ chart_builder_form.smoothing.label }}
                   {{ chart_builder_form.smoothing }}
                 </label>
@@ -1171,6 +1187,7 @@
                 </select>
               </label>
               <input type="hidden" name="chart_type" id="snapshot-chart-type-hidden" value="">
+              <input type="hidden" name="x_axis" id="snapshot-x-axis-hidden" value="">
               <input type="hidden" name="group_by" id="snapshot-group-by-hidden" value="">
               <input type="hidden" name="comparison" id="snapshot-comparison-hidden" value="">
               <input type="hidden" name="smoothing" id="snapshot-smoothing-hidden" value="">
@@ -1303,6 +1320,7 @@
           if (!contextForm) return;
 
           const chartType = document.querySelector("#chart-builder-modal [name='chart_type']");
+          const xAxis = document.querySelector("#chart-builder-modal [name='x_axis']");
           const groupBy = document.querySelector("#chart-builder-modal [name='group_by']");
           const comparison = document.querySelector("#chart-builder-modal [name='comparison']");
           const smoothing = document.querySelector("#chart-builder-modal [name='smoothing']");
@@ -1323,6 +1341,7 @@
 
           setHidden("builder-flag", "1");
           setHidden("builder-chart-type-hidden", chartType ? chartType.value : "");
+          setHidden("builder-x-axis-hidden", xAxis ? xAxis.value : "");
           setHidden("builder-group-by-hidden", groupBy ? groupBy.value : "");
           setHidden("builder-comparison-hidden", comparison ? comparison.value : "");
           setHidden("builder-smoothing-hidden", smoothing ? smoothing.value : "");
@@ -1387,6 +1406,7 @@
         if (snapshotForm) {
           snapshotForm.addEventListener("submit", function() {
             const chartType = document.querySelector("#chart-builder-modal [name='chart_type']");
+            const xAxis = document.querySelector("#chart-builder-modal [name='x_axis']");
             const groupBy = document.querySelector("#chart-builder-modal [name='group_by']");
             const comparison = document.querySelector("#chart-builder-modal [name='comparison']");
             const smoothing = document.querySelector("#chart-builder-modal [name='smoothing']");
@@ -1406,6 +1426,7 @@
             }
 
             setHidden("snapshot-chart-type-hidden", chartType ? chartType.value : "");
+            setHidden("snapshot-x-axis-hidden", xAxis ? xAxis.value : "");
             setHidden("snapshot-group-by-hidden", groupBy ? groupBy.value : "");
             setHidden("snapshot-comparison-hidden", comparison ? comparison.value : "");
             setHidden("snapshot-smoothing-hidden", smoothing ? smoothing.value : "");
@@ -1421,6 +1442,7 @@
 
         const metricsSelect = document.querySelector("#chart-builder-modal [name='metric_keys']");
         const chartTypeSelect = document.querySelector("#chart-builder-modal [name='chart_type']");
+        const xAxisSelect = document.querySelector("#chart-builder-modal [name='x_axis']");
         const groupBySelect = document.querySelector("#chart-builder-modal [name='group_by']");
         const comparisonSelect = document.querySelector("#chart-builder-modal [name='comparison']");
         const smoothingSelect = document.querySelector("#chart-builder-modal [name='smoothing']");
@@ -1448,18 +1470,31 @@
         function updateChartTypeConstraints() {
           if (!chartTypeSelect) return;
           const donutOption = Array.from(chartTypeSelect.options || []).find((o) => o.value === "donut");
+          const scatterOption = Array.from(chartTypeSelect.options || []).find((o) => o.value === "scatter");
           if (!donutOption) return;
           donutOption.disabled = selectedMetricCount() < 2;
           if (donutOption.disabled && chartTypeSelect.value === "donut") {
             chartTypeSelect.value = "line";
           }
+          if (scatterOption) {
+            scatterOption.disabled = selectedMetricCount() !== 2;
+            if (scatterOption.disabled && chartTypeSelect.value === "scatter") {
+              chartTypeSelect.value = "line";
+            }
+          }
         }
 
         function enforceSchemaConstraints() {
           const chartType = chartTypeSelect ? chartTypeSelect.value : "line";
+          const xAxis = xAxisSelect ? xAxisSelect.value : "time";
           const comparison = comparisonSelect ? comparisonSelect.value : "none";
           const donutSelected = chartType === "donut";
           const comparisonActive = comparison !== "none";
+          const metricAxis = xAxis === "metric";
+
+          if (chartType === "scatter" && xAxisSelect) {
+            xAxisSelect.value = "metric";
+          }
 
           if (comparisonActive && chartTypeSelect) {
             const donutOption = Array.from(chartTypeSelect.options || []).find((o) => o.value === "donut");
@@ -1468,6 +1503,30 @@
           }
 
           if (donutSelected) {
+            if (xAxisSelect) {
+              xAxisSelect.value = "time";
+              xAxisSelect.disabled = true;
+            }
+            if (groupBySelect) {
+              groupBySelect.value = "time";
+              groupBySelect.disabled = true;
+            }
+            if (comparisonSelect) {
+              comparisonSelect.value = "none";
+              comparisonSelect.disabled = true;
+            }
+            if (smoothingSelect) {
+              smoothingSelect.value = "none";
+              smoothingSelect.disabled = true;
+            }
+            return;
+          }
+
+          if (xAxisSelect) {
+            xAxisSelect.disabled = chartType === "scatter";
+          }
+
+          if (metricAxis) {
             if (groupBySelect) {
               groupBySelect.value = "time";
               groupBySelect.disabled = true;
@@ -1521,6 +1580,7 @@
 
           if (!keys.length) {
             if (chartTypeSelect) chartTypeSelect.disabled = true;
+            if (xAxisSelect) xAxisSelect.disabled = true;
             if (groupBySelect) groupBySelect.disabled = true;
             if (comparisonSelect) comparisonSelect.disabled = true;
             if (smoothingSelect) smoothingSelect.disabled = true;
@@ -1535,41 +1595,50 @@
           }
 
           if (chartTypeSelect) chartTypeSelect.disabled = false;
+          if (xAxisSelect) xAxisSelect.disabled = false;
           if (comparisonSelect) comparisonSelect.disabled = false;
           if (smoothingSelect) smoothingSelect.disabled = false;
           if (groupBySelect) groupBySelect.disabled = false;
-          updateComparisonControls();
           enforceSchemaConstraints();
+          updateComparisonControls();
 
           if (chartTypeSelect && chartTypeSelect.value === "donut" && keys.length < 2) {
             apply.disabled = true;
             setConstraintMessage("Donut charts require at least two metrics.");
             return;
           }
-          let unit = null;
-          let category = null;
-          for (const key of keys) {
-            const meta = chartBuilderMetricMeta[key];
-            if (!meta) continue;
-            unit = unit || meta.unit;
-            category = category || meta.category;
-            if (meta.unit !== unit) {
-              apply.disabled = true;
-              setConstraintMessage("Selected metrics must share the same unit.");
-              return;
-            }
-            if (meta.category !== category) {
-              apply.disabled = true;
-              setConstraintMessage("Selected metrics must share the same category.");
-              return;
-            }
+          const axisMode = xAxisSelect ? xAxisSelect.value : "time";
+          if (axisMode === "metric" && keys.length !== 2) {
+            apply.disabled = true;
+            setConstraintMessage("Metric-vs-metric charts require exactly two metrics.");
+            return;
           }
-          if (smoothingSelect && smoothingSelect.value === "rolling_avg") {
-            const unsupported = keys.filter((k) => chartBuilderMetricMeta[k] && !chartBuilderMetricMeta[k].supports_rolling_avg);
-            if (unsupported.length) {
-              apply.disabled = true;
-              setConstraintMessage(`Rolling average is not supported for: ${unsupported.join(", ")}`);
-              return;
+          if (axisMode !== "metric") {
+            let unit = null;
+            let category = null;
+            for (const key of keys) {
+              const meta = chartBuilderMetricMeta[key];
+              if (!meta) continue;
+              unit = unit || meta.unit;
+              category = category || meta.category;
+              if (meta.unit !== unit) {
+                apply.disabled = true;
+                setConstraintMessage("Selected metrics must share the same unit.");
+                return;
+              }
+              if (meta.category !== category) {
+                apply.disabled = true;
+                setConstraintMessage("Selected metrics must share the same category.");
+                return;
+              }
+            }
+            if (smoothingSelect && smoothingSelect.value === "rolling_avg") {
+              const unsupported = keys.filter((k) => chartBuilderMetricMeta[k] && !chartBuilderMetricMeta[k].supports_rolling_avg);
+              if (unsupported.length) {
+                apply.disabled = true;
+                setConstraintMessage(`Rolling average is not supported for: ${unsupported.join(", ")}`);
+                return;
+              }
             }
           }
           apply.disabled = false;
@@ -1589,6 +1658,7 @@
 
         if (metricsSelect) metricsSelect.addEventListener("change", () => { updateChartTypeConstraints(); updateMetricCompatibility(); });
         if (chartTypeSelect) chartTypeSelect.addEventListener("change", updateMetricCompatibility);
+        if (xAxisSelect) xAxisSelect.addEventListener("change", updateMetricCompatibility);
         if (groupBySelect) groupBySelect.addEventListener("change", updateMetricCompatibility);
         if (comparisonSelect) comparisonSelect.addEventListener("change", () => { updateComparisonControls(); updateMetricCompatibility(); });
         if (smoothingSelect) smoothingSelect.addEventListener("change", updateMetricCompatibility);

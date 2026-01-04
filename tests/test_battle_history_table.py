@@ -42,6 +42,7 @@ def test_battle_history_renders_import_widget_and_sort_links(auth_client, player
     assert "sort=run_progress__battle_date" in content
     assert "sort=-run_progress__wave" in content
     assert "sort=-run_progress__coins_earned" in content
+    assert "Run #" in content
     assert "Highest wave" in content
     assert "1234" in content
     assert "Gem blocks" in content
@@ -169,6 +170,80 @@ def test_battle_history_includes_killed_by_donut_chart(auth_client, player) -> N
     assert response.context["killed_by_donut_json"] is not None
     assert "Boss" in response.context["killed_by_donut_json"]
     assert "Killed By (diagnostic)" in response.content.decode("utf-8")
+
+
+@pytest.mark.django_db
+def test_battle_history_run_number_is_chronological(auth_client, player) -> None:
+    """Run numbers reflect chronological order per player."""
+
+    ingest_battle_report(
+        "\n".join(
+            [
+                "Battle Report",
+                "Battle Date: 2025-12-01 10:00:00",
+                "Tier: 6",
+                "Wave: 123",
+                "Coins Earned: 1.00M",
+            ]
+        ),
+        player=player,
+    )
+    ingest_battle_report(
+        "\n".join(
+            [
+                "Battle Report",
+                "Battle Date: 2025-12-03 10:00:00",
+                "Tier: 7",
+                "Wave: 456",
+                "Coins Earned: 2.00M",
+            ]
+        ),
+        player=player,
+    )
+
+    response = auth_client.get(reverse("core:battle_history"))
+    assert response.status_code == 200
+
+    ordered_ids = list(
+        BattleReport.objects.filter(player=player)
+        .select_related("run_progress")
+        .order_by("run_progress__battle_date")
+        .values_list("id", flat=True)
+    )
+    row_numbers = {row["run"].id: row["run_number"] for row in response.context["page_rows"]}
+    assert row_numbers[ordered_ids[0]] == 1
+    assert row_numbers[ordered_ids[1]] == 2
+
+
+@pytest.mark.django_db
+def test_battle_history_column_preferences_limit_columns(auth_client, player) -> None:
+    """Column preferences restrict the table headers to selected columns."""
+
+    ingest_battle_report(
+        "\n".join(
+            [
+                "Battle Report",
+                "Battle Date: 2025-12-01 10:00:00",
+                "Tier: 6",
+                "Wave: 123",
+                "Coins Earned: 1.00M",
+            ]
+        ),
+        player=player,
+    )
+
+    response = auth_client.post(
+        reverse("core:battle_history"),
+        data={
+            "action": "update_column_preferences",
+            "columns": ["run_number", "battle_date"],
+            "next": reverse("core:battle_history"),
+        },
+        follow=True,
+    )
+    assert response.status_code == 200
+    visible_keys = [column["key"] for column in response.context["visible_column_views"]]
+    assert visible_keys == ["run_number", "battle_date"]
 
 
 @pytest.mark.django_db

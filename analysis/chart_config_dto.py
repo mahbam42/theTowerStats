@@ -14,10 +14,11 @@ from datetime import date
 from typing import Literal
 
 
-ChartType = Literal["line", "bar", "area", "donut"]
+ChartType = Literal["line", "bar", "area", "scatter", "donut"]
 GroupBy = Literal["time", "tier", "preset"]
 ComparisonMode = Literal["none", "before_after", "run_vs_run"]
 SmoothingMode = Literal["none", "rolling_avg"]
+XAxisMode = Literal["time", "metric"]
 
 
 @dataclass(frozen=True, slots=True)
@@ -68,6 +69,7 @@ class ChartConfigDTO:
         smoothing: Optional smoothing mode (rolling average).
         context: Context filters used when producing the chart.
         scopes: Exactly two scopes when `comparison != "none"`.
+        x_axis: X-axis mode ("time" or metric-vs-metric).
         version: DTO version for forwards-compatible snapshot decoding.
     """
 
@@ -78,4 +80,5 @@ class ChartConfigDTO:
     smoothing: SmoothingMode
     context: ChartContextDTO
     scopes: tuple[ChartScopeDTO, ChartScopeDTO] | None = None
+    x_axis: XAxisMode = "time"
     version: str = "phase7_chart_config_v1"

@@ -52,6 +52,21 @@ def validate_chart_config_dto(
         if len(config.metrics) < 2:
             errors.append("Donut charts require at least two metrics.")
 
+    if config.chart_type == "scatter" and config.x_axis != "metric":
+        errors.append("Scatter charts require metric-vs-metric axis selection.")
+
+    if config.x_axis == "metric":
+        if config.chart_type == "donut":
+            errors.append("Metric-vs-metric charts do not support donut charts.")
+        if len(config.metrics) != 2:
+            errors.append("Metric-vs-metric charts require exactly two metrics.")
+        if config.group_by != "time":
+            errors.append("Metric-vs-metric charts do not support grouping.")
+        if config.comparison != "none":
+            errors.append("Metric-vs-metric charts do not support comparisons.")
+        if config.smoothing != "none":
+            errors.append("Metric-vs-metric charts do not support smoothing.")
+
     if config.comparison != "none":
         if config.scopes is None or len(config.scopes) != 2:
             errors.append("Two-scope comparisons require exactly two scopes.")
@@ -66,7 +81,7 @@ def validate_chart_config_dto(
             continue
         specs.append(spec)
 
-    if len(specs) >= 2:
+    if len(specs) >= 2 and config.x_axis != "metric":
         units = {spec.unit for spec in specs}
         if len(units) > 1:
             errors.append(f"Mixed units are not allowed in one chart: {sorted(units)}.")
@@ -95,4 +110,3 @@ def validate_chart_config_dto(
                 errors.append(f"before_after scope {idx} start_date must be <= end_date.")
 
     return ChartConfigValidationResult(is_valid=not errors, errors=tuple(errors), warnings=tuple(warnings))
-

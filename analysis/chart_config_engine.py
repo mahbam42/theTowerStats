@@ -24,7 +24,7 @@ class ChartDatasetDTO:
         label: Dataset label shown in legends.
         metric_key: MetricSeries key used for the dataset.
         unit: Display unit string.
-        values: Values aligned to `ChartDataDTO.labels`.
+        values: Values aligned to `ChartDataDTO.labels` or metric-vs-metric points.
         run_counts: Count of non-null contributing points aligned to labels.
         scope_label: Optional scope label when produced from a two-scope comparison.
     """
@@ -32,7 +32,7 @@ class ChartDatasetDTO:
     label: str
     metric_key: str
     unit: str
-    values: list[float | None]
+    values: list[float | None] | list[dict[str, float | int | None]]
     run_counts: list[int]
     scope_label: str | None = None
 
@@ -42,14 +42,26 @@ class ChartDataDTO:
     """Chart output DTO produced from a ChartConfigDTO.
 
     Args:
-        labels: ISO date labels.
-        datasets: Datasets aligned to labels.
-        chart_type: Config chart type (line/bar/donut).
+        labels: ISO date labels for time-based charts.
+        datasets: Datasets aligned to labels or metric-vs-metric points.
+        chart_type: Config chart type (line/bar/area/scatter/donut).
+        x_axis: X-axis mode ("time" or "metric").
+        x_label: X-axis label for metric-vs-metric charts.
+        x_unit: X-axis unit for metric-vs-metric charts.
+        y_label: Y-axis label for metric-vs-metric charts.
+        y_unit: Y-axis unit for metric-vs-metric charts.
+        run_ids: Run id list aligned to metric-vs-metric points.
     """
 
     labels: list[str]
     datasets: list[ChartDatasetDTO]
     chart_type: str
+    x_axis: str = "time"
+    x_label: str | None = None
+    x_unit: str | None = None
+    y_label: str | None = None
+    y_unit: str | None = None
+    run_ids: list[int | None] | None = None
 
 
 def analyze_chart_config_dto(
@@ -77,6 +89,8 @@ def analyze_chart_config_dto(
 
     if config.chart_type == "donut":
         return _analyze_donut(records, config=config, registry=registry)
+    if config.x_axis == "metric":
+        return _analyze_metric_axis(records, config=config, registry=registry)
 
     metric_points_by_key: dict[str, tuple[MetricPoint, ...]] = {}
     for metric_key in config.metrics:
@@ -115,6 +129,82 @@ def analyze_chart_config_dto(
             )
 
     return ChartDataDTO(labels=labels, datasets=datasets, chart_type=config.chart_type)
+
+
+def _analyze_metric_axis(
+    records: Iterable[object],
+    *,
+    config: ChartConfigDTO,
+    registry: MetricSeriesRegistry,
+) -> ChartDataDTO:
+    """Analyze a metric-vs-metric chart configuration into point datasets.
+
+    Args:
+        records: Iterable/QuerySet of battle report records already filtered by context.
+        config: ChartConfigDTO to execute (metric-vs-metric mode).
+        registry: MetricSeriesRegistry for labels/units.
+
+    Returns:
+        ChartDataDTO with x/y labels and point datasets.
+    """
+
+    if len(config.metrics) < 2:
+        return ChartDataDTO(labels=[], datasets=[], chart_type=config.chart_type, x_axis="metric")
+
+    x_key = config.metrics[0]
+    y_key = config.metrics[1]
+    x_spec = registry.get(x_key)
+    y_spec = registry.get(y_key)
+    if x_spec is None or y_spec is None:
+        return ChartDataDTO(labels=[], datasets=[], chart_type=config.chart_type, x_axis="metric")
+
+    x_result = analyze_metric_series(
+        records,
+        metric_key=x_key,
+        transform="none",
+        context=None,
+        entity_type=None,
+        entity_name=None,
+    )
+    y_result = analyze_metric_series(
+        records,
+        metric_key=y_key,
+        transform="none",
+        context=None,
+        entity_type=None,
+        entity_name=None,
+    )
+
+    points: list[dict[str, float | int | None]] = []
+    run_ids: list[int | None] = []
+    for x_point, y_point in zip(x_result.points, y_result.points, strict=False):
+        if x_point.value is None or y_point.value is None:
+            continue
+        run_id = x_point.run_id if x_point.run_id is not None else y_point.run_id
+        points.append({"x": float(x_point.value), "y": float(y_point.value), "runId": run_id})
+        run_ids.append(run_id)
+
+    label = f"{y_spec.label} vs {x_spec.label}"
+    datasets = [
+        ChartDatasetDTO(
+            label=label,
+            metric_key=y_key,
+            unit=y_spec.unit,
+            values=points,
+            run_counts=[],
+        )
+    ]
+    return ChartDataDTO(
+        labels=[],
+        datasets=datasets,
+        chart_type=config.chart_type,
+        x_axis="metric",
+        x_label=x_spec.label,
+        x_unit=x_spec.unit,
+        y_label=y_spec.label,
+        y_unit=y_spec.unit,
+        run_ids=run_ids,
+    )
 
 
 def _analyze_donut(records: Iterable[object], *, config: ChartConfigDTO, registry: MetricSeriesRegistry) -> ChartDataDTO:

@@ -15,7 +15,7 @@ More Options lets you refine which charts are displayed and how runs are filtere
 
 1. Select **Charts** in the navigation.
 2. Select **More options** to expand the panel.
-3. Select one or more entries in **Charts** to control which charts appear.
+3. Select one or more entries in **Charts** to control which charts appear. Hold **Ctrl** (Windows) or **Cmd** (Mac) to select multiple entries.
 4. Select **Rolling window** and **Rolling window size** to limit the most recent runs or days.
 5. Select **Moving average window** to smooth the line charts.
 6. Select **Ultimate Weapon**, **Guardian Chip**, or **Bot** to filter to runs where the item appears.

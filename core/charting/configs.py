@@ -226,7 +226,7 @@ CHART_CONFIGS: Final[tuple[ChartConfig, ...]] = (
     ChartConfig(
         id="free_upgrades_by_run",
         title="Free Upgrades by Run",
-        description="Stacked breakdown of free attack, defense, and utility upgrades per run. Total appears in the tooltip.",
+        description="Stacked breakdown of free attack, defense, and utility upgrades per run. Total appears in the tooltip and header badge.",
         category="economy",
         domain="economy",
         semantic_type="absolute",
@@ -244,6 +244,26 @@ CHART_CONFIGS: Final[tuple[ChartConfig, ...]] = (
             preset=SimpleFilterConfig(enabled=True),
         ),
         ui=ChartUI(show_by_default=True, selectable=True, order=6),
+    ),
+    ChartConfig(
+        id="free_upgrades_vs_coins_earned",
+        title="Free Upgrades vs Coins Earned",
+        description="Scatter of total free upgrades against total coins earned.",
+        category="economy",
+        domain="economy",
+        semantic_type="comparative",
+        chart_type="scatter",
+        default_granularity="per_run",
+        metric_series=(
+            ChartSeriesConfig(metric_key="free_upgrades_total", label="Free upgrades"),
+            ChartSeriesConfig(metric_key="coins_earned", label="Coins earned"),
+        ),
+        filters=ChartFilters(
+            date_range=DateRangeFilterConfig(enabled=True, default_start=DEFAULT_START),
+            tier=SimpleFilterConfig(enabled=True),
+            preset=SimpleFilterConfig(enabled=True),
+        ),
+        ui=ChartUI(show_by_default=False, selectable=True, order=9),
     ),
     ChartConfig(
         id="run_duration_vs_coins_earned",

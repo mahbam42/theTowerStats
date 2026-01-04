@@ -28,6 +28,7 @@ def test_build_runtime_chart_config_defaults() -> None:
         group_by="time",
         comparison="none",
         smoothing="none",
+        x_axis="time",
     )
     config = build_runtime_chart_config(selection)
 
@@ -47,6 +48,7 @@ def test_build_runtime_chart_config_rolling_avg_and_donut() -> None:
         group_by="time",
         comparison="none",
         smoothing="rolling_avg",
+        x_axis="time",
     )
     config = build_runtime_chart_config(selection)
 
@@ -63,6 +65,7 @@ def test_build_runtime_chart_config_group_by_tier() -> None:
         group_by="tier",
         comparison="none",
         smoothing="none",
+        x_axis="time",
     )
     config = build_runtime_chart_config(selection)
 
@@ -93,6 +96,7 @@ def test_build_runtime_chart_config_comparison_without_scopes() -> None:
         group_by="time",
         comparison="before_after",
         smoothing="none",
+        x_axis="time",
     )
     config = build_runtime_chart_config(selection)
 
@@ -109,6 +113,7 @@ def test_build_runtime_chart_config_group_by_preset() -> None:
         group_by="preset",
         comparison="none",
         smoothing="none",
+        x_axis="time",
     )
     config = build_runtime_chart_config(selection)
 

@@ -178,6 +178,10 @@ a:focus {
   color: var(--tts-color-text-muted);
 }
 
+.charts-multi-select-note {
+  font-size: 0.78rem;
+}
+
 .card-shell {
   background: var(--tts-color-surface);
   border: 1px solid var(--tts-color-border);
@@ -450,6 +454,13 @@ textarea:active {
 .label {
   background: var(--tts-color-border-muted);
   color: var(--tts-color-text);
+}
+
+.chart-total-badge {
+  margin-left: var(--tts-space-2);
+  font-size: 0.7rem;
+  letter-spacing: 0.02em;
+  text-transform: uppercase;
 }
 
 .badge.warning,

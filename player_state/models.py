@@ -150,6 +150,27 @@ class ChartSnapshot(models.Model):
         super().save(*args, **kwargs)
 
 
+class BattleHistoryColumnPreference(models.Model):
+    """Persisted Battle History column visibility preferences per player."""
+
+    player = models.OneToOneField(
+        Player,
+        on_delete=models.CASCADE,
+        related_name="battle_history_column_preferences",
+    )
+    columns = models.JSONField(
+        default=list,
+        help_text="Ordered list of visible Battle History column keys.",
+    )
+    created_at = models.DateTimeField(auto_now_add=True)
+    updated_at = models.DateTimeField(auto_now=True)
+
+    def __str__(self) -> str:
+        """Return a concise display string for admin contexts."""
+
+        return f"BattleHistoryColumnPreference(player_id={self.player_id})"
+
+
 class PlayerCard(models.Model):
     """Player card unlock state.
 

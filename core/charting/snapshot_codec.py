@@ -32,6 +32,7 @@ def encode_chart_config_dto(config: ChartConfigDTO) -> dict[str, Any]:
         "group_by": config.group_by,
         "comparison": config.comparison,
         "smoothing": config.smoothing,
+        "x_axis": config.x_axis,
         "context": context,
     }
     if config.scopes is not None:
@@ -96,6 +97,7 @@ def decode_chart_config_dto(payload: dict[str, Any]) -> ChartConfigDTO:
         smoothing=str(payload.get("smoothing") or "none"),  # type: ignore[arg-type]
         context=context,
         scopes=scopes,
+        x_axis=str(payload.get("x_axis") or "time"),  # type: ignore[arg-type]
         version=str(payload.get("version") or "phase7_chart_config_v1"),
     )
 
