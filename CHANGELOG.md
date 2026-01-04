@@ -9,10 +9,18 @@ This project follows Semantic Versioning.
 - Charts: default granularity to By battle log and reorganize dashboard controls with chart descriptions/tooltips.
 - Charts: move “Include tournaments” into the primary context controls.
 - Charts: compare run selectors display tier, wave, date, and time.
+- Charts: add fullscreen chart modal and Battle Report modal links from chart tooltips.
+- Charts: add run duration vs coins earned scatter and coins earned over time area charts.
+- Charts: add free upgrades stacked chart; show total upgrades in the tooltip.
+- Charts: add guided walkthrough entry point for demo mode and first login.
 - Tests: expand chart builder coverage and align demo CSV export test expectations.
 - Fix per-run label rendering and flagging; clarify chart labels in docs
 - Docs: add Admin Panel documentation.
 - Docs: add master prompts 41 and 42 to archive.
+- Docs: revise Charts user guide and update development workflow notes.
+- Landing page: make Getting Started the default homepage with a demo chart preview and docs links.
+- Demo data: refresh sample Battle Reports with early, mid, and late-game runs.
+- Roadmap: update phase planning notes.
 
 ## [0.4.0]
 

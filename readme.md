@@ -49,6 +49,8 @@ Guiding principles:
 - Default chart window uses the current **Event window**, with navigation controls
 - Default chart granularity is **By battle log**, with an optional switch to **By date**
 - Export derived metrics to CSV and download chart images as PNG snapshots
+- Full-screen chart modal and tooltip links to open Battle Report details
+- Guided walkthrough available in demo mode or on first login
 
 ### 🎯 Goals Dashboard
 
@@ -79,7 +81,7 @@ Guiding principles:
 - Shared dashboard shell with top navigation, global search, and consistent callouts
 - Foundation grid/forms for Battle History, Charts, and progress dashboards
 - Clear charts designed to answer real questions quickly
-- Optional demo dataset for safe exploration without importing your own data
+- Optional demo dataset (early, mid, and late game samples) for safe exploration without importing your own data
 
 ---
 

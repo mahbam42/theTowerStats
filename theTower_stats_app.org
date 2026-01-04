@@ -2425,7 +2425,7 @@ CLOSED: [2025-12-22 Mon 15:31]
 - [X] fetch_wiki_data and rebuild_wiki_definitions should have a pretty summary of deltas at the end.
   Especially when using --target all.
 
-*** Bugs/Enhancements [45/49]
+*** Bugs/Enhancements [48/50]
 
 **** DONE [#B] Error Updating Guardian Upgrade Table                 :bug:
 CLOSED: [2025-12-22 Mon 18:51]
@@ -3097,8 +3097,10 @@ CLOSED: [2026-01-02 Fri 15:46]
   - Damage by Source
   - Free Upgrades by Run (also fix the colors so there's visual separation.
   - Open to suggestions/even possibly a new chart
-**** TODO Make Getting Started the default homepage 
+**** DONE Make Getting Started the default homepage 
+CLOSED: [2026-01-04 Sun 09:25]
 
+- State "DONE"       from "TODO"       [2026-01-04 Sun 09:25]
 - Remove 'Getting Started' from the Top Nav
 - In Start Here If a user is not signed in have a small sign in widget and CTA to create account (can just link to the login page) 
 - Below 'Start Here' add a section linking to the Github repo with brief guidance that users can fork/clone the repo and self host. 
@@ -3108,13 +3110,17 @@ CLOSED: [2026-01-02 Fri 15:46]
   - 'Charts' should link to Charts.md
   - Add callout for Chart Builder
   - Ensure strong SEO on the public facing landing page. 
-**** TODO Improve Demo Data 
+**** DONE Improve Demo Data 
+CLOSED: [2026-01-04 Sun 09:25]
+- State "DONE"       from "TODO"       [2026-01-04 Sun 09:25]
 Minimum of 6 Battle Reports, dates spread to fall into 3 event windows.
 - 2 Early Game Runs (Low Values)
 - 2 Mid Tier (approximately mahbam42's data)
 - 2 Late Game, High Tier, Coins in the mid billions
 - Ensure that Mid and Late Game battle reports have suffiecient data to demonstrate all features. 
-**** IN PROGRESS prompt43.md
+**** DONE prompt43.md
+CLOSED: [2026-01-04 Sun 09:25]
+- State "DONE"       from "IN PROGRESS" [2026-01-04 Sun 09:25]
 - State "IN PROGRESS" from              [2026-01-02 Fri 14:52]
 
 
@@ -3122,9 +3128,10 @@ Minimum of 6 Battle Reports, dates spread to fall into 3 event windows.
 - [X] Landing Page
 - [X] Demo Data
 - [X] Guided Walkthrough
-- [ ] Remove 'total' line from 'Free Upgrades by Run' stacked chart. We need to show the total (sum of Attack, Defense, and Utility) somewhere on the Chart. 
-- [ ] Changelog Updates everything since 2cb639c
+- [X] Remove 'total' line from 'Free Upgrades by Run' stacked chart. We need to show the total (sum of Attack, Defense, and Utility) somewhere on the Chart. 
+- [X] Changelog Updates everything since 2cb639c
   git log -15 --oneline
+**** TODO [#C] add a small “Total” badge in the chart header to make the behavior more discoverable.
 **** TODO [#A] Free Upgrades vs Coins Earned (scatter)
 Correlation chart; no new data types; visually distinct.
 
