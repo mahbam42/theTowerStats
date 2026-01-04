@@ -2425,7 +2425,7 @@ CLOSED: [2025-12-22 Mon 15:31]
 - [X] fetch_wiki_data and rebuild_wiki_definitions should have a pretty summary of deltas at the end.
   Especially when using --target all.
 
-*** Bugs/Enhancements [48/53]
+*** Bugs/Enhancements [53/53]
 
 **** DONE [#B] Error Updating Guardian Upgrade Table                 :bug:
 CLOSED: [2025-12-22 Mon 18:51]
@@ -3131,9 +3131,13 @@ CLOSED: [2026-01-04 Sun 09:25]
 - [X] Remove 'total' line from 'Free Upgrades by Run' stacked chart. We need to show the total (sum of Attack, Defense, and Utility) somewhere on the Chart. 
 - [X] Changelog Updates everything since 2cb639c
   git log -15 --oneline
-**** TODO [#C] add a small “Total” badge in the chart header to make the behavior more discoverable.
+**** DONE [#C] add a small “Total” badge in the chart header to make the behavior more discoverable.
+CLOSED: [2026-01-04 Sun 17:33]
+- State "DONE"       from "TODO"       [2026-01-04 Sun 17:33]
 Enhancement to Free Upgrades Chart 
-**** TODO [#A] Free Upgrades vs Coins Earned (scatter)
+**** DONE [#A] Free Upgrades vs Coins Earned (scatter)
+CLOSED: [2026-01-04 Sun 17:33]
+- State "DONE"       from "TODO"       [2026-01-04 Sun 17:33]
 Correlation chart; no new data types; visually distinct.
 
 The Chart Builder only allows line, bar, and donut, and it always plots metrics against time (not metric‑vs‑metric). A correlation scatter like “Free Upgrades vs Coins Earned” isn’t supported in the builder right now.
@@ -3146,13 +3150,19 @@ forms.py (Chart Builder chart_type validation)
 - Extend Chart Builder to support Scatter Chart Types and to select more than just 'over time'
 - Use 'Free Upgrades vs. Coins Earned (scatter)' as an example with tutorial in Chart Builder Docs.
 - Add 1 or 2 more Example Use Cases for Chart Builder to Docs. 
-**** TODO [#A] On Battle History show Run Number
+**** DONE [#A] On Battle History show Run Number
+CLOSED: [2026-01-04 Sun 17:33]
+- State "DONE"       from "TODO"       [2026-01-04 Sun 17:33]
 It's useful and shown in the charts dashboard. Add a column to the table on Battle History to show the Run Number
 
 - Make sure that run number is scoped by player. Not just incremental to the order added to the database. 
-**** TODO [#B] Custom Column Display on Battle History Dashboard
+**** DONE [#B] Custom Column Display on Battle History Dashboard
+CLOSED: [2026-01-04 Sun 17:33]
+- State "DONE"       from "TODO"       [2026-01-04 Sun 17:33]
 Keep the current columns as the default, add a menu to toggle visibility of columns for all data in a battle report. Allow players to save their preferences. The idea is different players may prioritize different stats, so give them the option rearrange what they see. 
-**** TODO [#C] On Charts dashboard add a note that players can ctrl(/cmd) click multiple charts
+**** DONE [#C] On Charts dashboard add a note that players can ctrl(/cmd) click multiple charts
+CLOSED: [2026-01-04 Sun 17:33]
+- State "DONE"       from "TODO"       [2026-01-04 Sun 17:33]
 It's implied by the 6 default charts but it is a very handy feature. 
 ** Backlog [2/6]
 “Out of Scope”:
