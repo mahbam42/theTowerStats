@@ -53,6 +53,7 @@ Charts help you review how your run results change over time using the same valu
 - Scatter charts compare two values per run. Each dot represents a single run in your current filters.
 - Area charts emphasize momentum over time by shading the space under the line.
 - For donut charts, each slice represents the total for that value within your current filters, and the label includes the percent of the donut total. A slice named “Other coins” groups any remaining coins that are not listed as a named source.
+- For **Free Upgrades by Run**, hover a bar to see the total of Attack, Defense, and Utility upgrades for that run.
 - If a point is flagged, the tooltip includes a short reason that explains the signal.
 - Advanced analysis sections summarize observed differences using the snapshots you selected and the current filters you applied. They describe the basis and limitations and do not recommend actions.
 - Goal-aware comparisons report a weighted percent-change index across multiple metrics. A positive value means the selected metrics increased, after applying your selected weights.

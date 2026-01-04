@@ -226,7 +226,7 @@ CHART_CONFIGS: Final[tuple[ChartConfig, ...]] = (
     ChartConfig(
         id="free_upgrades_by_run",
         title="Free Upgrades by Run",
-        description="Stacked breakdown of free attack, defense, utility, and total upgrades per run.",
+        description="Stacked breakdown of free attack, defense, and utility upgrades per run. Total appears in the tooltip.",
         category="economy",
         domain="economy",
         semantic_type="absolute",
@@ -237,7 +237,6 @@ CHART_CONFIGS: Final[tuple[ChartConfig, ...]] = (
             ChartSeriesConfig(metric_key="free_attack_upgrades", label="Attack"),
             ChartSeriesConfig(metric_key="free_defense_upgrades", label="Defense"),
             ChartSeriesConfig(metric_key="free_utility_upgrades", label="Utility"),
-            ChartSeriesConfig(metric_key="free_upgrades_total", label="Total"),
         ),
         filters=ChartFilters(
             date_range=DateRangeFilterConfig(enabled=True, default_start=DEFAULT_START),

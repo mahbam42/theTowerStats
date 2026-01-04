@@ -753,7 +753,7 @@
         return context.granularity === "per_run" ? "Run" : "Date";
       }
 
-      function renderBarChart(canvasId, labels, datasets, stacked, runIds) {
+      function renderBarChart(canvasId, labels, datasets, stacked, runIds, chartId) {
         const canvas = document.getElementById(canvasId);
         const ctx = canvas ? canvas.getContext("2d") : null;
         if (!ctx || labels.length === 0 || datasets.length === 0) return;
@@ -761,6 +761,7 @@
         const tickColor = themeColor("--tts-color-chart-tick", "rgba(0, 0, 0, 0.72)");
         const { mappedDatasets, scales } = buildAxes(labels, datasets, gridColor, tickColor, xAxisTitle(), stacked);
         const hasRunIds = Array.isArray(runIds) && runIds.length;
+        const showTotal = chartId === "free_upgrades_by_run";
         const chart = new Chart(ctx, {
           type: "bar",
           data: {
@@ -786,6 +787,11 @@
                 ...baseTooltip,
                 callbacks: {
                   title: (items) => (items && items[0] ? `${xAxisTitle()}: ${items[0].label}` : ""),
+                  footer: (items) => {
+                    if (!showTotal || !Array.isArray(items) || items.length === 0) return "";
+                    const total = items.reduce((sum, item) => sum + (Number(item.parsed?.y) || 0), 0);
+                    return `Total: ${formatExactNumber(total)}`;
+                  },
                 },
               },
             },
@@ -945,7 +951,7 @@
           return renderDonutChart(canvasId, panel.labels, panel.datasets);
         }
         if (panel.chart_type === "bar") {
-          return renderBarChart(canvasId, panel.labels, panel.datasets, panel.stacked, panel.run_ids);
+          return renderBarChart(canvasId, panel.labels, panel.datasets, panel.stacked, panel.run_ids, panel.id);
         }
         if (panel.chart_type === "scatter") {
           return renderScatterChart(

@@ -60,6 +60,40 @@ def test_dashboard_walkthrough_is_available_on_first_login(auth_client) -> None:
 
 
 @pytest.mark.django_db
+def test_dashboard_free_upgrades_chart_excludes_total_series(auth_client, player) -> None:
+    """Free upgrades chart only stacks attack, defense, and utility series."""
+
+    from datetime import date as date_type
+
+    from core.services import ingest_battle_report
+
+    raw_text = "\n".join(
+        [
+            "Battle Report",
+            "Battle Date\tDec 10, 2025 10:00",
+            "Real Time\t1h 0m 0s",
+            "Tier\t1",
+            "Wave\t100",
+            "Free Attack Upgrade\t10",
+            "Free Defense Upgrade\t20",
+            "Free Utility Upgrade\t30",
+        ]
+    )
+    ingest_battle_report(raw_text, player=player, preset_name=None)
+
+    response = auth_client.get(
+        reverse("core:dashboard"),
+        {"charts": ["free_upgrades_by_run"], "start_date": date_type(2025, 12, 9)},
+    )
+    assert response.status_code == 200
+
+    panels = {p["id"]: p for p in json.loads(response.context["chart_panels_json"])}
+    panel = panels["free_upgrades_by_run"]
+    labels = [dataset.get("label") for dataset in panel["datasets"]]
+    assert labels == ["Attack", "Defense", "Utility"]
+
+
+@pytest.mark.django_db
 def test_dashboard_view_renders_with_no_data(auth_client) -> None:
     """Render the dashboard with no imported runs and show a neutral empty state."""
 
