@@ -2,7 +2,15 @@
 
 This project follows Semantic Versioning.
 
-## [0.5.1] (in progress)
+## [0.6.0] (in progress)
+
+- Charts: allow metric-vs-metric scatter with a selectable X-axis in the Chart Builder.
+- Charts: add a Free Upgrades vs Coins Earned scatter chart and show a Total badge on Free Upgrades by Run.
+- Charts: note multi-select behavior in the chart selector.
+- Battle History: add Run # ordering, real-time display, and per-user column visibility preferences.
+- Docs: update Charts, Chart Builder, and Battle History guides for the new behavior.
+
+## [0.5.1] 
 
 - UI: add dark theme styling across dashboards, navigation, tables, and callouts.
 - UI: reorder dashboard layouts on mobile so main content loads first, with compact tables on small screens.
