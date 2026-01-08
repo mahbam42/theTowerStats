@@ -37,7 +37,8 @@ Cards help you track your card slot progression and keep an organized view of yo
 
 - **Slots unlocked** shows your current slot count, and the maximum when it is available.
 - **Next slot cost** shows the cost for the next slot when the app has that data available.
-- **Next Level** increases automatically when your inventory progress rolls over into the next tier.
+- **Current level** reflects your saved card level and increases when your inventory progress rolls over into the next tier.
+- Level 0 means the card is unowned and has no saved progress.
 - **Rarity** shows the card’s rarity for quick scanning.
 - **Progress** is shown as current / threshold. When you exceed a threshold, the remainder carries into the next tier.
 - **(MAX)** indicates the card is fully maxed and can no longer be increased.

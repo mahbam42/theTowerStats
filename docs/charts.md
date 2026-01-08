@@ -42,6 +42,7 @@ Charts help you review how your run results change over time using the same valu
 - The **Why am I seeing this?** panel explains what your current filters include or exclude and how values are grouped.
 - The x-axis shows either dates or individual runs, based on the **Granularity** selection.
 - When you use **By battle log** and multiple runs share the same date, the x-axis label adds a Run number so each run stays distinct.
+- Run numbers are based on your own run history and do not use a global counter.
 - The y-axis shows the value for the selected chart, using the unit shown in the chart title.
 - Charts are grouped by domain:
   - **Economy** shows what your run produced (coins, cash, cells, reroll shards).

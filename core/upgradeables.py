@@ -140,6 +140,47 @@ def total_currency_invested_for_parameter(*, parameter_definition, level: int) -
     return _total_cost_invested_for_parameter(parameter_definition=parameter_definition, level=level)
 
 
+def total_currency_invested_from_level_zero(*, parameter_definition, level: int) -> int:
+    """Return total currency invested assuming a level-0 baseline.
+
+    Args:
+        parameter_definition: A parameter definition with `.levels` rows exposing `cost_raw`.
+        level: Current selected level, where level 0 represents no upgrades.
+
+    Returns:
+        Total parsed cost across level rows from 1..level inclusive.
+    """
+
+    if level <= 0:
+        return 0
+    total = 0
+    for row in parameter_definition.levels.filter(level__lte=level):
+        parsed = parse_cost_amount(cost_raw=getattr(row, "cost_raw", None))
+        if parsed is not None:
+            total += parsed
+    return total
+
+
+def levels_with_baseline_zero(levels: list[ParameterLevelRow]) -> list[ParameterLevelRow]:
+    """Ensure level rows include a level-0 baseline for display.
+
+    Args:
+        levels: Ordered level rows from wiki-derived tables.
+
+    Returns:
+        A new list of level rows with a synthetic level 0 when missing.
+    """
+
+    if not levels:
+        return []
+    ordered = sorted(levels, key=lambda row: row.level)
+    if ordered[0].level <= 0:
+        return ordered
+    baseline_cost = ordered[0].cost_raw
+    baseline = ParameterLevelRow(level=0, value_raw="", cost_raw=baseline_cost)
+    return [baseline] + ordered
+
+
 def total_stones_invested_for_parameter(*, parameter_definition, level: int) -> int:
     """Return total stones invested for a parameter up to a selected level.
 

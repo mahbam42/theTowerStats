@@ -74,7 +74,7 @@ def _bot_with_four_parameters(*, slug: str, name: str) -> BotDefinition:
 
 @pytest.mark.django_db
 def test_bot_unlock_creates_four_parameter_rows(auth_client, player) -> None:
-    """Unlocking a bot creates 4 parameter rows at the minimum level."""
+    """Unlocking a bot creates 4 parameter rows at level 0."""
 
     bot_def = _bot_with_four_parameters(slug="golden_bot", name="Golden Bot")
     bot = PlayerBot.objects.create(
@@ -92,7 +92,7 @@ def test_bot_unlock_creates_four_parameter_rows(auth_client, player) -> None:
     assert bot.unlocked is True
     params = list(PlayerBotParameter.objects.filter(player_bot=bot).order_by("id"))
     assert len(params) == 4
-    assert all(p.level == 1 for p in params)
+    assert all(p.level == 0 for p in params)
 
     response = auth_client.get(url)
     assert response.status_code == 200
@@ -156,7 +156,7 @@ def test_bots_dashboard_renders_wiki_link_when_available(auth_client, player) ->
 
 @pytest.mark.django_db
 def test_bot_level_down_decrements_until_min(auth_client, player) -> None:
-    """Level-down decrements by 1 and stops at the minimum level."""
+    """Level-down decrements by 1 and stops at level 0."""
 
     bot_def = _bot_with_four_parameters(slug="freeze_bot", name="Freeze Bot")
     bot = PlayerBot.objects.create(
@@ -183,7 +183,42 @@ def test_bot_level_down_decrements_until_min(auth_client, player) -> None:
     response = auth_client.post(url, data={"action": "level_down_bot_param", "param_id": player_param.id})
     assert response.status_code == 302
     player_param.refresh_from_db()
-    assert player_param.level == 1
+    assert player_param.level == 0
+
+
+@pytest.mark.django_db
+@pytest.mark.regression
+def test_bot_progress_totals_use_level_zero_baseline(auth_client, player) -> None:
+    """Total medals invested include costs up to the current level."""
+
+    bot_def = _bot_with_four_parameters(slug="thunder_bot", name="Thunder Bot")
+    bot = PlayerBot.objects.create(
+        player=player,
+        bot_definition=bot_def,
+        bot_slug=bot_def.slug,
+        unlocked=True,
+    )
+    param_def = bot_def.parameter_definitions.order_by("id").first()
+    assert param_def is not None
+    PlayerBotParameter.objects.create(
+        player=player,
+        player_bot=bot,
+        parameter_definition=param_def,
+        level=2,
+    )
+
+    url = reverse("core:bots_progress")
+    response = auth_client.get(url)
+    assert response.status_code == 200
+
+    tiles = response.context["bots"]
+    tile = next(entry for entry in tiles if entry["slug"] == bot_def.slug)
+    param_levels = {param["name"]: param["level"] for param in tile["parameters"]}
+    assert param_levels["Damage"] == 2
+    assert param_levels["Range"] == 0
+    assert param_levels["Duration"] == 0
+    assert param_levels["Cooldown"] == 0
+    assert tile["summary"]["total_invested"] == 11
 
 
 @pytest.mark.django_db

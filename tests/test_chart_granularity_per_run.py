@@ -61,8 +61,8 @@ def test_dashboard_per_run_granularity_emits_distinct_labels(auth_client, player
     panel = panels["coins_earned"]
     labels = panel["labels"]
     assert len(labels) == 2
-    assert any(f"Run {report_a.id}" in label for label in labels)
-    assert any(f"Run {report_b.id}" in label for label in labels)
+    assert any("Run 1" in label for label in labels)
+    assert any("Run 2" in label for label in labels)
 
     values = panel["datasets"][0]["data"]
     assert sorted(v for v in values if v is not None) == [1200.0, 2400.0]

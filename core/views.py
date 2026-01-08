@@ -86,7 +86,9 @@ from core.upgradeables import (
     build_upgradeable_parameter_view,
     build_uw_parameter_view,
     total_currency_invested_for_parameter,
+    total_currency_invested_from_level_zero,
     total_stones_invested_for_parameter,
+    levels_with_baseline_zero,
     validate_parameter_definitions,
     validate_uw_parameter_definitions,
 )
@@ -693,6 +695,7 @@ def dashboard(request: HttpRequest) -> HttpResponse:
         CHART_CONFIG_BY_ID[chart_id] for chart_id in selected_chart_ids if chart_id in CHART_CONFIG_BY_ID
     )
     configs_to_render = selected_configs
+    run_numbers_by_report_id = _run_numbers_by_report_id(player=player)
     rendered = render_charts(
         configs=configs_to_render,
         records=runs,
@@ -705,6 +708,7 @@ def dashboard(request: HttpRequest) -> HttpResponse:
             "bot": getattr(chart_form.cleaned_data.get("bot"), "name", None),
         },
         patch_boundaries=tuple(PatchBoundary.objects.values_list("boundary_date", flat=True)),
+        run_numbers_by_report_id=run_numbers_by_report_id,
     )
 
     chart_panels: list[dict[str, Any]] = [
@@ -856,6 +860,7 @@ def _landing_page_demo_chart_payload() -> dict[str, object] | None:
             "derived_metrics",
         )
     ).order_by("effective_battle_date")
+    run_numbers_by_report_id = _run_numbers_by_report_id(player=demo_player)
     rendered = render_charts(
         configs=(config,),
         records=runs,
@@ -864,6 +869,7 @@ def _landing_page_demo_chart_payload() -> dict[str, object] | None:
         moving_average_window=None,
         entity_selections={"uw": None, "guardian": None, "bot": None},
         patch_boundaries=tuple(PatchBoundary.objects.values_list("boundary_date", flat=True)),
+        run_numbers_by_report_id=run_numbers_by_report_id,
     )
     if not rendered:
         return None
@@ -924,6 +930,7 @@ def export_derived_metrics_csv(request: HttpRequest) -> HttpResponse:
             "bot": getattr(chart_form.cleaned_data.get("bot"), "name", None),
         },
         patch_boundaries=tuple(PatchBoundary.objects.values_list("boundary_date", flat=True)),
+        run_numbers_by_report_id=_run_numbers_by_report_id(player=player),
     )
 
     columns: list[tuple[str, dict[str, float | None]]] = []
@@ -3452,17 +3459,14 @@ def bots_progress(request: HttpRequest) -> HttpResponse:
                 bot.unlocked = True
                 bot.save(update_fields=["unlocked", "updated_at"])
                 for param_def in bot.bot_definition.parameter_definitions.all():
-                    min_level = (
-                        param_def.levels.order_by("level").values_list("level", flat=True).first() or 0
-                    )
                     player_param, created_param = PlayerBotParameter.objects.get_or_create(
                         player=player,
                         player_bot=bot,
                         parameter_definition=param_def,
-                        defaults={"level": min_level},
+                        defaults={"level": 0},
                     )
-                    if not created_param and player_param.level <= 0 and min_level > 0:
-                        player_param.level = min_level
+                    if not created_param and player_param.level < 0:
+                        player_param.level = 0
                         player_param.save(update_fields=["level", "updated_at"])
 
             if is_ajax:
@@ -3481,10 +3485,12 @@ def bots_progress(request: HttpRequest) -> HttpResponse:
                     param_def = player_param.parameter_definition
                     if param_def is None:
                         continue
-                    levels = [
+                    levels = levels_with_baseline_zero(
+                        [
                         ParameterLevelRow(level=row.level, value_raw=row.value_raw, cost_raw=row.cost_raw)
                         for row in param_def.levels.order_by("level")
-                    ]
+                        ]
+                    )
                     param_view = build_upgradeable_parameter_view(
                         player=player,
                         entity_kind="bot",
@@ -3493,7 +3499,7 @@ def bots_progress(request: HttpRequest) -> HttpResponse:
                         unit_kind=param_def.unit_kind,
                         player_cards=player_cards,
                     )
-                    total_medals += total_currency_invested_for_parameter(
+                    total_medals += total_currency_invested_from_level_zero(
                         parameter_definition=param_def,
                         level=player_param.level,
                     )
@@ -3550,10 +3556,12 @@ def bots_progress(request: HttpRequest) -> HttpResponse:
                 player_param.save(update_fields=["level", "updated_at"])
 
             if is_ajax:
-                levels = [
+                levels = levels_with_baseline_zero(
+                    [
                     ParameterLevelRow(level=row.level, value_raw=row.value_raw, cost_raw=row.cost_raw)
                     for row in levels_qs
-                ]
+                    ]
+                )
                 param_view = build_upgradeable_parameter_view(
                     player=player,
                     entity_kind="bot",
@@ -3562,7 +3570,7 @@ def bots_progress(request: HttpRequest) -> HttpResponse:
                     unit_kind=param_def.unit_kind,
                     player_cards=player_cards,
                 )
-                total_medals = total_currency_invested_for_parameter(
+                total_medals = total_currency_invested_from_level_zero(
                     parameter_definition=param_def,
                     level=player_param.level,
                 )
@@ -3602,7 +3610,7 @@ def bots_progress(request: HttpRequest) -> HttpResponse:
 
             param_def = player_param.parameter_definition
             levels_qs = param_def.levels.order_by("level")
-            min_level = levels_qs.values_list("level", flat=True).first() or 0
+            min_level = 0
             if player_param.level <= min_level:
                 if is_ajax:
                     return JsonResponse({"ok": False, "error": "Already at minimum level."}, status=400)
@@ -3614,10 +3622,12 @@ def bots_progress(request: HttpRequest) -> HttpResponse:
                 player_param.save(update_fields=["level", "updated_at"])
 
             if is_ajax:
-                levels = [
+                levels = levels_with_baseline_zero(
+                    [
                     ParameterLevelRow(level=row.level, value_raw=row.value_raw, cost_raw=row.cost_raw)
                     for row in levels_qs
-                ]
+                    ]
+                )
                 param_view = build_upgradeable_parameter_view(
                     player=player,
                     entity_kind="bot",
@@ -3626,7 +3636,7 @@ def bots_progress(request: HttpRequest) -> HttpResponse:
                     unit_kind=param_def.unit_kind,
                     player_cards=player_cards,
                 )
-                total_medals = total_currency_invested_for_parameter(
+                total_medals = total_currency_invested_from_level_zero(
                     parameter_definition=param_def,
                     level=player_param.level,
                 )
@@ -3670,15 +3680,14 @@ def bots_progress(request: HttpRequest) -> HttpResponse:
         except ValueError:
             continue
         for param_def in bot_def.parameter_definitions.all():
-            min_level = param_def.levels.order_by("level").values_list("level", flat=True).first() or 0
             player_param, created_param = PlayerBotParameter.objects.get_or_create(
                 player=player,
                 player_bot=bot,
                 parameter_definition=param_def,
-                defaults={"level": min_level},
+                defaults={"level": 0},
             )
-            if not created_param and player_param.level <= 0 and min_level > 0:
-                player_param.level = min_level
+            if not created_param and player_param.level < 0:
+                player_param.level = 0
                 player_param.save(update_fields=["level", "updated_at"])
 
     bots_qs = (
@@ -3745,6 +3754,7 @@ def bots_progress(request: HttpRequest) -> HttpResponse:
                 ParameterLevelRow(level=row.level, value_raw=row.value_raw, cost_raw=row.cost_raw)
                 for row in param_def.levels.order_by("level")
             ]
+            levels = levels_with_baseline_zero(levels)
             view = build_upgradeable_parameter_view(
                 player=player,
                 entity_kind="bot",
@@ -3753,7 +3763,7 @@ def bots_progress(request: HttpRequest) -> HttpResponse:
                 unit_kind=param_def.unit_kind,
                 player_cards=player_cards,
             )
-            total_medals_invested += total_currency_invested_for_parameter(
+            total_medals_invested += total_currency_invested_from_level_zero(
                 parameter_definition=param_def,
                 level=player_param.level,
             )

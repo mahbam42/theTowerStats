@@ -146,6 +146,21 @@ def _card_names_in_table(html: str) -> list[str]:
     return [name.strip() for name in names]
 
 
+def _card_level_in_table(html: str, *, card_name: str) -> str:
+    """Extract the rendered level value for a named card row."""
+
+    pattern = re.compile(
+        rf'<tr[^>]*class="[^"]*card-row[^"]*"[^>]*>.*?'
+        rf'<td[^>]*class="[^"]*card-name[^"]*"[^>]*>\s*{re.escape(card_name)}.*?</td>\s*'
+        r"<td>.*?</td>\s*"
+        r"<td>\s*(?P<level>[^<]+)\s*</td>",
+        re.DOTALL,
+    )
+    match = pattern.search(html)
+    assert match is not None, f"Card row for {card_name!r} not found."
+    return match.group("level").strip()
+
+
 @pytest.mark.django_db
 def test_cards_dashboard_supports_sorting_and_maxed_filter(auth_client, player) -> None:
     """Cards table supports sortable columns plus maxed/unmaxed filtering."""
@@ -193,6 +208,29 @@ def test_cards_dashboard_supports_sorting_and_maxed_filter(auth_client, player) 
 
     response = auth_client.get(url, data={"maxed": "unmaxed", "sort": "-level"})
     assert _card_names_in_table(response.content.decode("utf-8")) == ["Beta"]
+
+
+@pytest.mark.django_db
+@pytest.mark.regression
+def test_cards_dashboard_shows_level_zero_for_unowned_cards(auth_client, player) -> None:
+    """Cards dashboard shows level 0 and labels the column as current level."""
+
+    wiki = _wikidata_row(
+        canonical_name="Alpha",
+        entity_id="alpha",
+        raw_row={"Name": "Alpha", "Rarity": "Common"},
+        content_hash="alpha" * 16,
+    )
+    definition = CardDefinition.objects.create(name="Alpha", slug="alpha", rarity="Common", source_wikidata=wiki)
+    PlayerCard.objects.create(player=player, card_definition=definition, card_slug=definition.slug)
+
+    url = reverse("core:cards")
+    response = auth_client.get(url)
+    assert response.status_code == 200
+
+    content = response.content.decode("utf-8")
+    assert "Current level" in content
+    assert _card_level_in_table(content, card_name="Alpha") == "0"
 
 
 @pytest.mark.django_db

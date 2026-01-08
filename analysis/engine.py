@@ -51,9 +51,9 @@ def analyze_runs(records: Iterable[object]) -> AnalysisResult:
         if not _looks_like_run_progress(progress):
             continue
 
-        run_id = _coerce_int(getattr(progress, "id", None))
+        run_id = _coerce_int(getattr(record, "id", None))
         if run_id is None:
-            run_id = _coerce_int(getattr(record, "id", None))
+            run_id = _coerce_int(getattr(progress, "id", None))
 
         battle_date = _coerce_datetime(
             getattr(progress, "battle_date", None) or getattr(record, "parsed_at", None)
@@ -136,9 +136,9 @@ def analyze_metric_series(
         if not _looks_like_run_progress(progress):
             continue
 
-        run_id = _coerce_int(getattr(progress, "id", None))
+        run_id = _coerce_int(getattr(record, "id", None))
         if run_id is None:
-            run_id = _coerce_int(getattr(record, "id", None))
+            run_id = _coerce_int(getattr(progress, "id", None))
 
         battle_date = _coerce_datetime(
             getattr(progress, "battle_date", None) or getattr(record, "parsed_at", None)

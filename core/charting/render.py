@@ -92,6 +92,7 @@ def render_charts(
     moving_average_window: int | None,
     entity_selections: dict[str, str | None],
     patch_boundaries: tuple[date, ...] = (),
+    run_numbers_by_report_id: dict[int, int] | None = None,
 ) -> tuple[RenderedChart, ...]:
     """Render a set of charts from configs and already-filtered records.
 
@@ -126,6 +127,7 @@ def render_charts(
                 moving_average_window=moving_average_window,
                 entity_selections=entity_selections,
                 patch_boundaries=patch_boundaries,
+                run_numbers_by_report_id=run_numbers_by_report_id,
             )
         rendered.append(cache[cache_key])
     return tuple(rendered)
@@ -140,6 +142,7 @@ def render_chart(
     moving_average_window: int | None,
     entity_selections: dict[str, str | None],
     patch_boundaries: tuple[date, ...] = (),
+    run_numbers_by_report_id: dict[int, int] | None = None,
 ) -> RenderedChart:
     """Render a single chart panel from a ChartConfig.
 
@@ -154,7 +157,11 @@ def render_chart(
         RenderedChart containing chart labels and datasets.
     """
 
-    labeler = _labeler_for_records(records, granularity=granularity)
+    labeler = _labeler_for_records(
+        records,
+        granularity=granularity,
+        run_numbers_by_report_id=run_numbers_by_report_id,
+    )
 
     if config.chart_type == "donut":
         return _render_donut_chart(
@@ -583,6 +590,7 @@ def _labeler_for_records(
     records: Iterable[object],
     *,
     granularity: str,
+    run_numbers_by_report_id: dict[int, int] | None = None,
 ) -> Callable[[MetricPoint], str]:
     """Return a point-labeling function aligned to the selected granularity."""
 
@@ -600,8 +608,11 @@ def _labeler_for_records(
     def label(point: MetricPoint) -> str:
         date_label = point.battle_date.date().isoformat()
         if date_counts.get(date_label, 0) > 1:
-            run_id = point.run_id if point.run_id is not None else "?"
-            return f"{point.battle_date.strftime('%Y-%m-%d %H:%M')} • Run {run_id}"
+            run_number = None
+            if point.run_id is not None and run_numbers_by_report_id is not None:
+                run_number = run_numbers_by_report_id.get(point.run_id)
+            run_label = run_number if run_number is not None else point.run_id
+            return f"{point.battle_date.strftime('%Y-%m-%d %H:%M')} • Run {run_label or '?'}"
         return date_label
 
     return label
