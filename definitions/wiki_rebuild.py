@@ -35,7 +35,7 @@ from definitions.models import (
 
 _SLUG_RE = re.compile(r"[^a-z0-9]+")
 _PLACEHOLDER_RE = re.compile(r"^(?:-|—|–|null|none)?$", re.IGNORECASE)
-_DEDUP_SUFFIX_RE = re.compile(r"^(?P<base>.+?)(?:__(?P<index>\\d+))?$")
+_DEDUP_SUFFIX_RE = re.compile(r"^(?P<base>.+?)(?:__(?P<index>\d+))?$")
 
 _GUARDIAN_EXPECTED_PARAMETER_KEYS: dict[str, tuple[str, str, str]] = {
     "ally": (
@@ -376,6 +376,11 @@ def rebuild_ultimate_weapons_from_wikidata(
                 raise ValueError(
                     f"Ultimate weapon mapping missing or incomplete for slug={slug}: mapping={mapping!r}"
                 )
+            value_headers = list(mapping.keys())
+            cost_headers = _uw_cost_headers_for_slug(
+                value_headers=value_headers,
+                raw_row=example.raw_row,
+            )
             for value_header, key in mapping.items():
                 resolved_value_header = _uw_value_header_key(
                     value_header=value_header,
@@ -386,6 +391,8 @@ def rebuild_ultimate_weapons_from_wikidata(
                         f"Ultimate weapon value header not found for slug={slug} value_header={value_header!r}"
                     )
                 cost_header = _uw_cost_header(value_header=resolved_value_header, raw_row=example.raw_row)
+                if cost_header is None:
+                    cost_header = cost_headers.get(value_header)
                 if cost_header is None:
                     raise ValueError(
                         f"Ultimate weapon cost header not found for slug={slug} value_header={value_header!r}"
@@ -653,14 +660,65 @@ def _uw_cost_header(*, value_header: str, raw_row: dict) -> str | None:
         normalized_key = _normalize_wiki_header(str(key))
         if "stones" in normalized_key and normalized_value in normalized_key:
             return str(key)
-    # Fallback: some tables interleave value/cost columns using generic "Cost" headers.
-    keys = [str(k) for k in raw_row.keys()]
-    for idx, key in enumerate(keys):
-        if _normalize_wiki_header(key) == normalized_value:
-            for j in range(idx + 1, min(idx + 4, len(keys))):
-                if keys[j].casefold().startswith("cost"):
-                    return keys[j]
     return None
+
+
+def _uw_generic_cost_headers(raw_row: dict) -> list[str]:
+    """Return generic UW cost headers ordered by dedupe occurrence.
+
+    Args:
+        raw_row: Raw wiki row mapping (header -> value).
+
+    Returns:
+        Ordered list of generic cost headers (ex: Cost, Cost__2, Cost__3).
+    """
+
+    generic: list[tuple[int, str]] = []
+    for key in raw_row.keys():
+        header = str(key)
+        base, occurrence = _dedupe_occurrence(header)
+        if _normalize_wiki_header(base) == "cost":
+            generic.append((occurrence, header))
+    return [header for occurrence, header in sorted(generic, key=lambda item: item[0])]
+
+
+def _uw_cost_headers_for_slug(*, value_headers: list[str], raw_row: dict) -> dict[str, str]:
+    """Resolve cost headers for a UW row using explicit or generic columns.
+
+    Args:
+        value_headers: Ordered list of expected UW value headers for the slug.
+        raw_row: Raw wiki row mapping (header -> value).
+
+    Returns:
+        Mapping of value header label to the matching cost header label.
+    """
+
+    cost_by_value: dict[str, str] = {}
+    for value_header in value_headers:
+        resolved_value_header = _uw_value_header_key(value_header=value_header, raw_row=raw_row)
+        if resolved_value_header is None:
+            continue
+        cost_header = _uw_cost_header(value_header=resolved_value_header, raw_row=raw_row)
+        if cost_header is not None:
+            cost_by_value[value_header] = cost_header
+
+    if len(cost_by_value) == len(value_headers):
+        return cost_by_value
+
+    generic_costs = _uw_generic_cost_headers(raw_row)
+    if not generic_costs:
+        return cost_by_value
+
+    used = set(cost_by_value.values())
+    remaining_costs = [header for header in generic_costs if header not in used]
+    missing = [header for header in value_headers if header not in cost_by_value]
+    if len(remaining_costs) < len(missing):
+        return cost_by_value
+
+    for idx, value_header in enumerate(missing):
+        cost_by_value[value_header] = remaining_costs[idx]
+
+    return cost_by_value
 
 
 def _uw_value_header_key(*, value_header: str, raw_row: dict) -> str | None:

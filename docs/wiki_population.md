@@ -41,6 +41,9 @@ Preview field-level diffs before rebuilding (always fetches live wiki data and w
 > Rebuild logic must not depend on `WikiData.raw_row` key order (JSONB backends may reorder keys). If `rebuild_wiki_definitions` raises an “upgrade table drift” error, treat it as a schema mismatch in the scraped table headers or missing columns.
 
 > **Note**
+> Some ultimate weapon tables only label cost columns as `Cost`, `Cost__2`, etc. Rebuilds match these generic cost headers by dedupe occurrence and the expected parameter order for that weapon.
+
+> **Note**
 > Ultimate weapon rebuilds normalize header whitespace (including non-breaking spaces) when matching value and cost columns. If headers look correct but still mismatch, check for hidden spacing differences in the scraped table.
 
 > **Note**

@@ -7,6 +7,7 @@ This project follows Semantic Versioning.
 - Bots: normalize rebuild headers (including non-breaking spaces) and accept level 0 rows when present.
 - Bots: populate Runs used from battle report bot lines.
 - Guardians: remove unexpected parameter definitions during rebuild to prevent dashboard skips.
+- Ultimate Weapons: map generic cost headers (Cost, Cost__2, Cost__3) during rebuilds.
 - Cards: normalize effect headers when deriving card effects.
 - Docs: note header normalization for wiki rebuilds and clarify bot runs usage.
 

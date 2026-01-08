@@ -1,6 +1,12 @@
 import pytest
 
-from definitions.wiki_rebuild import _bot_cost_header, _derive_card_effect_raw, _uw_cost_header, _uw_value_header_key
+from definitions.wiki_rebuild import (
+    _bot_cost_header,
+    _derive_card_effect_raw,
+    _uw_cost_header,
+    _uw_cost_headers_for_slug,
+    _uw_value_header_key,
+)
 
 
 @pytest.mark.unit
@@ -10,14 +16,36 @@ def test_uw_cost_header_handles_nbsp_value_header() -> None:
 
     raw_row = {
         "Damage\u00a0%": "10x",
-        "Cost": "0",
-        "Quantity": "3",
-        "Cost__2": "0",
+        "Cost (Stones) (Damage %)": "0",
     }
     resolved_value_header = _uw_value_header_key(value_header="Damage %", raw_row=raw_row)
 
     assert resolved_value_header == "Damage\u00a0%"
-    assert _uw_cost_header(value_header=resolved_value_header, raw_row=raw_row) == "Cost"
+    assert _uw_cost_header(value_header=resolved_value_header, raw_row=raw_row) == "Cost (Stones) (Damage %)"
+
+
+@pytest.mark.unit
+@pytest.mark.regression
+def test_uw_cost_headers_match_generic_cost_columns() -> None:
+    """Ensure generic cost columns map to ordered UW headers."""
+
+    raw_row = {
+        "Damage\u00a0%": "10x",
+        "Cost": "0",
+        "Quantity": "3",
+        "Cost__2": "0",
+        "Cooldown": "200s",
+        "Cost__3": "0",
+    }
+
+    cost_headers = _uw_cost_headers_for_slug(
+        value_headers=["Damage %", "Quantity", "Cooldown"],
+        raw_row=raw_row,
+    )
+
+    assert cost_headers["Damage %"] == "Cost"
+    assert cost_headers["Quantity"] == "Cost__2"
+    assert cost_headers["Cooldown"] == "Cost__3"
 
 
 @pytest.mark.unit
