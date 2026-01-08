@@ -28,6 +28,10 @@ Translate stored wiki rows into structured definitions without re-downloading pa
 
 Targets (`--target`): `cards`, `bots`, `guardians`, `ultimate_weapons`, or `all` (default).
 
+Preview field-level diffs before rebuilding (always fetches live wiki data and writes nothing):
+
+- `python manage.py rebuild_wiki_definitions --target guardians --diffs`
+
 > **Note**
 > When running `rebuild_wiki_definitions` with fetching enabled, the cards fetch step also ingests the slots table so card slot limits can update.
 

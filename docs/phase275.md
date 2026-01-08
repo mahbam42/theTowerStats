@@ -78,5 +78,11 @@ python manage.py rebuild_wiki_definitions --check
 python manage.py rebuild_wiki_definitions --write
 ```
 
+Preview field-level diffs before rebuilding:
+
+```bash
+python manage.py rebuild_wiki_definitions --target guardians --diffs
+```
+
 This step still does **not** add gameplay math or derived analysis; it simply
 materializes structured rows with `source_wikidata` pointers for traceability.

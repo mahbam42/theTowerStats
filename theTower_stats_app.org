@@ -2425,7 +2425,7 @@ CLOSED: [2025-12-22 Mon 15:31]
 - [X] fetch_wiki_data and rebuild_wiki_definitions should have a pretty summary of deltas at the end.
   Especially when using --target all.
 
-*** Bugs/Enhancements [53/62]
+*** Bugs/Enhancements [53/63]
 
 **** DONE [#B] Error Updating Guardian Upgrade Table                 :bug:
 CLOSED: [2025-12-22 Mon 18:51]
@@ -3164,7 +3164,7 @@ Keep the current columns as the default, add a menu to toggle visibility of colu
 CLOSED: [2026-01-04 Sun 17:33]
 - State "DONE"       from "TODO"       [2026-01-04 Sun 17:33]
 It's implied by the 6 default charts but it is a very handy feature. 
-**** IN PROGRESS [#A] Improve rebuild_wiki_definitions       :enhancement:
+**** IN PROGRESS [#A] Improve rebuild_wiki_definitions (Blocking) :enhancement:
 - State "IN PROGRESS" from              [2026-01-08 Thu 10:07]
 
 
@@ -3202,6 +3202,15 @@ for entity_id, versions in by_entity.items():
 If you want, I can run a targeted query for guardian chips and summarize the diffs.
 
 Let's add a flag to rebuild_wiki_definitions called '--diffs' That ignores '--skip-fetch' and pulls the new data to a temporary list and outputs a table of the previous values and new values. Then the admin can rerun rebuild with --write to commit the changes.
+
+1. Yes include added/depreciated
+2. Single table per source section with columns entity_id | field | previous | new | status) sound good to start. Once I see the table I may request changes. 
+Be sure to also update all relevant documentation and follow agents.md while you work.
+
+
+Commit message suggestion:
+
+Add rebuild_wiki_definitions --diffs preview for wiki changes
 
 **** TODO [#A] On Charts Dashboard Data points aren't showing Run #  :bug:
 Should be strictly scoped by player not incremental to the full DB table. 
@@ -3255,6 +3264,8 @@ Doc References to be aligned:
 - Global :: We erroniously claim the Game allows 6 presets. It's only 5, update any references accordingly. 
 **** TODO [#C] wiki_population.md needs to cite the Fandom Wiki as it's source :bug:
 the-tower-idle-tower-defense.fandom.com/
+**** TODO [#A] Update Readme and Changelog to reflect changes (blocking)
+git log --oneline since commit 4977035
 ** Backlog [4/6]
 “Out of Scope”:
 - Cloud sync
