@@ -77,6 +77,9 @@ Battle History helps you review your past runs in a table so you can compare res
 > Battle Reports can use tabs, colons, or spacing between labels and values. If an import fails, the page shows an error message under the Battle Report field.
 
 > **Note**
+> If the game introduces a new compact unit suffix (a letter at the end of a number), the import still succeeds. The raw value is saved, and the suffix is captured for review.
+
+> **Note**
 > Column selections are saved to your account and apply across devices.
 
 > **Note**

@@ -15,8 +15,9 @@ import re
 from dataclasses import dataclass
 from datetime import datetime, timezone
 
-from analysis.quantity import UnitType
+from analysis.quantity import UnitType, is_known_magnitude_suffix, parse_quantity
 from analysis.units import UnitContract, UnitValidationError, parse_validated_quantity
+from definitions.models import Unit
 
 
 @dataclass(frozen=True)
@@ -113,6 +114,7 @@ _LABEL_SEPARATOR = r"(?:[ \t]*:[ \t]*|\t+[ \t]*|[ \t]{2,})"
 _LABEL_VALUE_RE = re.compile(
     rf"(?im)^[ \t]*(?P<label>.+?){_LABEL_SEPARATOR}(?P<value>.*?)[ \t]*$"
 )
+_COMPACT_VALUE_RE = re.compile(r"^\$?[\d,]+(?:\.\d+)?[A-Za-z]?$")
 
 
 def compute_battle_report_checksum(raw_text: str) -> str:
@@ -178,6 +180,25 @@ def parse_battle_report(raw_text: str) -> ParsedBattleReport:
         cells_earned=cells_earned,
         reroll_shards_earned=reroll_shards_earned,
     )
+
+
+def record_unrecognized_unit_suffixes(raw_text: str) -> set[str]:
+    """Persist unknown magnitude suffixes found in Battle Report values.
+
+    Args:
+        raw_text: Raw Battle Report text as pasted by the user.
+
+    Returns:
+        A set of unknown magnitude suffixes recorded in the Unit table.
+    """
+
+    unknown = _extract_unknown_unit_suffixes(raw_text)
+    for suffix in sorted(unknown):
+        Unit.objects.update_or_create(
+            name=f"magnitude suffix {suffix}",
+            defaults={"symbol": suffix, "kind": Unit.Kind.UNKNOWN},
+        )
+    return unknown
 
 
 def _extract_raw_fields(raw_text: str) -> RawBattleReportFields:
@@ -255,6 +276,27 @@ def _iter_label_value_lines(raw_text: str) -> list[tuple[str, str]]:
                 if label:
                     extracted.append((label, value))
     return extracted
+
+
+def _extract_unknown_unit_suffixes(raw_text: str) -> set[str]:
+    """Extract unknown compact magnitude suffixes from Battle Report values.
+
+    Args:
+        raw_text: Raw Battle Report text as pasted by the user.
+
+    Returns:
+        A set of magnitude suffixes not recognized by the compact parser.
+    """
+
+    unknown: set[str] = set()
+    for _, value in _iter_label_value_lines(raw_text):
+        cleaned = value.strip()
+        if not cleaned or not _COMPACT_VALUE_RE.match(cleaned):
+            continue
+        parsed = parse_quantity(cleaned, unit_type=UnitType.count)
+        if parsed.magnitude and not is_known_magnitude_suffix(parsed.magnitude):
+            unknown.add(parsed.magnitude)
+    return unknown
 
 
 def _normalize_label(label: str) -> str:

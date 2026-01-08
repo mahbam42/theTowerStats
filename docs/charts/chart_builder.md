@@ -46,8 +46,8 @@ This table lists the metrics available in Chart Builder along with their sources
 | Metric key | Label | Source | Calculation | Notes |
 | --- | --- | --- | --- | --- |
 | black_hole_damage | Black Hole Damage | BattleReport (observed) | sum of black_hole_damage |  |
-| bot_runs_count | Runs using selected bot | RunBots (observed) | sum of bot_present |  |
-| bot_uptime_percent | Bot uptime | RunBots (derived) | avg of bot_uptime_percent | Derived uptime percent for the selected Bot. |
+| bot_runs_count | Runs using selected bot | Planned (not yet ingested) | sum of bot_present | Run-level bot presence will be available after bot usage ingestion is implemented. |
+| bot_uptime_percent | Bot uptime | Planned (not yet ingested) | avg of bot_uptime_percent | Bot uptime is planned; current bot-related values come from Battle Report metrics only. |
 | cash_earned | Cash earned | BattleReport (observed) | sum of cash_earned |  |
 | cash_from_golden_tower | Cash From Golden Tower | BattleReport (observed) | sum of cash_from_golden_tower | Battle Report utility breakdown: cash earned from Golden Tower. |
 | cash_from_other_sources | Other cash | BattleReport (derived) | sum of cash_earned - cash_from_golden_tower - interest_earned | Residual cash not covered by named sources (derived). |
@@ -69,7 +69,7 @@ This table lists the metrics available in Chart Builder along with their sources
 | free_defense_upgrades | Free Defense Upgrade | BattleReport (observed) | sum of free_defense_upgrades | Battle Report utility breakdown: free defense upgrades. |
 | free_utility_upgrades | Free Utility Upgrade | BattleReport (observed) | sum of free_utility_upgrades | Battle Report utility breakdown: free utility upgrades. |
 | free_upgrades_total | Free Upgrades (Total) | BattleReport (derived) | sum of free_attack_upgrades + free_defense_upgrades + free_utility_upgrades | Derived total across free upgrade types. |
-| cooldown_reduction_effective | Effective cooldown | RunCombat (derived) | avg of effective_cooldown_seconds | Entity-scoped effective cooldown in seconds (placeholder for future reduction modeling). |
+| cooldown_reduction_effective | Effective cooldown | Planned (not yet ingested) | avg of effective_cooldown_seconds | Ultimate Weapon cooldown reductions are planned and not populated yet. |
 | damage_dealt | Damage dealt | BattleReport (observed) | sum of damage_dealt | Total damage dealt from Battle Reports. |
 | death_ray_damage | Death Ray Damage | BattleReport (observed) | sum of death_ray_damage |  |
 | death_wave_damage | Death Wave Damage | BattleReport (observed) | sum of death_wave_damage |  |
@@ -95,7 +95,7 @@ This table lists the metrics available in Chart Builder along with their sources
 | enemies_destroyed_total | Enemies destroyed (derived total) | BattleReport (derived) | sum of sum(enemy_type_counts) | Derived from per-type counts; ignores game-reported totals. |
 | enemies_destroyed_vampires | Vampires | BattleReport (observed) | sum of enemies_destroyed_vampires |  |
 | enemies_hit_by_orbs | Enemies Hit by Orbs | BattleReport (observed) | sum of enemies_hit_by_orbs |  |
-| guardian_activations_per_minute | Guardian activations/minute | RunGuardian (derived) | avg of guardian_activations_per_minute | Derived activations/minute for the selected Guardian Chip. |
+| guardian_activations_per_minute | Guardian activations/minute | Planned (not yet ingested) | avg of guardian_activations_per_minute | Guardian chip activation rates are planned and not populated yet. |
 | guardian_armor_shards_fetched | Armor Shards | BattleReport (observed) | sum of guardian_armor_shards_fetched | Battle Report Guardian section: armor shards fetched. |
 | guardian_cannon_shards_fetched | Cannon Shards | BattleReport (observed) | sum of guardian_cannon_shards_fetched | Battle Report Guardian section: cannon shards fetched. |
 | guardian_coins_fetched | Coins Fetched | BattleReport (observed) | sum of guardian_coins_fetched | Battle Report Guardian section: coins fetched (rolls up into Coins Earned by Source). |
@@ -108,7 +108,7 @@ This table lists the metrics available in Chart Builder along with their sources
 | guardian_medals_fetched | Medals | BattleReport (observed) | sum of guardian_medals_fetched | Battle Report Guardian section: medals fetched. |
 | guardian_rare_modules_fetched | Rare Modules | BattleReport (observed) | sum of guardian_rare_modules_fetched | Battle Report Guardian section: rare modules fetched. |
 | guardian_reroll_shards_fetched | Reroll Shards | BattleReport (observed) | sum of guardian_reroll_shards_fetched | Battle Report Guardian section: reroll shards fetched. |
-| guardian_runs_count | Runs using selected guardian chip | RunGuardian (observed) | sum of guardian_chip_present |  |
+| guardian_runs_count | Runs using selected guardian chip | Planned (not yet ingested) | sum of guardian_chip_present | Guardian chip presence per run is planned and not populated yet. |
 | guardian_summoned_enemies | Guardian Summoned Enemies | BattleReport (observed) | avg of guardian_summoned_enemies | Battle Report Guardian section: summoned enemies count. |
 | inner_land_mine_damage | Inner Land Mine Damage | BattleReport (observed) | sum of inner_land_mine_damage |  |
 | interest_earned | Interest earned | BattleReport (observed) | sum of interest_earned | Observed interest earned from Battle Reports. |
@@ -121,9 +121,9 @@ This table lists the metrics available in Chart Builder along with their sources
 | smart_missile_damage | Smart Missile Damage | BattleReport (observed) | sum of smart_missile_damage |  |
 | swamp_damage | Swamp Damage | BattleReport (observed) | sum of swamp_damage |  |
 | thorn_damage | Thorn Damage | BattleReport (observed) | sum of thorn_damage |  |
-| uw_effective_cooldown_seconds | Ultimate Weapon effective cooldown | RunCombat (derived) | avg of uw_effective_cooldown_seconds | Derived cooldown seconds for the selected Ultimate Weapon. |
-| uw_runs_count | Runs using selected ultimate weapon | RunCombat (observed) | sum of ultimate_weapon_present |  |
-| uw_uptime_percent | Ultimate Weapon uptime | RunCombat (derived) | avg of uw_uptime_percent | Derived uptime percent for the selected Ultimate Weapon. |
+| uw_effective_cooldown_seconds | Ultimate Weapon effective cooldown | Planned (not yet ingested) | avg of uw_effective_cooldown_seconds | Ultimate Weapon cooldown metrics are planned and not populated yet. |
+| uw_runs_count | Runs using selected ultimate weapon | Planned (not yet ingested) | sum of ultimate_weapon_present | Ultimate Weapon run presence is planned and not populated yet. |
+| uw_uptime_percent | Ultimate Weapon uptime | Planned (not yet ingested) | avg of uw_uptime_percent | Ultimate Weapon uptime is planned and not populated yet. |
 | waves_per_hour | Waves/hour | BattleReport (derived) | avg of waves_reached / hours | Observed waves reached divided by real time (hours). |
 | waves_reached | Waves reached | BattleReport (observed) | avg of wave |  |
 
@@ -131,6 +131,9 @@ This table lists the metrics available in Chart Builder along with their sources
 
 > **Note**
 > Chart Builder only uses values that exist in your imported Battle Reports and other available selections on the Charts page.
+
+> **Note**
+> Bot, Guardian Chip, and Ultimate Weapon run-usage metrics are planned but not populated yet. For now, related totals come from Battle Report metrics where available.
 
 > **Note**
 > Saving a snapshot stores the configuration you selected. It does not store a copy of your data.

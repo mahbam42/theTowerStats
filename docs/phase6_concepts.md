@@ -16,12 +16,14 @@ Phase 6 introduces a strict **unit contract** for any value displayed in dashboa
 
 - Values parsed from Battle Reports must be validated against an expected `UnitType`.
 - Multiplier formats (`x1.15`, `15%`) must **not** be accepted for non-multiplier contracts.
-- Compact magnitudes (`K`, `M`, `B`, `T`) must normalize deterministically.
+- Compact magnitudes (`k`, `m`, `b`, `t`, `q`, `Q`) must normalize deterministically.
+- Unknown compact suffixes are captured for review and do not break parsing.
 
 ### Implementation Notes
 
 - Best-effort parsing lives in `analysis/quantity.py`.
 - Fail-fast validation lives in `analysis/units.py` via `UnitContract` and `parse_validated_quantity`.
+- Baseline unit metadata is seeded into `definitions.Unit`, and unrecognized suffixes are recorded there for follow-up.
 
 ## Metric Categories
 

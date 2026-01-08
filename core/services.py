@@ -18,7 +18,11 @@ from gamedata.models import (
 )
 from player_state.models import Player, Preset
 from analysis.raw_text_metrics import extract_raw_text_metrics
-from core.parsers.battle_report import extract_ultimate_weapon_usage, parse_battle_report
+from core.parsers.battle_report import (
+    extract_ultimate_weapon_usage,
+    parse_battle_report,
+    record_unrecognized_unit_suffixes,
+)
 
 
 def ingest_battle_report(
@@ -42,6 +46,7 @@ def ingest_battle_report(
     preset_snapshot = _preset_snapshot(preset)
     try:
         with transaction.atomic():
+            record_unrecognized_unit_suffixes(raw_text)
             battle_report = BattleReport.objects.create(
                 player=player,
                 raw_text=raw_text,
@@ -74,6 +79,7 @@ def ingest_battle_report(
             return battle_report, True
     except IntegrityError:
         battle_report = BattleReport.objects.get(player=player, checksum=parsed.checksum)
+        record_unrecognized_unit_suffixes(raw_text)
         if preset is not None or is_tournament:
             BattleReportProgress.objects.filter(battle_report=battle_report, player=player).update(
                 preset=preset,

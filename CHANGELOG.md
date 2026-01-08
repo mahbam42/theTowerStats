@@ -2,13 +2,16 @@
 
 This project follows Semantic Versioning.
 
-## [0.6.0] (in progress)
+## [0.6.0] (latest)
 
-- Charts: allow metric-vs-metric scatter with a selectable X-axis in the Chart Builder.
-- Charts: add a Free Upgrades vs Coins Earned scatter chart and show a Total badge on Free Upgrades by Run.
-- Charts: note multi-select behavior in the chart selector.
-- Battle History: add Run # ordering, real-time display, and per-user column visibility preferences.
-- Docs: update Charts, Chart Builder, and Battle History guides for the new behavior.
+- Charts: fix run numbering so chart labels match Battle History ordering.
+- Cards: show correct level 0 values in the card library.
+- Bots: fix baseline totals in progress dashboards.
+- UI: improve dark-theme styling for callouts and help text.
+- Tooling: add `rebuild_wiki_definitions --diffs` preview for wiki changes.
+- Docs: align preset labels, cite wiki sources, and fix formatting.
+- Ops: add Google Analytics tag.
+- Roadmap: update phase planning notes.
 
 ## [0.5.1] 
 

@@ -39,7 +39,7 @@ When updating reference data, preserve raw values and follow the wiki immutabili
 
 1. Open `Battle reports` and confirm the latest `parsed_at` timestamp.
 2. Open the related `Battle report progress` row and verify `tier`, `wave`, and `real_time_seconds`.
-3. Review `Run bots`, `Run guardians`, and `Run combat/utility ultimate weapons` for expected entity links.
+3. `Run bots`, `Run guardians`, and `Run combat/utility ultimate weapons` exist for future ingestion but are not populated in production. Use `Battle report derived metrics` for the current source of bot/guardian/ultimate-weapon-related totals.
 
 ### Curate wiki-derived reference data
 

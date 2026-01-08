@@ -54,7 +54,21 @@ _MAGNITUDE_MULTIPLIERS: Final[dict[str, Decimal]] = {
     "b": Decimal(1_000_000_000),
     "t": Decimal(1_000_000_000_000),
     "q": Decimal(1_000_000_000_000_000),
+    "Q": Decimal(1_000_000_000_000_000_000),
 }
+
+
+def is_known_magnitude_suffix(suffix: str) -> bool:
+    """Return True when a compact magnitude suffix is recognized.
+
+    Args:
+        suffix: Raw magnitude suffix (e.g. `k`, `m`, `q`, `Q`).
+
+    Returns:
+        True when the suffix is supported by the compact number parser.
+    """
+
+    return suffix in _MAGNITUDE_MULTIPLIERS
 
 
 def parse_quantity(raw_value: str, *, unit_type: UnitType = UnitType.count) -> Quantity:
@@ -71,7 +85,8 @@ def parse_quantity(raw_value: str, *, unit_type: UnitType = UnitType.count) -> Q
         - A leading `x` forces `unit_type=multiplier` and parses the remainder.
         - A trailing `%` forces `unit_type=multiplier` and normalizes as a
           fraction (e.g. `15%` -> `0.15`).
-        - Magnitude suffixes are case-insensitive and stored lowercased.
+        - Magnitude suffixes are case-insensitive except for `Q` (quintillion).
+        - Supported suffixes include lowercase `k`..`q` and uppercase `Q`.
     """
 
     trimmed = raw_value.strip()
@@ -126,7 +141,9 @@ def _parse_compact_number(value: str, *, unit_type: UnitType) -> Quantity:
     prefix_stripped = cleaned.lstrip("$")
     suffix = ""
     if prefix_stripped and prefix_stripped[-1].isalpha():
-        suffix = prefix_stripped[-1].casefold()
+        suffix = prefix_stripped[-1]
+        if suffix != "Q":
+            suffix = suffix.casefold()
         number_text = prefix_stripped[:-1]
     else:
         number_text = prefix_stripped

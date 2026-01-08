@@ -248,3 +248,20 @@ def test_parse_battle_report_tolerates_reordered_and_messy_input() -> None:
     assert parsed.tier is None
     assert parsed.real_time_seconds == 754
     assert parsed.battle_date == datetime(2025, 12, 8, 1, 2, tzinfo=timezone.utc)
+
+
+def test_parse_battle_report_preserves_unknown_suffixes() -> None:
+    """Preserve raw values when compact magnitude suffixes are unknown."""
+
+    raw_text = "\n".join(
+        [
+            "Battle Report",
+            "Coins earned\t1.25Z",
+            "",
+        ]
+    )
+
+    parsed = parse_battle_report(raw_text)
+
+    assert parsed.coins_earned_raw == "1.25Z"
+    assert parsed.coins_earned is None

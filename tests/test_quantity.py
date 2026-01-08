@@ -30,6 +30,11 @@ def test_parse_quantity_handles_compact_suffixes() -> None:
     assert parsed.magnitude == "k"
     assert parsed.unit_type == UnitType.count
 
+    parsed = parse_quantity("2.5Q", unit_type=UnitType.coins)
+    assert parsed.normalized_value == Decimal("2500000000000000000")
+    assert parsed.magnitude == "Q"
+    assert parsed.unit_type == UnitType.coins
+
 
 def test_parse_quantity_handles_multiplier_and_percent() -> None:
     """Parse multiplier-style values into normalized Decimals."""

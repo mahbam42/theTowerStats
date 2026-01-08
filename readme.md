@@ -48,6 +48,7 @@ Guiding principles:
 - Filter charts by **date range**, **tier**, **preset**, and overlays
 - Default chart window uses the current **Event window**, with navigation controls
 - Default chart granularity is **By battle log**, with an optional switch to **By date**
+- Chart run labels follow Battle History ordering for consistent comparisons
 - Export derived metrics to CSV and download chart images as PNG snapshots
 - Full-screen chart modal and tooltip links to open Battle Report details
 - Guided walkthrough available in demo mode or on first login
@@ -78,6 +79,7 @@ Guiding principles:
 ### 🌙 Foundation-powered UI
 
 - Dark theme UI with consistent tables, callouts, and navigation styling
+- Improved callout and help-text contrast in dark theme
 - Shared dashboard shell with top navigation, global search, and consistent callouts
 - Foundation grid/forms for Battle History, Charts, and progress dashboards
 - Clear charts designed to answer real questions quickly
@@ -108,8 +110,8 @@ This app is about:
 
 ## Current Progress
 
-- Current development: **v0.6.0** (in progress)
-- Latest release: **v0.5.1**
+- Current development: **v0.6.0**
+- Latest release: **v0.6.0**
 - Changelog: `CHANGELOG.md`
 - Stable: Battle Report import, Battle History, Charts (including snapshots and compare scopes), and collection progress dashboards
 - Multi-user: Each signed-in account has its own isolated dataset
@@ -121,3 +123,4 @@ See the User Guide and Development sections in `/docs` ([or the published site](
 
 Tests are run in CI and during development.
 Production deployments install runtime dependencies only and do not execute tests.
+Maintainers can preview wiki diffs before rebuilds with `rebuild_wiki_definitions --diffs`.

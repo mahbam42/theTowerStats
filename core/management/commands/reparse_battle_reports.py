@@ -5,7 +5,7 @@ from __future__ import annotations
 from django.core.management.base import BaseCommand, CommandError
 
 from analysis.raw_text_metrics import extract_raw_text_metrics
-from core.parsers.battle_report import parse_battle_report
+from core.parsers.battle_report import parse_battle_report, record_unrecognized_unit_suffixes
 from gamedata.models import BattleReport, BattleReportDerivedMetrics, BattleReportProgress
 
 
@@ -61,6 +61,8 @@ class Command(BaseCommand):
 
         for report in queryset:
             totals["processed"] += 1
+            if write:
+                record_unrecognized_unit_suffixes(report.raw_text)
             parsed = parse_battle_report(report.raw_text)
             derived_payload = _derived_metrics_payload(report.raw_text)
 

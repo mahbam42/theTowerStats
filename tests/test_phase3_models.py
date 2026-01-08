@@ -39,7 +39,10 @@ def test_models_create_minimal_rows(player) -> None:
         source_section="test",
         parse_version="test_v1",
     )
-    Unit.objects.create(name="seconds", symbol="s", kind=Unit.Kind.SECONDS)
+    Unit.objects.get_or_create(
+        name="seconds",
+        defaults={"symbol": "s", "kind": Unit.Kind.SECONDS},
+    )
 
     card = CardDefinition.objects.create(name="Coin Bonus", slug="coin_bonus", source_wikidata=wiki)
 
