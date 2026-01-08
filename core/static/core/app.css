@@ -211,16 +211,25 @@ a:focus {
 .callout.success {
   background: rgba(60, 179, 113, 0.16) !important;
   border-color: rgba(60, 179, 113, 0.45) !important;
+  color: var(--tts-color-text) !important;
 }
 
 .callout.warning {
   background: rgba(245, 177, 76, 0.16) !important;
   border-color: rgba(245, 177, 76, 0.45) !important;
+  color: var(--tts-color-text) !important;
 }
 
 .callout.alert {
   background: rgba(211, 91, 82, 0.2) !important;
   border-color: rgba(211, 91, 82, 0.45) !important;
+  color: var(--tts-color-text) !important;
+}
+
+.callout.error {
+  background: rgba(211, 91, 82, 0.2) !important;
+  border-color: rgba(211, 91, 82, 0.45) !important;
+  color: var(--tts-color-text) !important;
 }
 
 .entity-tile {
@@ -257,6 +266,10 @@ a:focus {
 .preset-badge {
   margin-right: 0.25rem;
   margin-bottom: 0.25rem;
+}
+
+.help-text {
+  color: var(--tts-color-text-muted);
 }
 
 .preset-color-blue {
