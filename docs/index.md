@@ -1,30 +1,39 @@
 # theTowerStats
 
-Welcome to the documentation hub for **theTowerStats**. Players can explore history, charts, and collection progress without changing imported Battle Report data.
+## Overview
 
-Published documentation: <https://mahbam42.github.io/theTowerStats/>
+theTowerStats documentation helps you review imported Battle Reports, track collection progress, and understand dashboards without changing your saved game data.
 
-> **Highlight — Charts**
-> The Charts dashboard defaults to the current in-game Event window (14 days) and lets you select one or more charts, then filter by date range, granularity, tier, and preset labels.
+## When to Use This
 
-> **Highlight — Chart Builder & Metrics**
-> [Chart Builder](charts/chart_builder.md) lets you create a custom chart from the available metrics and apply it to the Charts dashboard.
-> The Chart Builder page includes a full list of tracked metrics with sources and calculation notes.
+- You want to pick the right section for Battle History, Charts, or collection tracking.
+- You want a quick overview of what each dashboard covers.
+- You want to confirm how presets and labels work across the app.
+- You want to review the sources behind reference data.
 
-> **Highlight — Cards**
-> The Cards dashboard surfaces unlocked slots, preset tags, and player card progress in read-only tables.
-> Presets define card groupings (unlocked via Lab Research “Card Presets”). The game currently allows 6 presets to be set, and this app allows as many as you’d like.
-> Presets can also be assigned to Battle Reports to track card usage over time.
+## How to Use
 
-## What’s inside
+1. Select a section from the navigation.
+2. Start with **User Guide** for Battle History, Charts, Cards, Ultimate Weapons, Guardian Chips, and Bots.
+3. Use **Wiki Population** when you maintain wiki-derived data.
+4. Use **Development** for phase notes and internal guidance.
+5. Open https://mahbam42.github.io/theTowerStats/ if you prefer the hosted documentation site.
 
-- **User Guide** — Task-based instructions for Battle History, Charts, Cards, Ultimate Weapons, Guardian Chips, and Bots.
-- **Wiki Population** — How to ingest and rebuild wiki-derived data safely.
-- **Development** — Previous phases, structure notes, and internal architecture for maintainers.
-- **Reference** — mkdocstrings-backed pages for management commands and future public APIs.
+## How to Read the Results
 
-## Principles
+- **User Guide** pages explain what each screen shows and how to interpret results.
+- **Charts** focuses on time-series views, filters, and comparisons.
+- **Cards** highlights slots, collection progress, and preset labels.
+- **Presets** are optional labels you define to group runs and cards (unlocked via the in-game Lab Research “Card Presets”). The game currently allows 5 presets, and the app lets you save more.
+- **Reference** pages list supported metrics and sources.
 
-- Keep `analysis/` pure and Django-free.
-- Keep Django apps focused on persistence and presentation.
-- Preserve raw imported values without destructive transforms.
+## Notes & Limitations
+
+> ⚠️ Note
+> Reference names and descriptions are based on the The Tower Idle Tower Defense Fandom Wiki (external): https://the-tower-idle-tower-defense.fandom.com/wiki/The_Tower_-_Idle_Tower_Defense_Wiki
+
+> ⚠️ Note
+> In-game preset selections can change mid-run. In the app, presets are static labels you apply for grouping and filtering.
+
+> ⚠️ Note
+> The documentation avoids strategy advice and focuses on what the app shows.

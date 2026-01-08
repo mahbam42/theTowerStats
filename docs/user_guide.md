@@ -34,7 +34,7 @@ theTowerStats turns your imported Battle Reports into Battle History tables, Cha
 ## How to Read the Results
 
 - Battle History shows one row per imported run, with filters and sorting to narrow what you see.
-- Presets are optional labels you create to group runs and cards for review (unlocked via the in-game Lab Research “Card Presets”). The game currently allows 6 presets, and this app lets you save more.
+- Presets are optional labels you create to group runs and cards for review (unlocked via the in-game Lab Research “Card Presets”). The game currently allows 5 presets, and this app lets you save more.
 - Charts reflect the current filters you selected (date range, tier, preset, and optional overlays).
 - Coins/real hour and other derived values are computed from the imported run text and displayed as numbers you can compare across runs.
 
@@ -45,6 +45,9 @@ theTowerStats turns your imported Battle Reports into Battle History tables, Cha
 
 > ⚠️ Note
 > Reference names and descriptions are based on the The Tower Idle Tower Defense Fandom Wiki (external): https://the-tower-idle-tower-defense.fandom.com/wiki/The_Tower_-_Idle_Tower_Defense_Wiki
+
+> ⚠️ Note
+> In-game preset selections can change mid-run. In the app, presets are static labels you apply for grouping and filtering.
 
 > ⚠️ Note
 > Your data is scoped to your signed-in account. Other users on the same instance cannot see or modify your runs or progress.

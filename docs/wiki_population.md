@@ -5,6 +5,8 @@ Populate wiki-derived data in two steps: ingest raw tables, then rebuild structu
 > **Warning**
 > These steps are for maintainers. They write to the database and expect stable network access only during ingestion.
 
+Source: https://the-tower-idle-tower-defense.fandom.com/
+
 ## Step 1 — Ingest wiki rows
 
 Use `fetch_wiki_data` to capture raw tables into `definitions.WikiData`. Pick the target that matches the section you need.

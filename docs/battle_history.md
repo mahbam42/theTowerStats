@@ -39,7 +39,7 @@ Battle History helps you review your past runs in a table so you can compare res
 - **Coins/real hour** divides coins earned by the run’s **Real Time** duration as reported by the game.
 - **Real time** shows the run duration as reported by the game.
 - **Gem blocks**, **Cells earned**, and **Reroll shards** show run resources that may be missing in older or incomplete reports.
-- **Preset** is an optional label you can use to group runs for review. The game currently allows 6 presets, and this app lets you save more. Presets do not change any gameplay results.
+- **Preset** is an optional label you can use to group runs for review. The game currently allows 5 presets, and this app lets you save more. Presets do not change any gameplay results.
 - **Top 3 Tournament Logs** shows your three best tournament-marked runs by highest wave.
 - Selecting a column header toggles between ascending and descending order for that column.
 
@@ -66,6 +66,9 @@ Battle History helps you review your past runs in a table so you can compare res
 
 > **Note**
 > If you delete a preset later, runs that used it can still show the saved label in the table so your history stays readable.
+
+> **Note**
+> In-game preset selections can change mid-run. In the app, presets are static labels you apply for grouping and filtering.
 
 > **Note**
 > The **Add Battle Report** panel is collapsed by default to keep the page focused on your table.
