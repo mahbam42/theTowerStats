@@ -561,19 +561,37 @@
         bodyColor: tooltipBodyColor,
       };
 
-      function formatCompactNumber(value) {
-        const absValue = Math.abs(Number(value));
-        if (!Number.isFinite(absValue)) return String(value);
-        if (absValue >= 1_000_000_000) return (value / 1_000_000_000).toFixed(2) + "B";
-        if (absValue >= 1_000_000) return (value / 1_000_000).toFixed(2) + "M";
-        if (absValue >= 1_000) return (value / 1_000).toFixed(2) + "K";
-        return String(value);
-      }
-
       function formatExactNumber(value) {
         const num = Number(value);
         if (!Number.isFinite(num)) return String(value);
         return new Intl.NumberFormat(undefined, { maximumFractionDigits: 2 }).format(num);
+      }
+
+      function formatCompactNumber(value) {
+        const num = Number(value);
+        const absValue = Math.abs(num);
+        if (!Number.isFinite(absValue)) return String(value);
+        const units = [
+          { threshold: 1_000_000_000_000_000_000, suffix: "Q" },
+          { threshold: 1_000_000_000_000_000, suffix: "q" },
+          { threshold: 1_000_000_000_000, suffix: "T" },
+          { threshold: 1_000_000_000, suffix: "B" },
+          { threshold: 1_000_000, suffix: "M" },
+          { threshold: 1_000, suffix: "K" },
+        ];
+        for (const unit of units) {
+          if (absValue >= unit.threshold) {
+            return `${(num / unit.threshold).toFixed(2)}${unit.suffix}`;
+          }
+        }
+        return formatExactNumber(num);
+      }
+
+      function formatChartNumber(value, unit) {
+        const unitLabel = String(unit || "").trim().toLowerCase();
+        const noCompact = new Set(["%", "percent", "x", "multiplier", "seconds", "s"]);
+        if (noCompact.has(unitLabel)) return formatExactNumber(value);
+        return formatCompactNumber(value);
       }
 
       function colorWithAlpha(color, alpha) {
@@ -724,7 +742,7 @@
                     const datasetLabel = context.dataset?.label || "Series";
                     const unit = context.dataset?.unit || "";
                     const unitLabel = unit ? ` ${unit}` : "";
-                    const base = `${datasetLabel}: ${formatExactNumber(context.parsed.y)}${unitLabel}`;
+                    const base = `${datasetLabel}: ${formatChartNumber(context.parsed.y, unit)}${unitLabel}`;
                     const reasons = context.dataset?.flagReasons || null;
                     const reason =
                       reasons && Number.isInteger(context.dataIndex) ? reasons[context.dataIndex] : null;
@@ -797,7 +815,7 @@
                   footer: (items) => {
                     if (!showTotal || !Array.isArray(items) || items.length === 0) return "";
                     const total = items.reduce((sum, item) => sum + (Number(item.parsed?.y) || 0), 0);
-                    return `Total: ${formatExactNumber(total)}`;
+                    return `Total: ${formatChartNumber(total, "")}`;
                   },
                 },
               },
@@ -877,7 +895,7 @@
                   label: (context) => {
                     const value = context.parsed;
                     const unitLabel = unit ? ` ${unit}` : "";
-                    return `${formatExactNumber(value)}${unitLabel}`;
+                    return `${formatChartNumber(value, unit)}${unitLabel}`;
                   },
                 },
               },
@@ -926,12 +944,12 @@
                     if (!items || !items[0]) return "";
                     const value = items[0].parsed?.x;
                     const unitLabel = xUnit ? ` ${xUnit}` : "";
-                    return `${xTitle}: ${formatExactNumber(value)}${unitLabel}`;
+                    return `${xTitle}: ${formatChartNumber(value, xUnit)}${unitLabel}`;
                   },
                   label: (context) => {
                     const value = context.parsed?.y;
                     const unitLabel = yUnit ? ` ${yUnit}` : "";
-                    return `${yTitle}: ${formatExactNumber(value)}${unitLabel}`;
+                    return `${yTitle}: ${formatChartNumber(value, yUnit)}${unitLabel}`;
                   },
                 },
               },
@@ -941,7 +959,7 @@
                 type: "linear",
                 title: { display: true, text: xTitle },
                 grid: { color: gridColor },
-                ticks: { color: tickColor },
+                ticks: { callback: (value) => formatCompactNumber(value), color: tickColor },
               },
               y: {
                 beginAtZero: true,

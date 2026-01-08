@@ -79,6 +79,9 @@ Charts help you review how your run results change over time using the same valu
 > **Note**
 > PNG export downloads a chart image as currently displayed, including your current filters and chart options.
 
+> **Note**
+> Large values in charts are abbreviated in axes and tooltips (K, M, B, T, q, Q). Exports keep the full numeric values.
+
 > **Caution**
 > Some charts require additional selections. For example, “Runs Using Selected UW” needs an Ultimate Weapon selection.
 

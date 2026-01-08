@@ -5,6 +5,7 @@ This project follows Semantic Versioning.
 ## [0.6.0] (latest)
 
 - Charts: fix run numbering so chart labels match Battle History ordering.
+- Charts: abbreviate large values in axes and tooltips using compact suffixes.
 - Cards: show correct level 0 values in the card library.
 - Bots: fix baseline totals in progress dashboards.
 - UI: improve dark-theme styling for callouts and help text.
