@@ -508,6 +508,26 @@ def extract_ultimate_weapon_usage(raw_text: str) -> tuple[tuple[str, ...], tuple
     return _dedupe_preserve_order(combat), _dedupe_preserve_order(utility)
 
 
+def extract_bot_usage(raw_text: str) -> tuple[str, ...]:
+    """Extract bot usage name list from raw Battle Report text.
+
+    Args:
+        raw_text: Raw Battle Report text as pasted by the user.
+
+    Returns:
+        Tuple of bot display names in best-effort order.
+    """
+
+    bot_pattern = re.compile(r"\b([A-Za-z]+ Bot)\b")
+    bots: list[str] = []
+    for label, _value in _iter_label_value_lines(raw_text):
+        for match in bot_pattern.finditer(label or ""):
+            name = match.group(1).strip()
+            if name:
+                bots.append(name)
+    return _dedupe_preserve_order(bots)
+
+
 def _split_name_list(raw: str) -> list[str]:
     """Split a comma-delimited name list into normalized display names."""
 

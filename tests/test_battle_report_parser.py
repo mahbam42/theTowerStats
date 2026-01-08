@@ -6,7 +6,7 @@ from datetime import datetime, timezone
 
 import pytest
 
-from core.parsers.battle_report import parse_battle_report
+from core.parsers.battle_report import extract_bot_usage, parse_battle_report
 
 pytestmark = [pytest.mark.unit, pytest.mark.golden]
 
@@ -265,3 +265,21 @@ def test_parse_battle_report_preserves_unknown_suffixes() -> None:
 
     assert parsed.coins_earned_raw == "1.25Z"
     assert parsed.coins_earned is None
+
+
+def test_extract_bot_usage_from_report_section() -> None:
+    """Extract bot names from the Battle Report bots section."""
+
+    raw_text = "\n".join(
+        [
+            "Battle Report",
+            "Bots",
+            "Flame Bot Damage\t111.15B",
+            "Thunder Bot Stuns\t32",
+            "Golden Bot Coins Earned\t578",
+            "Destroyed in Golden Bot\t34",
+            "",
+        ]
+    )
+
+    assert extract_bot_usage(raw_text) == ("Flame Bot", "Thunder Bot", "Golden Bot")

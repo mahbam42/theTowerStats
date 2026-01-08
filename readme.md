@@ -110,8 +110,8 @@ This app is about:
 
 ## Current Progress
 
-- Current development: **v0.6.0**
-- Latest release: **v0.6.0**
+- Current development: **v0.6.1**
+- Latest release: **v0.6.1**
 - Changelog: `CHANGELOG.md`
 - Stable: Battle Report import, Battle History, Charts (including snapshots and compare scopes), and collection progress dashboards
 - Multi-user: Each signed-in account has its own isolated dataset

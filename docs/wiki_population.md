@@ -40,6 +40,12 @@ Preview field-level diffs before rebuilding (always fetches live wiki data and w
 > **Note**
 > Rebuild logic must not depend on `WikiData.raw_row` key order (JSONB backends may reorder keys). If `rebuild_wiki_definitions` raises an “upgrade table drift” error, treat it as a schema mismatch in the scraped table headers or missing columns.
 
+> **Note**
+> Ultimate weapon rebuilds normalize header whitespace (including non-breaking spaces) when matching value and cost columns. If headers look correct but still mismatch, check for hidden spacing differences in the scraped table.
+
+> **Note**
+> Bot and card rebuilds also normalize header whitespace for column matching (including non-breaking spaces).
+
 ## Step 3 — Sync player state
 
 Create or refresh Player State rows so dashboards can display ownership:

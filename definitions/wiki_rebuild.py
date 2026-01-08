@@ -171,14 +171,18 @@ def _derive_card_effect_raw(raw_row: dict[str, object], *, description: str) -> 
 
     import re
 
-    direct = str(raw_row.get("Effect") or "").strip()
+    effect_key = _find_wiki_header_key(raw_row, "Effect")
+    direct = ""
+    if effect_key is not None:
+        direct = str(raw_row.get(effect_key) or "").strip()
     if direct:
         return direct
 
     level_pattern = re.compile(r"^(?:Lv\.?|Lvl\.?|Level)\s*\.?\s*(\d+)$", re.IGNORECASE)
     levels: list[tuple[int, str]] = []
     for key, value in raw_row.items():
-        match = level_pattern.match(str(key or "").strip())
+        normalized_key = _normalize_wiki_header(str(key or ""))
+        match = level_pattern.match(normalized_key)
         if not match:
             continue
         level = _safe_int(match.group(1))
@@ -253,7 +257,8 @@ def rebuild_bots_from_wikidata(*, write: bool, parse_version: str = "bots_v1") -
     with transaction.atomic():
         for slug, rows in grouped.items():
             example = rows[0]
-            name = (example.raw_row.get("Bot") or example.canonical_name or slug).strip()
+            bot_header = _find_wiki_header_key(example.raw_row, "Bot")
+            name = (example.raw_row.get(bot_header) or example.canonical_name or slug).strip()
             bot, created = BotDefinition.objects.update_or_create(
                 slug=slug,
                 defaults={
@@ -268,11 +273,25 @@ def rebuild_bots_from_wikidata(*, write: bool, parse_version: str = "bots_v1") -
             summary = _bump_definition(summary, created)
 
             # Bot table format: Level, Cost, then 4 parameters (Duration/Cooldown/Bonus/Range).
-            parameter_headers = [h for h in rows[0].raw_row.keys() if h not in {"Level", "Cost"} and not str(h).startswith("_") and h != "Bot"]
+            parameter_headers = []
+            for key in rows[0].raw_row.keys():
+                raw_key = str(key)
+                if raw_key.startswith("_"):
+                    continue
+                normalized = _normalize_wiki_header(raw_key)
+                if normalized in {"level", "cost", "bot"}:
+                    continue
+                parameter_headers.append(raw_key)
             if len(parameter_headers) != 4:
                 raise ValueError(
                     f"Bot upgrade table drift for slug={slug}: expected 4 parameters, got {parameter_headers!r}"
                 )
+            level_header = _find_wiki_header_key(example.raw_row, "Level")
+            cost_header = _bot_cost_header(raw_row=example.raw_row)
+            if level_header is None:
+                raise ValueError(f"Bot level header not found for slug={slug}.")
+            if cost_header is None:
+                raise ValueError(f"Bot cost header not found for slug={slug}.")
             for header in parameter_headers:
                 key = _bot_parameter_key(header)
                 unit_kind = _bot_unit_kind(key)
@@ -293,11 +312,11 @@ def rebuild_bots_from_wikidata(*, write: bool, parse_version: str = "bots_v1") -
 
                 created_levels = 0
                 for row in rows:
-                    level = _safe_int(row.raw_row.get("Level"))
-                    if level <= 0:
+                    level = _safe_int(row.raw_row.get(level_header))
+                    if level < 0:
                         continue
                     value_raw = str(row.raw_row.get(header, "")).strip()
-                    cost_raw = str(row.raw_row.get("Cost", "")).strip()
+                    cost_raw = str(row.raw_row.get(cost_header, "")).strip()
                     if _is_placeholder_or_total(value_raw) or _is_placeholder_or_total(cost_raw):
                         continue
                     BotParameterLevel.objects.create(
@@ -358,7 +377,15 @@ def rebuild_ultimate_weapons_from_wikidata(
                     f"Ultimate weapon mapping missing or incomplete for slug={slug}: mapping={mapping!r}"
                 )
             for value_header, key in mapping.items():
-                cost_header = _uw_cost_header(value_header=value_header, raw_row=example.raw_row)
+                resolved_value_header = _uw_value_header_key(
+                    value_header=value_header,
+                    raw_row=example.raw_row,
+                )
+                if resolved_value_header is None:
+                    raise ValueError(
+                        f"Ultimate weapon value header not found for slug={slug} value_header={value_header!r}"
+                    )
+                cost_header = _uw_cost_header(value_header=resolved_value_header, raw_row=example.raw_row)
                 if cost_header is None:
                     raise ValueError(
                         f"Ultimate weapon cost header not found for slug={slug} value_header={value_header!r}"
@@ -384,7 +411,7 @@ def rebuild_ultimate_weapons_from_wikidata(
                     level = _safe_int(row.raw_row.get("Level"))
                     if level <= 0:
                         continue
-                    value_raw = str(row.raw_row.get(value_header, "")).strip()
+                    value_raw = str(row.raw_row.get(resolved_value_header, "")).strip()
                     cost_raw = str(row.raw_row.get(cost_header, "")).strip()
                     if _is_placeholder_or_total(value_raw) or _is_placeholder_or_total(cost_raw):
                         continue
@@ -417,7 +444,8 @@ def rebuild_guardian_chips_from_wikidata(
     with transaction.atomic():
         for slug, rows in grouped.items():
             example = rows[0]
-            name = (example.raw_row.get("Guardian") or example.canonical_name or slug).strip()
+            guardian_header = _find_wiki_header_key(example.raw_row, "Guardian")
+            name = (example.raw_row.get(guardian_header) or example.canonical_name or slug).strip()
             chip, created = GuardianChipDefinition.objects.update_or_create(
                 slug=slug,
                 defaults={
@@ -436,6 +464,21 @@ def rebuild_guardian_chips_from_wikidata(
                 raise ValueError(
                     f"Guardian upgrade table drift for slug={slug}: expected 3 parameters, got {pairs!r}"
                 )
+            expected_keys = {_guardian_parameter_key(value_header, slug=slug) for value_header, _ in pairs}
+            extras = GuardianChipParameterDefinition.objects.filter(
+                guardian_chip_definition=chip,
+            ).exclude(key__in=expected_keys)
+            if extras.exists():
+                deleted_levels = GuardianChipParameterLevel.objects.filter(
+                    parameter_definition__in=extras
+                ).count()
+                if deleted_levels:
+                    GuardianChipParameterLevel.objects.filter(parameter_definition__in=extras).delete()
+                    summary = replace(
+                        summary,
+                        deleted_parameter_levels=summary.deleted_parameter_levels + deleted_levels,
+                    )
+                extras.delete()
             for value_header, cost_header in pairs:
                 key = _guardian_parameter_key(value_header, slug=slug)
                 unit_kind = _guardian_unit_kind(key)
@@ -504,7 +547,7 @@ def _bump_param_def(summary: RebuildSummary, created: bool) -> RebuildSummary:
 def _bot_parameter_key(header: str) -> str:
     """Map a bot upgrade table header to a ParameterKey."""
 
-    normalized = header.strip().casefold()
+    normalized = _normalize_wiki_header(header)
     if normalized == "duration":
         return ParameterKey.DURATION.value
     if normalized == "cooldown":
@@ -594,26 +637,89 @@ def _uw_value_headers_for_slug(slug: str) -> dict[str, str]:
 def _uw_cost_header(*, value_header: str, raw_row: dict) -> str | None:
     """Find the cost column header for a UW value header."""
 
+    normalized_value = _normalize_wiki_header(value_header)
     candidates = [
         f"Stones ({value_header})",
         f"Stone ({value_header})",
-        f"Cost (Stones) ({value_header})",
         f"Cost (Stones) ({value_header})",
     ]
     for candidate in candidates:
         if candidate in raw_row:
             return candidate
+        for key in raw_row.keys():
+            if _normalize_wiki_header(str(key)) == _normalize_wiki_header(candidate):
+                return str(key)
     for key in raw_row.keys():
-        if "Stones" in str(key) and value_header in str(key):
+        normalized_key = _normalize_wiki_header(str(key))
+        if "stones" in normalized_key and normalized_value in normalized_key:
             return str(key)
     # Fallback: some tables interleave value/cost columns using generic "Cost" headers.
     keys = [str(k) for k in raw_row.keys()]
     for idx, key in enumerate(keys):
-        if key == value_header:
+        if _normalize_wiki_header(key) == normalized_value:
             for j in range(idx + 1, min(idx + 4, len(keys))):
                 if keys[j].casefold().startswith("cost"):
                     return keys[j]
     return None
+
+
+def _uw_value_header_key(*, value_header: str, raw_row: dict) -> str | None:
+    """Return the raw_row key that matches a UW value header.
+
+    Args:
+        value_header: Expected header label from the UW mapping.
+        raw_row: Raw wiki row mapping (header -> value).
+
+    Returns:
+        The matching raw_row key string, or None if not found.
+    """
+
+    return _find_wiki_header_key(raw_row, value_header)
+
+
+def _find_wiki_header_key(raw_row: dict, header: str) -> str | None:
+    """Return the raw_row key that matches a header after normalization.
+
+    Args:
+        raw_row: Raw wiki row mapping (header -> value).
+        header: Expected header label to match.
+
+    Returns:
+        The matching raw_row key string, or None if not found.
+    """
+
+    normalized_target = _normalize_wiki_header(header)
+    for key in raw_row.keys():
+        if _normalize_wiki_header(str(key)) == normalized_target:
+            return str(key)
+    return None
+
+
+def _bot_cost_header(*, raw_row: dict) -> str | None:
+    """Find the cost column header for a bot upgrade table row."""
+
+    direct = _find_wiki_header_key(raw_row, "Cost")
+    if direct is not None:
+        return direct
+    for key in raw_row.keys():
+        normalized = _normalize_wiki_header(str(key))
+        if normalized.startswith("cost") or "medal" in normalized:
+            return str(key)
+    return None
+
+
+def _normalize_wiki_header(header: str) -> str:
+    """Normalize wiki header text for matching.
+
+    Args:
+        header: Raw header string.
+
+    Returns:
+        Normalized header string for case-insensitive comparisons.
+    """
+
+    cleaned = header.replace("\u00a0", " ").strip()
+    return " ".join(cleaned.split()).casefold()
 
 
 def _uw_unit_kind(key: str) -> str:
@@ -645,7 +751,7 @@ def _guardian_header_pairs(raw_row: dict, *, slug: str) -> list[tuple[str, str]]
             True when the header appears to represent a cost/currency column.
         """
 
-        lowered = header.strip().casefold()
+        lowered = _normalize_wiki_header(header)
         if "bits" in lowered:
             return True
         return lowered.startswith("cost")
@@ -663,7 +769,7 @@ def _guardian_header_pairs(raw_row: dict, *, slug: str) -> list[tuple[str, str]]
 
     def _cost_sort_key(header: str) -> tuple[str, int, str]:
         base, occurrence = _dedupe_occurrence(header)
-        return (base.casefold(), occurrence, header.casefold())
+        return (_normalize_wiki_header(base), occurrence, _normalize_wiki_header(header))
 
     ordered_cost_headers = sorted(cost_headers, key=_cost_sort_key)
     if len(ordered_cost_headers) < len(expected_keys):
@@ -673,7 +779,7 @@ def _guardian_header_pairs(raw_row: dict, *, slug: str) -> list[tuple[str, str]]
         )
 
     def _value_preference(header: str) -> tuple[int, int, str]:
-        normalized = header.strip().casefold()
+        normalized = _normalize_wiki_header(header)
         has_parens = "(" in normalized or ")" in normalized
         return (1 if has_parens else 0, len(normalized), normalized)
 
@@ -706,7 +812,7 @@ def _guardian_header_pairs(raw_row: dict, *, slug: str) -> list[tuple[str, str]]
 def _guardian_parameter_key(value_header: str, *, slug: str) -> str:
     """Map guardian chip value headers to ParameterKey."""
 
-    normalized = value_header.strip().casefold()
+    normalized = _normalize_wiki_header(value_header)
     if slug == "ally":
         if "recovery amount" in normalized:
             return ParameterKey.RECOVERY_AMOUNT.value

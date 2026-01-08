@@ -25,7 +25,7 @@ The Bots page helps you track which bots are unlocked, how far each upgrade para
 ## How to Read the Results
 
 - **Total Medals invested** is the sum of the upgrade costs for the levels above 0 that you have recorded in the app.
-- **Runs used** counts how many of your imported Battle Reports include that bot.
+- **Runs used** counts how many of your imported Battle Reports include that bot in the Bots section.
 - **Level** is your saved upgrade level for that parameter.
 - Level 0 means no upgrades have been recorded yet.
 - **Current** is the current raw value for your saved level.

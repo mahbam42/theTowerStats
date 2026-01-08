@@ -2,7 +2,15 @@
 
 This project follows Semantic Versioning.
 
-## [0.6.0] (latest)
+## [0.6.1] (in progress)
+
+- Bots: normalize rebuild headers (including non-breaking spaces) and accept level 0 rows when present.
+- Bots: populate Runs used from battle report bot lines.
+- Guardians: remove unexpected parameter definitions during rebuild to prevent dashboard skips.
+- Cards: normalize effect headers when deriving card effects.
+- Docs: note header normalization for wiki rebuilds and clarify bot runs usage.
+
+## [0.6.0]
 
 - Charts: fix run numbering so chart labels match Battle History ordering.
 - Charts: abbreviate large values in axes and tooltips using compact suffixes.

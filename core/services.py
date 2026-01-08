@@ -8,17 +8,19 @@ from __future__ import annotations
 
 from django.db import IntegrityError, transaction
 
-from definitions.models import UltimateWeaponDefinition
+from definitions.models import BotDefinition, UltimateWeaponDefinition
 from gamedata.models import (
     BattleReport,
     BattleReportDerivedMetrics,
     BattleReportProgress,
     RunCombatUltimateWeapon,
+    RunBot,
     RunUtilityUltimateWeapon,
 )
 from player_state.models import Player, Preset
 from analysis.raw_text_metrics import extract_raw_text_metrics
 from core.parsers.battle_report import (
+    extract_bot_usage,
     extract_ultimate_weapon_usage,
     parse_battle_report,
     record_unrecognized_unit_suffixes,
@@ -75,6 +77,7 @@ def ingest_battle_report(
                 reroll_shards_earned=parsed.reroll_shards_earned,
                 is_tournament=is_tournament,
             )
+            _ingest_run_bot_usage(battle_report=battle_report, player=player)
             _ingest_run_ultimate_weapon_usage(battle_report=battle_report, player=player)
             return battle_report, True
     except IntegrityError:
@@ -88,6 +91,7 @@ def ingest_battle_report(
                 is_tournament=is_tournament,
             )
         _persist_derived_metrics(battle_report=battle_report, player=player, raw_text=raw_text)
+        _ingest_run_bot_usage(battle_report=battle_report, player=player)
         _ingest_run_ultimate_weapon_usage(battle_report=battle_report, player=player)
         return battle_report, False
 
@@ -204,3 +208,47 @@ def _ingest_run_ultimate_weapon_usage(*, battle_report: BattleReport, player: Pl
         RunCombatUltimateWeapon.objects.bulk_create(combat_rows)
     if utility_rows:
         RunUtilityUltimateWeapon.objects.bulk_create(utility_rows)
+
+
+def _ingest_run_bot_usage(*, battle_report: BattleReport, player: Player) -> None:
+    """Persist best-effort Bot usage rows for a Battle Report.
+
+    Args:
+        battle_report: Persisted BattleReport row to attach usage to.
+        player: Owning player derived from the authenticated user.
+
+    Notes:
+        Usage rows are derived from the Battle Report raw text. Unknown names
+        are ignored, and existing rows are left in place to keep ingestion
+        idempotent for duplicate imports.
+    """
+
+    bot_names = extract_bot_usage(battle_report.raw_text or "")
+    if not bot_names:
+        return
+
+    definitions = {
+        definition.name.casefold(): definition for definition in BotDefinition.objects.order_by("id")
+    }
+    existing_ids = set(
+        RunBot.objects.filter(player=player, battle_report=battle_report).values_list(
+            "bot_definition_id",
+            flat=True,
+        )
+    )
+
+    rows: list[RunBot] = []
+    for name in bot_names:
+        definition = definitions.get(name.casefold())
+        if definition is None or definition.id in existing_ids:
+            continue
+        rows.append(
+            RunBot(
+                player=player,
+                battle_report=battle_report,
+                bot_definition=definition,
+            )
+        )
+
+    if rows:
+        RunBot.objects.bulk_create(rows)

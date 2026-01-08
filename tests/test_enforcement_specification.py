@@ -17,6 +17,7 @@ from definitions.models import (
     CardDefinition,
     Currency,
     GuardianChipDefinition,
+    GuardianChipParameterDefinition,
     ParameterKey,
     UltimateWeaponDefinition,
 )
@@ -209,6 +210,7 @@ def test_parameter_key_field_is_enforced_by_choices() -> None:
         param.full_clean()
 
 
+@pytest.mark.integration
 @pytest.mark.django_db
 def test_upgrade_table_levels_are_contiguous_and_currency_is_enforced() -> None:
     """Parameter levels are contiguous starting at 1 and currency is enforced."""
@@ -218,8 +220,9 @@ def test_upgrade_table_levels_are_contiguous_and_currency_is_enforced() -> None:
 
     for param_def in BotParameterDefinition.objects.all():
         levels = list(param_def.levels.order_by("level").values_list("level", flat=True))
-        assert levels[0] == 1
-        assert levels == list(range(1, max(levels) + 1))
+        min_level = levels[0]
+        assert min_level in {0, 1}
+        assert levels == list(range(min_level, max(levels) + 1))
         assert all(row.currency == Currency.MEDALS for row in param_def.levels.all())
 
     # DB constraint must reject wrong currency.
@@ -457,6 +460,29 @@ def test_guardian_cost_headers_are_detected_case_insensitively() -> None:
 
     rebuild_guardian_chips_from_wikidata(write=True)
     chip = GuardianChipDefinition.objects.get(slug="ally")
+    assert chip.parameter_definitions.count() == 3
+
+
+@pytest.mark.integration
+@pytest.mark.regression
+@pytest.mark.django_db
+def test_guardian_rebuild_removes_extra_parameter_definitions() -> None:
+    """Guardian rebuild should remove unexpected parameter definitions."""
+
+    _ingest_guardian_page(fixture="wiki_guardian_page_v1.html")
+    rebuild_guardian_chips_from_wikidata(write=True)
+
+    chip = GuardianChipDefinition.objects.get(slug="ally")
+    GuardianChipParameterDefinition.objects.create(
+        guardian_chip_definition=chip,
+        key=ParameterKey.DURATION.value,
+        display_name="Duration",
+        unit_kind="seconds",
+    )
+    assert chip.parameter_definitions.count() == 4
+
+    rebuild_guardian_chips_from_wikidata(write=True)
+    chip.refresh_from_db()
     assert chip.parameter_definitions.count() == 3
 
 
