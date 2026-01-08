@@ -72,7 +72,7 @@ nav:
           - Phase 7 Summary: phase7.md
           - Phase 8 Summary: phase8.md
           - Phase 9 Summary: phase9.md
-      - Phase 10 Summary: phase10.md
+          - Phase 10 Summary: phase10.md
       - Deployment (Railway): deployment.md
       - Clone and Start Locally: clone_start_locally.md
       - Testing:

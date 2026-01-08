@@ -2425,7 +2425,7 @@ CLOSED: [2025-12-22 Mon 15:31]
 - [X] fetch_wiki_data and rebuild_wiki_definitions should have a pretty summary of deltas at the end.
   Especially when using --target all.
 
-*** Bugs/Enhancements [53/53]
+*** Bugs/Enhancements [53/62]
 
 **** DONE [#B] Error Updating Guardian Upgrade Table                 :bug:
 CLOSED: [2025-12-22 Mon 18:51]
@@ -3164,7 +3164,98 @@ Keep the current columns as the default, add a menu to toggle visibility of colu
 CLOSED: [2026-01-04 Sun 17:33]
 - State "DONE"       from "TODO"       [2026-01-04 Sun 17:33]
 It's implied by the 6 default charts but it is a very handy feature. 
-** Backlog [2/6]
+**** IN PROGRESS [#A] Improve rebuild_wiki_definitions       :enhancement:
+- State "IN PROGRESS" from              [2026-01-08 Thu 10:07]
+
+
+Yes. There’s a built‑in dry‑run path, but it only reports counts, not field‑by‑field diffs.
+
+- `fetch_wiki_data supports --check` (no DB writes, prints added/changed/unchanged/deprecated). See fetch_wiki_data.py and phase275.md.
+- `rebuild_wiki_definitions` supports `--check`, and you can keep it offline with `--skip-fetch`. See `rebuild_wiki_definitions.py` and `wiki_population.md`.
+- If you want to preview the actual guardian chip value deltas, you have two safe options after a `--write` fetch:
+
+  Admin UI: filter WikiData by parse_version=guardian_chips_v1 and inspect the latest two rows per entity_id in detail view. Admin is wired in admin.py.
+  Django shell diff (latest vs previous per entity). Example snippet you can run:
+
+#+BEGIN_SRC python
+# python manage.py shell
+from collections import defaultdict
+from definitions.models import WikiData
+
+rows = (
+    WikiData.objects
+    .filter(parse_version="guardian_chips_v1")
+    .order_by("entity_id", "-id")
+)
+
+by_entity = defaultdict(list)
+for row in rows:
+    by_entity[row.entity_id].append(row)
+
+for entity_id, versions in by_entity.items():
+    if len(versions) >= 2 and versions[0].content_hash != versions[1].content_hash:
+        print(entity_id)
+        print("old:", versions[1].raw_row)
+        print("new:", versions[0].raw_row)
+        print("---")
+#+END_SRC         
+If you want, I can run a targeted query for guardian chips and summarize the diffs.
+
+Let's add a flag to rebuild_wiki_definitions called '--diffs' That ignores '--skip-fetch' and pulls the new data to a temporary list and outputs a table of the previous values and new values. Then the admin can rerun rebuild with --write to commit the changes.
+
+**** TODO [#A] On Charts Dashboard Data points aren't showing Run #  :bug:
+Should be strictly scoped by player not incremental to the full DB table. 
+**** TODO [#A] Add Community Documentation                   :enhancement:
+Community Name: The Tower Stats
+Contact: mahbam42+tts@gmail.com
+
+- [ ] SECURITY.md
+- [ ] Code of Conduct
+- [ ] CONTRIBUTING.md
+- [ ] Pull Request Template
+  - [ ] Optional: Add a config.yml to .github/ for the templates
+**** TODO [#B] Cards Dashboard is missing level 0                    :bug:
+Parameters column is showing a level ahead of current unlock progress. The column should be labeled 'current level' not 'next level' that may correct the issue and also clear up confusion.
+**** TODO [#B] Clean Up unused models               :enhancement:planning:
+We never did anything with the Run* models, or Units in Game Definitions
+**** TODO [#B] Dark Mode Cleanup                                     :bug:
+- Demo Mode Alert Bar (multiple pages) – After enabling demo mode by clicking “Try demo data” on the home page, the site shows a persistent banner at the top of most pages (“Demo mode — You are viewing sample data…”). This banner has a dark brown background with black text, which is hard to read against the dark UI and clearly inherits the light theme. The banner appears in the same form on the Charts, Battle History, Goals, Cards, Ultimate Weapons, Guardian Chips and Bots pages.
+- Chart‑Builder Modal “Selection constraints” message – On the Charts page, clicking the Chart Builder button opens a modal to build a custom chart. At the top of this modal, there is a box labeled “Selection constraints” that tells you to select at least one metric. This box has an amber/tan background with black text, which clashes badly with the dark modal and is difficult to read. This looks like a light‑theme component that hasn’t been restyled for dark mode.
+- Demo Mode Enabled Message – Immediately after enabling demo mode, a green status bar appears on the Charts page saying “Demo mode enabled.”. It also uses black text on a dark green background, making the message hard to read.
+
+  I exited demo mode and re‑checked the site.  Without demo mode, most of the dark‑theme UI looks consistent; however, the elements that had light‑theme artefacts in demo mode still need adjustments, and an additional warning message surfaced on the Battle History import form.
+- On the Add Battle Report form, there’s a tan box with black text stating “Tournament runs cannot be detected automatically from pasted text.” This is difficult to read against the dark background.
+
+- Success messages like “Battle Report imported.” use dark text on darkly colored backgrounds (a green bar), which is another light‑theme artifact.
+
+- Overall the dark theme is consistent, but any status or instructional banners/messages still inherit light‑theme colors.
+  
+- Newly observed issue (non‑demo mode)
+
+| Location                                    | Steps to reproduce                                                                                                                                              | Observation                                                                                                                                                                                                                                | Evidence |
+| ------------------------------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ | -------- |
+| **Battle History → Add Battle Report form** | 1. On the Battle History page (with demo mode off), expand the **Add Battle Report** accordion. 2. Examine the “Tournament run” option beneath the paste field. | The instructional text “Tournament runs cannot be detected automatically from pasted text.” appears in a tan/brown box with **black text**.  This dark‑on‑dark combination is hard to read and clashes with the rest of the dark‑theme UI. |          |
+**** TODO [#B] Bots Dashboard Needs to Display Upgrade Progress starting from level 0 :bug:
+Currently shows all parameters at initial level 1, not 0 making the 'total medals invested' also inaccurate. 
+**** TODO [#C] Clarify 'Presets' Definition and Intention in Docs
+Our app uses the 'presets' feature (unlocked via lab research)' to track player defined Cards groupings. We give our users access to this feature immediately and also apply it to Battle Reports to track performance with different card load outs. The game automatically updates a preset if cards are changed during a round. This can lead to unplanned changes to a loadout over multiple rounds. Typical player behavior would be to have an initial card preset, and then swap to sustain focused cards mid to late in a Round. Our model is indenpendant of mid round changes and can serve as a static loadout grouping. 
+
+From the Wiki:
+> Card Presets allows you to set up to 5 card presets. Presets can be switched during rounds if the same locked cards are equipped on different presets. If a card is swapped during a round, the change will remain saved to the preset. https://the-tower-idle-tower-defense.fandom.com/wiki/Card_Presets
+
+Doc References to be aligned: 
+- cards.md ::  "Presets are labels that help you filter and group cards (unlocked via Lab Research 'Card Presets'). The Game currently allows for 6 presets to be set, this app allows as many as you'd like. Define and set Presets from the Cards Dashboard."
+
+- user_guide.md ::  "Presets are optional labels you create to group runs and cards for review (unlocked via the in-game Lab Research “Card Presets”). The game currently allows 6 presets, and this app lets you save more."
+
+- battle_history.md :: "Preset is an optional label you can use to group runs for review. The game currently allows 6 presets, and this app lets you save more. Presets do not change any gameplay results."
+
+- index.md :: Add how Presets work differently to the 'Highlight' Section. Replace "Presets define card groupings (unlocked via Lab Research “Card Presets”). The game currently allows 6 presets to be set, and this app allows as many as you’d like. Presets can also be assigned to Battle Reports to track card usage over time"
+
+- Global :: We erroniously claim the Game allows 6 presets. It's only 5, update any references accordingly. 
+**** TODO [#C] wiki_population.md needs to cite the Fandom Wiki as it's source :bug:
+the-tower-idle-tower-defense.fandom.com/
+** Backlog [4/6]
 “Out of Scope”:
 - Cloud sync
 - Real-time scraping
@@ -3348,9 +3439,17 @@ K-means belongs entirely inside of analysis
 
 - It never implies success
 
-*** TODO [#C] Hide Deathwave on UW Sync Chart
+*** TODO [#B] Draft a “This app is done” release note
+Cite philosophy.md and mention k-means as the next big feature
+*** CANCELED [#C] Hide Deathwave on UW Sync Chart
+CLOSED: [2026-01-07 Wed 16:29]
+- State "CANCELED"   from "TODO"       [2026-01-07 Wed 16:29] \\
+  don't need it
 Add an optional toggle to show/hide the Death Wave activation markers (so the schedule focuses on GT/BH overlap), while still keeping everything descriptive.
-*** TODO [#C] Required Doc Type Header (Must Prepend to All Docs)
+*** CANCELED [#C] Required Doc Type Header (Must Prepend to All Docs)
+CLOSED: [2026-01-07 Wed 16:28]
+- State "CANCELED"   from "TODO"       [2026-01-07 Wed 16:28] \\
+  seems to working well enough without it
 Every document authored or modified by Codex must begin with exactly one of the following headers, placed at the very top of the file.
 
 #+BEGIN_SRC html
@@ -3426,8 +3525,6 @@ Follow the documentation standards defined in agents.md.
 If writing a User Guide, prioritize clarity for non-technical users, avoid internal details, and follow the required task-based structure.
 Validate the final document against the Documentation Self-Check Checklist before completing the task.
 
-*** TODO [#B] Draft a “This app is done” release note
-Cite philosophy.md and mention k-means as the next big feature
 *** CANCELED [#C] What-If Scenarios
 CLOSED: [2025-12-22 Mon 09:01]
 
