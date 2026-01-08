@@ -16,7 +16,6 @@ Before starting, read `docs/philosophy.md`, `docs/design_philosophy.md`, and `ag
 - If you use a chatbot or automated assistant, it must follow `agents.md` without exception.
 - Add or update tests for every behavior change.
 - Update documentation in `docs/` for any functional change and ensure `mkdocs.yml` stays accurate.
-- Do not edit `.org` files.
 - Do not change version numbers or `CHANGELOG.md` unless explicitly asked.
 
 ## Engineering Standards
