@@ -158,6 +158,9 @@ def _ingest_run_ultimate_weapon_usage(*, battle_report: BattleReport, player: Pl
         Usage rows are derived from the Battle Report raw text. Unknown names
         are ignored, and existing rows are left in place to keep ingestion
         idempotent for duplicate imports.
+
+    Returns:
+        Number of RunBot rows created.
     """
 
     combat_names, utility_names = extract_ultimate_weapon_usage(battle_report.raw_text or "")
@@ -212,7 +215,7 @@ def _ingest_run_ultimate_weapon_usage(*, battle_report: BattleReport, player: Pl
         RunUtilityUltimateWeapon.objects.bulk_create(utility_rows)
 
 
-def _ingest_run_bot_usage(*, battle_report: BattleReport, player: Player) -> None:
+def _ingest_run_bot_usage(*, battle_report: BattleReport, player: Player) -> int:
     """Persist best-effort Bot usage rows for a Battle Report.
 
     Args:
@@ -227,7 +230,7 @@ def _ingest_run_bot_usage(*, battle_report: BattleReport, player: Player) -> Non
 
     bot_names = extract_bot_usage(battle_report.raw_text or "")
     if not bot_names:
-        return
+        return 0
 
     definitions = {
         definition.name.casefold(): definition for definition in BotDefinition.objects.order_by("id")
@@ -254,3 +257,18 @@ def _ingest_run_bot_usage(*, battle_report: BattleReport, player: Player) -> Non
 
     if rows:
         RunBot.objects.bulk_create(rows)
+    return len(rows)
+
+
+def backfill_run_bot_usage(*, battle_report: BattleReport, player: Player) -> int:
+    """Backfill bot usage rows for an existing Battle Report.
+
+    Args:
+        battle_report: Persisted BattleReport row to attach usage to.
+        player: Owning player derived from the authenticated user.
+
+    Returns:
+        Number of RunBot rows created.
+    """
+
+    return _ingest_run_bot_usage(battle_report=battle_report, player=player)

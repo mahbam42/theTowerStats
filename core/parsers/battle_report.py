@@ -201,7 +201,7 @@ def fallback_battle_date(
 
 
 def battle_date_is_fallback(raw_text: str) -> bool:
-    """Return True when the Battle Report is missing a battle date line.
+    """Return True when the Battle Report lacks a usable battle date line.
 
     Args:
         raw_text: Raw Battle Report text as pasted by the user.
@@ -212,7 +212,9 @@ def battle_date_is_fallback(raw_text: str) -> bool:
 
     raw_fields = _extract_raw_fields(raw_text)
     value = (raw_fields.battle_date or "").strip()
-    return value == ""
+    if value == "":
+        return True
+    return _parse_battle_date(value) is None
 
 
 def record_unrecognized_unit_suffixes(raw_text: str) -> set[str]:

@@ -237,21 +237,27 @@
 	            <p class="margin-0">
 	              Baseline: Run A ({{ comparison_result.label_a }}) • Comparison: Run B ({{ comparison_result.label_b }})
 	            </p>
-	          {% elif comparison_result.kind == "run_sets" %}
-	            <p class="margin-0">
-	              Baseline: Scope A (runs={{ comparison_result.scope_a_run_count }}) • Comparison: Scope B (runs={{ comparison_result.scope_b_run_count }})
-	            </p>
-	            <p class="margin-0 muted">Summary focus: {{ comparison_result.summary_focus }}</p>
-	            {% if not comparison_result.goal_aware_supported %}
-	              <p class="margin-0 muted">Goal-aware summary is available only for Economy focus.</p>
-	            {% endif %}
-	          {% else %}
-	            <p class="margin-0">
-	              Baseline: Window A ({{ comparison_result.window_a.start_date }} to {{ comparison_result.window_a.end_date }})
-	              • Comparison: Window B ({{ comparison_result.window_b.start_date }} to {{ comparison_result.window_b.end_date }})
-	            </p>
-	            <p class="margin-0 muted">Summary focus: {{ comparison_result.summary_focus }}</p>
-	          {% endif %}
+          {% elif comparison_result.kind == "run_sets" %}
+            <p class="margin-0">
+              Baseline: Scope A (runs={{ comparison_result.scope_a_run_count }}) • Comparison: Scope B (runs={{ comparison_result.scope_b_run_count }})
+            </p>
+            <p class="margin-0 muted">Summary focus: {{ comparison_result.summary_focus }}</p>
+            {% if comparison_result.scope_summary_mode %}
+              <p class="margin-0 muted">Scope summary: {{ comparison_result.scope_summary_mode }}</p>
+            {% endif %}
+            {% if not comparison_result.goal_aware_supported %}
+              <p class="margin-0 muted">Goal-aware summary is available only for Economy focus.</p>
+            {% endif %}
+          {% else %}
+            <p class="margin-0">
+              Baseline: Window A ({{ comparison_result.window_a.start_date }} to {{ comparison_result.window_a.end_date }})
+              • Comparison: Window B ({{ comparison_result.window_b.start_date }} to {{ comparison_result.window_b.end_date }})
+            </p>
+            <p class="margin-0 muted">Summary focus: {{ comparison_result.summary_focus }}</p>
+            {% if comparison_result.scope_summary_mode %}
+              <p class="margin-0 muted">Scope summary: {{ comparison_result.scope_summary_mode }}</p>
+            {% endif %}
+          {% endif %}
 	          <ul class="margin-bottom-0">
 	            {% if comparison_result.baseline_value is not None %}
 	              <li>Baseline: {{ comparison_result.baseline_value|floatformat:2 }} {{ comparison_result.metric }}</li>
@@ -405,6 +411,13 @@
                 <label>{{ comparison_form.summary_focus.label }}
                   {{ comparison_form.summary_focus }}
                 </label>
+              </div>
+              <div class="cell medium-6">
+                <label>
+                  {{ comparison_form.scope_average }}
+                  {{ comparison_form.scope_average.label }}
+                </label>
+                <p class="help-text">When enabled, Compare uses per-run averages to reduce skew from uneven scope sizes.</p>
               </div>
             </div>
 

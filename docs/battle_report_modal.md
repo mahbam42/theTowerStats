@@ -24,6 +24,7 @@ The Battle Report Modal lets you view the full raw report for a single run while
 - The Metrics section lists key values from the report; metric labels link to charts when available.
 - The Raw Battle Report section preserves the original report layout and spacing.
 - Missing values display as an em dash so you can see where the report did not include a value.
+- When the report lacks a Battle Date, the header uses the import timestamp and marks it as **Imported**.
 
 ## Notes & Limitations
 

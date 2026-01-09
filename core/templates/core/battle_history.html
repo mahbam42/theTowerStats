@@ -217,7 +217,14 @@
                         {% if column.key == "run_number" %}
                           {{ row.run_number|default:"—" }}
                         {% elif column.key == "battle_date" %}
-                          {{ row.run.run_progress.battle_date|default:"—" }}
+                          {% if row.battle_date_display %}
+                            {{ row.battle_date_display }}
+                            {% if row.battle_date_fallback %}
+                              <span class="muted" title="Imported time used as fallback">Imported</span>
+                            {% endif %}
+                          {% else %}
+                            <span class="muted">—</span>
+                          {% endif %}
                         {% elif column.key == "tier" %}
                           {% if row.is_tournament %}
                             <span class="badge warning tournament-badge">Tournament{% if row.tournament_bracket %}: {{ row.tournament_bracket }}{% endif %}</span>

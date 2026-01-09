@@ -103,6 +103,28 @@ def test_battle_history_import_allows_missing_battle_date(auth_client, player) -
 
 
 @pytest.mark.django_db
+def test_battle_history_marks_fallback_battle_date(auth_client, player) -> None:
+    """Battle History marks imported timestamps when Battle Date is missing."""
+
+    raw_text = "\n".join(
+        [
+            "Battle Report",
+            "Game Time\t1d 9h 39m 5s",
+            "Real Time\t9h 3m 18s",
+            "Tier\t1",
+            "Wave\t3656",
+            "Killed By\tFast",
+            "Coins earned\t17.29M",
+        ]
+    )
+    auth_client.post(reverse("core:battle_history"), data={"raw_text": raw_text}, follow=True)
+
+    response = auth_client.get(reverse("core:battle_history"))
+    assert response.status_code == 200
+    assert "Imported" in response.content.decode("utf-8")
+
+
+@pytest.mark.django_db
 def test_battle_history_import_accepts_single_space_separators(auth_client, player) -> None:
     """Import accepts reports when the clipboard collapses tabs into single spaces."""
 

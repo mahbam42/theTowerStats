@@ -93,3 +93,28 @@ def test_battle_report_modal_run_number_is_player_scoped(auth_client, player) ->
 
     payload = response.json()
     assert payload["report"]["run_number"] == 1
+
+
+@pytest.mark.django_db
+def test_battle_report_modal_marks_fallback_battle_date(auth_client, player) -> None:
+    """Modal payload marks fallback battle dates."""
+
+    report = BattleReport.objects.create(
+        player=player,
+        raw_text="Battle Report\nCoins earned    1,200\n",
+        checksum="fallback-date".ljust(64, "x"),
+    )
+    BattleReportProgress.objects.create(
+        battle_report=report,
+        player=player,
+        battle_date=report.parsed_at,
+        tier=2,
+        wave=100,
+        real_time_seconds=600,
+    )
+
+    response = auth_client.get(reverse("core:battle_report_modal", args=[report.id]))
+    assert response.status_code == 200
+
+    payload = response.json()
+    assert payload["report"]["battle_date_fallback"] is True

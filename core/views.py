@@ -39,6 +39,7 @@ from analysis.quantity import UnitType
 from analysis.rates import coins_per_hour as coins_per_hour_rate
 from analysis.series_registry import DEFAULT_REGISTRY
 from core.demo import DEMO_USERNAME, demo_mode_enabled, get_demo_player, set_demo_mode
+from core.parsers.battle_report import battle_date_is_fallback
 from core.advice import (
     AdviceItem,
     GoalScopeSample,
@@ -504,10 +505,12 @@ def dashboard(request: HttpRequest) -> HttpResponse:
     tier_options, preset_options, compare_run_map = _comparison_scope_options(context_runs)
     compare_run_map_json = json.dumps(compare_run_map)
     comparison_scope_warning = None
+    scope_average = bool(comparison_form.cleaned_data.get("scope_average") or False)
     if comparison_result and comparison_result.get("kind") == "run_sets":
         comparison_scope_warning = _comparison_scope_size_warning(
             scope_a_count=cast(int | None, comparison_result.get("scope_a_run_count")),
             scope_b_count=cast(int | None, comparison_result.get("scope_b_run_count")),
+            scope_average=scope_average,
         )
     advice_items = generate_optimization_advice(comparison_result)
 
@@ -1652,11 +1655,19 @@ def battle_history(request: HttpRequest) -> HttpResponse:
     for run in page_obj.object_list:
         metric = run_metrics.get(run.id)
         manual_tournament = bool(getattr(getattr(run, "run_progress", None), "is_tournament", False))
+        progress = getattr(run, "run_progress", None)
+        battle_date_fallback = False
+        battle_date_display = None
+        if progress is not None:
+            battle_date_display = getattr(progress, "battle_date", None)
+            battle_date_fallback = battle_date_is_fallback(run.raw_text or "")
         page_rows.append(
             {
                 "run": run,
                 "metric": metric,
                 "run_number": run_numbers.get(run.id),
+                "battle_date_display": battle_date_display,
+                "battle_date_fallback": battle_date_fallback,
                 "real_time_display": _format_real_time(
                     getattr(getattr(run, "run_progress", None), "real_time_seconds", None)
                 ),
@@ -1740,6 +1751,7 @@ def battle_report_modal(request: HttpRequest, report_id: int) -> JsonResponse:
 
     run_numbers = _run_numbers_by_report_id(player=player)
     progress = getattr(report, "run_progress", None)
+    battle_date_fallback = battle_date_is_fallback(report.raw_text or "")
     payload = {
         "ok": True,
         "report": {
@@ -1747,6 +1759,7 @@ def battle_report_modal(request: HttpRequest, report_id: int) -> JsonResponse:
             "run_number": run_numbers.get(report.id),
             "raw_text": report.raw_text,
             "battle_date": progress.battle_date.isoformat() if progress and progress.battle_date else None,
+            "battle_date_fallback": battle_date_fallback,
             "parsed_at": report.parsed_at.isoformat() if report.parsed_at else None,
             "tier": progress.tier if progress else None,
             "is_tournament": bool(progress.is_tournament) if progress else False,
@@ -2929,7 +2942,14 @@ def _guardian_runs_used_counts(*, player: Player) -> dict[str, int]:
         if not isinstance(values, dict):
             continue
         for slug, metric_key in metric_keys.items():
-            if metric_key in values:
+            raw_value = values.get(metric_key)
+            if raw_value is None:
+                continue
+            try:
+                numeric = float(raw_value)
+            except (TypeError, ValueError):
+                continue
+            if numeric > 0:
                 counts[slug] += 1
     return counts
 
@@ -4187,7 +4207,7 @@ def _with_effective_battle_date(runs: QuerySet[BattleReport]) -> QuerySet[Battle
 
 
 def _comparison_scope_size_warning(
-    *, scope_a_count: int | None, scope_b_count: int | None
+    *, scope_a_count: int | None, scope_b_count: int | None, scope_average: bool | None
 ) -> str | None:
     """Return a warning message when comparison scopes differ substantially.
 
@@ -4209,7 +4229,9 @@ def _comparison_scope_size_warning(
     if smaller == 0:
         return None
     if larger >= smaller * 2 and (larger - smaller) >= 3:
-        return "Scope sizes differ widely; comparisons may be skewed by uneven samples."
+        if scope_average:
+            return "Scope sizes differ widely; averages help but uneven samples can still skew comparisons."
+        return "Scope sizes differ widely; consider enabling Average each scope for fairer comparisons."
     return None
 
 
@@ -4245,16 +4267,22 @@ def _build_comparison_result(
         "enemies_destroyed_by_thorns": ("Destroyed by Thorns", UnitType.count),
     }
 
-    def _average_metric_value(records: tuple[BattleReport, ...], *, metric_key: str) -> tuple[int, float | None]:
-        """Compute the average metric value and its contributing sample size.
+    def _aggregate_metric_value(
+        records: tuple[BattleReport, ...],
+        *,
+        metric_key: str,
+        mode: str,
+    ) -> tuple[int, float | None]:
+        """Compute the aggregated metric value and its contributing sample size.
 
         Args:
             records: BattleReport records included in the scope.
             metric_key: Metric key registered in the analysis engine.
+            mode: Either "average" or "total".
 
         Returns:
-            A `(n, average)` tuple where `n` counts non-missing values and
-            `average` is None when there are no usable points.
+            A `(n, value)` tuple where `n` counts non-missing values and
+            `value` is None when there are no usable points.
         """
 
         raw_spec = raw_text_metric_specs.get(metric_key)
@@ -4271,19 +4299,22 @@ def _build_comparison_result(
                 values.append(float(extracted.value))
             if not values:
                 return 0, None
-            return len(values), float(sum(values) / len(values))
+            total = float(sum(values))
+            return (len(values), total / len(values)) if mode == "average" else (len(values), total)
 
         series = analyze_metric_series(records, metric_key=metric_key)
         values = [point.value for point in series.points if point.value is not None]
         if not values:
             return 0, None
-        return len(values), float(sum(values) / len(values))
+        total = float(sum(values))
+        return (len(values), total / len(values)) if mode == "average" else (len(values), total)
 
     def _metric_summaries_for_focus(
         *,
         records_a: tuple[BattleReport, ...],
         records_b: tuple[BattleReport, ...],
         metric_keys: tuple[str, ...],
+        mode: str,
     ) -> tuple[list[dict[str, object]], tuple[str, ...]]:
         """Build metric summary rows for the selected focus.
 
@@ -4301,15 +4332,15 @@ def _build_comparison_result(
         limitations: list[str] = []
 
         for metric_key in metric_keys:
-            n_a, avg_a = _average_metric_value(records_a, metric_key=metric_key)
-            n_b, avg_b = _average_metric_value(records_b, metric_key=metric_key)
+            n_a, value_a = _aggregate_metric_value(records_a, metric_key=metric_key, mode=mode)
+            n_b, value_b = _aggregate_metric_value(records_b, metric_key=metric_key, mode=mode)
             if n_a < MIN_RUNS_FOR_ADVICE or n_b < MIN_RUNS_FOR_ADVICE:
                 label = get_metric_definition(metric_key).label
                 limitations.append(
                     f"Metric omitted due to insufficient samples: {label} (A n={n_a}, B n={n_b})."
                 )
                 continue
-            if avg_a is None or avg_b is None:
+            if value_a is None or value_b is None:
                 label = get_metric_definition(metric_key).label
                 limitations.append(
                     f"Metric omitted due to missing values: {label} (A n={n_a}, B n={n_b})."
@@ -4317,14 +4348,14 @@ def _build_comparison_result(
                 continue
 
             spec = get_metric_definition(metric_key)
-            computed = delta(avg_a, avg_b)
+            computed = delta(value_a, value_b)
             rows.append(
                 {
                     "metric_key": metric_key,
                     "label": spec.label,
                     "unit": spec.unit,
-                    "baseline_value": avg_a,
-                    "comparison_value": avg_b,
+                    "baseline_value": value_a,
+                    "comparison_value": value_b,
                     "delta": computed,
                     "percent_display": computed.percent * 100 if computed.percent is not None else None,
                     "baseline_n": n_a,
@@ -4345,9 +4376,15 @@ def _build_comparison_result(
             GoalScopeSample used by goal-aware advice scoring.
         """
 
-        runs_coins_per_hour, coins_per_hour = _average_metric_value(records, metric_key="coins_per_hour")
-        runs_coins_per_wave, coins_per_wave = _average_metric_value(records, metric_key="coins_per_wave")
-        runs_waves_reached, waves_reached = _average_metric_value(records, metric_key="waves_reached")
+        runs_coins_per_hour, coins_per_hour = _aggregate_metric_value(
+            records, metric_key="coins_per_hour", mode="average"
+        )
+        runs_coins_per_wave, coins_per_wave = _aggregate_metric_value(
+            records, metric_key="coins_per_wave", mode="average"
+        )
+        runs_waves_reached, waves_reached = _aggregate_metric_value(
+            records, metric_key="waves_reached", mode="average"
+        )
 
         return GoalScopeSample(
             label=label,
@@ -4399,15 +4436,18 @@ def _build_comparison_result(
 
     scope_a_runs = tuple(form.cleaned_data.get("scope_a_runs") or ())
     scope_b_runs = tuple(form.cleaned_data.get("scope_b_runs") or ())
+    scope_average = bool(form.cleaned_data.get("scope_average") or False)
+    mode = "average" if scope_average else "total"
     if scope_a_runs and scope_b_runs:
-        headline_n_a, headline_a = _average_metric_value(scope_a_runs, metric_key="coins_per_hour")
-        headline_n_b, headline_b = _average_metric_value(scope_b_runs, metric_key="coins_per_hour")
+        headline_n_a, headline_a = _aggregate_metric_value(scope_a_runs, metric_key="coins_per_hour", mode=mode)
+        headline_n_b, headline_b = _aggregate_metric_value(scope_b_runs, metric_key="coins_per_hour", mode=mode)
         computed = None if headline_a is None or headline_b is None else delta(headline_a, headline_b)
 
         rows, limitations = _metric_summaries_for_focus(
             records_a=scope_a_runs,
             records_b=scope_b_runs,
             metric_keys=focus_metric_keys,
+            mode=mode,
         )
 
         goal_baseline = _goal_scope_sample_from_records("Scope A", scope_a_runs) if goal_aware_supported else None
@@ -4420,6 +4460,7 @@ def _build_comparison_result(
             "focus_metrics_sufficient": bool(rows),
             "scope_a_run_count": len(scope_a_runs),
             "scope_b_run_count": len(scope_b_runs),
+            "scope_summary_mode": mode,
             "metric": "coins/hour",
             "label_a": "Scope A",
             "label_b": "Scope B",
@@ -4475,8 +4516,8 @@ def _build_comparison_result(
                 effective_battle_date__date__lte=b_end,
             )
         )
-        headline_n_a, baseline_value = _average_metric_value(records_a, metric_key="coins_per_hour")
-        headline_n_b, comparison_value = _average_metric_value(records_b, metric_key="coins_per_hour")
+        headline_n_a, baseline_value = _aggregate_metric_value(records_a, metric_key="coins_per_hour", mode=mode)
+        headline_n_b, comparison_value = _aggregate_metric_value(records_b, metric_key="coins_per_hour", mode=mode)
         computed = (
             None
             if baseline_value is None or comparison_value is None
@@ -4487,6 +4528,7 @@ def _build_comparison_result(
             records_a=records_a,
             records_b=records_b,
             metric_keys=focus_metric_keys,
+            mode=mode,
         )
         goal_baseline = _goal_scope_sample_from_records("Window A", records_a) if goal_aware_supported else None
         goal_comparison = _goal_scope_sample_from_records("Window B", records_b) if goal_aware_supported else None
@@ -4499,6 +4541,7 @@ def _build_comparison_result(
             "metric": "coins/hour",
             "window_a": window_a,
             "window_b": window_b,
+            "scope_summary_mode": mode,
             "baseline_value": baseline_value,
             "comparison_value": comparison_value,
             "delta": computed,

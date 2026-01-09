@@ -283,7 +283,12 @@
         const report = payload.report;
         const titleParts = [];
         if (report.battle_date) {
-          titleParts.push(new Date(report.battle_date).toLocaleString());
+          const label = new Date(report.battle_date).toLocaleString();
+          if (report.battle_date_fallback) {
+            titleParts.push(`${label} (Imported)`);
+          } else {
+            titleParts.push(label);
+          }
         } else if (report.parsed_at) {
           titleParts.push(new Date(report.parsed_at).toLocaleString());
         }

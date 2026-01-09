@@ -589,6 +589,11 @@ class ComparisonForm(forms.Form):
         label="Scope B runs",
         widget=forms.SelectMultiple(attrs={"size": 8}),
     )
+    scope_average = forms.BooleanField(
+        required=False,
+        initial=False,
+        label="Average each scope",
+    )
 
     summary_focus = forms.ChoiceField(
         required=False,
@@ -645,6 +650,11 @@ class ComparisonForm(forms.Form):
 
         focus = (self.cleaned_data.get("summary_focus") or "").strip()
         return focus or "economy"
+
+    def clean_scope_average(self) -> bool:
+        """Default the scope average toggle to False when unspecified."""
+
+        return bool(self.cleaned_data.get("scope_average") or False)
 
 
 class BattleHistoryColumnPreferenceForm(forms.Form):

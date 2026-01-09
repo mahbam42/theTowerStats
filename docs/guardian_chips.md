@@ -56,7 +56,15 @@ The Guardian Chips page helps you track which chips are unlocked, which chips ar
 > If no Battle Reports have been imported yet, **Runs used** will show “No battles recorded yet”.
 
 > **Note**
-> **Runs used** is inferred from Guardian metrics in Battle Reports for Attack, Fetch, Bounty, and Summon. Ally does not expose a direct Battle Report metric, so its **Runs used** value is muted.
+> **Runs used** is inferred from Guardian metrics in Battle Reports for Attack, Fetch, Bounty, and Summon when the recorded value is greater than 0. Ally does not expose a direct Battle Report metric, so its **Runs used** value is muted.
+
+> **Note**
+> Tracked Guardian metrics by chip:
+> - Attack: Guardian Damage
+> - Fetch: Coins Fetched
+> - Bounty: Guardian coins stolen
+> - Summon: Summoned enemies
+> - Ally: no Battle Report metric available yet
 
 > **Note**
 > On smaller screens, the upgrade cards use a more compact layout to keep the details readable.

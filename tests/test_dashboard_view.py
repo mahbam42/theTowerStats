@@ -584,6 +584,7 @@ def test_dashboard_view_multi_run_scope_compare_defaults_to_economy(auth_client,
         {
             "scope_a_runs": [runs[0].pk, runs[1].pk, runs[2].pk],
             "scope_b_runs": [runs[3].pk, runs[4].pk, runs[5].pk],
+            "scope_average": "on",
         },
     )
     assert response.status_code == 200
@@ -790,6 +791,7 @@ def test_dashboard_view_window_delta_comparison(auth_client, player) -> None:
             "window_a_end": date(2025, 12, 2),
             "window_b_start": date(2025, 12, 9),
             "window_b_end": date(2025, 12, 10),
+            "scope_average": "on",
         },
     )
     assert response.status_code == 200
@@ -841,6 +843,7 @@ def test_dashboard_view_window_delta_ignores_chart_date_filters(auth_client, pla
             "window_a_end": date(2025, 12, 1),
             "window_b_start": date(2025, 12, 10),
             "window_b_end": date(2025, 12, 10),
+            "scope_average": "on",
         },
     )
     assert response.status_code == 200
@@ -924,6 +927,7 @@ def test_dashboard_view_window_delta_respects_tier_filter(auth_client, player) -
             "window_a_end": date(2025, 12, 1),
             "window_b_start": date(2025, 12, 10),
             "window_b_end": date(2025, 12, 10),
+            "scope_average": "on",
         },
     )
     assert response.status_code == 200
@@ -993,6 +997,7 @@ def test_dashboard_view_window_delta_respects_preset_filter(auth_client, player)
             "window_a_end": date(2025, 12, 1),
             "window_b_start": date(2025, 12, 10),
             "window_b_end": date(2025, 12, 10),
+            "scope_average": "on",
         },
     )
     assert response.status_code == 200

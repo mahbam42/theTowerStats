@@ -77,6 +77,7 @@ def test_guardian_dashboard_runs_used_tracks_guardian_metrics(auth_client, playe
     """Runs used uses guardian metrics when available and mutes Ally."""
 
     attack = _guardian_with_three_parameters(slug="attack", name="Attack")
+    bounty = _guardian_with_three_parameters(slug="bounty", name="Bounty")
     ally = _guardian_with_three_parameters(slug="ally", name="Ally")
 
     report = BattleReport.objects.create(
@@ -87,8 +88,8 @@ def test_guardian_dashboard_runs_used_tracks_guardian_metrics(auth_client, playe
     BattleReportDerivedMetrics.objects.create(
         player=player,
         battle_report=report,
-        values={"guardian_damage": 1_000_000},
-        raw_values={"guardian_damage": "1.00M"},
+        values={"guardian_damage": 1_000_000, "guardian_coins_stolen": 0},
+        raw_values={"guardian_damage": "1.00M", "guardian_coins_stolen": "0"},
     )
 
     response = auth_client.get(reverse("core:guardian_progress"))
@@ -96,10 +97,13 @@ def test_guardian_dashboard_runs_used_tracks_guardian_metrics(auth_client, playe
 
     tiles = response.context["guardian_chips"]
     attack_tile = next(entry for entry in tiles if entry["slug"] == attack.slug)
+    bounty_tile = next(entry for entry in tiles if entry["slug"] == bounty.slug)
     ally_tile = next(entry for entry in tiles if entry["slug"] == ally.slug)
 
     assert attack_tile["summary"]["headline_value"] == 1
     assert attack_tile["summary"]["headline_muted"] is False
+    assert bounty_tile["summary"]["headline_value"] == 0
+    assert bounty_tile["summary"]["headline_muted"] is False
     assert ally_tile["summary"]["headline_value"] == "—"
     assert ally_tile["summary"]["headline_muted"] is True
     assert ally_tile["summary"]["headline_tooltip"] == "Runs Used cannot be tracked yet for Ally Chip."

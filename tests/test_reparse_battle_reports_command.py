@@ -9,7 +9,8 @@ from django.core.management import call_command
 from definitions.models import PatchBoundary
 
 from core.parsers.battle_report import compute_battle_report_checksum
-from gamedata.models import BattleReport, BattleReportDerivedMetrics, BattleReportProgress
+from definitions.models import BotDefinition, WikiData
+from gamedata.models import BattleReport, BattleReportDerivedMetrics, BattleReportProgress, RunBot
 
 pytestmark = pytest.mark.integration
 
@@ -184,3 +185,40 @@ def test_reparse_battle_reports_respects_patch_boundary(player) -> None:
     out_window_progress = BattleReportProgress.objects.get(battle_report=out_window_report)
     assert in_window_progress.coins_earned == 1_200_000
     assert out_window_progress.coins_earned is None
+
+
+@pytest.mark.django_db
+def test_reparse_battle_reports_backfills_run_bot_usage(player) -> None:
+    """Reparsing adds missing bot usage rows from raw text."""
+
+    wiki = WikiData.objects.create(
+        page_url="https://example.test/wiki/flame_bot",
+        canonical_name="Flame Bot",
+        entity_id="flame_bot",
+        content_hash="botwiki".ljust(64, "x"),
+        raw_row={"Name": "Flame Bot"},
+        source_section="bots_flame_bot_table_0",
+        parse_version="bots_v1",
+    )
+    bot_def = BotDefinition.objects.create(name="Flame Bot", slug="flame_bot", source_wikidata=wiki)
+
+    raw_text = "\n".join(
+        [
+            "Battle Report",
+            "Battle Date\tDec 07, 2025 21:59",
+            "Real Time\t2h 17m 23s",
+            "Tier\t7",
+            "Wave\t1301",
+            "Flame Bot Damage\t1.23M",
+        ]
+    )
+    report = BattleReport.objects.create(
+        player=player,
+        raw_text=raw_text,
+        checksum=compute_battle_report_checksum(raw_text),
+    )
+    BattleReportProgress.objects.create(battle_report=report, player=player)
+
+    call_command("reparse_battle_reports", "--write")
+
+    assert RunBot.objects.filter(player=player, battle_report=report, bot_definition=bot_def).exists()

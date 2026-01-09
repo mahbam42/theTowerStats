@@ -14,6 +14,7 @@ from core.parsers.battle_report import (
     parse_battle_report,
     record_unrecognized_unit_suffixes,
 )
+from core.services import backfill_run_bot_usage
 from definitions.models import PatchBoundary
 from gamedata.models import BattleReport, BattleReportDerivedMetrics, BattleReportProgress
 
@@ -77,6 +78,7 @@ class Command(BaseCommand):
             "updated_progress": 0,
             "created_derived": 0,
             "updated_derived": 0,
+            "created_bots": 0,
             "no_change": 0,
         }
 
@@ -145,6 +147,12 @@ class Command(BaseCommand):
                             "raw_values": derived_payload["raw_values"],
                         },
                     )
+
+            if write:
+                totals["created_bots"] += backfill_run_bot_usage(
+                    battle_report=report,
+                    player=report.player,
+                )
 
         mode = "CHECK" if check else "WRITE"
         self.stdout.write(f"[{mode}] {totals}")
