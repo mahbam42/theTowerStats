@@ -200,6 +200,21 @@ def fallback_battle_date(
     return parsed_at
 
 
+def battle_date_is_fallback(raw_text: str) -> bool:
+    """Return True when the Battle Report is missing a battle date line.
+
+    Args:
+        raw_text: Raw Battle Report text as pasted by the user.
+
+    Returns:
+        True when the report lacks a Battle Date entry, otherwise False.
+    """
+
+    raw_fields = _extract_raw_fields(raw_text)
+    value = (raw_fields.battle_date or "").strip()
+    return value == ""
+
+
 def record_unrecognized_unit_suffixes(raw_text: str) -> set[str]:
     """Persist unknown magnitude suffixes found in Battle Report values.
 
