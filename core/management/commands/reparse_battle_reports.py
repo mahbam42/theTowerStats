@@ -14,7 +14,7 @@ from core.parsers.battle_report import (
     parse_battle_report,
     record_unrecognized_unit_suffixes,
 )
-from core.services import backfill_run_bot_usage
+from core.services import backfill_run_bot_usage, pending_run_bot_usage_count
 from definitions.models import PatchBoundary
 from gamedata.models import BattleReport, BattleReportDerivedMetrics, BattleReportProgress
 
@@ -121,7 +121,8 @@ class Command(BaseCommand):
                 or derived.raw_values != derived_payload["raw_values"]
             )
 
-            if not progress_changed and not derived_changed:
+            bot_pending = pending_run_bot_usage_count(battle_report=report, player=report.player)
+            if not progress_changed and not derived_changed and bot_pending == 0:
                 totals["no_change"] += 1
                 continue
 
@@ -153,6 +154,8 @@ class Command(BaseCommand):
                     battle_report=report,
                     player=report.player,
                 )
+            else:
+                totals["created_bots"] += bot_pending
 
         mode = "CHECK" if check else "WRITE"
         self.stdout.write(f"[{mode}] {totals}")

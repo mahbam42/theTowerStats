@@ -228,9 +228,55 @@ def _ingest_run_bot_usage(*, battle_report: BattleReport, player: Player) -> int
         idempotent for duplicate imports.
     """
 
-    bot_names = extract_bot_usage(battle_report.raw_text or "")
+    rows = _bot_usage_rows(battle_report=battle_report, player=player)
+    if rows:
+        RunBot.objects.bulk_create(rows)
+    return len(rows)
+
+
+def backfill_run_bot_usage(*, battle_report: BattleReport, player: Player) -> int:
+    """Backfill bot usage rows for an existing Battle Report.
+
+    Args:
+        battle_report: Persisted BattleReport row to attach usage to.
+        player: Owning player derived from the authenticated user.
+
+    Returns:
+        Number of RunBot rows created.
+    """
+
+    return _ingest_run_bot_usage(battle_report=battle_report, player=player)
+
+
+def pending_run_bot_usage_count(*, battle_report: BattleReport, player: Player) -> int:
+    """Return how many RunBot rows are missing for a report.
+
+    Args:
+        battle_report: Persisted BattleReport row to inspect.
+        player: Owning player derived from the authenticated user.
+
+    Returns:
+        Count of RunBot rows that would be created on backfill.
+    """
+
+    return len(_bot_usage_rows(battle_report=battle_report, player=player))
+
+
+def _bot_usage_rows(*, battle_report: BattleReport, player: Player) -> list[RunBot]:
+    """Build missing RunBot rows inferred from raw text or derived metrics.
+
+    Args:
+        battle_report: Persisted BattleReport row to inspect.
+        player: Owning player derived from the authenticated user.
+
+    Returns:
+        List of RunBot rows to create.
+    """
+
+    bot_names = set(extract_bot_usage(battle_report.raw_text or ""))
+    bot_names.update(_bot_names_from_derived_metrics(battle_report))
     if not bot_names:
-        return 0
+        return []
 
     definitions = {
         definition.name.casefold(): definition for definition in BotDefinition.objects.order_by("id")
@@ -254,21 +300,38 @@ def _ingest_run_bot_usage(*, battle_report: BattleReport, player: Player) -> int
                 bot_definition=definition,
             )
         )
-
-    if rows:
-        RunBot.objects.bulk_create(rows)
-    return len(rows)
+    return rows
 
 
-def backfill_run_bot_usage(*, battle_report: BattleReport, player: Player) -> int:
-    """Backfill bot usage rows for an existing Battle Report.
+def _bot_names_from_derived_metrics(battle_report: BattleReport) -> set[str]:
+    """Return bot display names inferred from derived metrics values.
 
     Args:
-        battle_report: Persisted BattleReport row to attach usage to.
-        player: Owning player derived from the authenticated user.
+        battle_report: BattleReport row with optional derived metrics.
 
     Returns:
-        Number of RunBot rows created.
+        Set of bot display names inferred from derived metric values.
     """
 
-    return _ingest_run_bot_usage(battle_report=battle_report, player=player)
+    derived = getattr(battle_report, "derived_metrics", None)
+    values = getattr(derived, "values", None)
+    if not isinstance(values, dict):
+        return set()
+    metric_to_name = {
+        "flame_bot_damage": "Flame Bot",
+        "thunder_bot_stuns": "Thunder Bot",
+        "golden_bot_coins_earned": "Golden Bot",
+        "enemies_destroyed_in_golden_bot": "Golden Bot",
+    }
+    names: set[str] = set()
+    for metric_key, name in metric_to_name.items():
+        raw_value = values.get(metric_key)
+        if raw_value is None:
+            continue
+        try:
+            numeric = float(raw_value)
+        except (TypeError, ValueError):
+            continue
+        if numeric > 0:
+            names.add(name)
+    return names

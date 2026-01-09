@@ -51,6 +51,31 @@ def _derived_metrics(raw_text: str) -> object:
 
 
 @pytest.mark.golden
+def test_bot_metrics_extract_from_raw_text() -> None:
+    """Extract bot metrics used for run usage inference."""
+
+    raw_text = "\n".join(
+        [
+            "Battle Report",
+            "Battle Date\tDec 14, 2025 01:39",
+            "Flame Bot Damage\t402.59T",
+            "Thunder Bot Stuns\t1.79K",
+            "Golden Bot Coins Earned\t57.74K",
+            "",
+        ]
+    )
+
+    extracted = extract_raw_text_metrics(raw_text)
+
+    assert extracted["flame_bot_damage"].raw_value == "402.59T"
+    assert extracted["flame_bot_damage"].value == 402_590_000_000_000.0
+    assert extracted["thunder_bot_stuns"].raw_value == "1.79K"
+    assert extracted["thunder_bot_stuns"].value == 1790.0
+    assert extracted["golden_bot_coins_earned"].raw_value == "57.74K"
+    assert extracted["golden_bot_coins_earned"].value == 57_740.0
+
+
+@pytest.mark.golden
 def test_free_upgrades_metrics_extract_and_total() -> None:
     """Extract free upgrade metrics and derive the total."""
 

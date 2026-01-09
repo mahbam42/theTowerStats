@@ -3552,7 +3552,7 @@ Currently only limits number of reports to reparse. It will be better to also li
 **** TODO Prompt51 Corrections
 - [ ] Check Coins per Real Hour in Production
 - [X] Battle History Run Number Scoping
-- [ ] Battle Date Fallback
+- [X] Battle Date Fallback
   - Before reparse_battle_reports:
     Working well, but we need to add a flag or indicator that the date is a fallback rather than straight from the report.
 - [ ] Amplify Bot Runs Used:
@@ -3568,6 +3568,7 @@ Currently only limits number of reports to reparse. It will be better to also li
   All looks good. I made a small grammatical fix on goals.md
 - [ ] Compare Windows
   - We need to add an enhancement. When selecting tier ranges, there needs to be a toggle to average each scope. If there are more individual runs in Scope A than Scope B, the current compare values are summed and therefore misleading. This can be improved by explicitly letting a user opt-in to seeing the average performance of Scope A vs. Scope B. This should be noted in a helper text and explained in greater detail in the docs
+  - [ ] When averaging we should relax the constraint on needing more than 3 runs per scope. Since we're averaging 1/1 vs 4/4 is still a 1 to 1 comparision. 
 - [ ] reparse_battle_reports fixes
   - Updated one Report, unclear what the change was. 
 - [ ] Changelog Update

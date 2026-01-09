@@ -8,6 +8,7 @@ import pytest
 from django.core.management import call_command
 from definitions.models import PatchBoundary
 
+from analysis.raw_text_metrics import extract_raw_text_metrics
 from core.parsers.battle_report import compute_battle_report_checksum
 from definitions.models import BotDefinition, WikiData
 from gamedata.models import BattleReport, BattleReportDerivedMetrics, BattleReportProgress, RunBot
@@ -218,6 +219,59 @@ def test_reparse_battle_reports_backfills_run_bot_usage(player) -> None:
         checksum=compute_battle_report_checksum(raw_text),
     )
     BattleReportProgress.objects.create(battle_report=report, player=player)
+
+    call_command("reparse_battle_reports", "--write")
+
+    assert RunBot.objects.filter(player=player, battle_report=report, bot_definition=bot_def).exists()
+
+
+@pytest.mark.regression
+@pytest.mark.django_db
+def test_reparse_battle_reports_backfills_bot_usage_without_progress_change(player) -> None:
+    """Reparsing backfills bot usage even when progress/derived metrics are unchanged."""
+
+    wiki = WikiData.objects.create(
+        page_url="https://example.test/wiki/flame_bot",
+        canonical_name="Flame Bot",
+        entity_id="flame_bot",
+        content_hash="botwiki".ljust(64, "x"),
+        raw_row={"Name": "Flame Bot"},
+        source_section="bots_flame_bot_table_0",
+        parse_version="bots_v1",
+    )
+    bot_def = BotDefinition.objects.create(name="Flame Bot", slug="flame_bot", source_wikidata=wiki)
+
+    raw_text = "\n".join(
+        [
+            "Battle Report",
+            "Battle Date\tDec 08, 2025 20:00",
+            "Real Time\t2h 0m 0s",
+            "Tier\t6",
+            "Wave\t900",
+            "Flame Bot Damage\t1.23M",
+            "",
+        ]
+    )
+    report = BattleReport.objects.create(
+        player=player,
+        raw_text=raw_text,
+        checksum=compute_battle_report_checksum(raw_text),
+    )
+    BattleReportProgress.objects.create(
+        battle_report=report,
+        player=player,
+        battle_date=datetime(2025, 12, 8, 20, 0, tzinfo=timezone.utc),
+        tier=6,
+        wave=900,
+        real_time_seconds=7200,
+    )
+    extracted = extract_raw_text_metrics(raw_text)
+    BattleReportDerivedMetrics.objects.create(
+        battle_report=report,
+        player=player,
+        values={key: parsed.value for key, parsed in extracted.items()},
+        raw_values={key: parsed.raw_value for key, parsed in extracted.items()},
+    )
 
     call_command("reparse_battle_reports", "--write")
 

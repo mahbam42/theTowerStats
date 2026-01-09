@@ -67,6 +67,9 @@ RAW_TEXT_METRIC_SPECS: Final[dict[str, tuple[str, UnitType]]] = {
     "guardian_core_shards_fetched": ("Core Shards", UnitType.count),
     "guardian_common_modules_fetched": ("Common Modules", UnitType.count),
     "guardian_rare_modules_fetched": ("Rare Modules", UnitType.count),
+    "flame_bot_damage": ("Flame Bot Damage", UnitType.damage),
+    "thunder_bot_stuns": ("Thunder Bot Stuns", UnitType.count),
+    "golden_bot_coins_earned": ("Golden Bot Coins Earned", UnitType.coins),
 }
 
 
