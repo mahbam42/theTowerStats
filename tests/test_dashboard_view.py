@@ -713,6 +713,51 @@ def test_dashboard_view_multi_run_scope_compare_insufficient(auth_client, player
 
 @pytest.mark.integration
 @pytest.mark.django_db
+def test_dashboard_view_average_scope_compare_allows_single_run(auth_client, player) -> None:
+    """Allow averaged scope comparisons with single-run samples."""
+
+    runs: list[BattleReport] = []
+    for idx, coins in enumerate((1200, 2400), start=1):
+        raw_text = "\n".join(
+            [
+                "Battle Report",
+                "Real Time\t10m 0s",
+                f"Coins earned\t{coins:,}",
+                "",
+            ]
+        )
+        report = BattleReport.objects.create(
+            player=player,
+            raw_text=raw_text,
+            checksum=(f"multirun-average-{idx}".ljust(64, "a")),
+        )
+        BattleReportProgress.objects.create(
+            battle_report=report,
+            player=player,
+            battle_date=datetime(2025, 12, idx, tzinfo=timezone.utc),
+            tier=1,
+            wave=100,
+            real_time_seconds=600,
+        )
+        runs.append(report)
+
+    response = auth_client.get(
+        reverse("core:dashboard"),
+        {
+            "scope_average": "on",
+            "scope_a_runs": [runs[0].pk],
+            "scope_b_runs": [runs[1].pk],
+        },
+    )
+    assert response.status_code == 200
+
+    advice_items = tuple(response.context["advice_items"])
+    assert len(advice_items) == 1
+    assert advice_items[0].title.startswith("Observed change in coins/hour:")
+
+
+@pytest.mark.integration
+@pytest.mark.django_db
 def test_dashboard_view_multi_run_scope_compare_requires_focus_metrics(auth_client, player) -> None:
     """Degrade to insufficient data when the selected focus has no usable metrics."""
 

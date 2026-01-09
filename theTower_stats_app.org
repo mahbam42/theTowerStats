@@ -3549,15 +3549,15 @@ Docs
 ***** TODO [#C] In reparse_battle_reports, extend --limit to use Patch Boundary
 Currently only limits number of reports to reparse. It will be better to also limit to patch boundaries.
 
-**** TODO Prompt51 Corrections
+**** TODO Prompt51 Corrections [7/9]
 - [ ] Check Coins per Real Hour in Production
 - [X] Battle History Run Number Scoping
 - [X] Battle Date Fallback
   - Before reparse_battle_reports:
     Working well, but we need to add a flag or indicator that the date is a fallback rather than straight from the report.
-- [ ] Amplify Bot Runs Used:
+- [X] Amplify Bot Runs Used:
   For player mahabm42, they have 18 runs logged in Dev but only show 3 runs used for the tracked bots even after running reparse_battle_reports.
-- [ ] Guardian Chip Runs Used
+- [X] Guardian Chip Runs Used
   - Before running reparse_battle_reports:
     Showing incorrectly for Bounty (should be 0 based on mahbam42's usage)
     If coins stolen, damage, enemies summoned, or coins fetched is <= 0 then the coorisponding chip wasn't used.
@@ -3566,10 +3566,10 @@ Currently only limits number of reports to reparse. It will be better to also li
     - Since only 2 chips can be active at a time it is unlikely that the runs used would be equal between more than 2 chips and also equal to the number of battle reports parsed
 - [X] Docs Fixes
   All looks good. I made a small grammatical fix on goals.md
-- [ ] Compare Windows
-  - We need to add an enhancement. When selecting tier ranges, there needs to be a toggle to average each scope. If there are more individual runs in Scope A than Scope B, the current compare values are summed and therefore misleading. This can be improved by explicitly letting a user opt-in to seeing the average performance of Scope A vs. Scope B. This should be noted in a helper text and explained in greater detail in the docs
-  - [ ] When averaging we should relax the constraint on needing more than 3 runs per scope. Since we're averaging 1/1 vs 4/4 is still a 1 to 1 comparision. 
-- [ ] reparse_battle_reports fixes
+- [X] Compare Windows
+  - [X] We need to add an enhancement. When selecting tier ranges, there needs to be a toggle to average each scope. If there are more individual runs in Scope A than Scope B, the current compare values are summed and therefore misleading. This can be improved by explicitly letting a user opt-in to seeing the average performance of Scope A vs. Scope B. This should be noted in a helper text and explained in greater detail in the docs
+  - [X] When averaging we should relax the constraint on needing more than 3 runs per scope. Since we're averaging 1/1 vs 4/4 is still a 1 to 1 comparision. 
+- [X] reparse_battle_reports fixes
   - Updated one Report, unclear what the change was. 
 - [ ] Changelog Update
   Pending revisions to earlier tasks

@@ -42,6 +42,21 @@ class AdviceItem:
     limitations: str
 
 
+def _min_runs_for_comparison(comparison_result: dict[str, Any]) -> int:
+    """Return the minimum run count for advice summaries based on comparison mode.
+
+    Args:
+        comparison_result: Result payload returned by `_build_comparison_result`.
+
+    Returns:
+        Minimum number of runs required per scope for advice summaries.
+    """
+
+    if comparison_result.get("scope_summary_mode") == "average":
+        return 1
+    return MIN_RUNS_FOR_ADVICE
+
+
 def generate_optimization_advice(comparison_result: dict[str, Any] | None) -> tuple[AdviceItem, ...]:
     """Generate descriptive advice items from an existing comparison result.
 
@@ -75,15 +90,16 @@ def generate_optimization_advice(comparison_result: dict[str, Any] | None) -> tu
         a_count = comparison_result.get("scope_a_run_count")
         b_count = comparison_result.get("scope_b_run_count")
         focus = comparison_result.get("summary_focus") or "economy"
+        min_runs = _min_runs_for_comparison(comparison_result)
         basis = f"Basis: Scope A runs={a_count}, Scope B runs={b_count}."
         context = f"Context: Summary focus={focus}."
         if (
             not isinstance(a_count, int)
             or not isinstance(b_count, int)
-            or a_count < MIN_RUNS_FOR_ADVICE
-            or b_count < MIN_RUNS_FOR_ADVICE
+            or a_count < min_runs
+            or b_count < min_runs
         ):
-            limitations = f"Limitations: Advice summaries require at least {MIN_RUNS_FOR_ADVICE} runs per scope."
+            limitations = f"Limitations: Advice summaries require at least {min_runs} runs per scope."
             item = AdviceItem(
                 title=INSUFFICIENT_DATA_MESSAGE,
                 basis=basis,
@@ -100,7 +116,7 @@ def generate_optimization_advice(comparison_result: dict[str, Any] | None) -> tu
                 context=context,
                 limitations=(
                     "Limitations: The selected Summary focus does not have enough usable metric samples "
-                    f"to summarize (need at least {MIN_RUNS_FOR_ADVICE} runs per scope for each metric)."
+                    f"to summarize (need at least {min_runs} runs per scope for each metric)."
                 ),
             )
             _assert_non_prescriptive(item)
@@ -141,6 +157,7 @@ def generate_optimization_advice(comparison_result: dict[str, Any] | None) -> tu
         a_count = getattr(window_a, "run_count", None)
         b_count = getattr(window_b, "run_count", None)
         focus = comparison_result.get("summary_focus") or "economy"
+        min_runs = _min_runs_for_comparison(comparison_result)
         basis = f"Basis: Window A runs={a_count}, Window B runs={b_count}."
         context = (
             f"Context: Window A {getattr(window_a, 'start_date', None)} → {getattr(window_a, 'end_date', None)}; "
@@ -150,11 +167,11 @@ def generate_optimization_advice(comparison_result: dict[str, Any] | None) -> tu
         if (
             not isinstance(a_count, int)
             or not isinstance(b_count, int)
-            or a_count < MIN_RUNS_FOR_ADVICE
-            or b_count < MIN_RUNS_FOR_ADVICE
+            or a_count < min_runs
+            or b_count < min_runs
         ):
             limitations = (
-                f"Limitations: Advice summaries require at least {MIN_RUNS_FOR_ADVICE} runs per scope."
+                f"Limitations: Advice summaries require at least {min_runs} runs per scope."
             )
             item = AdviceItem(
                 title=INSUFFICIENT_DATA_MESSAGE,
@@ -172,7 +189,7 @@ def generate_optimization_advice(comparison_result: dict[str, Any] | None) -> tu
                 context=context,
                 limitations=(
                     "Limitations: The selected Summary focus does not have enough usable metric samples "
-                    f"to summarize (need at least {MIN_RUNS_FOR_ADVICE} runs per scope for each metric)."
+                    f"to summarize (need at least {min_runs} runs per scope for each metric)."
                 ),
             )
             _assert_non_prescriptive(item)

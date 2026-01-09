@@ -33,7 +33,7 @@ Compare lets you review differences between two scopes of runs on the Charts das
 ## Notes & Limitations
 
 > **Caution**
-> Advice summaries require at least 3 runs in each scope. If either scope is thin or empty, the panel shows “Insufficient data.”
+> Advice summaries require at least 3 runs in each scope unless **Average each scope** is enabled. When averaging, single-run scopes are allowed but can be noisy.
 
 > **Note**
 > Goal-aware summaries in Compare are available only when Summary focus is set to **Economy**.

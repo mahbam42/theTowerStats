@@ -4325,16 +4325,18 @@ def _build_comparison_result(
 
         Returns:
             A `(rows, limitations)` tuple. Rows include only metrics with at
-            least `MIN_RUNS_FOR_ADVICE` contributing samples in both scopes.
+            least `MIN_RUNS_FOR_ADVICE` contributing samples in both scopes
+            unless averaging is enabled.
         """
 
         rows: list[dict[str, object]] = []
         limitations: list[str] = []
+        min_samples = 1 if mode == "average" else MIN_RUNS_FOR_ADVICE
 
         for metric_key in metric_keys:
             n_a, value_a = _aggregate_metric_value(records_a, metric_key=metric_key, mode=mode)
             n_b, value_b = _aggregate_metric_value(records_b, metric_key=metric_key, mode=mode)
-            if n_a < MIN_RUNS_FOR_ADVICE or n_b < MIN_RUNS_FOR_ADVICE:
+            if n_a < min_samples or n_b < min_samples:
                 label = get_metric_definition(metric_key).label
                 limitations.append(
                     f"Metric omitted due to insufficient samples: {label} (A n={n_a}, B n={n_b})."
