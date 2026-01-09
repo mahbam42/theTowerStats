@@ -2,7 +2,18 @@
 
 This project follows Semantic Versioning.
 
-## [0.6.1] (in progress)
+## [0.6.2] (in progress)
+
+- Battle History: show coins per real hour in the table and modal when reported.
+- Battle History: fall back to import timestamps for missing battle dates and label imported dates in the UI.
+- Battle History modal: use player-scoped run numbers.
+- Charts: add tier/preset compare selectors, scope averaging toggle, and scope size warnings.
+- Bots: mute Amplify Bot runs used; infer bot runs used from Battle Report bot metrics.
+- Guardian Chips: infer runs used for trackable chips from Battle Report metrics; mute Ally runs used.
+- Commands: extend `reparse_battle_reports` to backfill bot usage, support patch windows, and reapply battle date fallback.
+- Docs: update compare, battle history, battle report modal, bots, guardian chips, goals, and management command guidance.
+
+## [0.6.1]
 
 - Bots: normalize rebuild headers (including non-breaking spaces) and accept level 0 rows when present.
 - Bots: populate Runs used from battle report bot lines.
