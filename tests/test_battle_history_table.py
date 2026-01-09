@@ -82,7 +82,7 @@ def test_battle_history_import_accepts_space_separated_headers(auth_client, play
 
 @pytest.mark.django_db
 def test_battle_history_import_allows_missing_battle_date(auth_client, player) -> None:
-    """Import allows reports missing Battle Date and stores a null battle date."""
+    """Import allows reports missing Battle Date and stores a fallback battle date."""
 
     raw_text = "\n".join(
         [
@@ -99,7 +99,7 @@ def test_battle_history_import_allows_missing_battle_date(auth_client, player) -
     assert response.status_code == 200
 
     report = BattleReport.objects.get(player=player)
-    assert report.run_progress.battle_date is None
+    assert report.run_progress.battle_date == report.parsed_at
 
 
 @pytest.mark.django_db
@@ -124,6 +124,31 @@ def test_battle_history_import_accepts_single_space_separators(auth_client, play
     report = BattleReport.objects.get(player=player)
     assert report.run_progress.tier == 1
     assert report.run_progress.wave == 3656
+
+
+@pytest.mark.django_db
+def test_battle_history_displays_coins_per_real_hour(auth_client, player) -> None:
+    """Coins per real hour renders when coins and real time are available."""
+
+    ingest_battle_report(
+        "\n".join(
+            [
+                "Battle Report",
+                "Battle Date: 2025-12-01 13:45:00",
+                "Tier: 6",
+                "Wave: 1234",
+                "Real Time: 1h 0m 0s",
+                "Coins Earned: 1.00M",
+            ]
+        ),
+        player=player,
+    )
+
+    response = auth_client.get(reverse("core:battle_history"))
+    assert response.status_code == 200
+
+    content = response.content.decode("utf-8")
+    assert "1000000.00" in content
 
 
 @pytest.mark.django_db

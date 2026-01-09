@@ -2,7 +2,7 @@
 
 ## Overview
 
-The Goals Dashboard lets you set target upgrade levels and see the total currency needed to reach each target.
+The Goals Dashboard lets you set target upgrade levels and see the total currency needed to reach each target. Goals are cost surfaces, not priorities, and they apply to any upgrade with a level table.
 
 ## When to Use This
 
@@ -47,3 +47,9 @@ The Goals Dashboard lets you set target upgrade levels and see the total currenc
 
 > ⚠️ Note
 > On smaller screens, the goals table uses a compact layout to keep more columns visible at once.
+
+> ⚠️ Note
+> Goals currently support deterministic parameters only. If an upgrade effect is not deterministic, it is not a goal target.
+
+> ⚠️ Note
+> Any upgrade with a level table can be a goal, including upgrades focused on performance, structure, capacity, or access.

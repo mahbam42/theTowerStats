@@ -182,6 +182,24 @@ def parse_battle_report(raw_text: str) -> ParsedBattleReport:
     )
 
 
+def fallback_battle_date(
+    parsed_battle_date: datetime | None, *, parsed_at: datetime | None
+) -> datetime | None:
+    """Return a usable battle date, falling back to the parse timestamp.
+
+    Args:
+        parsed_battle_date: Parsed battle date from the report, if present.
+        parsed_at: Timestamp when the report was imported.
+
+    Returns:
+        Parsed battle date when available; otherwise the import timestamp.
+    """
+
+    if parsed_battle_date is not None:
+        return parsed_battle_date
+    return parsed_at
+
+
 def record_unrecognized_unit_suffixes(raw_text: str) -> set[str]:
     """Persist unknown magnitude suffixes found in Battle Report values.
 

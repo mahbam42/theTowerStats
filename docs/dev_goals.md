@@ -4,6 +4,12 @@
 
 The Goals Dashboard stores player-selected target levels for upgradeable parameters and computes the remaining currency required to reach each target.
 
+### Definitions
+
+- Goals are cost surfaces, not priority signals. They describe the cost to reach a target, not the order players should pursue.
+- Goals currently support deterministic parameters only; probabilistic or simulated effects should not be modeled as goals yet.
+- Any entity with a level table can be a goal, even if the parameter describes structure, capacity, or access rather than performance.
+
 ### Data Sources
 
 - Current level sources:

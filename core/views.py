@@ -8,6 +8,7 @@ import io
 from dataclasses import dataclass
 from datetime import date, timedelta
 from typing import Any, cast
+from collections.abc import Iterable
 
 from django.contrib import messages
 from django.contrib.auth import login as auth_login
@@ -101,6 +102,7 @@ from definitions.models import (
 )
 from gamedata.models import (
     BattleReport,
+    BattleReportDerivedMetrics,
     BattleReportProgress,
 )
 from player_state.card_slots import card_slot_max_slots, next_card_slot_unlock_cost_raw
@@ -499,6 +501,14 @@ def dashboard(request: HttpRequest) -> HttpResponse:
         base_analysis=base_analysis.runs,
         context_runs=context_runs,
     )
+    tier_options, preset_options, compare_run_map = _comparison_scope_options(context_runs)
+    compare_run_map_json = json.dumps(compare_run_map)
+    comparison_scope_warning = None
+    if comparison_result and comparison_result.get("kind") == "run_sets":
+        comparison_scope_warning = _comparison_scope_size_warning(
+            scope_a_count=cast(int | None, comparison_result.get("scope_a_run_count")),
+            scope_b_count=cast(int | None, comparison_result.get("scope_b_run_count")),
+        )
     advice_items = generate_optimization_advice(comparison_result)
 
     advice_snapshot_a = getattr(effective_get, "get", lambda _k: None)("advice_snapshot_a")
@@ -805,6 +815,10 @@ def dashboard(request: HttpRequest) -> HttpResponse:
         "chart_form": chart_form,
         "comparison_form": comparison_form,
         "comparison_result": comparison_result,
+        "comparison_scope_warning": comparison_scope_warning,
+        "compare_scope_tier_options": tier_options,
+        "compare_scope_preset_options": preset_options,
+        "compare_scope_run_map_json": compare_run_map_json,
         "advice_items": advice_items,
         "snapshot_id": snapshot_id,
         "advice_snapshot_a": advice_snapshot_a,
@@ -1636,7 +1650,7 @@ def battle_history(request: HttpRequest) -> HttpResponse:
     run_metrics = {entry.run_id: entry for entry in analyzed_runs}
     page_rows: list[dict[str, object]] = []
     for run in page_obj.object_list:
-        metric = run_metrics.get(getattr(getattr(run, "run_progress", None), "id", None) or run.id)
+        metric = run_metrics.get(run.id)
         manual_tournament = bool(getattr(getattr(run, "run_progress", None), "is_tournament", False))
         page_rows.append(
             {
@@ -1724,11 +1738,13 @@ def battle_report_modal(request: HttpRequest, report_id: int) -> JsonResponse:
     except BattleReport.DoesNotExist:
         return JsonResponse({"ok": False, "error": "Battle Report not found."}, status=404)
 
+    run_numbers = _run_numbers_by_report_id(player=player)
     progress = getattr(report, "run_progress", None)
     payload = {
         "ok": True,
         "report": {
             "id": report.id,
+            "run_number": run_numbers.get(report.id),
             "raw_text": report.raw_text,
             "battle_date": progress.battle_date.isoformat() if progress and progress.battle_date else None,
             "parsed_at": report.parsed_at.isoformat() if report.parsed_at else None,
@@ -2890,6 +2906,34 @@ def ultimate_weapon_progress(request: HttpRequest) -> HttpResponse:
     )
 
 
+def _guardian_runs_used_counts(*, player: Player) -> dict[str, int]:
+    """Return observed guardian chip usage counts keyed by chip slug.
+
+    Args:
+        player: Player whose Battle Reports are being summarized.
+
+    Returns:
+        Mapping of guardian chip slug to count of runs with a matching guardian
+        metric recorded in derived Battle Report values.
+    """
+
+    metric_keys = {
+        "attack": "guardian_damage",
+        "fetch": "guardian_coins_fetched",
+        "bounty": "guardian_coins_stolen",
+        "summon": "guardian_summoned_enemies",
+    }
+    counts = {slug: 0 for slug in metric_keys}
+    derived_rows = BattleReportDerivedMetrics.objects.filter(player=player).values_list("values", flat=True)
+    for values in derived_rows:
+        if not isinstance(values, dict):
+            continue
+        for slug, metric_key in metric_keys.items():
+            if metric_key in values:
+                counts[slug] += 1
+    return counts
+
+
 @login_required
 def guardian_progress(request: HttpRequest) -> HttpResponse:
     """Render the Guardian Chips progress dashboard."""
@@ -3261,6 +3305,7 @@ def guardian_progress(request: HttpRequest) -> HttpResponse:
         chips_qs = chips_qs.filter(guardian_chip_definition__name__icontains=name_query)
 
     any_battles = BattleReport.objects.filter(player=player).exists()
+    guardian_run_counts = _guardian_runs_used_counts(player=player)
     active_count = PlayerGuardianChip.objects.filter(player=player, active=True).count()
     activation_limit_reached = active_count >= MAX_ACTIVE_GUARDIAN_CHIPS
 
@@ -3340,11 +3385,13 @@ def guardian_progress(request: HttpRequest) -> HttpResponse:
             messages.warning(request, f"Skipping {chip_def.name}: missing parameter rows.")
             continue
 
-        runs_using = BattleReport.objects.filter(
-            player=player,
-            run_guardians__guardian_chip_definition=chip_def,
-        ).distinct()
-        runs_count = runs_using.count() if any_battles else 0
+        runs_count = guardian_run_counts.get(chip_def.slug, 0) if any_battles else 0
+        runs_muted = chip_def.slug == "ally"
+        runs_tooltip = (
+            "Runs Used cannot be tracked yet for Ally Chip."
+            if runs_muted
+            else ""
+        )
 
         tiles.append(
             {
@@ -3360,8 +3407,10 @@ def guardian_progress(request: HttpRequest) -> HttpResponse:
                 "summary": {
                     "total_invested": total_bits_invested,
                     "headline_label": "Runs used",
-                    "headline_value": runs_count,
+                    "headline_value": "—" if runs_muted else runs_count,
                     "headline_empty": (not any_battles),
+                    "headline_muted": runs_muted,
+                    "headline_tooltip": runs_tooltip,
                 },
                 "parameters": parameters,
             }
@@ -3777,6 +3826,12 @@ def bots_progress(request: HttpRequest) -> HttpResponse:
 
         runs_using = BattleReport.objects.filter(player=player, run_bots__bot_definition=bot_def).distinct()
         runs_count = runs_using.count() if any_battles else 0
+        runs_muted = bot_def.slug == "amplify_bot"
+        runs_tooltip = (
+            "Runs Used cannot be tracked yet for Amplify Bot."
+            if runs_muted
+            else ""
+        )
 
         tiles.append(
             {
@@ -3790,8 +3845,10 @@ def bots_progress(request: HttpRequest) -> HttpResponse:
                 "summary": {
                     "total_invested": total_medals_invested,
                     "headline_label": "Runs used",
-                    "headline_value": runs_count,
+                    "headline_value": "—" if runs_muted else runs_count,
                     "headline_empty": (not any_battles),
+                    "headline_muted": runs_muted,
+                    "headline_tooltip": runs_tooltip,
                 },
                 "parameters": parameters,
             }
@@ -4061,6 +4118,54 @@ def _context_filtered_runs(filter_form: ChartContextForm, *, player: Player) -> 
     return runs
 
 
+def _comparison_scope_options(
+    runs: Iterable[BattleReport],
+) -> tuple[list[dict[str, str]], list[dict[str, str]], dict[str, list[int]]]:
+    """Build tier and preset options for the comparison dropdowns.
+
+    Args:
+        runs: Iterable of BattleReport records already scoped to the active context.
+
+    Returns:
+        Tuple of (tier_options, preset_options, run_id_map) where the options are
+        simple dicts with `value`/`label` keys and the map stores run ids keyed by
+        option value.
+    """
+
+    tiers: dict[int, list[int]] = {}
+    presets: dict[int, list[int]] = {}
+    preset_labels: dict[int, str] = {}
+
+    for run in runs:
+        progress = getattr(run, "run_progress", None)
+        if progress is None:
+            continue
+        tier = getattr(progress, "tier", None)
+        if tier is not None:
+            tiers.setdefault(int(tier), []).append(run.id)
+        preset_id = getattr(progress, "preset_id", None)
+        if preset_id:
+            presets.setdefault(int(preset_id), []).append(run.id)
+            preset = getattr(progress, "preset", None)
+            name = getattr(preset, "name", None)
+            if name:
+                preset_labels[int(preset_id)] = name
+
+    tier_options = [{"value": f"tier:{tier}", "label": f"Tier {tier}"} for tier in sorted(tiers)]
+    preset_options = [
+        {"value": f"preset:{preset_id}", "label": preset_labels.get(preset_id, f"Preset {preset_id}")}
+        for preset_id in sorted(presets, key=lambda pid: preset_labels.get(pid, str(pid)).casefold())
+    ]
+
+    run_id_map: dict[str, list[int]] = {}
+    for tier, run_ids in tiers.items():
+        run_id_map[f"tier:{tier}"] = run_ids
+    for preset_id, run_ids in presets.items():
+        run_id_map[f"preset:{preset_id}"] = run_ids
+
+    return tier_options, preset_options, run_id_map
+
+
 def _with_effective_battle_date(runs: QuerySet[BattleReport]) -> QuerySet[BattleReport]:
     """Annotate a queryset with an effective battle date for time-series filtering.
 
@@ -4079,6 +4184,33 @@ def _with_effective_battle_date(runs: QuerySet[BattleReport]) -> QuerySet[Battle
             output_field=DateTimeField(),
         )
     )
+
+
+def _comparison_scope_size_warning(
+    *, scope_a_count: int | None, scope_b_count: int | None
+) -> str | None:
+    """Return a warning message when comparison scopes differ substantially.
+
+    Args:
+        scope_a_count: Number of runs in scope A.
+        scope_b_count: Number of runs in scope B.
+
+    Returns:
+        Warning text when scope sizes differ enough to skew comparisons,
+        otherwise None.
+    """
+
+    if scope_a_count is None or scope_b_count is None:
+        return None
+    if scope_a_count <= 0 or scope_b_count <= 0:
+        return None
+    larger = max(scope_a_count, scope_b_count)
+    smaller = min(scope_a_count, scope_b_count)
+    if smaller == 0:
+        return None
+    if larger >= smaller * 2 and (larger - smaller) >= 3:
+        return "Scope sizes differ widely; comparisons may be skewed by uneven samples."
+    return None
 
 
 def _build_comparison_result(

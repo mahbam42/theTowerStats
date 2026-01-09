@@ -16,14 +16,17 @@ Compare lets you review differences between two scopes of runs on the Charts das
 2. Select **Compare** to expand the comparison panel.
 3. Select **Summary focus** to choose the category you want to emphasize.
 4. Select multiple runs in **Scope A runs** and **Scope B runs**.
-5. Confirm each run entry by its tier, wave, date, and time.
-6. Select **Compare** to view the delta summary and any available Advice.
+5. Use **Last 3**, **Last 10**, or **Clear** to adjust the selection quickly.
+6. Use the **Tier** dropdown to select all runs that match a tier or preset.
+7. Confirm each run entry by its tier, wave, date, and time.
+8. Select **Compare** to view the delta summary and any available Advice.
 
 ## How to Read the Results
 
 - The summary table compares the two scopes using the selected focus category.
 - Each metric row shows baseline and comparison values along with the delta.
 - When a scope has too few runs, the panel reports insufficient data.
+- A warning appears when the two scopes are very different in size.
 
 ## Notes & Limitations
 
@@ -35,3 +38,6 @@ Compare lets you review differences between two scopes of runs on the Charts das
 
 > **Note**
 > Percent changes cannot be calculated when a baseline average is zero.
+
+> **Note**
+> When scope sizes differ widely, Compare highlights the mismatch so you can refine your selection.

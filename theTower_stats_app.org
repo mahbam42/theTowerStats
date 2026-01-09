@@ -2425,7 +2425,7 @@ CLOSED: [2025-12-22 Mon 15:31]
 - [X] fetch_wiki_data and rebuild_wiki_definitions should have a pretty summary of deltas at the end.
   Especially when using --target all.
 
-*** Bugs/Enhancements [61/63]
+*** Bugs/Enhancements [61/71]
 
 **** DONE [#B] Error Updating Guardian Upgrade Table                 :bug:
 CLOSED: [2025-12-22 Mon 18:51]
@@ -3285,7 +3285,261 @@ the-tower-idle-tower-defense.fandom.com/
 CLOSED: [2026-01-08 Thu 15:23]
 - State "DONE"       from "TODO"       [2026-01-08 Thu 15:23]
 git log --oneline since commit 4977035
-** Backlog [4/6]
+**** TODO [#B] Coins per Real Hour not displaying on Battle History  :bug:
+Compare with Runs 72 and 73
+
+**Run 72**
+#+BEGIN_SRC text
+Battle Report
+Battle Date	Jan 07, 2026 16:55
+Game Time	9h 49m 48s
+Real Time	2h 27m 26s
+Tier	7
+Wave	1013
+Killed By	Ranged
+Coins earned	18.68M
+Coins per hour	7.60M
+Cash earned	$41.39M
+Interest earned	$2.02M
+Gem Blocks Tapped	2
+Cells Earned	73
+Reroll Shards Earned	436
+Combat
+Damage dealt	6.94q
+Damage Taken	9.03B
+Damage Taken Wall	1.02B
+Damage Taken While Berserked	0
+Damage Gain From Berserk	x0.00
+Death Defy	0
+Lifesteal	54.57M
+Projectiles Damage	808.20T
+Projectiles Count	142.32K
+Thorn damage	39.82T
+Orb Damage	4.30q
+Enemies Hit by Orbs	35.17K
+Land Mine Damage	128.11T
+Land Mines Spawned	19562
+Rend Armor Damage	0
+Death Ray Damage	1.41q
+Smart Missile Damage	27.62T
+Inner Land Mine Damage	0
+Chain Lightning Damage	202.19T
+Death Wave Damage	3.71T
+Tagged by Deathwave	4731
+Swamp Damage	0
+Black Hole Damage	6.39T
+Electrons Damage	0
+Utility
+Waves Skipped	0
+Recovery Packages	607
+Free Attack Upgrade	566
+Free Defense Upgrade	557
+Free Utility Upgrade	529
+HP From Death Wave	57.66M
+Coins From Death Wave	160.46K
+Cash From Golden Tower	$20.93M
+Coins From Golden Tower	4.78M
+Coins From Black Hole	465.06K
+Coins From Spotlight	41.74K
+Coins From Orb	0
+Coins from Coin Upgrade	6.02M
+Coins from Coin Bonuses	6.84M
+Enemies Destroyed
+Total Enemies	68175
+Basic	43530
+Fast	8770
+Tank	9067
+Ranged	6251
+Boss	101
+Protector	107
+Total Elites	23
+Vampires	8
+Rays	4
+Scatters	11
+Saboteur	0
+Commander	0
+Overcharge	0
+Destroyed By Orbs	35172
+Destroyed by Thorns	40
+Destroyed by Death Ray	12107
+Destroyed by Land Mine	5581
+Destroyed in Spotlight	7401
+Bots
+Flame Bot Damage	6.67T
+Thunder Bot Stuns	495
+Golden Bot Coins Earned	13.03K
+Destroyed in Golden Bot	340
+Guardian
+Damage	1.95T
+Summoned enemies	0
+Guardian coins stolen	0
+Coins Fetched	17.77K
+Gems	7
+Medals	4
+Reroll Shards	18
+Cannon Shards	3
+Armor Shards	6
+Generator Shards	3
+Core Shards	0
+Common Modules	1
+Rare Modules	0
+#+END_SRC
+
+**Run 73**
+#+BEGIN_SRC text
+Battle Report
+Battle Date	Jan 08, 2026 15:54
+Game Time	14h 13m 19s
+Real Time	3h 25m 28s
+Tier	6
+Wave	1457
+Killed By	Ranged
+Coins earned	30.26M
+Coins per hour	8.84M
+Cash earned	$95.57M
+Interest earned	$2.90M
+Gem Blocks Tapped	2
+Cells Earned	315
+Reroll Shards Earned	364
+Combat
+Damage dealt	159.96q
+Damage Taken	38.07B
+Damage Taken Wall	3.86B
+Damage Taken While Berserked	0
+Damage Gain From Berserk	x0.00
+Death Defy	0
+Lifesteal	65.37M
+Projectiles Damage	15.34q
+Projectiles Count	382.16K
+Thorn damage	1.05q
+Orb Damage	92.08q
+Enemies Hit by Orbs	41.73K
+Land Mine Damage	1.25q
+Land Mines Spawned	29977
+Rend Armor Damage	0
+Death Ray Damage	49.76q
+Smart Missile Damage	143.10T
+Inner Land Mine Damage	0
+Chain Lightning Damage	1.52T
+Death Wave Damage	17.61T
+Tagged by Deathwave	7738
+Swamp Damage	0
+Black Hole Damage	191.85T
+Electrons Damage	0
+Utility
+Waves Skipped	0
+Recovery Packages	882
+Free Attack Upgrade	748
+Free Defense Upgrade	709
+Free Utility Upgrade	707
+HP From Death Wave	110.98M
+Coins From Death Wave	256.68K
+Cash From Golden Tower	$52.30M
+Coins From Golden Tower	8.54M
+Coins From Black Hole	820.76K
+Coins From Spotlight	81.22K
+Coins From Orb	0
+Coins from Coin Upgrade	9.61M
+Coins from Coin Bonuses	10.28M
+Enemies Destroyed
+Total Enemies	106567
+Basic	64442
+Fast	14594
+Tank	15194
+Ranged	11116
+Boss	145
+Protector	154
+Total Elites	88
+Vampires	33
+Rays	27
+Scatters	28
+Saboteur	0
+Commander	0
+Overcharge	0
+Destroyed By Orbs	41729
+Destroyed by Thorns	89
+Destroyed by Death Ray	24649
+Destroyed by Land Mine	9733
+Destroyed in Spotlight	11906
+Bots
+Flame Bot Damage	90.95T
+Thunder Bot Stuns	1.18K
+Golden Bot Coins Earned	33.02K
+Destroyed in Golden Bot	978
+Guardian
+Damage	46.39T
+Summoned enemies	0
+Guardian coins stolen	0
+Coins Fetched	24.90K
+Gems	5
+Medals	2
+Reroll Shards	4
+Cannon Shards	6
+Armor Shards	3
+Generator Shards	6
+Core Shards	0
+Common Modules	0
+Rare Modules	0
+#+END_SRC
+**** TODO [#A] Battle History Modal Showing Incremental Run Number not player scoped :bug:
+Run 72 shows in Battle History Modal as 115, Run 73 shows as 116 for player mahbam42
+**** TODO [#A] Battle Date not Showing on Battle History             :bug:
+If a player copies their battle report from the end of round screen and not the in app Battle History 'Battle Date' is missing from the report. We need to failover to logging the Battle Date as the Date Parsed.
+
+- [ ] Note issue in docs
+- [ ] Include this fix in reparse_battle_reports
+**** TODO [#C] Mute Runs used for Amplify Bot on Bots Dashboard      :bug:
+- [ ] Add a tooltip and to the Docs that we currently do not have a datapoint to track it's usage
+**** TODO [#B] Runs Used Showing 0 for Guardian Chips on Guardian Dashboard :bug:
+Should be able to track based on Battle Reports -at least for Fetch, Bounty and Attack. Ally and Summon cannot be tracked currently.
+[codex: correct me if I'm wrong] 
+
+- [ ] Mute the fields and add a tooltip
+- [ ] Add a tooltip and to the Docs that we currently do not have a datapoint to track some Chip usage
+**** TODO [#B] Better Define Goals in goals.md and dev_goals.md :enhancement:
+Add:
+
+Goals are cost surfaces, not priorities. Goals currently support deterministic performance parameters only.
+
+Under that model:
+
+Any thing with a level table can be a goal
+
+But not all goals describe performance
+
+Some describe structure, capacity, or access
+**** TODO [#B] Improve Compare on Charts Dashboard           :enhancement:
+Add a dropdown (next to last 3/last 10/clear) for tier to Scope A and B. Populate the dropdowns only with recorded tiers/presets. Selecting a tier from the dropdown selects all runs in that tier/preset.
+Add a warning when scopes differ wildly in size
+Add Helper text: “Selects all recorded runs matching this tier/preset”
+
+This support players compare and decide on performance between tiers for farming and measuring their performance. 
+**** TODO [#B] Enforce reparse_battle_reports behavior (maintenance)
+
+Goal
+- Ensure the reparse command enforces the intended backfill behavior for Battle History fields.
+- Ensure reparse covers the backfill needs introduced by Task 68 (Guardian Chips Runs Used).
+
+Notes
+- Align the command with the Battle History fallback rules (including Battle Date fallback from Task 66).
+- When Guardian Chip usage metrics are introduced, ensure reparse recomputes any derived metrics or persisted fields required by Task 68.
+- Extend `--limit` to respect patch boundaries (not just a raw count of reports).
+
+Acceptance criteria
+- Running the command with `--write` applies the expected backfill logic.
+- Running the command with `--check` performs no writes and reports intended changes.
+- Behavior is covered by tests.
+
+Tests
+- Add or extend integration tests in `tests/test_reparse_battle_reports_command.py`.
+
+Docs
+- Update `docs/management_commands.md` if behavior or flags change.
+
+
+***** TODO [#C] In reparse_battle_reports, extend --limit to use Patch Boundary
+Currently only limits number of reports to reparse. It will be better to also limit to patch boundaries.
+** Backlog [4/8]
 “Out of Scope”:
 - Cloud sync
 - Real-time scraping
@@ -3471,6 +3725,53 @@ K-means belongs entirely inside of analysis
 
 *** TODO [#B] Draft a “This app is done” release note
 Cite philosophy.md and mention k-means as the next big feature
+*** WAIT Add Card Slots to Goals
+- State "WAIT"       from              [2026-01-09 Fri 12:09] \\
+  Thinking about it
+
+
+**Option 1 — Separate by Goal Kind (strongest alignment)**
+
+Introduce a non-judgmental grouping in the goal picker, e.g.:
+- Performance Parameters
+- Progression / Capacity
+- Utility / Unlocks
+
+No ranking. No ordering. Just semantic labeling.
+
+This preserves:
+- User agency
+- Transparency
+- Non-prescription
+
+And it makes the app more honest, not less.
+
+**Option 2 — Allow it, but don’t surface it elsewhere**
+
+We already have:
+
+> “Bots, Guardian Chips, and Ultimate Weapons dashboards render a small goals widget” 
+
+If Card Slots:
+- Can be added as a goal
+- But never appear in cross-dashboard widgets
+
+This avoids the “this is as important as DPS” visual cue.
+
+This is a pragmatic, low-impact solution.
+
+**Option 3 — Let the user opt into seeing “non-performance goals”**
+
+This works, but it’s heavier UX for marginal gain unless you’re already adding preferences.
+
+What not to do (still true):
+- Don’t auto-suggest Card Slot goals
+- Don’t prefill them
+- Don’t include them in any summary like “Top remaining costs”
+- Don’t co-mingle them in language that implies impact (“biggest gains”)
+
+That would violate our own Explainability over Optimization rule.
+
 *** CANCELED [#C] Hide Deathwave on UW Sync Chart
 CLOSED: [2026-01-07 Wed 16:29]
 - State "CANCELED"   from "TODO"       [2026-01-07 Wed 16:29] \\
@@ -3638,7 +3939,6 @@ definitions/models.py:407
 CLOSED: [2025-12-17 Wed 14:31]
 - State "DONE"       from "TODO"       [2025-12-17 Wed 14:31]
 Mostly a visual tweak, but adds context and history for the player to interpert their performance history. 
-
 ** Codex Tasks
 - [X] prompt 16
 - [X] prompt 17
@@ -3671,9 +3971,17 @@ Mostly a visual tweak, but adds context and history for the player to interpert 
 - [X] promt 37 Charts Enhancements
 - [X] prompt 37 validation
 - [X] prompt38Validation.md
-
-- [ ] phase12.md
-
+- [X] phase12.md
 - [X] prompt39.md Cards Progress and Top Wave Widgets
+- [X] prompt40.md
+- [X] prompt41.md
+- [X] prompt42.md
+- [X] prompt43.md
+- [X] prompt44.md
+- [X] prompt45.md
+- [X] prompt46.md
+- [X] prompt47.md
+- [X] prompt50.md
+- [ ] prompt51.md
   
 - [ ] version1.0.md 

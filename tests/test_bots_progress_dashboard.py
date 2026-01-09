@@ -155,6 +155,28 @@ def test_bots_dashboard_renders_wiki_link_when_available(auth_client, player) ->
 
 
 @pytest.mark.django_db
+def test_bots_dashboard_mutes_runs_used_for_amplify_bot(auth_client, player) -> None:
+    """Amplify Bot uses a muted runs-used indicator."""
+
+    bot_def = _bot_with_four_parameters(slug="amplify_bot", name="Amplify Bot")
+    PlayerBot.objects.create(
+        player=player,
+        bot_definition=bot_def,
+        bot_slug=bot_def.slug,
+        unlocked=False,
+    )
+
+    response = auth_client.get(reverse("core:bots_progress"))
+    assert response.status_code == 200
+
+    tiles = response.context["bots"]
+    tile = next(entry for entry in tiles if entry["slug"] == bot_def.slug)
+    assert tile["summary"]["headline_muted"] is True
+    assert tile["summary"]["headline_value"] == "—"
+    assert tile["summary"]["headline_tooltip"] == "Runs Used cannot be tracked yet for Amplify Bot."
+
+
+@pytest.mark.django_db
 def test_bot_level_down_decrements_until_min(auth_client, player) -> None:
     """Level-down decrements by 1 and stops at level 0."""
 

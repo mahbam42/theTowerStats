@@ -15,6 +15,7 @@ from definitions.models import (
     ParameterKey,
     WikiData,
 )
+from gamedata.models import BattleReport, BattleReportDerivedMetrics
 from player_state.models import PlayerGuardianChip, PlayerGuardianChipParameter
 
 pytestmark = pytest.mark.integration
@@ -69,6 +70,39 @@ def _guardian_with_three_parameters(*, slug: str, name: str) -> GuardianChipDefi
             source_wikidata=wiki,
         )
     return guardian
+
+
+@pytest.mark.django_db
+def test_guardian_dashboard_runs_used_tracks_guardian_metrics(auth_client, player) -> None:
+    """Runs used uses guardian metrics when available and mutes Ally."""
+
+    attack = _guardian_with_three_parameters(slug="attack", name="Attack")
+    ally = _guardian_with_three_parameters(slug="ally", name="Ally")
+
+    report = BattleReport.objects.create(
+        player=player,
+        raw_text="Battle Report\nGuardian\nDamage\t1.00M\n",
+        checksum="guardian-runs".ljust(64, "x"),
+    )
+    BattleReportDerivedMetrics.objects.create(
+        player=player,
+        battle_report=report,
+        values={"guardian_damage": 1_000_000},
+        raw_values={"guardian_damage": "1.00M"},
+    )
+
+    response = auth_client.get(reverse("core:guardian_progress"))
+    assert response.status_code == 200
+
+    tiles = response.context["guardian_chips"]
+    attack_tile = next(entry for entry in tiles if entry["slug"] == attack.slug)
+    ally_tile = next(entry for entry in tiles if entry["slug"] == ally.slug)
+
+    assert attack_tile["summary"]["headline_value"] == 1
+    assert attack_tile["summary"]["headline_muted"] is False
+    assert ally_tile["summary"]["headline_value"] == "—"
+    assert ally_tile["summary"]["headline_muted"] is True
+    assert ally_tile["summary"]["headline_tooltip"] == "Runs Used cannot be tracked yet for Ally Chip."
 
 
 @pytest.mark.django_db

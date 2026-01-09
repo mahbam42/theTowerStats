@@ -54,6 +54,9 @@ The Bots page helps you track which bots are unlocked, how far each upgrade para
 > If no Battle Reports have been imported yet, **Runs used** will show “No battles recorded yet”.
 
 > **Note**
+> Amplify Bot does not currently expose usage details in Battle Reports, so its **Runs used** value is muted.
+
+> **Note**
 > On smaller screens, the upgrade cards use a more compact layout to keep the details readable.
 
 ## Advanced Usage

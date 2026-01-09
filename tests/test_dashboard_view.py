@@ -125,7 +125,7 @@ def test_dashboard_quick_import_accepts_space_separated_headers(auth_client, pla
 
 @pytest.mark.django_db
 def test_dashboard_quick_import_allows_missing_battle_date(auth_client, player) -> None:
-    """Dashboard quick import allows reports missing Battle Date."""
+    """Dashboard quick import falls back to the parsed timestamp."""
 
     raw_text = "\n".join(
         [
@@ -142,7 +142,7 @@ def test_dashboard_quick_import_allows_missing_battle_date(auth_client, player) 
     assert response.status_code == 200
 
     report = BattleReport.objects.get(player=player)
-    assert report.run_progress.battle_date is None
+    assert report.run_progress.battle_date == report.parsed_at
 
 
 @pytest.mark.django_db
@@ -600,6 +600,80 @@ def test_dashboard_view_multi_run_scope_compare_defaults_to_economy(auth_client,
     advice_items = tuple(response.context["advice_items"])
     assert any("Observed change in coins/hour:" in item.title for item in advice_items)
     assert any(item.title.startswith("For your selected goal: Hybrid") for item in advice_items)
+
+
+@pytest.mark.integration
+@pytest.mark.django_db
+def test_dashboard_view_compare_scope_options_include_tiers_and_presets(auth_client, player) -> None:
+    """Expose tier/preset options and run mappings for compare scopes."""
+
+    preset = Preset.objects.create(player=player, name="Farming")
+    reports = []
+    for idx, tier in enumerate((1, 2, 1), start=1):
+        report = BattleReport.objects.create(
+            player=player,
+            raw_text=f"Battle Report\nCoins earned    {1000 * idx}\n",
+            checksum=(f"compare-options-{idx}".ljust(64, "x")),
+        )
+        BattleReportProgress.objects.create(
+            battle_report=report,
+            player=player,
+            battle_date=datetime(2025, 12, idx, tzinfo=timezone.utc),
+            tier=tier,
+            wave=100,
+            real_time_seconds=600,
+            preset=preset if idx != 2 else None,
+        )
+        reports.append(report)
+
+    response = auth_client.get(
+        reverse("core:dashboard"),
+        {"start_date": "2025-12-01", "end_date": "2025-12-31"},
+    )
+    assert response.status_code == 200
+
+    tier_values = {opt["value"] for opt in response.context["compare_scope_tier_options"]}
+    preset_options = response.context["compare_scope_preset_options"]
+    run_map = json.loads(response.context["compare_scope_run_map_json"])
+
+    assert tier_values == {"tier:1", "tier:2"}
+    assert preset_options[0]["value"] == f"preset:{preset.id}"
+    assert preset_options[0]["label"] == "Farming"
+    assert set(run_map["tier:1"]) == {reports[0].id, reports[2].id}
+    assert set(run_map[f"preset:{preset.id}"]) == {reports[0].id, reports[2].id}
+
+
+@pytest.mark.integration
+@pytest.mark.django_db
+def test_dashboard_view_warns_when_scope_sizes_are_skewed(auth_client, player) -> None:
+    """Warn when scope A/B sizes differ significantly."""
+
+    reports: list[BattleReport] = []
+    for idx in range(10):
+        report = BattleReport.objects.create(
+            player=player,
+            raw_text=f"Battle Report\nCoins earned    {1200 + idx * 100}\n",
+            checksum=(f"scope-warn-{idx}".ljust(64, "w")),
+        )
+        BattleReportProgress.objects.create(
+            battle_report=report,
+            player=player,
+            battle_date=datetime(2025, 12, idx + 1, tzinfo=timezone.utc),
+            tier=1,
+            wave=100,
+            real_time_seconds=600,
+        )
+        reports.append(report)
+
+    response = auth_client.get(
+        reverse("core:dashboard"),
+        {
+            "scope_a_runs": [r.id for r in reports[:3]],
+            "scope_b_runs": [r.id for r in reports[3:11]],
+        },
+    )
+    assert response.status_code == 200
+    assert response.context["comparison_scope_warning"] is not None
 
 
 @pytest.mark.integration

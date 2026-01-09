@@ -287,7 +287,8 @@
         } else if (report.parsed_at) {
           titleParts.push(new Date(report.parsed_at).toLocaleString());
         }
-        titleParts.push(`Run ${report.id}`);
+        const runLabel = Number.isInteger(report.run_number) ? report.run_number : report.id;
+        titleParts.push(`Run ${runLabel}`);
         if (titleEl) titleEl.textContent = titleParts.join(" • ");
         if (rawEl) rawEl.textContent = report.raw_text || "";
         renderMetrics(report.metrics || []);

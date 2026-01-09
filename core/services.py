@@ -22,6 +22,7 @@ from analysis.raw_text_metrics import extract_raw_text_metrics
 from core.parsers.battle_report import (
     extract_bot_usage,
     extract_ultimate_weapon_usage,
+    fallback_battle_date,
     parse_battle_report,
     record_unrecognized_unit_suffixes,
 )
@@ -55,10 +56,11 @@ def ingest_battle_report(
                 checksum=parsed.checksum,
             )
             _persist_derived_metrics(battle_report=battle_report, player=player, raw_text=raw_text)
+            battle_date = fallback_battle_date(parsed.battle_date, parsed_at=battle_report.parsed_at)
             BattleReportProgress.objects.create(
                 battle_report=battle_report,
                 player=player,
-                battle_date=parsed.battle_date,
+                battle_date=battle_date,
                 tier=parsed.tier,
                 wave=parsed.wave,
                 real_time_seconds=parsed.real_time_seconds,

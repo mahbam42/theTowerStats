@@ -227,8 +227,11 @@
       {% include "core/partials/scope_summary.html" %}
       {% include "core/partials/why_panel.html" %}
 
-	      {% if comparison_result %}
-	        <div class="callout success">
+      {% if comparison_result %}
+        {% if comparison_scope_warning %}
+          <div class="callout warning" role="status">{{ comparison_scope_warning }}</div>
+        {% endif %}
+        <div class="callout success">
 	          <p class="margin-0"><strong>Deltas ({{ comparison_result.metric }})</strong></p>
 	          {% if comparison_result.kind == "runs" %}
 	            <p class="margin-0">
@@ -415,6 +418,26 @@
                   <button type="button" class="button secondary compare-select-last-n" data-select-id="id_scope_a_runs" data-n="10">Last 10</button>
                   <button type="button" class="button secondary compare-clear" data-select-id="id_scope_a_runs">Clear</button>
                 </div>
+                <label class="margin-top-0">Tier
+                  <select class="compare-tier-select" name="scope_a_tier" data-select-id="id_scope_a_runs">
+                    <option value="">Select a tier or preset</option>
+                    {% if compare_scope_tier_options %}
+                      <optgroup label="Tiers">
+                        {% for option in compare_scope_tier_options %}
+                          <option value="{{ option.value }}">{{ option.label }}</option>
+                        {% endfor %}
+                      </optgroup>
+                    {% endif %}
+                    {% if compare_scope_preset_options %}
+                      <optgroup label="Presets">
+                        {% for option in compare_scope_preset_options %}
+                          <option value="{{ option.value }}">{{ option.label }}</option>
+                        {% endfor %}
+                      </optgroup>
+                    {% endif %}
+                  </select>
+                </label>
+                <p class="help-text">Selects all recorded runs matching this tier/preset.</p>
               </div>
               <div class="cell medium-6">
                 <label>{{ comparison_form.scope_b_runs.label }}
@@ -425,6 +448,26 @@
                   <button type="button" class="button secondary compare-select-last-n" data-select-id="id_scope_b_runs" data-n="10">Last 10</button>
                   <button type="button" class="button secondary compare-clear" data-select-id="id_scope_b_runs">Clear</button>
                 </div>
+                <label class="margin-top-0">Tier
+                  <select class="compare-tier-select" name="scope_b_tier" data-select-id="id_scope_b_runs">
+                    <option value="">Select a tier or preset</option>
+                    {% if compare_scope_tier_options %}
+                      <optgroup label="Tiers">
+                        {% for option in compare_scope_tier_options %}
+                          <option value="{{ option.value }}">{{ option.label }}</option>
+                        {% endfor %}
+                      </optgroup>
+                    {% endif %}
+                    {% if compare_scope_preset_options %}
+                      <optgroup label="Presets">
+                        {% for option in compare_scope_preset_options %}
+                          <option value="{{ option.value }}">{{ option.label }}</option>
+                        {% endfor %}
+                      </optgroup>
+                    {% endif %}
+                  </select>
+                </label>
+                <p class="help-text">Selects all recorded runs matching this tier/preset.</p>
               </div>
             </div>
 
@@ -537,6 +580,7 @@
 
 {% block extra_scripts %}
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <script type="application/json" id="compare-scope-map">{{ compare_scope_run_map_json|safe }}</script>
     <script>
       document.addEventListener("DOMContentLoaded", () => {
       const chartPanels = {{ chart_panels_json|safe }};
@@ -1388,37 +1432,62 @@
 	          });
 	        }
 
-	        function selectLastNOptions(selectEl, n) {
-	          if (!selectEl || !selectEl.options) return;
-	          const opts = Array.from(selectEl.options).filter((o) => Boolean(o.value));
-	          const last = opts.slice(Math.max(opts.length - n, 0));
-	          for (const option of selectEl.options) option.selected = false;
-	          for (const option of last) option.selected = true;
-	        }
+        function selectLastNOptions(selectEl, n) {
+          if (!selectEl || !selectEl.options) return;
+          const opts = Array.from(selectEl.options).filter((o) => Boolean(o.value));
+          const last = opts.slice(Math.max(opts.length - n, 0));
+          for (const option of selectEl.options) option.selected = false;
+          for (const option of last) option.selected = true;
+        }
 
-	        function clearOptions(selectEl) {
-	          if (!selectEl || !selectEl.options) return;
-	          for (const option of selectEl.options) option.selected = false;
-	        }
+        function clearOptions(selectEl) {
+          if (!selectEl || !selectEl.options) return;
+          for (const option of selectEl.options) option.selected = false;
+        }
 
-	        for (const btn of document.querySelectorAll(".compare-select-last-n")) {
-	          btn.addEventListener("click", function() {
-	            const selectId = btn.getAttribute("data-select-id");
-	            const n = Number(btn.getAttribute("data-n") || "0");
-	            const selectEl = selectId ? document.getElementById(selectId) : null;
-	            if (!selectEl || !n) return;
-	            selectLastNOptions(selectEl, n);
-	          });
-	        }
+        function readJsonScript(id) {
+          const node = document.getElementById(id);
+          if (!node) return null;
+          try {
+            return JSON.parse(node.textContent || "null");
+          } catch (_err) {
+            return null;
+          }
+        }
+
+        for (const btn of document.querySelectorAll(".compare-select-last-n")) {
+          btn.addEventListener("click", function() {
+            const selectId = btn.getAttribute("data-select-id");
+            const n = Number(btn.getAttribute("data-n") || "0");
+            const selectEl = selectId ? document.getElementById(selectId) : null;
+            if (!selectEl || !n) return;
+            selectLastNOptions(selectEl, n);
+          });
+        }
 
 	        for (const btn of document.querySelectorAll(".compare-clear")) {
-	          btn.addEventListener("click", function() {
-	            const selectId = btn.getAttribute("data-select-id");
-	            const selectEl = selectId ? document.getElementById(selectId) : null;
-	            if (!selectEl) return;
-	            clearOptions(selectEl);
-	          });
-	        }
+          btn.addEventListener("click", function() {
+            const selectId = btn.getAttribute("data-select-id");
+            const selectEl = selectId ? document.getElementById(selectId) : null;
+            if (!selectEl) return;
+            clearOptions(selectEl);
+          });
+        }
+
+        const compareScopeMap = readJsonScript("compare-scope-map") || {};
+        for (const selectEl of document.querySelectorAll(".compare-tier-select")) {
+          selectEl.addEventListener("change", function() {
+            const value = selectEl.value;
+            const selectId = selectEl.getAttribute("data-select-id");
+            const target = selectId ? document.getElementById(selectId) : null;
+            if (!target || !value) return;
+            const runIds = compareScopeMap[value] || [];
+            for (const option of target.options) option.selected = false;
+            for (const option of target.options) {
+              if (runIds.includes(Number(option.value))) option.selected = true;
+            }
+          });
+        }
 
         const snapshotForm = document.getElementById("snapshot-save-form");
         if (snapshotForm) {

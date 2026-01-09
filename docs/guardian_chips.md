@@ -28,7 +28,7 @@ The Guardian Chips page helps you track which chips are unlocked, which chips ar
 
 - **Active** shows whether a chip is currently selected as active.
 - **Total Bits invested** is the sum of the upgrade costs for the levels you have increased in the app.
-- **Runs used** counts how many of your imported Battle Reports include that Guardian Chip.
+- **Runs used** counts how many of your imported Battle Reports include Guardian metrics linked to that chip.
 - **Level** is your saved upgrade level for that parameter.
 - **Current** is the current raw value for your saved level.
 - **Next** shows the next-level value, with the change emphasized in parentheses when it can be parsed.
@@ -54,6 +54,9 @@ The Guardian Chips page helps you track which chips are unlocked, which chips ar
 
 > **Caution**
 > If no Battle Reports have been imported yet, **Runs used** will show “No battles recorded yet”.
+
+> **Note**
+> **Runs used** is inferred from Guardian metrics in Battle Reports for Attack, Fetch, Bounty, and Summon. Ally does not expose a direct Battle Report metric, so its **Runs used** value is muted.
 
 > **Note**
 > On smaller screens, the upgrade cards use a more compact layout to keep the details readable.
