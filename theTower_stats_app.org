@@ -2425,7 +2425,7 @@ CLOSED: [2025-12-22 Mon 15:31]
 - [X] fetch_wiki_data and rebuild_wiki_definitions should have a pretty summary of deltas at the end.
   Especially when using --target all.
 
-*** Bugs/Enhancements [71/77]
+*** Bugs/Enhancements [71/82]
 
 **** DONE [#B] Error Updating Guardian Upgrade Table                 :bug:
 CLOSED: [2025-12-22 Mon 18:51]
@@ -3586,21 +3586,41 @@ CLOSED: [2026-01-09 Fri 19:36]
 - [X] Changelog Update
   Pending revisions to earlier tasks
 
-**** TODO [#A] Can we set up GitHub Actions to use Postgres so CI is testing closer to Production? :chore:
+**** IN PROGRESS [#A] Can we set up GitHub Actions to use Postgres so CI is testing closer to Production? :chore:
 
-**** TODO [#B] Standardized/Enforce Unit Display                     :bug:
-In Modals Especially
-And Compare/Advice Results
-
-**** TODO [#B] Player Preferences                            :enhancement:
-Store Favorite Charts for Charts Dashboard
-Store Chart Builder creations 
-
+- State "IN PROGRESS" from "DONE"       [2026-01-10 Sat 08:28] \\
+  needs to be deployed
 **** TODO [#B] Deploy Command for Railway                          :chore:
 Run migrations, rebuild_wiki_definitions, reparse_battle_reports
 
+**** TODO [#C] Standardized/Enforce Unit Display                     :bug:
+In Modals Especially
+And Compare/Advice Results
+
+**** TODO [#C] Player Preferences                            :enhancement:
+Store Favorite Charts for Charts Dashboard
+Store Chart Builder creations 
+
 **** TODO [#B] MOTD with latest changelog entry              :enhancement:
 Add to getting_started as well (between quick start and self host)
+
+**** TODO [#C] Compare Scopes needs to include Tournaments           :bug:
+In the Run Select List, Tournaments should be available. 
+
+**** TODO [#C] On Charts Dashboard in Context Tier Select needs to include tournaments :bug:
+Replace with a dropdown list of recorded tiers and 'tournament's 
+
+**** TODO [#B] Add Ability to Filter  by Snapshot or View Past N Runs on Chart Dashboard :enhancement:
+In the Context panel in addition to the date, tier and preset selects. 
+
+**** TODO [#A] Improve Snapshots Implementation              :enhancement:
+This feature will be aided by the previous task elevating it out of the Admin and on to the dashboards.
+Needs to be feaured on index.md.
+
+Snapshots date back to phase 7. They are not just "Snapshots persist a versioned `ChartConfigDTO` payload (`ChartSnapshot.config`) plus a dashboard `target`." Snapshots allow players to set custom milestones and progress markers, e.g. before unlocking X (UW, Bot, Relic, Lab, etc). This allows players to separate data beyond what is currently tracked in the app. Since it's player defined, it can be applied to Relics or Card Tiers. This can also apply to Tournament Ranks (Copper, Silver, Gold, etc). 
+
+**** TODO [#A] Add Tournament Rank to Battle Report Import
+Next to the isTournament checkbox add a dropdown to select Tournament Rank (Copper, Silver, Gold, Platinum, Champions, and Legends). 
 ** Backlog [4/8]
 “Out of Scope”:
 - Cloud sync
@@ -3833,6 +3853,34 @@ What not to do (still true):
 - Don’t co-mingle them in language that implies impact (“biggest gains”)
 
 That would violate our own Explainability over Optimization rule.
+*** WAIT [#B] Enforce Level 0 Bot/UW/Guardian Chip Parameter Levels
+- State "WAIT"       from "TODO"       [2026-01-10 Sat 13:31] \\
+  Might not break when rebuilt
+It's not cleanly scrapable from the wiki, but should be in the DB for progress tracking.
+**** Bots Level 0
+Thunder Bot
+Duration 5.0s 0 
+Cooldown 120s 0
+Linger 20% 0
+Range 28m 0
+
+Flame Bot
+Damage Reduction 20%
+Cooldown 75s
+Damage x50
+Range 30m
+
+Golden Bot
+Duration 20s
+Cooldown 120s
+Bonus 2.0x
+Range 20m 
+
+Amplify Bot
+Duration 20s
+Cooldown 120s
+Bonus 3.50%
+Range 25m 
 
 *** CANCELED [#C] Hide Deathwave on UW Sync Chart
 CLOSED: [2026-01-07 Wed 16:29]
