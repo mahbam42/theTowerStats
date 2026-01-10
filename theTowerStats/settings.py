@@ -8,6 +8,7 @@ checked into the repository.
 from __future__ import annotations
 
 import os
+import sys
 from pathlib import Path
 from urllib.parse import urlparse
 
@@ -83,6 +84,22 @@ def _parse_hostname(value: str) -> str | None:
     return parsed.hostname
 
 
+def _is_running_tests() -> bool:
+    """Return True when settings are loaded under a test runner.
+
+    Args:
+        None.
+
+    Returns:
+        True when pytest or Django's test runner appears to be active.
+    """
+
+    return (
+        "pytest" in sys.modules
+        or any(arg in {"test", "pytest"} for arg in sys.argv)
+    )
+
+
 def _env_platform_hosts(names: list[str]) -> list[str]:
     """Collect hostnames from platform-provided environment variables.
 
@@ -108,6 +125,7 @@ def _env_platform_hosts(names: list[str]) -> list[str]:
     return hosts
 
 DEBUG = _env_bool("DJANGO_DEBUG", default=True)
+RUNNING_TESTS = _is_running_tests()
 
 _DEV_SECRET_KEY = "dev-only-insecure-secret-key"
 SECRET_KEY = os.getenv("DJANGO_SECRET_KEY") or (_DEV_SECRET_KEY if DEBUG else "")
@@ -211,7 +229,7 @@ STORAGES = {
     "default": {"BACKEND": "django.core.files.storage.FileSystemStorage"},
     "staticfiles": {"BACKEND": "django.contrib.staticfiles.storage.StaticFilesStorage"},
 }
-if not DEBUG:
+if not DEBUG and not RUNNING_TESTS:
     STORAGES["staticfiles"]["BACKEND"] = "whitenoise.storage.CompressedManifestStaticFilesStorage"
 
 _DJANGO_CSRF_TRUSTED_ORIGINS_RAW = os.getenv("DJANGO_CSRF_TRUSTED_ORIGINS")
@@ -225,6 +243,8 @@ if not DEBUG and _DJANGO_CSRF_TRUSTED_ORIGINS_RAW is None and _PLATFORM_HOSTS:
 SECURE_SSL_REDIRECT = _env_bool("DJANGO_SECURE_SSL_REDIRECT", default=not DEBUG)
 SESSION_COOKIE_SECURE = _env_bool("DJANGO_SESSION_COOKIE_SECURE", default=not DEBUG)
 CSRF_COOKIE_SECURE = _env_bool("DJANGO_CSRF_COOKIE_SECURE", default=not DEBUG)
+if RUNNING_TESTS:
+    SECURE_SSL_REDIRECT = False
 
 SECURE_HSTS_SECONDS = _env_int("DJANGO_SECURE_HSTS_SECONDS", default=3600 if not DEBUG else 0)
 SECURE_HSTS_INCLUDE_SUBDOMAINS = _env_bool(
