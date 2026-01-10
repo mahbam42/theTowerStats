@@ -16,6 +16,27 @@ jobs:
       max-parallel: 4
       matrix:
         python-version: ["3.13", "3.14"]
+    services:
+      postgres:
+        image: postgres:16
+        env:
+          POSTGRES_DB: towerstats
+          POSTGRES_USER: postgres
+          POSTGRES_PASSWORD: postgres
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd "pg_isready -U postgres"
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
+    env:
+      DJANGO_DEBUG: "0"
+      DJANGO_SECRET_KEY: "${{ secrets.DJANGO_SECRET_KEY || 'ci-secret-key' }}"
+      DJANGO_ALLOWED_HOSTS: "localhost,127.0.0.1"
+      DJANGO_CSRF_TRUSTED_ORIGINS: "http://localhost,https://localhost,http://127.0.0.1,https://127.0.0.1"
+      DJANGO_DB_CONN_MAX_AGE: "60"
+      DATABASE_URL: "postgresql://postgres:postgres@localhost:5432/towerstats"
 
     steps:
       - uses: actions/checkout@v4
@@ -37,6 +58,27 @@ jobs:
       max-parallel: 4
       matrix:
         python-version: ["3.13"]
+    services:
+      postgres:
+        image: postgres:16
+        env:
+          POSTGRES_DB: towerstats
+          POSTGRES_USER: postgres
+          POSTGRES_PASSWORD: postgres
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd "pg_isready -U postgres"
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
+    env:
+      DJANGO_DEBUG: "0"
+      DJANGO_SECRET_KEY: "${{ secrets.DJANGO_SECRET_KEY || 'ci-secret-key' }}"
+      DJANGO_ALLOWED_HOSTS: "localhost,127.0.0.1"
+      DJANGO_CSRF_TRUSTED_ORIGINS: "http://localhost,https://localhost,http://127.0.0.1,https://127.0.0.1"
+      DJANGO_DB_CONN_MAX_AGE: "60"
+      DATABASE_URL: "postgresql://postgres:postgres@localhost:5432/towerstats"
 
     steps:
       - uses: actions/checkout@v4

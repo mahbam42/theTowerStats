@@ -2425,7 +2425,7 @@ CLOSED: [2025-12-22 Mon 15:31]
 - [X] fetch_wiki_data and rebuild_wiki_definitions should have a pretty summary of deltas at the end.
   Especially when using --target all.
 
-*** Bugs/Enhancements [65/72]
+*** Bugs/Enhancements [71/77]
 
 **** DONE [#B] Error Updating Guardian Upgrade Table                 :bug:
 CLOSED: [2025-12-22 Mon 18:51]
@@ -3214,7 +3214,9 @@ Commit message suggestion:
 
 Add rebuild_wiki_definitions --diffs preview for wiki changes
 
-**** IN PROGRESS [#A] On Charts Dashboard Data points aren't showing Run # :bug:
+**** DONE [#A] On Charts Dashboard Data points aren't showing Run #  :bug:
+CLOSED: [2026-01-09 Fri 19:36]
+- State "DONE"       from "IN PROGRESS" [2026-01-09 Fri 19:36]
 - State "IN PROGRESS" from "DONE"       [2026-01-08 Thu 15:19]
 - State "DONE"       from "TODO"       [2026-01-08 Thu 15:19]
 Should be strictly scoped by player not incremental to the full DB table. 
@@ -3285,7 +3287,9 @@ the-tower-idle-tower-defense.fandom.com/
 CLOSED: [2026-01-08 Thu 15:23]
 - State "DONE"       from "TODO"       [2026-01-08 Thu 15:23]
 git log --oneline since commit 4977035
-**** TODO [#B] Coins per Real Hour not displaying on Battle History  :bug:
+**** DONE [#B] Coins per Real Hour not displaying on Battle History  :bug:
+CLOSED: [2026-01-09 Fri 19:36]
+- State "DONE"       from "TODO"       [2026-01-09 Fri 19:36]
 Compare with Runs 72 and 73
 
 **Run 72**
@@ -3485,16 +3489,20 @@ Rare Modules	0
 CLOSED: [2026-01-09 Fri 16:32]
 - State "DONE"       from "TODO"       [2026-01-09 Fri 16:32]
 Run 72 shows in Battle History Modal as 115, Run 73 shows as 116 for player mahbam42
-**** TODO [#A] Battle Date not Showing on Battle History             :bug:
+**** DONE [#A] Battle Date not Showing on Battle History             :bug:
+CLOSED: [2026-01-09 Fri 19:36]
+- State "DONE"       from "TODO"       [2026-01-09 Fri 19:36]
 If a player copies their battle report from the end of round screen and not the in app Battle History 'Battle Date' is missing from the report. We need to failover to logging the Battle Date as the Date Parsed.
 
-- [ ] Note issue in docs
-- [ ] Include this fix in reparse_battle_reports
+- [X] Note issue in docs
+- [X] Include this fix in reparse_battle_reports
 **** DONE [#C] Mute Runs used for Amplify Bot on Bots Dashboard      :bug:
 CLOSED: [2026-01-09 Fri 16:32]
 - State "DONE"       from "TODO"       [2026-01-09 Fri 16:32]
 - [ ] Add a tooltip and to the Docs that we currently do not have a datapoint to track it's usage
-**** IN PROGRESS [#B] Runs Used Showing 0 for Guardian Chips on Guardian Dashboard :bug:
+**** DONE [#B] Runs Used Showing 0 for Guardian Chips on Guardian Dashboard :bug:
+CLOSED: [2026-01-09 Fri 19:36]
+- State "DONE"       from "IN PROGRESS" [2026-01-09 Fri 19:36]
 - State "IN PROGRESS" from "TODO"       [2026-01-09 Fri 16:32]
 Should be able to track based on Battle Reports -at least for Fetch, Bounty and Attack. Ally and Summon cannot be tracked currently.
 [codex: correct me if I'm wrong] 
@@ -3515,7 +3523,9 @@ Any thing with a level table can be a goal
 But not all goals describe performance
 
 Some describe structure, capacity, or access
-**** TODO [#B] Improve Compare on Charts Dashboard           :enhancement:
+**** DONE [#B] Improve Compare on Charts Dashboard           :enhancement:
+CLOSED: [2026-01-09 Fri 19:36]
+- State "DONE"       from "TODO"       [2026-01-09 Fri 19:36]
 Add a dropdown (next to last 3/last 10/clear) for tier to Scope A and B. Populate the dropdowns only with recorded tiers/presets. Selecting a tier from the dropdown selects all runs in that tier/preset.
 Add a warning when scopes differ wildly in size
 Add Helper text: “Selects all recorded runs matching this tier/preset”
@@ -3549,8 +3559,10 @@ Docs
 ***** TODO [#C] In reparse_battle_reports, extend --limit to use Patch Boundary
 Currently only limits number of reports to reparse. It will be better to also limit to patch boundaries.
 
-**** TODO Prompt51 Corrections [7/9]
-- [ ] Check Coins per Real Hour in Production
+**** DONE Prompt51 Corrections [9/9]
+CLOSED: [2026-01-09 Fri 19:36]
+- State "DONE"       from "TODO"       [2026-01-09 Fri 19:36]
+- [X] Check Coins per Real Hour in Production
 - [X] Battle History Run Number Scoping
 - [X] Battle Date Fallback
   - Before reparse_battle_reports:
@@ -3571,8 +3583,24 @@ Currently only limits number of reports to reparse. It will be better to also li
   - [X] When averaging we should relax the constraint on needing more than 3 runs per scope. Since we're averaging 1/1 vs 4/4 is still a 1 to 1 comparision. 
 - [X] reparse_battle_reports fixes
   - Updated one Report, unclear what the change was. 
-- [ ] Changelog Update
+- [X] Changelog Update
   Pending revisions to earlier tasks
+
+**** TODO [#A] Can we set up GitHub Actions to use Postgres so CI is testing closer to Production? :chore:
+
+**** TODO [#B] Standardized/Enforce Unit Display                     :bug:
+In Modals Especially
+And Compare/Advice Results
+
+**** TODO [#B] Player Preferences                            :enhancement:
+Store Favorite Charts for Charts Dashboard
+Store Chart Builder creations 
+
+**** TODO [#B] Deploy Command for Railway                          :chore:
+Run migrations, rebuild_wiki_definitions, reparse_battle_reports
+
+**** TODO [#B] MOTD with latest changelog entry              :enhancement:
+Add to getting_started as well (between quick start and self host)
 ** Backlog [4/8]
 “Out of Scope”:
 - Cloud sync
