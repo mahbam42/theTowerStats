@@ -219,7 +219,7 @@ def test_cards_dashboard_shows_level_zero_for_unowned_cards(auth_client, player)
         canonical_name="Alpha",
         entity_id="alpha",
         raw_row={"Name": "Alpha", "Rarity": "Common"},
-        content_hash="alpha" * 16,
+        content_hash="a" * 64,
     )
     definition = CardDefinition.objects.create(name="Alpha", slug="alpha", rarity="Common", source_wikidata=wiki)
     PlayerCard.objects.create(player=player, card_definition=definition, card_slug=definition.slug)

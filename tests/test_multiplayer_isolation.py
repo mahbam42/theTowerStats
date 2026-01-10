@@ -85,7 +85,7 @@ def test_chart_run_numbers_are_player_scoped(client) -> None:
         report = BattleReport.objects.create(
             player=player_b,
             raw_text=f"Battle Report\nCoins earned    {idx},000\n",
-            checksum=f"b{idx}" * 64,
+            checksum="b" * 64 if idx == 1 else "c" * 64,
         )
         BattleReportProgress.objects.create(
             battle_report=report,
@@ -114,7 +114,7 @@ def test_chart_run_numbers_are_player_scoped(client) -> None:
     report_a2 = BattleReport.objects.create(
         player=player_a,
         raw_text="Battle Report\nCoins earned    2,000\n",
-        checksum="c" * 64,
+        checksum="d" * 64,
     )
     BattleReportProgress.objects.create(
         battle_report=report_a2,

@@ -30,6 +30,17 @@ def _run_manage_check_deploy(*, env: dict[str, str]) -> subprocess.CompletedProc
     """
 
     merged_env = os.environ.copy()
+    for key in (
+        "DJANGO_ALLOWED_HOSTS",
+        "DJANGO_CSRF_TRUSTED_ORIGINS",
+        "DJANGO_DEBUG",
+        "DJANGO_SECRET_KEY",
+        "RAILWAY_PUBLIC_DOMAIN",
+        "RAILWAY_PUBLIC_URL",
+        "RAILWAY_STATIC_URL",
+        "RAILWAY_URL",
+    ):
+        merged_env.pop(key, None)
     merged_env.update(env)
     merged_env.setdefault("DJANGO_SETTINGS_MODULE", "theTowerStats.settings")
     return subprocess.run(
