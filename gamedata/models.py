@@ -8,6 +8,18 @@ from django.core.exceptions import ValidationError
 from definitions.models import BotDefinition, GuardianChipDefinition, UltimateWeaponDefinition
 from player_state.models import Player, Preset
 
+TOURNAMENT_RANK_KEYS: tuple[str, ...] = (
+    "copper",
+    "silver",
+    "gold",
+    "platinum",
+    "champions",
+    "legends",
+)
+TOURNAMENT_RANK_CHOICES: tuple[tuple[str, str], ...] = tuple(
+    (key, key.title()) for key in TOURNAMENT_RANK_KEYS
+)
+
 
 class BattleReport(models.Model):
     """Raw, preserved battle report payload imported from the player."""
@@ -113,6 +125,13 @@ class BattleReportProgress(models.Model):
     is_tournament = models.BooleanField(
         default=False,
         help_text="Manual override: mark this run as a tournament when the report text does not indicate it.",
+    )
+    tournament_rank = models.CharField(
+        max_length=20,
+        null=True,
+        blank=True,
+        choices=TOURNAMENT_RANK_CHOICES,
+        help_text="Optional tournament rank recorded during import.",
     )
 
     class Meta:

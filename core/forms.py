@@ -8,6 +8,7 @@ Phase 1 requires:
 from __future__ import annotations
 
 from datetime import date
+import json
 
 import re
 
@@ -22,9 +23,10 @@ from core.charting.builder import (
     build_before_after_scopes,
     build_run_vs_run_scopes,
 )
+from core.tournament import parse_tier_or_tournament, tier_filter_value, tournament_filter_value
 from definitions.models import BotDefinition, GuardianChipDefinition, UltimateWeaponDefinition
-from gamedata.models import BattleReport
-from player_state.models import GoalType, Player, Preset
+from gamedata.models import BattleReport, BattleReportProgress, TOURNAMENT_RANK_CHOICES
+from player_state.models import ChartSnapshot, GoalType, Player, Preset
 
 
 class BattleReportImportForm(forms.Form):
@@ -47,6 +49,12 @@ class BattleReportImportForm(forms.Form):
         required=False,
         label="Tournament run",
         help_text="Enable when this run was a tournament round but the pasted report text does not indicate it.",
+    )
+    tournament_rank = forms.ChoiceField(
+        required=False,
+        choices=(("", "Select a rank"),) + TOURNAMENT_RANK_CHOICES,
+        label="Tournament rank",
+        help_text="Required when Tournament run is enabled.",
     )
 
     def clean_raw_text(self) -> str:
@@ -85,6 +93,18 @@ class BattleReportImportForm(forms.Form):
             raise forms.ValidationError(f"Duplicate headers detected: {', '.join(duplicates)}.")
         return raw_text
 
+    def clean(self) -> dict[str, object]:
+        """Validate tournament metadata requirements."""
+
+        cleaned = super().clean()
+        is_tournament = bool(cleaned.get("is_tournament"))
+        tournament_rank = (cleaned.get("tournament_rank") or "").strip()
+        if is_tournament and not tournament_rank:
+            self.add_error("tournament_rank", "Select a tournament rank.")
+        if not is_tournament:
+            cleaned["tournament_rank"] = ""
+        return cleaned
+
 
 class ChartContextForm(forms.Form):
     """Validate contextual filters and chart overlay options."""
@@ -115,17 +135,31 @@ class ChartContextForm(forms.Form):
         label="Granularity",
         help_text="Controls whether charts show one point per date or one point per run.",
     )
-    tier = forms.IntegerField(
+    tier = forms.ChoiceField(
         required=False,
-        min_value=1,
+        choices=(),
         label="Tier",
-        help_text="Optional exact tier filter.",
+        help_text="Optional tier or tournament filter.",
     )
     preset = forms.ModelChoiceField(
         required=False,
         queryset=Preset.objects.none(),
         label="Preset",
         empty_label="All presets",
+    )
+    context_snapshot = forms.ModelChoiceField(
+        required=False,
+        queryset=ChartSnapshot.objects.none(),
+        label="Snapshot",
+        empty_label="No snapshot filter",
+        help_text="Optional snapshot filter applied alongside other context controls.",
+    )
+    past_runs = forms.IntegerField(
+        required=False,
+        min_value=1,
+        max_value=365,
+        label="Past N runs",
+        help_text="Optional filter for the most recent N runs in scope.",
     )
     include_tournaments = forms.BooleanField(
         required=False,
@@ -205,6 +239,7 @@ class ChartContextForm(forms.Form):
         today: date | None = kwargs.pop("today", None)
         super().__init__(*args, **kwargs)
         self._today = today or date.today()
+        self._tournament_filter: str | None = None
         if player is None:
             self.fields["preset"].queryset = Preset.objects.order_by("name")
         else:
@@ -212,6 +247,28 @@ class ChartContextForm(forms.Form):
         self.fields["ultimate_weapon"].queryset = UltimateWeaponDefinition.objects.order_by("name")
         self.fields["guardian_chip"].queryset = GuardianChipDefinition.objects.order_by("name")
         self.fields["bot"].queryset = BotDefinition.objects.order_by("name")
+        if player is None:
+            self.fields["context_snapshot"].queryset = ChartSnapshot.objects.none()
+        else:
+            self.fields["context_snapshot"].queryset = (
+                ChartSnapshot.objects.filter(player=player, target="charts").order_by("name")
+            )
+        tier_queryset = BattleReportProgress.objects.filter(tier__isnull=False)
+        if player is not None:
+            tier_queryset = tier_queryset.filter(player=player)
+        recorded_tiers = (
+            tier_queryset.order_by("tier").values_list("tier", flat=True).distinct()
+        )
+        tier_choices: list[tuple[str, str]] = [("", "All tiers")]
+        tier_choices.extend(
+            (tier_filter_value(int(tier)), f"Tier {int(tier)}") for tier in recorded_tiers
+        )
+        tier_choices.append((tournament_filter_value(None), "Tournament (all)"))
+        tier_choices.extend(
+            (tournament_filter_value(key), f"Tournament: {label}")
+            for key, label in TOURNAMENT_RANK_CHOICES
+        )
+        self.fields["tier"].choices = tier_choices
         charts = list_selectable_chart_configs()
         category_labels = {
             "economy": "Economy",
@@ -270,10 +327,26 @@ class ChartContextForm(forms.Form):
             "Choose whether charts show one point per date or per run."
         )
 
+    def clean_tier(self) -> int | None:
+        """Parse tier selections into tier or tournament filters."""
+
+        value = self.cleaned_data.get("tier")
+        tier_value, tournament_filter = parse_tier_or_tournament(str(value or ""))
+        if value and tier_value is None and tournament_filter is None:
+            raise forms.ValidationError("Select a valid tier.")
+        self._tournament_filter = tournament_filter
+        return tier_value
+
     def clean(self) -> dict[str, object]:
         """Apply Event-window defaults and dashboard invariants."""
 
         cleaned = super().clean()
+        tournament_filter = self._tournament_filter
+        if tournament_filter:
+            cleaned["tournament_filter"] = tournament_filter
+            cleaned["include_tournaments"] = True
+        else:
+            cleaned["tournament_filter"] = None
         if not cleaned.get("start_date") and not cleaned.get("end_date"):
             window = event_window_for_date(target=self._today, anchor=date(2025, 12, 9))
             cleaned["start_date"] = window.start
@@ -282,6 +355,10 @@ class ChartContextForm(forms.Form):
             cleaned["charts"] = list(default_selected_chart_ids())
         if not cleaned.get("granularity"):
             cleaned["granularity"] = "per_run"
+        past_runs = cleaned.get("past_runs")
+        if past_runs:
+            cleaned["window_kind"] = "last_runs"
+            cleaned["window_n"] = past_runs
         window_kind = (cleaned.get("window_kind") or "").strip()
         window_n = cleaned.get("window_n")
         if window_kind and not window_n:
@@ -323,6 +400,12 @@ class BattleHistoryFilterForm(forms.Form):
     """Validate filter controls for the Battle History dashboard."""
 
     tier = forms.IntegerField(required=False, min_value=1, label="Tier")
+    snapshot = forms.ModelChoiceField(
+        required=False,
+        queryset=ChartSnapshot.objects.none(),
+        label="Snapshot",
+        empty_label="All snapshots",
+    )
     killed_by = forms.CharField(required=False, label="Killed by")
     goal = forms.CharField(required=False, label="Goal")
     include_tournaments = forms.BooleanField(
@@ -379,6 +462,12 @@ class BattleHistoryFilterForm(forms.Form):
             self.fields["preset"].queryset = Preset.objects.order_by("name")
         else:
             self.fields["preset"].queryset = Preset.objects.filter(player=player).order_by("name")
+        if player is None:
+            self.fields["snapshot"].queryset = ChartSnapshot.objects.none()
+        else:
+            self.fields["snapshot"].queryset = (
+                ChartSnapshot.objects.filter(player=player, target="charts").order_by("name")
+            )
 
 
 class BattleHistoryPresetUpdateForm(forms.Form):
@@ -680,6 +769,53 @@ class BattleHistoryColumnPreferenceForm(forms.Form):
         if not selected:
             raise forms.ValidationError("Select at least one column.")
         return selected
+
+
+class ChartFavoritesForm(forms.Form):
+    """Validate ordered favorite chart selections."""
+
+    favorite_chart_ids = forms.CharField(required=False, widget=forms.HiddenInput)
+
+    def __init__(self, *args, available_chart_ids: set[str], **kwargs) -> None:
+        """Initialize with the available chart ids."""
+
+        super().__init__(*args, **kwargs)
+        self._available_chart_ids = available_chart_ids
+
+    def clean_favorite_chart_ids(self) -> tuple[str, ...]:
+        """Return a de-duplicated ordered list of chart ids."""
+
+        raw = self.cleaned_data.get("favorite_chart_ids") or "[]"
+        try:
+            parsed = json.loads(raw)
+        except json.JSONDecodeError as exc:
+            raise forms.ValidationError("Invalid favorites payload.") from exc
+        if not isinstance(parsed, list):
+            raise forms.ValidationError("Favorites must be an ordered list.")
+        cleaned: list[str] = []
+        for entry in parsed:
+            key = str(entry)
+            if key not in self._available_chart_ids:
+                raise forms.ValidationError(f"Unknown chart id: {key}.")
+            if key in cleaned:
+                continue
+            cleaned.append(key)
+        return tuple(cleaned)
+
+
+class ChartBuilderSavedConfigForm(forms.Form):
+    """Validate metadata for saved Chart Builder configurations."""
+
+    saved_id = forms.IntegerField(required=False, widget=forms.HiddenInput)
+    name = forms.CharField(required=True, max_length=120, label="Saved chart name")
+
+    def clean_name(self) -> str:
+        """Require a non-empty saved chart name."""
+
+        name = (self.cleaned_data.get("name") or "").strip()
+        if not name:
+            raise forms.ValidationError("Saved chart name is required.")
+        return name
 
 
 class ChartBuilderForm(forms.Form):

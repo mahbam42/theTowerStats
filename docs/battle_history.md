@@ -19,13 +19,14 @@ Battle History helps you review your past runs in a table so you can compare res
 3. Paste your Battle Report text into the import field.
 4. (Optional) Enter a preset label to group runs by your own intent (presets are unlocked via the in-game Lab Research “Card Presets”).
 5. (Optional) Enable **Tournament run** when this run was a tournament round.
-6. Select **Import Battle Report**.
-7. Select values in **Filters** to narrow the table.
-8. Select **Columns** to choose which columns appear, then select **Save columns**.
-9. Select a column header to sort the table by that column.
-10. Select a run row to open the Battle Report Modal. For details, see [Battle Report Modal](battle_report_modal.md).
-11. To change a run’s preset later, select a value in the **Preset** selector inside that row.
-12. To filter by a preset, select a value in **Preset** under **Filters**, or select a preset badge in the table.
+6. Select **Tournament rank** when **Tournament run** is enabled.
+7. Select **Import Battle Report**.
+8. Select values in **Filters** to narrow the table, including **Snapshot** when needed.
+9. Select **Columns** to choose which columns appear, then select **Save columns**.
+10. Select a column header to sort the table by that column.
+11. Select a run row to open the Battle Report Modal. For details, see [Battle Report Modal](battle_report_modal.md).
+12. To change a run’s preset later, select a value in the **Preset** selector inside that row.
+13. To filter by a preset, select a value in **Preset** under **Filters**, or select a preset badge in the table.
 
 ## How to Read the Results
 
@@ -41,6 +42,7 @@ Battle History helps you review your past runs in a table so you can compare res
 - **Gem blocks**, **Cells earned**, and **Reroll shards** show run resources that may be missing in older or incomplete reports.
 - **Preset** is an optional label you can use to group runs for review. The game currently allows 5 presets, and this app lets you save more. Presets do not change any gameplay results.
 - **Top 3 Tournament Logs** shows your three best tournament-marked runs by highest wave.
+- Tournament badges show **Tournament** with the recorded rank when available.
 - Selecting a column header toggles between ascending and descending order for that column.
 
 ## Notes & Limitations
@@ -53,6 +55,9 @@ Battle History helps you review your past runs in a table so you can compare res
 
 > **Note**
 > Tournament rounds can be marked in-game without appearing in the copied Battle Report text. The app cannot detect tournament runs automatically from pasted text, so use **Tournament run** during import to exclude those runs from charts and history by default.
+
+> **Note**
+> Tournament rank is required when **Tournament run** is enabled. Older runs may show “Tournament” without a rank if they were imported before the rank field existed.
 
 > **Note**
 > **Highest Wave by Tier** and **Top 3 Tournament Logs** use all imported runs, not the current filter selections. Tournament runs only appear in the tournament summary when you marked them during import.

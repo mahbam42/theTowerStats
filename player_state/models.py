@@ -171,6 +171,61 @@ class BattleHistoryColumnPreference(models.Model):
         return f"BattleHistoryColumnPreference(player_id={self.player_id})"
 
 
+class ChartDashboardPreference(models.Model):
+    """Persisted Charts dashboard preferences per player."""
+
+    player = models.OneToOneField(
+        Player,
+        on_delete=models.CASCADE,
+        related_name="chart_dashboard_preferences",
+    )
+    favorite_chart_ids = models.JSONField(
+        default=list,
+        help_text="Ordered list of chart ids marked as favorites.",
+    )
+    created_at = models.DateTimeField(auto_now_add=True)
+    updated_at = models.DateTimeField(auto_now=True)
+
+    def __str__(self) -> str:
+        """Return a concise display string for admin contexts."""
+
+        return f"ChartDashboardPreference(player_id={self.player_id})"
+
+
+class ChartBuilderSavedConfig(models.Model):
+    """Saved Chart Builder configuration for reuse and editing."""
+
+    player = models.ForeignKey(
+        Player,
+        on_delete=models.CASCADE,
+        related_name="chart_builder_saved_configs",
+    )
+    name = models.CharField(max_length=120)
+    config = models.JSONField(
+        default=dict,
+        help_text="Versioned ChartConfigDTO payload for the saved chart.",
+    )
+    chart_builder = models.JSONField(
+        default=dict,
+        help_text="Chart Builder inputs used to recreate this saved chart.",
+    )
+    created_at = models.DateTimeField(auto_now_add=True)
+    updated_at = models.DateTimeField(auto_now=True)
+
+    class Meta:
+        constraints = [
+            models.UniqueConstraint(
+                fields=["player", "name"],
+                name="uniq_player_chart_builder_saved_config",
+            )
+        ]
+
+    def __str__(self) -> str:
+        """Return a concise display string for admin contexts."""
+
+        return f"ChartBuilderSavedConfig({self.name})"
+
+
 class PlayerCard(models.Model):
     """Player card unlock state.
 

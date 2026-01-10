@@ -91,3 +91,54 @@ def _raw_text_from_run(run: object) -> str | None:
         return _raw_text_from_run(run_progress)
 
     return None
+
+
+def tier_filter_value(tier: int) -> str:
+    """Return a tier filter value for combined tier/tournament dropdowns.
+
+    Args:
+        tier: Numeric tier value.
+
+    Returns:
+        Encoded tier selection value.
+    """
+
+    return f"tier:{tier}"
+
+
+def tournament_filter_value(rank: str | None) -> str:
+    """Return a tournament filter value for combined dropdowns.
+
+    Args:
+        rank: Optional tournament rank key (e.g. "gold").
+
+    Returns:
+        Encoded tournament selection value.
+    """
+
+    suffix = rank.strip() if rank else "all"
+    return f"tournament:{suffix}"
+
+
+def parse_tier_or_tournament(value: str) -> tuple[int | None, str | None]:
+    """Parse a combined tier/tournament filter value.
+
+    Args:
+        value: Raw selection value from the tier dropdown.
+
+    Returns:
+        Tuple of (tier, tournament_filter) where only one is set.
+    """
+
+    cleaned = value.strip()
+    if not cleaned:
+        return None, None
+    if cleaned.startswith("tier:"):
+        try:
+            return int(cleaned.split(":", 1)[1]), None
+        except ValueError:
+            return None, None
+    if cleaned.startswith("tournament:"):
+        suffix = cleaned.split(":", 1)[1].strip()
+        return None, suffix or "all"
+    return None, None

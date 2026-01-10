@@ -26,10 +26,11 @@ theTowerStats turns your imported Battle Reports into Battle History tables, Cha
     a. (Optional) Enter a preset label to group runs by your own goals.
 
 10. (Optional) Enable **Tournament run** when this run was a tournament round.
-11. Select **Import Battle Report**.
-12. Select **Charts** to view time-series charts based on your imported runs.
-13. Select **Cards**, **Ultimate Weapons**, **Guardians**, or **Bots** to record and review saved progress.
-14. Select **Sign out** to end your session.
+11. Select **Tournament rank** when **Tournament run** is enabled.
+12. Select **Import Battle Report**.
+13. Select **Charts** to view time-series charts based on your imported runs.
+14. Select **Cards**, **Ultimate Weapons**, **Guardians**, or **Bots** to record and review saved progress.
+15. Select **Sign out** to end your session.
 
 ## How to Read the Results
 
@@ -63,6 +64,12 @@ theTowerStats turns your imported Battle Reports into Battle History tables, Cha
 
 > ⚠️ Note
 > The interface uses a dark theme by default. Chart legends, tooltips, and focused form controls stay dark for readability.
+
+> ⚠️ Note
+> If there has been a new deployment since your last sign-in, a message banner appears once to highlight the latest update.
+
+> ⚠️ Note
+> The Getting Started page includes a short summary of the latest changelog entry with a link to the full changelog.
 
 ## Advanced Usage
 

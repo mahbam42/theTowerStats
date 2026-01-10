@@ -39,6 +39,7 @@ from analysis.quantity import UnitType
 from analysis.rates import coins_per_hour as coins_per_hour_rate
 from analysis.series_registry import DEFAULT_REGISTRY
 from core.demo import DEMO_USERNAME, demo_mode_enabled, get_demo_player, set_demo_mode
+from core.changelog import latest_changelog_summary
 from core.parsers.battle_report import battle_date_is_fallback
 from core.advice import (
     AdviceItem,
@@ -67,6 +68,8 @@ from core.forms import (
     CardInventoryUpdateForm,
     CardPresetBulkUpdateForm,
     CardPresetUpdateForm,
+    ChartBuilderSavedConfigForm,
+    ChartFavoritesForm,
     ChartBuilderForm,
     ChartContextForm,
     CardsFilterForm,
@@ -105,12 +108,15 @@ from gamedata.models import (
     BattleReport,
     BattleReportDerivedMetrics,
     BattleReportProgress,
+    TOURNAMENT_RANK_CHOICES,
 )
 from player_state.card_slots import card_slot_max_slots, next_card_slot_unlock_cost_raw
 from player_state.cards import apply_inventory_rollover, derive_card_progress, derive_total_cards_progress
 from player_state.economy import enforce_and_deduct_gems_if_tracked
 from player_state.models import (
     BattleHistoryColumnPreference,
+    ChartBuilderSavedConfig,
+    ChartDashboardPreference,
     ChartSnapshot,
     GoalTarget,
     GoalType,
@@ -125,7 +131,12 @@ from player_state.models import (
     PlayerUltimateWeaponParameter,
     Preset,
 )
-from core.tournament import is_tournament, tournament_bracket
+from core.tournament import (
+    is_tournament,
+    tier_filter_value,
+    tournament_bracket,
+    tournament_filter_value,
+)
 from core.search import build_search_items
 from core.uw_sync import build_uw_sync_payload
 from core.uw_usage import count_observed_uw_runs
@@ -296,6 +307,9 @@ def dashboard(request: HttpRequest) -> HttpResponse:
     player = _request_player(request)
     walkthrough_first_login = bool(request.session.pop(WALKTHROUGH_FIRST_LOGIN_SESSION_KEY, False))
     walkthrough_enabled = demo_mode_enabled(request) or walkthrough_first_login
+    selectable_configs = list_selectable_chart_configs()
+    available_chart_ids = {cfg.id for cfg in selectable_configs}
+    favorite_chart_ids = _favorite_chart_ids(player=player, available_ids=available_chart_ids)
     if request.method == "POST" and demo_mode_enabled(request):
         return _reject_demo_write(request)
 
@@ -380,7 +394,14 @@ def dashboard(request: HttpRequest) -> HttpResponse:
                     merged["window_b_end"] = (config_dto.scopes[1].end_date.isoformat() if config_dto.scopes[1].end_date else "")
                 merged["start_date"] = config_dto.context.start_date.isoformat() if config_dto.context.start_date else ""
                 merged["end_date"] = config_dto.context.end_date.isoformat() if config_dto.context.end_date else ""
-                merged["tier"] = str(config_dto.context.tier or "")
+                if config_dto.context.tournament_filter:
+                    merged["tier"] = tournament_filter_value(config_dto.context.tournament_filter)
+                else:
+                    merged["tier"] = (
+                        tier_filter_value(config_dto.context.tier)
+                        if config_dto.context.tier
+                        else ""
+                    )
                 merged["preset"] = str(config_dto.context.preset_id or "")
                 merged["include_tournaments"] = "on" if config_dto.context.include_tournaments else ""
             else:
@@ -400,6 +421,77 @@ def dashboard(request: HttpRequest) -> HttpResponse:
             effective_get = merged
     if request.method == "POST":
         action = (request.POST.get("action") or "").strip()
+        if action == "update_chart_favorites":
+            favorites_form = ChartFavoritesForm(
+                request.POST,
+                available_chart_ids=available_chart_ids,
+            )
+            if favorites_form.is_valid():
+                ChartDashboardPreference.objects.update_or_create(
+                    player=player,
+                    defaults={"favorite_chart_ids": list(favorites_form.cleaned_data["favorite_chart_ids"])},
+                )
+                messages.success(request, "Saved favorite charts.")
+            else:
+                messages.error(request, "Could not save favorite charts.")
+            return redirect("core:dashboard")
+        if action == "save_chart_builder_creation":
+            metadata_form = ChartBuilderSavedConfigForm(request.POST)
+            chart_form = ChartContextForm(effective_get, player=player, today=date.today())  # type: ignore[arg-type]
+            chart_form.is_valid()
+            context_runs = _context_filtered_runs(chart_form, player=player)
+            builder_form = ChartBuilderForm(request.POST, runs_queryset=context_runs)
+            if not metadata_form.is_valid() or not builder_form.is_valid():
+                messages.error(request, "Could not save the chart builder entry.")
+                return redirect("core:dashboard")
+            config_dto = build_chart_config_dto(context_form=chart_form, builder_form=builder_form)
+            validation = validate_chart_config_dto(config_dto, registry=DEFAULT_REGISTRY)
+            if not validation.is_valid:
+                messages.error(request, "Could not save the chart builder entry: validation failed.")
+                return redirect("core:dashboard")
+            payload = _chart_builder_payload(builder_form)
+            saved_id = metadata_form.cleaned_data.get("saved_id")
+            name = metadata_form.cleaned_data["name"]
+            if saved_id:
+                updated = ChartBuilderSavedConfig.objects.filter(player=player, id=saved_id).update(
+                    name=name,
+                    config=encode_chart_config_dto(config_dto),
+                    chart_builder=payload,
+                )
+                if updated:
+                    messages.success(request, "Updated saved chart.")
+                else:
+                    messages.error(request, "Saved chart not found.")
+                return redirect("core:dashboard")
+            try:
+                ChartBuilderSavedConfig.objects.create(
+                    player=player,
+                    name=name,
+                    config=encode_chart_config_dto(config_dto),
+                    chart_builder=payload,
+                )
+            except Exception as exc:
+                if settings.DEBUG:
+                    raise
+                messages.error(request, f"Could not save the chart builder entry: {exc}")
+                return redirect("core:dashboard")
+            messages.success(request, "Saved chart builder entry.")
+            return redirect("core:dashboard")
+        if action == "delete_chart_builder_creation":
+            saved_id = request.POST.get("saved_id")
+            try:
+                saved_pk = int(saved_id or "")
+            except ValueError:
+                saved_pk = None
+            if not saved_pk:
+                messages.error(request, "Saved chart not found.")
+                return redirect("core:dashboard")
+            deleted, _ = ChartBuilderSavedConfig.objects.filter(player=player, id=saved_pk).delete()
+            if deleted:
+                messages.success(request, "Deleted saved chart.")
+            else:
+                messages.error(request, "Saved chart not found.")
+            return redirect("core:dashboard")
         if action == "create_chart_snapshot":
             name = (request.POST.get("snapshot_name") or "").strip()
             if not name:
@@ -442,12 +534,14 @@ def dashboard(request: HttpRequest) -> HttpResponse:
             raw_text = import_form.cleaned_data["raw_text"]
             preset_name = import_form.cleaned_data.get("preset_name") or None
             is_tournament_override = bool(import_form.cleaned_data.get("is_tournament") or False)
+            tournament_rank = (import_form.cleaned_data.get("tournament_rank") or None)
             try:
                 _, created = ingest_battle_report(
                     raw_text,
                     player=player,
                     preset_name=preset_name,
                     is_tournament=is_tournament_override,
+                    tournament_rank=tournament_rank,
                 )
             except Exception:
                 if settings.DEBUG:
@@ -482,7 +576,10 @@ def dashboard(request: HttpRequest) -> HttpResponse:
             defaulted_get["end_date"] = window.end.isoformat()
 
     if not defaulted_get.get("charts"):
-        defaulted_get.setlist("charts", [str(cid) for cid in default_selected_chart_ids()])
+        if favorite_chart_ids:
+            defaulted_get.setlist("charts", [str(cid) for cid in favorite_chart_ids])
+        else:
+            defaulted_get.setlist("charts", [str(cid) for cid in default_selected_chart_ids()])
 
     if not defaulted_get.get("granularity"):
         defaulted_get["granularity"] = "per_run"
@@ -502,7 +599,7 @@ def dashboard(request: HttpRequest) -> HttpResponse:
         base_analysis=base_analysis.runs,
         context_runs=context_runs,
     )
-    tier_options, preset_options, compare_run_map = _comparison_scope_options(context_runs)
+    tier_options, preset_options, tournament_options, compare_run_map = _comparison_scope_options(context_runs)
     compare_run_map_json = json.dumps(compare_run_map)
     comparison_scope_warning = None
     scope_average = bool(comparison_form.cleaned_data.get("scope_average") or False)
@@ -784,7 +881,23 @@ def dashboard(request: HttpRequest) -> HttpResponse:
         combined = [json.loads(builder_json)] + json.loads(chart_panels_json)
         chart_panels_json = json.dumps(combined)
 
-    chart_context = _chart_context_summary(chart_form, selectable_configs=list_selectable_chart_configs())
+    config_by_id = {cfg.id: cfg for cfg in selectable_configs}
+    favorite_charts = [config_by_id[cid] for cid in favorite_chart_ids if cid in config_by_id]
+    available_favorite_charts = [
+        cfg for cfg in selectable_configs if cfg.id not in favorite_chart_ids
+    ]
+    favorite_chart_ids_json = json.dumps(list(favorite_chart_ids))
+    saved_chart_builder_configs = (
+        ChartBuilderSavedConfig.objects.filter(player=player).order_by("name")
+    )
+    saved_chart_builder_configs_json = json.dumps(
+        [
+            {"id": cfg.id, "name": cfg.name, "chart_builder": cfg.chart_builder}
+            for cfg in saved_chart_builder_configs
+        ]
+    )
+
+    chart_context = _chart_context_summary(chart_form, selectable_configs=selectable_configs)
     has_filters = _form_has_filters(chart_form)
     chartable_points = sum(
         1
@@ -821,6 +934,7 @@ def dashboard(request: HttpRequest) -> HttpResponse:
         "comparison_scope_warning": comparison_scope_warning,
         "compare_scope_tier_options": tier_options,
         "compare_scope_preset_options": preset_options,
+        "compare_scope_tournament_options": tournament_options,
         "compare_scope_run_map_json": compare_run_map_json,
         "advice_items": advice_items,
         "snapshot_id": snapshot_id,
@@ -835,6 +949,11 @@ def dashboard(request: HttpRequest) -> HttpResponse:
         "chart_builder_form": chart_builder_form,
         "chart_builder_errors": builder_errors,
         "chart_snapshots": ChartSnapshot.objects.filter(player=player, target="charts").order_by("-created_at"),
+        "favorite_charts": favorite_charts,
+        "available_favorite_charts": available_favorite_charts,
+        "favorite_chart_ids_json": favorite_chart_ids_json,
+        "chart_builder_saved_configs": saved_chart_builder_configs,
+        "chart_builder_saved_configs_json": saved_chart_builder_configs_json,
         "chart_builder_metric_meta_json": json.dumps(
             {
                 spec.key: {
@@ -908,12 +1027,15 @@ def getting_started(request: HttpRequest) -> HttpResponse:
         player = _request_player(request)
         has_imported_runs = BattleReport.objects.filter(player=player).exists()
     demo_chart_payload = _landing_page_demo_chart_payload()
+    changelog_summary = latest_changelog_summary(max_items=3)
     return render(
         request,
         "core/getting_started.html",
         {
             "has_imported_runs": has_imported_runs,
             "demo_chart_json": json.dumps(demo_chart_payload) if demo_chart_payload else None,
+            "changelog_summary": changelog_summary,
+            "changelog_url": getattr(settings, "CHANGELOG_GITHUB_URL", ""),
         },
     )
 
@@ -1226,7 +1348,8 @@ def _runs_for_chart_context_dto(*, player: Player, context: ChartContextDTO) -> 
             "derived_metrics",
         )
     ).order_by("effective_battle_date")
-    if not context.include_tournaments:
+    force_tournaments = bool(context.tournament_filter)
+    if not context.include_tournaments and not force_tournaments:
         runs = runs.exclude(Q(run_progress__tier__isnull=True) | Q(run_progress__is_tournament=True))
     if context.start_date:
         runs = runs.filter(effective_battle_date__date__gte=context.start_date)
@@ -1236,6 +1359,7 @@ def _runs_for_chart_context_dto(*, player: Player, context: ChartContextDTO) -> 
         runs = runs.filter(run_progress__tier=context.tier)
     if context.preset_id:
         runs = runs.filter(run_progress__preset_id=context.preset_id)
+    runs = _apply_tournament_filter(runs, tournament_filter=context.tournament_filter)
     return runs
 
 
@@ -1388,7 +1512,7 @@ def _ordered_battle_report_ids(runs: QuerySet[BattleReport] | list[BattleReport]
     return [run.id for run in runs]
 
 
-def _battle_report_modal_metrics(progress: BattleReportProgress | None) -> list[dict[str, str | None]]:
+def _battle_report_modal_metrics(progress: BattleReportProgress | None) -> list[dict[str, object]]:
     """Build metric rows for the Battle Report modal with optional chart links."""
 
     if progress is None:
@@ -1409,60 +1533,130 @@ def _battle_report_modal_metrics(progress: BattleReportProgress | None) -> list[
         return f"{value:,}"
 
     coins_per_hour_value: str | None = None
+    coins_per_hour_numeric: float | None = None
     if progress.coins_earned is not None and progress.real_time_seconds:
-        coins_per_hour_value = f"{coins_per_hour_rate(coins=progress.coins_earned, real_time_seconds=progress.real_time_seconds):,.2f}"
+        coins_per_hour_numeric = coins_per_hour_rate(
+            coins=progress.coins_earned,
+            real_time_seconds=progress.real_time_seconds,
+        )
+        coins_per_hour_value = f"{coins_per_hour_numeric:,.2f}"
 
     def _display(value: str | None) -> str:
         if value is None or value == "":
             return "—"
         return value
 
-    metrics: list[dict[str, str | None]] = [
+    metrics: list[dict[str, object]] = [
         {
             "key": "coins_earned",
             "label": "Coins earned",
             "value": _display(progress.coins_earned_raw),
+            "numeric_value": progress.coins_earned,
+            "unit": "coins",
             "chart_id": chart_links.get("coins_earned"),
         },
         {
             "key": "coins_per_hour",
             "label": "Coins per real hour",
             "value": _display(coins_per_hour_value),
+            "numeric_value": coins_per_hour_numeric,
+            "unit": "coins/hour",
             "chart_id": chart_links.get("coins_per_hour"),
         },
         {
             "key": "cash_earned",
             "label": "Cash earned",
             "value": _display(progress.cash_earned_raw),
+            "numeric_value": progress.cash_earned,
+            "unit": "cash",
             "chart_id": chart_links.get("cash_earned"),
         },
         {
             "key": "interest_earned",
             "label": "Interest earned",
             "value": _display(progress.interest_earned_raw),
+            "numeric_value": progress.interest_earned,
+            "unit": "cash",
             "chart_id": chart_links.get("interest_earned"),
         },
         {
             "key": "gem_blocks_tapped",
             "label": "Gem blocks",
             "value": _display(_format_int(progress.gem_blocks_tapped)),
+            "numeric_value": progress.gem_blocks_tapped,
+            "unit": "",
             "chart_id": None,
         },
         {
             "key": "cells_earned",
             "label": "Cells earned",
             "value": _display(_format_int(progress.cells_earned)),
+            "numeric_value": progress.cells_earned,
+            "unit": "cells",
             "chart_id": chart_links.get("cells_earned"),
         },
         {
             "key": "reroll_shards_earned",
             "label": "Reroll shards",
             "value": _display(_format_int(progress.reroll_shards_earned)),
+            "numeric_value": progress.reroll_shards_earned,
+            "unit": "shards",
             "chart_id": chart_links.get("reroll_shards_earned"),
         },
     ]
 
+    if progress.is_tournament or progress.tournament_rank:
+        rank_value = progress.tournament_rank.title() if progress.tournament_rank else None
+        metrics.append(
+            {
+                "key": "tournament_rank",
+                "label": "Tournament rank",
+                "value": _display(rank_value),
+                "numeric_value": None,
+                "unit": "",
+                "chart_id": None,
+            }
+        )
+
     return metrics
+
+
+def _favorite_chart_ids(*, player: Player, available_ids: set[str]) -> list[str]:
+    """Return ordered favorite chart ids scoped to the player."""
+
+    preferences = ChartDashboardPreference.objects.filter(player=player).first()
+    if preferences is None:
+        return []
+    return [cid for cid in preferences.favorite_chart_ids if str(cid) in available_ids]
+
+
+def _chart_builder_payload(builder_form: ChartBuilderForm) -> dict[str, object]:
+    """Serialize Chart Builder selections for saved configs."""
+
+    if not builder_form.is_valid():
+        raise ValueError("ChartBuilderForm must be valid before serialization.")
+
+    run_a = builder_form.cleaned_data.get("run_a")
+    run_b = builder_form.cleaned_data.get("run_b")
+    window_a_start = builder_form.cleaned_data.get("window_a_start")
+    window_a_end = builder_form.cleaned_data.get("window_a_end")
+    window_b_start = builder_form.cleaned_data.get("window_b_start")
+    window_b_end = builder_form.cleaned_data.get("window_b_end")
+
+    return {
+        "metric_keys": list(builder_form.cleaned_data.get("metric_keys") or []),
+        "chart_type": builder_form.cleaned_data.get("chart_type"),
+        "x_axis": builder_form.cleaned_data.get("x_axis"),
+        "group_by": builder_form.cleaned_data.get("group_by"),
+        "comparison": builder_form.cleaned_data.get("comparison"),
+        "smoothing": builder_form.cleaned_data.get("smoothing"),
+        "run_a": getattr(run_a, "id", None) or "",
+        "run_b": getattr(run_b, "id", None) or "",
+        "window_a_start": window_a_start.isoformat() if window_a_start else "",
+        "window_a_end": window_a_end.isoformat() if window_a_end else "",
+        "window_b_start": window_b_start.isoformat() if window_b_start else "",
+        "window_b_end": window_b_end.isoformat() if window_b_end else "",
+    }
 
 
 @login_required
@@ -1544,12 +1738,14 @@ def battle_history(request: HttpRequest) -> HttpResponse:
             raw_text = import_form.cleaned_data["raw_text"]
             preset_name = import_form.cleaned_data.get("preset_name") or None
             is_tournament_override = bool(import_form.cleaned_data.get("is_tournament") or False)
+            tournament_rank = (import_form.cleaned_data.get("tournament_rank") or None)
             try:
                 _, created = ingest_battle_report(
                     raw_text,
                     player=player,
                     preset_name=preset_name,
                     is_tournament=is_tournament_override,
+                    tournament_rank=tournament_rank,
                 )
             except Exception:
                 if settings.DEBUG:
@@ -1593,8 +1789,13 @@ def battle_history(request: HttpRequest) -> HttpResponse:
     runs_qs = BattleReport.objects.filter(player=player).select_related(
         "run_progress", "run_progress__preset", "derived_metrics"
     )
+    snapshot = filter_form.cleaned_data.get("snapshot") if filter_form.is_valid() else None
+    snapshot_context = _snapshot_context_from_filter(snapshot)
+    force_tournaments = bool(
+        snapshot_context and (snapshot_context.tournament_filter or snapshot_context.include_tournaments)
+    )
     include_tournaments = bool(filter_form.cleaned_data.get("include_tournaments") or False)
-    if not include_tournaments:
+    if not include_tournaments and not force_tournaments:
         runs_qs = runs_qs.exclude(Q(run_progress__tier__isnull=True) | Q(run_progress__is_tournament=True))
 
     tier = filter_form.cleaned_data.get("tier") if filter_form.is_valid() else None
@@ -1612,6 +1813,8 @@ def battle_history(request: HttpRequest) -> HttpResponse:
     preset = filter_form.cleaned_data.get("preset") if filter_form.is_valid() else None
     if preset:
         runs_qs = runs_qs.filter(run_progress__preset=preset)
+    runs_qs = _with_effective_battle_date(runs_qs)
+    runs_qs = _apply_snapshot_context_filters(runs_qs, snapshot_context=snapshot_context)
 
     killed_by_rows = (
         runs_qs.values("run_progress__killed_by")
@@ -1656,6 +1859,7 @@ def battle_history(request: HttpRequest) -> HttpResponse:
         metric = run_metrics.get(run.id)
         manual_tournament = bool(getattr(getattr(run, "run_progress", None), "is_tournament", False))
         progress = getattr(run, "run_progress", None)
+        tournament_rank = getattr(progress, "tournament_rank", None) if progress else None
         battle_date_fallback = False
         battle_date_display = None
         if progress is not None:
@@ -1673,6 +1877,7 @@ def battle_history(request: HttpRequest) -> HttpResponse:
                 ),
                 "is_tournament": manual_tournament or is_tournament(run),
                 "tournament_bracket": tournament_bracket(run),
+                "tournament_rank": tournament_rank,
             }
         )
 
@@ -1763,6 +1968,7 @@ def battle_report_modal(request: HttpRequest, report_id: int) -> JsonResponse:
             "parsed_at": report.parsed_at.isoformat() if report.parsed_at else None,
             "tier": progress.tier if progress else None,
             "is_tournament": bool(progress.is_tournament) if progress else False,
+            "tournament_rank": progress.tournament_rank if progress else None,
             "metrics": _battle_report_modal_metrics(progress),
         },
     }
@@ -2848,7 +3054,8 @@ def ultimate_weapon_progress(request: HttpRequest) -> HttpResponse:
                         "derived_metrics",
                     )
                 ).order_by("effective_battle_date")
-                if not dto.context.include_tournaments:
+                force_tournaments = bool(dto.context.tournament_filter)
+                if not dto.context.include_tournaments and not force_tournaments:
                     runs_qs = runs_qs.exclude(Q(run_progress__tier__isnull=True) | Q(run_progress__is_tournament=True))
                 if dto.context.start_date:
                     runs_qs = runs_qs.filter(effective_battle_date__date__gte=dto.context.start_date)
@@ -2858,6 +3065,10 @@ def ultimate_weapon_progress(request: HttpRequest) -> HttpResponse:
                     runs_qs = runs_qs.filter(run_progress__tier=dto.context.tier)
                 if dto.context.preset_id:
                     runs_qs = runs_qs.filter(run_progress__preset_id=dto.context.preset_id)
+                runs_qs = _apply_tournament_filter(
+                    runs_qs,
+                    tournament_filter=dto.context.tournament_filter,
+                )
 
                 analyzed = analyze_chart_config_dto(
                     runs_qs,
@@ -4039,8 +4250,14 @@ def _filtered_runs(filter_form: ChartContextForm, *, player: Player) -> QuerySet
         )
     ).order_by("effective_battle_date", "id")
     valid = filter_form.is_valid()
+    snapshot = filter_form.cleaned_data.get("context_snapshot") if valid else None
+    snapshot_context = _snapshot_context_from_filter(snapshot)
+    tournament_filter = filter_form.cleaned_data.get("tournament_filter") if valid else None
+    force_tournaments = bool(tournament_filter) or bool(
+        snapshot_context and (snapshot_context.tournament_filter or snapshot_context.include_tournaments)
+    )
     include_tournaments = bool(valid and (filter_form.cleaned_data.get("include_tournaments") or False))
-    if not include_tournaments:
+    if not include_tournaments and not force_tournaments:
         runs = runs.exclude(Q(run_progress__tier__isnull=True) | Q(run_progress__is_tournament=True))
     if not valid:
         return runs
@@ -4059,6 +4276,8 @@ def _filtered_runs(filter_form: ChartContextForm, *, player: Player) -> QuerySet
         runs = runs.filter(run_progress__tier=tier)
     if preset:
         runs = runs.filter(run_progress__preset=preset)
+    runs = _apply_tournament_filter(runs, tournament_filter=tournament_filter)
+    runs = _apply_snapshot_context_filters(runs, snapshot_context=snapshot_context)
     if window_kind and window_n:
         runs = _apply_rolling_window(runs, kind=str(window_kind), n=int(window_n), end_date=end_date)
     return runs
@@ -4109,6 +4328,111 @@ def _apply_rolling_window(
     return runs
 
 
+def _apply_tournament_filter(
+    runs: QuerySet[BattleReport], *, tournament_filter: str | None
+) -> QuerySet[BattleReport]:
+    """Apply a tournament filter to a run queryset.
+
+    Args:
+        runs: BattleReport queryset already scoped by player and date filters.
+        tournament_filter: "all" for all tournaments or a rank key.
+
+    Returns:
+        QuerySet filtered to tournament runs (optionally by rank).
+    """
+
+    if not tournament_filter:
+        return runs
+    filtered = runs.filter(run_progress__is_tournament=True)
+    if tournament_filter != "all":
+        filtered = filtered.filter(run_progress__tournament_rank=tournament_filter)
+    return filtered
+
+
+def _snapshot_context_from_filter(snapshot: ChartSnapshot | None) -> ChartContextDTO | None:
+    """Return a ChartContextDTO for a snapshot-based filter selection."""
+
+    if snapshot is None:
+        return None
+    if snapshot.config:
+        try:
+            return decode_chart_config_dto(dict(snapshot.config)).context
+        except ValueError:
+            return None
+    raw_context = dict(snapshot.chart_context or {})
+    if not raw_context:
+        return None
+    return ChartContextDTO(
+        start_date=_parse_context_date(raw_context.get("start_date")),
+        end_date=_parse_context_date(raw_context.get("end_date")),
+        tier=_parse_context_int(raw_context.get("tier")),
+        tournament_filter=_parse_context_str(raw_context.get("tournament_filter")),
+        preset_id=_parse_context_int(raw_context.get("preset_id") or raw_context.get("preset")),
+        include_tournaments=_parse_context_bool(raw_context.get("include_tournaments")),
+    )
+
+
+def _apply_snapshot_context_filters(
+    runs: QuerySet[BattleReport], *, snapshot_context: ChartContextDTO | None
+) -> QuerySet[BattleReport]:
+    """Apply snapshot context filters to an existing queryset."""
+
+    if snapshot_context is None:
+        return runs
+    if snapshot_context.start_date:
+        runs = runs.filter(effective_battle_date__date__gte=snapshot_context.start_date)
+    if snapshot_context.end_date:
+        runs = runs.filter(effective_battle_date__date__lte=snapshot_context.end_date)
+    if snapshot_context.tier:
+        runs = runs.filter(run_progress__tier=snapshot_context.tier)
+    if snapshot_context.preset_id:
+        runs = runs.filter(run_progress__preset_id=snapshot_context.preset_id)
+    return _apply_tournament_filter(runs, tournament_filter=snapshot_context.tournament_filter)
+
+
+def _parse_context_date(value: object) -> date | None:
+    """Parse optional date values from snapshot context payloads."""
+
+    if value is None or value == "":
+        return None
+    if isinstance(value, date):
+        return value
+    try:
+        return date.fromisoformat(str(value))
+    except ValueError:
+        return None
+
+
+def _parse_context_int(value: object) -> int | None:
+    """Parse optional int values from snapshot context payloads."""
+
+    if value is None or value == "":
+        return None
+    try:
+        return int(str(value))
+    except ValueError:
+        return None
+
+
+def _parse_context_bool(value: object) -> bool:
+    """Parse optional bool values from snapshot context payloads."""
+
+    if isinstance(value, bool):
+        return value
+    if value is None:
+        return False
+    return str(value).strip().casefold() in {"1", "true", "yes", "on"}
+
+
+def _parse_context_str(value: object) -> str | None:
+    """Parse optional string values from snapshot context payloads."""
+
+    if value is None:
+        return None
+    cleaned = str(value).strip()
+    return cleaned or None
+
+
 def _context_filtered_runs(filter_form: ChartContextForm, *, player: Player) -> QuerySet[BattleReport]:
     """Return a queryset filtered only by tier/preset context.
 
@@ -4123,8 +4447,14 @@ def _context_filtered_runs(filter_form: ChartContextForm, *, player: Player) -> 
         )
     ).order_by("effective_battle_date", "id")
     valid = filter_form.is_valid()
+    snapshot = filter_form.cleaned_data.get("context_snapshot") if valid else None
+    snapshot_context = _snapshot_context_from_filter(snapshot)
+    tournament_filter = filter_form.cleaned_data.get("tournament_filter") if valid else None
+    force_tournaments = bool(tournament_filter) or bool(
+        snapshot_context and (snapshot_context.tournament_filter or snapshot_context.include_tournaments)
+    )
     include_tournaments = bool(valid and (filter_form.cleaned_data.get("include_tournaments") or False))
-    if not include_tournaments:
+    if not include_tournaments and not force_tournaments:
         runs = runs.exclude(Q(run_progress__tier__isnull=True) | Q(run_progress__is_tournament=True))
     if not valid:
         return runs
@@ -4135,24 +4465,33 @@ def _context_filtered_runs(filter_form: ChartContextForm, *, player: Player) -> 
         runs = runs.filter(run_progress__tier=tier)
     if preset:
         runs = runs.filter(run_progress__preset=preset)
+    runs = _apply_tournament_filter(runs, tournament_filter=tournament_filter)
+    runs = _apply_snapshot_context_filters(runs, snapshot_context=snapshot_context)
     return runs
 
 
 def _comparison_scope_options(
     runs: Iterable[BattleReport],
-) -> tuple[list[dict[str, str]], list[dict[str, str]], dict[str, list[int]]]:
-    """Build tier and preset options for the comparison dropdowns.
+) -> tuple[
+    list[dict[str, str]],
+    list[dict[str, str]],
+    list[dict[str, str]],
+    dict[str, list[int]],
+]:
+    """Build tier, tournament, and preset options for the comparison dropdowns.
 
     Args:
         runs: Iterable of BattleReport records already scoped to the active context.
 
     Returns:
-        Tuple of (tier_options, preset_options, run_id_map) where the options are
-        simple dicts with `value`/`label` keys and the map stores run ids keyed by
-        option value.
+        Tuple of (tier_options, preset_options, tournament_options, run_id_map)
+        where the options are simple dicts with `value`/`label` keys and the map
+        stores run ids keyed by option value.
     """
 
     tiers: dict[int, list[int]] = {}
+    tournaments: list[int] = []
+    tournament_ranks: dict[str, list[int]] = {}
     presets: dict[int, list[int]] = {}
     preset_labels: dict[int, str] = {}
 
@@ -4163,6 +4502,11 @@ def _comparison_scope_options(
         tier = getattr(progress, "tier", None)
         if tier is not None:
             tiers.setdefault(int(tier), []).append(run.id)
+        if bool(getattr(progress, "is_tournament", False)):
+            tournaments.append(run.id)
+            rank = getattr(progress, "tournament_rank", None)
+            if rank:
+                tournament_ranks.setdefault(str(rank), []).append(run.id)
         preset_id = getattr(progress, "preset_id", None)
         if preset_id:
             presets.setdefault(int(preset_id), []).append(run.id)
@@ -4171,7 +4515,23 @@ def _comparison_scope_options(
             if name:
                 preset_labels[int(preset_id)] = name
 
-    tier_options = [{"value": f"tier:{tier}", "label": f"Tier {tier}"} for tier in sorted(tiers)]
+    tier_options = [
+        {"value": tier_filter_value(tier), "label": f"Tier {tier}"}
+        for tier in sorted(tiers)
+    ]
+    tournament_options: list[dict[str, str]] = []
+    if tournaments:
+        tournament_options.append(
+            {"value": tournament_filter_value(None), "label": "Tournament (all)"}
+        )
+        for key, label in TOURNAMENT_RANK_CHOICES:
+            if key in tournament_ranks:
+                tournament_options.append(
+                    {
+                        "value": tournament_filter_value(key),
+                        "label": f"Tournament: {label}",
+                    }
+                )
     preset_options = [
         {"value": f"preset:{preset_id}", "label": preset_labels.get(preset_id, f"Preset {preset_id}")}
         for preset_id in sorted(presets, key=lambda pid: preset_labels.get(pid, str(pid)).casefold())
@@ -4179,11 +4539,15 @@ def _comparison_scope_options(
 
     run_id_map: dict[str, list[int]] = {}
     for tier, run_ids in tiers.items():
-        run_id_map[f"tier:{tier}"] = run_ids
+        run_id_map[tier_filter_value(tier)] = run_ids
     for preset_id, run_ids in presets.items():
         run_id_map[f"preset:{preset_id}"] = run_ids
+    if tournaments:
+        run_id_map[tournament_filter_value(None)] = tournaments
+        for rank, run_ids in tournament_ranks.items():
+            run_id_map[tournament_filter_value(rank)] = run_ids
 
-    return tier_options, preset_options, run_id_map
+    return tier_options, preset_options, tournament_options, run_id_map
 
 
 def _with_effective_battle_date(runs: QuerySet[BattleReport]) -> QuerySet[BattleReport]:
@@ -4566,7 +4930,13 @@ def _form_has_filters(form: ChartContextForm) -> bool:
         return False
     if form.cleaned_data.get("start_date") or form.cleaned_data.get("end_date"):
         return True
-    if form.cleaned_data.get("tier") or form.cleaned_data.get("preset"):
+    if (
+        form.cleaned_data.get("tier")
+        or form.cleaned_data.get("tournament_filter")
+        or form.cleaned_data.get("preset")
+        or form.cleaned_data.get("context_snapshot")
+        or form.cleaned_data.get("past_runs")
+    ):
         return True
     charts = tuple(form.cleaned_data.get("charts") or ())
     if charts and set(charts) != set(default_selected_chart_ids()):
@@ -4603,8 +4973,9 @@ def _chart_context_summary(
     start_date = form.cleaned_data.get("start_date")
     end_date = form.cleaned_data.get("end_date")
     granularity = form.cleaned_data.get("granularity")
-    tier = form.cleaned_data.get("tier")
+    tier = form.data.get("tier") if hasattr(form, "data") else None
     preset = form.cleaned_data.get("preset")
+    snapshot = form.cleaned_data.get("context_snapshot")
     moving_average_window = form.cleaned_data.get("moving_average_window")
     ev_trials = form.cleaned_data.get("ev_trials")
     ev_seed = form.cleaned_data.get("ev_seed")
@@ -4616,6 +4987,7 @@ def _chart_context_summary(
         "granularity": str(granularity) if granularity else None,
         "tier": str(tier) if tier else None,
         "preset": preset.name if preset else None,
+        "snapshot": snapshot.name if snapshot else None,
         "moving_average_window": str(moving_average_window) if moving_average_window else None,
         "ev_trials": str(ev_trials) if ev_trials else None,
         "ev_seed": str(ev_seed) if ev_seed else None,

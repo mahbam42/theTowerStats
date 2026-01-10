@@ -45,6 +45,8 @@ def test_battle_report_modal_payload_includes_metrics_and_raw_text(auth_client, 
     metrics = {metric["key"]: metric for metric in payload["report"]["metrics"]}
     assert metrics["coins_earned"]["chart_id"] == "coins_earned"
     assert metrics["coins_per_hour"]["value"] == "7,200.00"
+    assert metrics["coins_earned"]["numeric_value"] == 1200
+    assert metrics["coins_earned"]["unit"] == "coins"
     assert metrics["gem_blocks_tapped"]["chart_id"] is None
     assert metrics["interest_earned"]["value"] == "—"
 

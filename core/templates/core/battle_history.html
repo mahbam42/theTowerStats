@@ -59,6 +59,12 @@
                     <span class="form-error is-visible">{{ import_form.is_tournament.errors|striptags }}</span>
                   {% endif %}
                 </label>
+                <label>Tournament rank
+                  {{ import_form.tournament_rank }}
+                  {% if import_form.tournament_rank.errors %}
+                    <span class="form-error is-visible">{{ import_form.tournament_rank.errors|striptags }}</span>
+                  {% endif %}
+                </label>
                 <button class="button" type="submit">Import Battle Report</button>
               </form>
             </div>
@@ -88,6 +94,9 @@
           </label>
           <label>Preset
             {{ filter_form.preset }}
+          </label>
+          <label>Snapshot
+            {{ filter_form.snapshot }}
           </label>
           <label>Sort
             {{ filter_form.sort }}
@@ -227,13 +236,17 @@
                           {% endif %}
                         {% elif column.key == "tier" %}
                           {% if row.is_tournament %}
-                            <span class="badge warning tournament-badge">Tournament{% if row.tournament_bracket %}: {{ row.tournament_bracket }}{% endif %}</span>
+                            <span class="badge warning tournament-badge">
+                              Tournament{% if row.tournament_rank %}: {{ row.tournament_rank|title }}{% elif row.tournament_bracket %}: {{ row.tournament_bracket }}{% endif %}
+                            </span>
                           {% else %}
                             {{ row.run.run_progress.tier|default:"—" }}
                           {% endif %}
                         {% elif column.key == "tournament" %}
                           {% if row.is_tournament %}
-                            <span class="badge warning">Yes</span>
+                            <span class="badge warning">
+                              Yes{% if row.tournament_rank %} ({{ row.tournament_rank|title }}){% endif %}
+                            </span>
                           {% else %}
                             <span class="muted">No</span>
                           {% endif %}

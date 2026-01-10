@@ -22,6 +22,7 @@ def encode_chart_config_dto(config: ChartConfigDTO) -> dict[str, Any]:
         "start_date": _encode_date(config.context.start_date),
         "end_date": _encode_date(config.context.end_date),
         "tier": config.context.tier,
+        "tournament_filter": config.context.tournament_filter,
         "preset_id": config.context.preset_id,
         "include_tournaments": bool(config.context.include_tournaments),
     }
@@ -67,6 +68,7 @@ def decode_chart_config_dto(payload: dict[str, Any]) -> ChartConfigDTO:
         start_date=_parse_date(context_raw.get("start_date")),
         end_date=_parse_date(context_raw.get("end_date")),
         tier=_parse_int(context_raw.get("tier")),
+        tournament_filter=_parse_str(context_raw.get("tournament_filter")),
         preset_id=_parse_int(context_raw.get("preset_id")),
         include_tournaments=_parse_bool(context_raw.get("include_tournaments")),
     )
@@ -143,3 +145,12 @@ def _parse_bool(value: object) -> bool:
         return False
     normalized = str(value).strip().casefold()
     return normalized in {"1", "true", "yes", "on"}
+
+
+def _parse_str(value: object) -> str | None:
+    """Best-effort string parsing for snapshot payloads."""
+
+    if value is None:
+        return None
+    cleaned = str(value).strip()
+    return cleaned or None

@@ -18,14 +18,16 @@ Compare lets you review differences between two scopes of runs on the Charts das
 4. (Optional) Enable **Average each scope** to compare per-run averages instead of totals.
 5. Select multiple runs in **Scope A runs** and **Scope B runs**.
 6. Use **Last 3**, **Last 10**, or **Clear** to adjust the selection quickly.
-7. Use the **Tier** dropdown to select all runs that match a tier or preset.
-8. Confirm each run entry by its tier, wave, date, and time.
-9. Select **Compare** to view the delta summary and any available Advice.
+7. Use the **Tier or Tournament** dropdown to select runs by tier or tournament rank.
+8. Enable **Include tournaments** when you want tournament runs to appear in the lists.
+9. Confirm each run entry by its tier, wave, date, and time.
+10. Select **Compare** to view the delta summary and any available Advice.
 
 ## How to Read the Results
 
 - The summary table compares the two scopes using the selected focus category.
 - Each metric row shows baseline and comparison values along with the delta.
+- Values use the same abbreviated unit formatting as the Charts dashboard.
 - When **Average each scope** is enabled, values are per-run averages; otherwise they are totals for the scope.
 - When a scope has too few runs, the panel reports insufficient data.
 - A warning appears when the two scopes are very different in size.

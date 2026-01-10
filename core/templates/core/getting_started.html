@@ -154,6 +154,23 @@
         {% endif %}
       </div>
 
+      {% if changelog_summary %}
+        <div class="card-shell margin-top-1">
+          <h4>Latest update</h4>
+          <p class="muted margin-bottom-0">Version {{ changelog_summary.version }}</p>
+          {% if changelog_summary.items %}
+            <ul class="margin-bottom-0">
+              {% for item in changelog_summary.items %}
+                <li>{{ item }}</li>
+              {% endfor %}
+            </ul>
+          {% endif %}
+          {% if changelog_url %}
+            <a class="button secondary margin-top-1" href="{{ changelog_url }}" target="_blank" rel="noopener noreferrer">View full changelog</a>
+          {% endif %}
+        </div>
+      {% endif %}
+
       <div class="card-shell margin-top-1">
         <h4>GitHub</h4>
         <p class="muted">

@@ -153,6 +153,27 @@
           </div>
         </div>
       {% endif %}
+      {% if motd %}
+        <div class="grid-x grid-margin-x">
+          <div class="cell">
+            <div class="callout primary" role="status">
+              <p class="margin-0">
+                <strong>New update live</strong> — Version {{ motd.version }} just shipped.
+              </p>
+              {% if motd.items %}
+                <ul class="margin-bottom-0">
+                  {% for item in motd.items %}
+                    <li>{{ item }}</li>
+                  {% endfor %}
+                </ul>
+              {% endif %}
+              {% if motd.changelog_url %}
+                <a class="button tiny secondary margin-top-1" href="{{ motd.changelog_url }}" target="_blank" rel="noopener noreferrer">View changelog</a>
+              {% endif %}
+            </div>
+          </div>
+        </div>
+      {% endif %}
       {% if messages %}
         <div class="grid-x grid-margin-x">
           <div class="cell">

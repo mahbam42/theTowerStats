@@ -70,13 +70,26 @@
             </label>
           </div>
           <div class="cell medium-2">
-            <label class="margin-bottom-0">Tier
+            <label class="margin-bottom-0">Tier or Tournament
               {{ chart_form.tier }}
             </label>
           </div>
           <div class="cell medium-2">
             <label class="margin-bottom-0">Preset
               {{ chart_form.preset }}
+            </label>
+          </div>
+        </div>
+
+        <div class="grid-x grid-margin-x align-middle margin-top-1">
+          <div class="cell medium-4">
+            <label class="margin-bottom-0">Snapshot
+              {{ chart_form.context_snapshot }}
+            </label>
+          </div>
+          <div class="cell medium-2">
+            <label class="margin-bottom-0">Past N runs
+              {{ chart_form.past_runs }}
             </label>
           </div>
         </div>
@@ -117,6 +130,43 @@
                 {{ chart_form.charts }}
               </label>
               <p class="help-text muted charts-multi-select-note">Tip: Hold Ctrl (Windows) or Cmd (Mac) to select multiple charts.</p>
+            </div>
+          </div>
+          <div class="grid-x grid-margin-x margin-top-1">
+            <div class="cell medium-6">
+              <h5 class="margin-bottom-0">Favorite charts</h5>
+              <p class="muted margin-top-0">Favorites determine the default chart selection and can be reordered.</p>
+              <ul class="margin-bottom-0" id="favorite-charts-list">
+                {% for chart in favorite_charts %}
+                  <li data-chart-id="{{ chart.id }}" data-chart-title="{{ chart.title }}">
+                    <span>{{ chart.title }}</span>
+                    <div class="button-group tiny">
+                      <button class="button secondary favorite-move-up" type="button">Up</button>
+                      <button class="button secondary favorite-move-down" type="button">Down</button>
+                      <button class="button secondary favorite-remove" type="button">Remove</button>
+                    </div>
+                  </li>
+                {% endfor %}
+              </ul>
+              <div class="grid-x grid-margin-x align-middle margin-top-1">
+                <div class="cell auto">
+                  <select id="favorite-chart-add-select">
+                    <option value="">Add a chart...</option>
+                    {% for chart in available_favorite_charts %}
+                      <option value="{{ chart.id }}">{{ chart.title }}</option>
+                    {% endfor %}
+                  </select>
+                </div>
+                <div class="cell shrink">
+                  <button class="button secondary" type="button" id="favorite-chart-add">Add</button>
+                </div>
+              </div>
+              <form method="post" class="margin-top-1" id="favorite-charts-form">
+                {% csrf_token %}
+                <input type="hidden" name="action" value="update_chart_favorites">
+                <input type="hidden" name="favorite_chart_ids" id="favorite-chart-ids" value="{{ favorite_chart_ids_json }}">
+                <button class="button secondary expanded" type="submit">Save favorites</button>
+              </form>
             </div>
           </div>
           <div class="grid-x grid-margin-x margin-top-1">
@@ -301,12 +351,30 @@
 	                {% for row in comparison_result.metric_summaries %}
 	                  <tr>
 	                    <td>{{ row.label }} <span class="muted">({{ row.unit }})</span></td>
-	                    <td>{% if row.baseline_value is not None %}{{ row.baseline_value|floatformat:2 }}{% else %}n/a{% endif %}</td>
-	                    <td>{% if row.comparison_value is not None %}{{ row.comparison_value|floatformat:2 }}{% else %}n/a{% endif %}</td>
-	                    <td>{% if row.delta %}{{ row.delta.absolute|floatformat:2 }}{% else %}n/a{% endif %}</td>
+	                    <td>
+                        {% if row.baseline_value is not None %}
+                          <span class="metric-value" data-format="unit-value" data-unit="{{ row.unit }}" data-value="{{ row.baseline_value }}"></span>
+                        {% else %}
+                          n/a
+                        {% endif %}
+                      </td>
+	                    <td>
+                        {% if row.comparison_value is not None %}
+                          <span class="metric-value" data-format="unit-value" data-unit="{{ row.unit }}" data-value="{{ row.comparison_value }}"></span>
+                        {% else %}
+                          n/a
+                        {% endif %}
+                      </td>
+	                    <td>
+                        {% if row.delta %}
+                          <span class="metric-value" data-format="unit-value" data-unit="{{ row.unit }}" data-value="{{ row.delta.absolute }}"></span>
+                        {% else %}
+                          n/a
+                        {% endif %}
+                      </td>
 	                    <td>
 	                      {% if row.percent_display is not None %}
-	                        {{ row.percent_display|floatformat:2 }}%
+                          <span class="metric-value" data-format="unit-value" data-unit="%" data-value="{{ row.percent_display }}" data-suffix="%"></span>
 	                      {% else %}
 	                        n/a
 	                      {% endif %}
@@ -431,12 +499,19 @@
                   <button type="button" class="button secondary compare-select-last-n" data-select-id="id_scope_a_runs" data-n="10">Last 10</button>
                   <button type="button" class="button secondary compare-clear" data-select-id="id_scope_a_runs">Clear</button>
                 </div>
-                <label class="margin-top-0">Tier
+                <label class="margin-top-0">Tier or Tournament
                   <select class="compare-tier-select" name="scope_a_tier" data-select-id="id_scope_a_runs">
-                    <option value="">Select a tier or preset</option>
+                    <option value="">Select a tier, tournament, or preset</option>
                     {% if compare_scope_tier_options %}
                       <optgroup label="Tiers">
                         {% for option in compare_scope_tier_options %}
+                          <option value="{{ option.value }}">{{ option.label }}</option>
+                        {% endfor %}
+                      </optgroup>
+                    {% endif %}
+                    {% if compare_scope_tournament_options %}
+                      <optgroup label="Tournaments">
+                        {% for option in compare_scope_tournament_options %}
                           <option value="{{ option.value }}">{{ option.label }}</option>
                         {% endfor %}
                       </optgroup>
@@ -461,12 +536,19 @@
                   <button type="button" class="button secondary compare-select-last-n" data-select-id="id_scope_b_runs" data-n="10">Last 10</button>
                   <button type="button" class="button secondary compare-clear" data-select-id="id_scope_b_runs">Clear</button>
                 </div>
-                <label class="margin-top-0">Tier
+                <label class="margin-top-0">Tier or Tournament
                   <select class="compare-tier-select" name="scope_b_tier" data-select-id="id_scope_b_runs">
-                    <option value="">Select a tier or preset</option>
+                    <option value="">Select a tier, tournament, or preset</option>
                     {% if compare_scope_tier_options %}
                       <optgroup label="Tiers">
                         {% for option in compare_scope_tier_options %}
+                          <option value="{{ option.value }}">{{ option.label }}</option>
+                        {% endfor %}
+                      </optgroup>
+                    {% endif %}
+                    {% if compare_scope_tournament_options %}
+                      <optgroup label="Tournaments">
+                        {% for option in compare_scope_tournament_options %}
                           <option value="{{ option.value }}">{{ option.label }}</option>
                         {% endfor %}
                       </optgroup>
@@ -559,6 +641,12 @@
                     <span class="form-error is-visible">{{ import_form.is_tournament.errors|striptags }}</span>
                   {% endif %}
                 </label>
+                <label>Tournament rank
+                  {{ import_form.tournament_rank }}
+                  {% if import_form.tournament_rank.errors %}
+                    <span class="form-error is-visible">{{ import_form.tournament_rank.errors|striptags }}</span>
+                  {% endif %}
+                </label>
                 <button class="button expanded" type="submit">Import Battle Report</button>
               </form>
             </div>
@@ -594,6 +682,7 @@
 {% block extra_scripts %}
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
     <script type="application/json" id="compare-scope-map">{{ compare_scope_run_map_json|safe }}</script>
+    <script type="application/json" id="saved-chart-configs">{{ chart_builder_saved_configs_json|safe }}</script>
     <script>
       document.addEventListener("DOMContentLoaded", () => {
       const chartPanels = {{ chart_panels_json|safe }};
@@ -676,6 +765,17 @@
         });
       }
 
+      function formatTierLabel(value) {
+        if (!value) return "All tiers";
+        if (value.startsWith("tier:")) return `Tier ${value.slice(5)}`;
+        if (value.startsWith("tournament:")) {
+          const rank = value.slice("tournament:".length).trim();
+          if (!rank || rank === "all") return "Tournament (all)";
+          return `Tournament: ${rank.charAt(0).toUpperCase()}${rank.slice(1)}`;
+        }
+        return value;
+      }
+
       function readChartContextFromDOM() {
         const form = document.getElementById("chart-context-form");
         if (!form) return initialContext;
@@ -699,6 +799,10 @@
           }
         }
 
+        const snapshotEl = form.elements["context_snapshot"];
+        const snapshotLabel =
+          snapshotEl && snapshotEl.selectedIndex >= 0 ? snapshotEl.options[snapshotEl.selectedIndex].text : null;
+
         return {
           charts: selectedCharts.length ? selectedCharts.join(", ") : null,
           start_date: getValue("start_date"),
@@ -706,6 +810,7 @@
           granularity: getValue("granularity"),
           tier: getValue("tier"),
           preset: presetLabel && presetLabel !== "All presets" ? presetLabel : null,
+          snapshot: snapshotLabel && snapshotLabel !== "No snapshot filter" ? snapshotLabel : null,
           moving_average_window: getValue("moving_average_window"),
           window_kind: getValue("window_kind"),
           window_n: getValue("window_n"),
@@ -717,13 +822,14 @@
         const end = context.end_date || "Any end";
         const charts = context.charts ? `Charts: ${context.charts}` : "Charts: (default)";
         const granularity = context.granularity === "per_run" ? "By battle log" : "By date";
-        const tier = context.tier ? `Tier ${context.tier}` : "All tiers";
+        const tier = formatTierLabel(context.tier);
         const preset = context.preset ? `Preset: ${context.preset}` : "All presets";
+        const snapshot = context.snapshot ? `Snapshot: ${context.snapshot}` : "Snapshot: none";
         const ma = context.moving_average_window ? `MA window: ${context.moving_average_window}` : "MA window: default";
         const window = context.window_kind
           ? `${context.window_kind.replace("_", " ")}: ${context.window_n || "?"}`
           : "Rolling window: none";
-        return `${charts} • ${granularity} • ${tier} • ${preset} • ${start} → ${end} • ${ma} • ${window}`;
+        return `${charts} • ${granularity} • ${tier} • ${preset} • ${snapshot} • ${start} → ${end} • ${ma} • ${window}`;
       }
 
       function updateContextSummary() {
@@ -808,8 +914,9 @@
                   afterBody: () => {
                     const context = readChartContextFromDOM();
                     const lines = [];
-                    if (context.tier) lines.push(`Filter tier: ${context.tier}`);
+                    if (context.tier) lines.push(`Filter: ${formatTierLabel(context.tier)}`);
                     if (context.preset) lines.push(`Filter preset: ${context.preset}`);
+                    if (context.snapshot) lines.push(`Snapshot: ${context.snapshot}`);
                     if (context.start_date || context.end_date) {
                       lines.push(`Date range: ${context.start_date || "…"} → ${context.end_date || "…"}`);
                     }
@@ -1238,6 +1345,56 @@
             </div>
           </div>
 
+          <div class="margin-top-1">
+            <h5 class="margin-bottom-0">Saved charts</h5>
+            <p class="muted margin-top-0">Save Chart Builder selections for reuse or editing.</p>
+            <label>Saved charts
+              <select id="saved-chart-select">
+                <option value="">Select a saved chart...</option>
+                {% for saved in chart_builder_saved_configs %}
+                  <option value="{{ saved.id }}">{{ saved.name }}</option>
+                {% endfor %}
+              </select>
+            </label>
+            <div class="button-group tiny">
+              <button class="button secondary" type="button" id="load-saved-chart">Load</button>
+              <button class="button secondary" type="button" id="delete-saved-chart">Delete</button>
+            </div>
+            {% if not demo_mode %}
+              <form method="post" id="saved-chart-form" class="margin-top-1">
+                {% csrf_token %}
+                <input type="hidden" name="action" value="save_chart_builder_creation">
+                <input type="hidden" name="saved_id" id="saved-chart-id" value="">
+                <label>Saved chart name
+                  <input type="text" name="name" id="saved-chart-name" maxlength="120" placeholder="e.g. Farming comparison">
+                </label>
+                <input type="hidden" name="chart_type" id="saved-chart-chart-type-hidden" value="">
+                <input type="hidden" name="x_axis" id="saved-chart-x-axis-hidden" value="">
+                <input type="hidden" name="group_by" id="saved-chart-group-by-hidden" value="">
+                <input type="hidden" name="comparison" id="saved-chart-comparison-hidden" value="">
+                <input type="hidden" name="smoothing" id="saved-chart-smoothing-hidden" value="">
+                <input type="hidden" name="run_a" id="saved-chart-run-a-hidden" value="">
+                <input type="hidden" name="run_b" id="saved-chart-run-b-hidden" value="">
+                <input type="hidden" name="window_a_start" id="saved-chart-window-a-start-hidden" value="">
+                <input type="hidden" name="window_a_end" id="saved-chart-window-a-end-hidden" value="">
+                <input type="hidden" name="window_b_start" id="saved-chart-window-b-start-hidden" value="">
+                <input type="hidden" name="window_b_end" id="saved-chart-window-b-end-hidden" value="">
+                <div id="saved-chart-metric-keys-hidden"></div>
+                <button class="button expanded" type="submit">Save chart builder entry</button>
+              </form>
+              <form method="post" id="delete-saved-chart-form" class="margin-top-1">
+                {% csrf_token %}
+                <input type="hidden" name="action" value="delete_chart_builder_creation">
+                <input type="hidden" name="saved_id" id="delete-saved-chart-id" value="">
+                <button class="button secondary expanded" type="submit">Delete saved chart</button>
+              </form>
+            {% else %}
+              <div class="callout warning margin-top-1" role="status">
+                Saved charts are disabled in demo mode.
+              </div>
+            {% endif %}
+          </div>
+
           <hr>
 
 	          <h5 class="margin-bottom-0">Snapshots</h5>
@@ -1468,6 +1625,184 @@
           }
         }
 
+        function syncBuilderHiddenFields(prefix, metricsContainerId) {
+          const chartType = document.querySelector("#chart-builder-modal [name='chart_type']");
+          const xAxis = document.querySelector("#chart-builder-modal [name='x_axis']");
+          const groupBy = document.querySelector("#chart-builder-modal [name='group_by']");
+          const comparison = document.querySelector("#chart-builder-modal [name='comparison']");
+          const smoothing = document.querySelector("#chart-builder-modal [name='smoothing']");
+          const runA = document.querySelector("#chart-builder-modal [name='run_a']");
+          const runB = document.querySelector("#chart-builder-modal [name='run_b']");
+          const aStart = document.querySelector("#chart-builder-modal [name='window_a_start']");
+          const aEnd = document.querySelector("#chart-builder-modal [name='window_a_end']");
+          const bStart = document.querySelector("#chart-builder-modal [name='window_b_start']");
+          const bEnd = document.querySelector("#chart-builder-modal [name='window_b_end']");
+          const metrics = document.querySelector("#chart-builder-modal [name='metric_keys']");
+
+          const selectedMetricKeys = [];
+          if (metrics && metrics.options) {
+            for (const option of metrics.options) {
+              if (option.selected) selectedMetricKeys.push(option.value);
+            }
+          }
+
+          setHidden(`${prefix}-chart-type-hidden`, chartType ? chartType.value : "");
+          setHidden(`${prefix}-x-axis-hidden`, xAxis ? xAxis.value : "");
+          setHidden(`${prefix}-group-by-hidden`, groupBy ? groupBy.value : "");
+          setHidden(`${prefix}-comparison-hidden`, comparison ? comparison.value : "");
+          setHidden(`${prefix}-smoothing-hidden`, smoothing ? smoothing.value : "");
+          setHidden(`${prefix}-run-a-hidden`, runA ? runA.value : "");
+          setHidden(`${prefix}-run-b-hidden`, runB ? runB.value : "");
+          setHidden(`${prefix}-window-a-start-hidden`, aStart ? aStart.value : "");
+          setHidden(`${prefix}-window-a-end-hidden`, aEnd ? aEnd.value : "");
+          setHidden(`${prefix}-window-b-start-hidden`, bStart ? bStart.value : "");
+          setHidden(`${prefix}-window-b-end-hidden`, bEnd ? bEnd.value : "");
+          syncMetricHiddenTo(metricsContainerId, selectedMetricKeys);
+        }
+
+        function initializeFavoriteCharts() {
+          const list = document.getElementById("favorite-charts-list");
+          const addSelect = document.getElementById("favorite-chart-add-select");
+          const addBtn = document.getElementById("favorite-chart-add");
+          const idsInput = document.getElementById("favorite-chart-ids");
+          if (!list || !addSelect || !addBtn || !idsInput) return;
+
+          function syncIds() {
+            const ids = Array.from(list.querySelectorAll("li[data-chart-id]")).map(
+              (item) => item.dataset.chartId
+            );
+            idsInput.value = JSON.stringify(ids.filter(Boolean));
+          }
+
+          function addOption(id, title) {
+            if (!addSelect) return;
+            const option = document.createElement("option");
+            option.value = id;
+            option.textContent = title;
+            addSelect.appendChild(option);
+          }
+
+          function removeOption(id) {
+            const options = Array.from(addSelect.options);
+            const match = options.find((opt) => opt.value === id);
+            if (match) match.remove();
+          }
+
+          list.addEventListener("click", (event) => {
+            const target = event.target;
+            if (!(target instanceof HTMLElement)) return;
+            const item = target.closest("li[data-chart-id]");
+            if (!item) return;
+            if (target.classList.contains("favorite-move-up") && item.previousElementSibling) {
+              item.parentElement.insertBefore(item, item.previousElementSibling);
+            } else if (target.classList.contains("favorite-move-down") && item.nextElementSibling) {
+              item.parentElement.insertBefore(item.nextElementSibling, item);
+            } else if (target.classList.contains("favorite-remove")) {
+              const chartId = item.dataset.chartId;
+              const title = item.dataset.chartTitle || item.textContent || "";
+              item.remove();
+              if (chartId) addOption(chartId, title.trim());
+            }
+            syncIds();
+          });
+
+          addBtn.addEventListener("click", () => {
+            const selected = addSelect.value;
+            if (!selected) return;
+            const option = addSelect.options[addSelect.selectedIndex];
+            const title = option ? option.textContent : selected;
+            const item = document.createElement("li");
+            item.dataset.chartId = selected;
+            item.dataset.chartTitle = title;
+            item.innerHTML = `<span>${title}</span>
+              <div class="button-group tiny">
+                <button class="button secondary favorite-move-up" type="button">Up</button>
+                <button class="button secondary favorite-move-down" type="button">Down</button>
+                <button class="button secondary favorite-remove" type="button">Remove</button>
+              </div>`;
+            list.appendChild(item);
+            removeOption(selected);
+            addSelect.value = "";
+            syncIds();
+          });
+
+          syncIds();
+        }
+
+        function initializeSavedCharts() {
+          const savedConfigs = readJsonScript("saved-chart-configs") || [];
+          const savedSelect = document.getElementById("saved-chart-select");
+          const loadBtn = document.getElementById("load-saved-chart");
+          const deleteBtn = document.getElementById("delete-saved-chart");
+          const saveIdInput = document.getElementById("saved-chart-id");
+          const saveNameInput = document.getElementById("saved-chart-name");
+          const deleteIdInput = document.getElementById("delete-saved-chart-id");
+          const saveForm = document.getElementById("saved-chart-form");
+          const deleteForm = document.getElementById("delete-saved-chart-form");
+          if (!savedSelect) return;
+
+          const savedById = new Map(
+            savedConfigs.map((entry) => [String(entry.id), entry])
+          );
+
+          function applyBuilderPayload(payload) {
+            if (!payload) return;
+            if (metricsSelect && metricsSelect.options) {
+              const selected = new Set(payload.metric_keys || []);
+              for (const option of metricsSelect.options) {
+                option.selected = selected.has(option.value);
+              }
+            }
+            if (chartTypeSelect) chartTypeSelect.value = payload.chart_type || "line";
+            if (xAxisSelect) xAxisSelect.value = payload.x_axis || "time";
+            if (groupBySelect) groupBySelect.value = payload.group_by || "time";
+            if (comparisonSelect) comparisonSelect.value = payload.comparison || "none";
+            if (smoothingSelect) smoothingSelect.value = payload.smoothing || "none";
+            if (runASelect) runASelect.value = payload.run_a || "";
+            if (runBSelect) runBSelect.value = payload.run_b || "";
+            if (windowInputs[0]) windowInputs[0].value = payload.window_a_start || "";
+            if (windowInputs[1]) windowInputs[1].value = payload.window_a_end || "";
+            if (windowInputs[2]) windowInputs[2].value = payload.window_b_start || "";
+            if (windowInputs[3]) windowInputs[3].value = payload.window_b_end || "";
+            updateChartTypeConstraints();
+            enforceSchemaConstraints();
+          }
+
+          function syncSavedSelection() {
+            const selectedId = savedSelect.value;
+            if (saveIdInput) saveIdInput.value = selectedId || "";
+            if (deleteIdInput) deleteIdInput.value = selectedId || "";
+            const payload = savedById.get(selectedId || "");
+            if (saveNameInput) saveNameInput.value = payload ? payload.name || "" : "";
+          }
+
+          savedSelect.addEventListener("change", syncSavedSelection);
+          syncSavedSelection();
+
+          if (loadBtn) {
+            loadBtn.addEventListener("click", () => {
+              const payload = savedById.get(savedSelect.value || "");
+              if (!payload) return;
+              applyBuilderPayload(payload.chart_builder || {});
+            });
+          }
+
+          if (saveForm) {
+            saveForm.addEventListener("submit", () => {
+              syncBuilderHiddenFields("saved-chart", "saved-chart-metric-keys-hidden");
+            });
+          }
+
+          if (deleteBtn) {
+            deleteBtn.addEventListener("click", () => {
+              if (!deleteForm) return;
+              const payload = savedById.get(savedSelect.value || "");
+              if (!payload) return;
+              deleteForm.submit();
+            });
+          }
+        }
+
         for (const btn of document.querySelectorAll(".compare-select-last-n")) {
           btn.addEventListener("click", function() {
             const selectId = btn.getAttribute("data-select-id");
@@ -1505,38 +1840,7 @@
         const snapshotForm = document.getElementById("snapshot-save-form");
         if (snapshotForm) {
           snapshotForm.addEventListener("submit", function() {
-            const chartType = document.querySelector("#chart-builder-modal [name='chart_type']");
-            const xAxis = document.querySelector("#chart-builder-modal [name='x_axis']");
-            const groupBy = document.querySelector("#chart-builder-modal [name='group_by']");
-            const comparison = document.querySelector("#chart-builder-modal [name='comparison']");
-            const smoothing = document.querySelector("#chart-builder-modal [name='smoothing']");
-            const runA = document.querySelector("#chart-builder-modal [name='run_a']");
-            const runB = document.querySelector("#chart-builder-modal [name='run_b']");
-            const aStart = document.querySelector("#chart-builder-modal [name='window_a_start']");
-            const aEnd = document.querySelector("#chart-builder-modal [name='window_a_end']");
-            const bStart = document.querySelector("#chart-builder-modal [name='window_b_start']");
-            const bEnd = document.querySelector("#chart-builder-modal [name='window_b_end']");
-            const metrics = document.querySelector("#chart-builder-modal [name='metric_keys']");
-
-            const selectedMetricKeys = [];
-            if (metrics && metrics.options) {
-              for (const option of metrics.options) {
-                if (option.selected) selectedMetricKeys.push(option.value);
-              }
-            }
-
-            setHidden("snapshot-chart-type-hidden", chartType ? chartType.value : "");
-            setHidden("snapshot-x-axis-hidden", xAxis ? xAxis.value : "");
-            setHidden("snapshot-group-by-hidden", groupBy ? groupBy.value : "");
-            setHidden("snapshot-comparison-hidden", comparison ? comparison.value : "");
-            setHidden("snapshot-smoothing-hidden", smoothing ? smoothing.value : "");
-            setHidden("snapshot-run-a-hidden", runA ? runA.value : "");
-            setHidden("snapshot-run-b-hidden", runB ? runB.value : "");
-            setHidden("snapshot-window-a-start-hidden", aStart ? aStart.value : "");
-            setHidden("snapshot-window-a-end-hidden", aEnd ? aEnd.value : "");
-            setHidden("snapshot-window-b-start-hidden", bStart ? bStart.value : "");
-            setHidden("snapshot-window-b-end-hidden", bEnd ? bEnd.value : "");
-            syncMetricHiddenTo("snapshot-metric-keys-hidden", selectedMetricKeys);
+            syncBuilderHiddenFields("snapshot", "snapshot-metric-keys-hidden");
           });
         }
 
@@ -1762,6 +2066,8 @@
         if (groupBySelect) groupBySelect.addEventListener("change", updateMetricCompatibility);
         if (comparisonSelect) comparisonSelect.addEventListener("change", () => { updateComparisonControls(); updateMetricCompatibility(); });
         if (smoothingSelect) smoothingSelect.addEventListener("change", updateMetricCompatibility);
+        initializeFavoriteCharts();
+        initializeSavedCharts();
         updateChartTypeConstraints();
         updateComparisonControls();
         updateMetricCompatibility();

@@ -36,3 +36,16 @@ Reparse is idempotent and supports scoped backfills.
 - Reparse also backfills bot usage rows used by **Runs used** on the Bots dashboard.
 
 ::: core.management.commands.reparse_battle_reports
+
+## Deployment helpers
+
+### `deploy_railway`
+
+Runs the deploy-time pipeline (migrations, wiki rebuild, reparse).
+
+- Requires `--write` to run.
+- `--skip-migrations` skips `migrate`.
+- `--skip-wiki` skips `rebuild_wiki_definitions --target all --write`.
+- `--skip-reparse` skips `reparse_battle_reports --write`.
+
+::: core.management.commands.deploy_railway

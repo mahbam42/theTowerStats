@@ -29,7 +29,12 @@ from core.parsers.battle_report import (
 
 
 def ingest_battle_report(
-    raw_text: str, *, player: Player, preset_name: str | None = None, is_tournament: bool = False
+    raw_text: str,
+    *,
+    player: Player,
+    preset_name: str | None = None,
+    is_tournament: bool = False,
+    tournament_rank: str | None = None,
 ) -> tuple[BattleReport, bool]:
     """Ingest a Battle Report, rejecting duplicates by checksum.
 
@@ -38,6 +43,7 @@ def ingest_battle_report(
         player: Owning player derived from the authenticated user.
         preset_name: Optional preset label to associate with the run.
         is_tournament: Manual override to mark a run as a tournament.
+        tournament_rank: Optional tournament rank label for manual tournament runs.
 
     Returns:
         A tuple of (battle_report, created) where `created` is False when the report
@@ -78,6 +84,7 @@ def ingest_battle_report(
                 cells_earned=parsed.cells_earned,
                 reroll_shards_earned=parsed.reroll_shards_earned,
                 is_tournament=is_tournament,
+                tournament_rank=(tournament_rank if is_tournament else None),
             )
             _ingest_run_bot_usage(battle_report=battle_report, player=player)
             _ingest_run_ultimate_weapon_usage(battle_report=battle_report, player=player)
@@ -91,6 +98,7 @@ def ingest_battle_report(
                 preset_name_snapshot=preset_snapshot["name"],
                 preset_color_snapshot=preset_snapshot["color"],
                 is_tournament=is_tournament,
+                tournament_rank=(tournament_rank if is_tournament else None),
             )
         _persist_derived_metrics(battle_report=battle_report, player=player, raw_text=raw_text)
         _ingest_run_bot_usage(battle_report=battle_report, player=player)

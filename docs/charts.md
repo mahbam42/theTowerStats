@@ -20,9 +20,11 @@ Charts help you review how your run results change over time using the same valu
 3. In **Context**, review the **Start** and **End** dates. The app defaults to the current in-game Event window (14 days).
   A. Select **Previous**, **Next**, or **All** to change the date window.
 4. In **Context**, review **Granularity**. It defaults to **By battle log**, and you can switch to **By date** when needed.
-5. In **Context**, select a **Tier** and **Preset** to narrow the scope.
-  A. In **Context**, toggle **Include tournaments** to include tournament runs in the charts.
-6. Select **Apply** to refresh the dashboard.
+5. In **Context**, select a **Tier or Tournament** and **Preset** to narrow the scope.
+  A. Choose a tournament rank when you want only that tournament bracket.
+  B. Toggle **Include tournaments** to include tournament runs in the charts.
+6. (Optional) In **Context**, select a **Snapshot** or enter **Past N runs** to tighten the scope.
+7. Select **Apply** to refresh the dashboard.
 
 
 * Open **More options** to refine charts, windowing, and item filters. For details, see [More Options](charts/more_options.md).
@@ -50,6 +52,7 @@ Charts help you review how your run results change over time using the same valu
   - **Enemy Destruction** shows what actually killed enemies.
   - **Efficiency** shows time-normalized rates (per hour).
 - For per-hour charts (such as coins/real hour), the rate uses the run’s **Real Time** duration as reported in the Battle Report.
+- Snapshot filters apply alongside date ranges and other scope controls, so you can combine them.
 - When a chart includes multiple lines, each line label tells you what group it represents (for example, a tier or a preset label).
 - If a value is missing in the underlying Battle Report, the chart may show a gap for that date.
 - Scatter charts compare two values per run. Each dot represents a single run in your current filters.

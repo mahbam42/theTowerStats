@@ -196,6 +196,7 @@ TEMPLATES = [
                 "django.contrib.auth.context_processors.auth",
                 "django.contrib.messages.context_processors.messages",
                 "core.context_processors.demo_mode",
+                "core.context_processors.motd_banner",
             ],
         },
     }
@@ -218,6 +219,8 @@ AUTH_PASSWORD_VALIDATORS = [
 ]
 
 LANGUAGE_CODE = "en-us"
+
+CHANGELOG_GITHUB_URL = "https://github.com/mahbam42/theTowerStats/blob/main/CHANGELOG.md"
 TIME_ZONE = "UTC"
 USE_I18N = True
 USE_TZ = True

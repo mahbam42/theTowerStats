@@ -9,6 +9,7 @@ theTowerStats documentation helps you review imported Battle Reports, track coll
 - You want to pick the right section for Battle History, Charts, or collection tracking.
 - You want a quick overview of what each dashboard covers.
 - You want to confirm how presets and labels work across the app.
+- You want to understand where snapshots appear across dashboards.
 - You want to review the sources behind reference data.
 
 ## How to Use
@@ -25,6 +26,7 @@ theTowerStats documentation helps you review imported Battle Reports, track coll
 - **Charts** focuses on time-series views, filters, and comparisons.
 - **Cards** highlights slots, collection progress, and preset labels.
 - **Presets** are optional labels you define to group runs and cards (unlocked via the in-game Lab Research “Card Presets”). The game currently allows 5 presets, and the app lets you save more.
+- **Snapshots** are named references you can reuse across dashboards to anchor comparisons and filters.
 - **Reference** pages list supported metrics and sources.
 
 ## Notes & Limitations

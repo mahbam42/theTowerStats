@@ -9,6 +9,7 @@ Chart Builder lets you create a custom chart from the available metrics and appl
 - You want to chart a value that is not listed in the default chart list.
 - You want to combine multiple related lines on one chart for comparison.
 - You want to save a named snapshot so you can return to the same custom chart later.
+- You want to save a reusable Chart Builder setup and edit it later.
 - You want to confirm whether a metric is available before you export or compare it.
 
 ## How to Use
@@ -20,8 +21,11 @@ Chart Builder lets you create a custom chart from the available metrics and appl
 5. In **Step 2 — Chart settings**, select the chart style (Line, Area, Bar, Scatter, or Donut) and the X-axis mode (**Time** or **Metric vs metric**).
 6. (Optional) In **Step 3 — Comparison**, select a comparison mode when you want an additional line or grouping.
 7. Select **Apply to dashboard** to add the custom chart to the dashboard.
-8. (Optional) Select **Save snapshot** to save the current builder selections under a name.
-9. (Optional) Select **Load snapshot** to restore a previously saved chart configuration.
+8. (Optional) Use **Saved charts** to load a previously saved Chart Builder entry.
+9. (Optional) Enter a name and select **Save chart builder entry** to save or update the current setup.
+10. (Optional) Select **Delete saved chart** to remove a saved entry you no longer need.
+11. (Optional) Select **Save snapshot** to save the current builder selections under a name.
+12. (Optional) Select **Load snapshot** to restore a previously saved chart configuration.
 
 ### Example: Free Upgrades vs Coins Earned (Scatter)
 
@@ -38,6 +42,7 @@ Chart Builder lets you create a custom chart from the available metrics and appl
 - **Time** uses dates or run labels on the X-axis, while **Metric vs metric** compares two selected values per run.
 - If a chart shows multiple lines, the legend describes what each line represents for the comparison you selected.
 - If a chart shows gaps, at least one run in the scope is missing the underlying value for that point.
+- Saved charts store your Chart Builder selections so you can reuse and adjust them later.
 
 ## Metrics Reference
 

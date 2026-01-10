@@ -12,7 +12,7 @@ from django.urls import reverse
 from analysis.engine import analyze_runs
 from analysis.raw_text_metrics import extract_raw_text_metrics
 from gamedata.models import BattleReport, BattleReportDerivedMetrics, BattleReportProgress
-from player_state.models import Preset
+from player_state.models import ChartSnapshot, Preset
 from core.views import WALKTHROUGH_FIRST_LOGIN_SESSION_KEY
 
 pytestmark = pytest.mark.integration
@@ -203,7 +203,11 @@ def test_dashboard_quick_import_tournament_override_excludes_from_charts_by_defa
             "Coins earned\t17.29M",
         ]
     )
-    response = auth_client.post(reverse("core:dashboard"), data={"raw_text": raw_text, "is_tournament": "on"}, follow=True)
+    response = auth_client.post(
+        reverse("core:dashboard"),
+        data={"raw_text": raw_text, "is_tournament": "on", "tournament_rank": "gold"},
+        follow=True,
+    )
     assert response.status_code == 200
     assert response.context["chart_empty_state"] == "No runs match the current filters."
 
@@ -346,7 +350,7 @@ def test_dashboard_view_filters_by_tier(auth_client, player) -> None:
         real_time_seconds=600,
     )
 
-    response = auth_client.get(reverse("core:dashboard"), {"tier": 2, "start_date": FILTER_START})
+    response = auth_client.get(reverse("core:dashboard"), {"tier": "tier:2", "start_date": FILTER_START})
     assert response.status_code == 200
 
     panels = {p["id"]: p for p in json.loads(response.context["chart_panels_json"])}
@@ -355,6 +359,112 @@ def test_dashboard_view_filters_by_tier(auth_client, player) -> None:
     values = panel["datasets"][0]["data"]
     assert labels == ["2025-12-02"]
     assert values == [14400.0]
+
+
+@pytest.mark.integration
+@pytest.mark.django_db
+def test_dashboard_view_tier_choices_include_tournament_filters(auth_client, player) -> None:
+    """Tier selector includes tournament filter options."""
+
+    response = auth_client.get(reverse("core:dashboard"))
+    assert response.status_code == 200
+
+    choices = {value for value, _label in response.context["chart_form"].fields["tier"].choices}
+    assert "tournament:all" in choices
+    assert "tournament:gold" in choices
+
+
+@pytest.mark.django_db
+@pytest.mark.integration
+@pytest.mark.golden
+def test_dashboard_view_filters_by_tournament_rank(auth_client, player) -> None:
+    """Filter charts by tournament rank selections."""
+
+    gold_report = BattleReport.objects.create(
+        player=player,
+        raw_text="Battle Report\nCoins earned    1,200\n",
+        checksum="g" * 64,
+    )
+    BattleReportProgress.objects.create(
+        battle_report=gold_report,
+        player=player,
+        battle_date=datetime(2025, 12, 1, tzinfo=timezone.utc),
+        tier=1,
+        wave=100,
+        real_time_seconds=600,
+        is_tournament=True,
+        tournament_rank="gold",
+    )
+
+    silver_report = BattleReport.objects.create(
+        player=player,
+        raw_text="Battle Report\nCoins earned    2,400\n",
+        checksum="s" * 64,
+    )
+    BattleReportProgress.objects.create(
+        battle_report=silver_report,
+        player=player,
+        battle_date=datetime(2025, 12, 2, tzinfo=timezone.utc),
+        tier=1,
+        wave=100,
+        real_time_seconds=600,
+        is_tournament=True,
+        tournament_rank="silver",
+    )
+
+    response = auth_client.get(
+        reverse("core:dashboard"),
+        {"tier": "tournament:gold", "start_date": FILTER_START},
+    )
+    assert response.status_code == 200
+
+    panels = {p["id"]: p for p in json.loads(response.context["chart_panels_json"])}
+    panel = panels["coins_per_hour"]
+    assert panel["datasets"][0]["data"] == [7200.0]
+
+
+@pytest.mark.integration
+@pytest.mark.django_db
+def test_dashboard_view_snapshot_filter_combines_with_date_range(auth_client, player) -> None:
+    """Snapshot filters intersect with the explicit date range."""
+
+    reports = []
+    for day, coins in ((1, 1200), (4, 2400), (10, 3600)):
+        report = BattleReport.objects.create(
+            player=player,
+            raw_text=f"Battle Report\nCoins earned    {coins:,}\n",
+            checksum=f"snapshot-{day}".ljust(64, "s"),
+        )
+        BattleReportProgress.objects.create(
+            battle_report=report,
+            player=player,
+            battle_date=datetime(2025, 12, day, tzinfo=timezone.utc),
+            tier=1,
+            wave=100,
+            real_time_seconds=600,
+        )
+        reports.append(report)
+
+    snapshot = ChartSnapshot.objects.create(
+        player=player,
+        name="Early window",
+        target="charts",
+        chart_context={"start_date": "2025-12-01", "end_date": "2025-12-05"},
+    )
+
+    response = auth_client.get(
+        reverse("core:dashboard"),
+        {
+            "context_snapshot": snapshot.id,
+            "start_date": "2025-12-03",
+            "end_date": "2025-12-10",
+        },
+    )
+    assert response.status_code == 200
+
+    panels = {p["id"]: p for p in json.loads(response.context["chart_panels_json"])}
+    panel = panels["coins_per_hour"]
+    assert panel["labels"] == ["2025-12-04"]
 
 
 @pytest.mark.django_db
@@ -560,6 +670,62 @@ def test_dashboard_view_run_delta_comparison(auth_client, player) -> None:
 
 @pytest.mark.integration
 @pytest.mark.django_db
+def test_dashboard_view_compare_table_uses_unit_formatting_helper(auth_client, player) -> None:
+    """Compare summary table renders unit formatting data attributes."""
+
+    scope_a = []
+    for idx, coins in enumerate((1200, 2400), start=1):
+        report = BattleReport.objects.create(
+            player=player,
+            raw_text=f"Battle Report\nCoins earned    {coins:,}\n",
+            checksum=f"format-a-{idx}".ljust(64, "a"),
+        )
+        BattleReportProgress.objects.create(
+            battle_report=report,
+            player=player,
+            battle_date=datetime(2025, 12, idx, tzinfo=timezone.utc),
+            tier=1,
+            wave=100,
+            real_time_seconds=600,
+            coins_earned=coins,
+        )
+        scope_a.append(report)
+
+    scope_b = []
+    for idx, coins in enumerate((3600, 4800), start=3):
+        report = BattleReport.objects.create(
+            player=player,
+            raw_text=f"Battle Report\nCoins earned    {coins:,}\n",
+            checksum=f"format-b-{idx}".ljust(64, "b"),
+        )
+        BattleReportProgress.objects.create(
+            battle_report=report,
+            player=player,
+            battle_date=datetime(2025, 12, idx, tzinfo=timezone.utc),
+            tier=1,
+            wave=100,
+            real_time_seconds=600,
+            coins_earned=coins,
+        )
+        scope_b.append(report)
+
+    response = auth_client.get(
+        reverse("core:dashboard"),
+        {
+            "scope_a_runs": [run.id for run in scope_a],
+            "scope_b_runs": [run.id for run in scope_b],
+            "summary_focus": "economy",
+            "scope_average": "on",
+            "start_date": FILTER_START,
+        },
+    )
+    assert response.status_code == 200
+    content = response.content.decode("utf-8")
+    assert 'data-format="unit-value"' in content
+
+
+@pytest.mark.integration
+@pytest.mark.django_db
 def test_dashboard_view_multi_run_scope_compare_defaults_to_economy(auth_client, player) -> None:
     """Summarize multi-run scopes and include goal-aware advice by default."""
 
@@ -642,6 +808,42 @@ def test_dashboard_view_compare_scope_options_include_tiers_and_presets(auth_cli
     assert preset_options[0]["label"] == "Farming"
     assert set(run_map["tier:1"]) == {reports[0].id, reports[2].id}
     assert set(run_map[f"preset:{preset.id}"]) == {reports[0].id, reports[2].id}
+
+
+@pytest.mark.integration
+@pytest.mark.django_db
+def test_dashboard_view_compare_scope_options_include_tournaments(auth_client, player) -> None:
+    """Expose tournament scope options when tournament runs are present."""
+
+    report = BattleReport.objects.create(
+        player=player,
+        raw_text="Battle Report\nCoins earned    1,200\n",
+        checksum="compare-tournament".ljust(64, "t"),
+    )
+    BattleReportProgress.objects.create(
+        battle_report=report,
+        player=player,
+        battle_date=datetime(2025, 12, 1, tzinfo=timezone.utc),
+        tier=1,
+        wave=100,
+        real_time_seconds=600,
+        is_tournament=True,
+        tournament_rank="gold",
+    )
+
+    response = auth_client.get(
+        reverse("core:dashboard"),
+        {"start_date": "2025-12-01", "end_date": "2025-12-31", "include_tournaments": "on"},
+    )
+    assert response.status_code == 200
+
+    tournament_options = response.context["compare_scope_tournament_options"]
+    run_map = json.loads(response.context["compare_scope_run_map_json"])
+
+    option_values = {opt["value"] for opt in tournament_options}
+    assert option_values == {"tournament:all", "tournament:gold"}
+    assert set(run_map["tournament:all"]) == {report.id}
+    assert set(run_map["tournament:gold"]) == {report.id}
 
 
 @pytest.mark.integration
@@ -967,7 +1169,7 @@ def test_dashboard_view_window_delta_respects_tier_filter(auth_client, player) -
     # - Window B avg: 1,800/600*3600 = 10,800
     response = auth_client.get(reverse("core:dashboard"),
         {
-            "tier": 2,
+            "tier": "tier:2",
             "window_a_start": date(2025, 12, 1),
             "window_a_end": date(2025, 12, 1),
             "window_b_start": date(2025, 12, 10),

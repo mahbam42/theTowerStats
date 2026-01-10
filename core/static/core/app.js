@@ -11,6 +11,59 @@
     window.$(document).foundation();
   }
 
+  function formatExactNumber(value) {
+    const num = Number(value);
+    if (!Number.isFinite(num)) return String(value);
+    return new Intl.NumberFormat(undefined, { maximumFractionDigits: 2 }).format(num);
+  }
+
+  function formatCompactNumber(value) {
+    const num = Number(value);
+    const absValue = Math.abs(num);
+    if (!Number.isFinite(absValue)) return String(value);
+    const units = [
+      { threshold: 1_000_000_000_000_000_000, suffix: "Q" },
+      { threshold: 1_000_000_000_000_000, suffix: "q" },
+      { threshold: 1_000_000_000_000, suffix: "T" },
+      { threshold: 1_000_000_000, suffix: "B" },
+      { threshold: 1_000_000, suffix: "M" },
+      { threshold: 1_000, suffix: "K" },
+    ];
+    for (const unit of units) {
+      if (absValue >= unit.threshold) {
+        return `${(num / unit.threshold).toFixed(2)}${unit.suffix}`;
+      }
+    }
+    return formatExactNumber(num);
+  }
+
+  function formatChartNumber(value, unit) {
+    const unitLabel = String(unit || "").trim().toLowerCase();
+    const noCompact = new Set(["%", "percent", "x", "multiplier", "seconds", "s"]);
+    if (noCompact.has(unitLabel)) return formatExactNumber(value);
+    return formatCompactNumber(value);
+  }
+
+  window.ttsFormatChartNumber = formatChartNumber;
+  window.ttsFormatExactNumber = formatExactNumber;
+
+  function initializeUnitFormatting() {
+    const formatter = window.ttsFormatChartNumber || formatChartNumber;
+    const nodes = document.querySelectorAll("[data-format='unit-value']");
+    for (const node of nodes) {
+      const rawValue = node.dataset.value;
+      const unit = node.dataset.unit || "";
+      const suffix = node.dataset.suffix || "";
+      const numeric = Number(rawValue);
+      if (!Number.isFinite(numeric)) {
+        node.textContent = rawValue || "—";
+        continue;
+      }
+      const formatted = formatter(numeric, unit);
+      node.textContent = suffix ? `${formatted}${suffix}` : formatted;
+    }
+  }
+
   function initializeGlobalSearch() {
     const input = document.getElementById("global-search-input");
     const dropdown = document.getElementById("global-search-dropdown");
@@ -196,6 +249,7 @@
       const windowKind = getFormValue("window_kind");
       const windowN = getFormValue("window_n");
       const movingAverage = getFormValue("moving_average_window");
+      const contextSnapshot = getFormValue("context_snapshot");
       if (granularity) url.searchParams.set("granularity", granularity);
       if (tier) url.searchParams.set("tier", tier);
       if (preset) url.searchParams.set("preset", preset);
@@ -203,6 +257,7 @@
       if (windowKind) url.searchParams.set("window_kind", windowKind);
       if (windowN) url.searchParams.set("window_n", windowN);
       if (movingAverage) url.searchParams.set("moving_average_window", movingAverage);
+      if (contextSnapshot) url.searchParams.set("context_snapshot", contextSnapshot);
       return url.toString();
     }
 
@@ -237,6 +292,7 @@
     function renderMetrics(metrics) {
       if (!metricsEl) return;
       metricsEl.innerHTML = "";
+      const formatter = window.ttsFormatChartNumber || formatChartNumber;
       for (const metric of metrics || []) {
         const row = document.createElement("div");
         row.className = "battle-report-metric-row";
@@ -244,7 +300,14 @@
         const label = document.createElement("span");
         const value = document.createElement("span");
         value.className = "battle-report-metric-value";
-        value.textContent = metric.value || "—";
+        const numeric = metric.numeric_value;
+        const unit = metric.unit || "";
+        if (Number.isFinite(Number(numeric))) {
+          const formatted = formatter(numeric, unit);
+          value.textContent = unit ? `${formatted} ${unit}` : formatted;
+        } else {
+          value.textContent = metric.value || "—";
+        }
 
         if (metric.chart_id) {
           const link = document.createElement("a");
@@ -667,6 +730,7 @@
         initializeFoundation();
         initializeGlobalSearch();
         initializeBattleReportModal();
+        initializeUnitFormatting();
         initializeGuidedWalkthrough();
       },
       { once: true }
@@ -677,5 +741,6 @@
   initializeFoundation();
   initializeGlobalSearch();
   initializeBattleReportModal();
+  initializeUnitFormatting();
   initializeGuidedWalkthrough();
 })();

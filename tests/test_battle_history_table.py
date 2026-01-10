@@ -387,7 +387,7 @@ def test_battle_history_excludes_manual_tournaments_by_default(auth_client, play
     )
     response = auth_client.post(
         reverse("core:battle_history"),
-        data={"raw_text": raw_text, "is_tournament": "on"},
+        data={"raw_text": raw_text, "is_tournament": "on", "tournament_rank": "gold"},
         follow=True,
     )
     assert response.status_code == 200

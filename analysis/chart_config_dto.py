@@ -29,6 +29,7 @@ class ChartContextDTO:
         start_date: Optional inclusive lower bound date.
         end_date: Optional inclusive upper bound date.
         tier: Optional tier filter.
+        tournament_filter: Optional tournament filter ("all" or specific rank key).
         preset_id: Optional preset id filter.
         include_tournaments: Whether tournament runs are included in the scope.
     """
@@ -36,6 +37,7 @@ class ChartContextDTO:
     start_date: date | None
     end_date: date | None
     tier: int | None = None
+    tournament_filter: str | None = None
     preset_id: int | None = None
     include_tournaments: bool = False
 
