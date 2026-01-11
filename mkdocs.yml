@@ -63,11 +63,12 @@ nav:
       - Changelog: repo/CHANGELOG.md
       - Readme: repo/readme.md
       - Contributing: repo/CONTRIBUTING.md
-      - Versioning: repo/VERSIONING.md
-      - Security: repo/SECURITY.md
       - App Philosophy: philosophy.md
       - Design Philosophy: design_philosophy.md
       - Code of Conduct: repo/CODE_OF_CONDUCT.md
+      - Versioning: repo/VERSIONING.md
+      - Security: repo/SECURITY.md
+      
   - Wiki Population: wiki_population.md
   - Development:
       - Project Structure: project_structure.md
