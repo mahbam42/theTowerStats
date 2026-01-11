@@ -26,8 +26,11 @@ def test_motd_banner_shows_once_per_deploy(monkeypatch) -> None:
     modified_at = datetime(2025, 1, 2, tzinfo=timezone.utc)
     monkeypatch.setattr("core.context_processors.changelog_modified_at", lambda: modified_at)
     monkeypatch.setattr(
-        "core.context_processors.latest_changelog_summary",
-        lambda max_items=2: ChangelogSummary(version="1.2.3", items=("Item one", "Item two")),
+        "core.context_processors.latest_changelog_summaries",
+        lambda max_items=2, max_sections=2: (
+            ChangelogSummary(version="1.2.3", items=("Item one", "Item two")),
+            ChangelogSummary(version="1.2.2", items=("Older one",)),
+        ),
     )
 
     payload = motd_banner(request)
@@ -51,8 +54,10 @@ def test_motd_banner_requires_authenticated_user(monkeypatch) -> None:
     modified_at = datetime(2025, 1, 2, tzinfo=timezone.utc)
     monkeypatch.setattr("core.context_processors.changelog_modified_at", lambda: modified_at)
     monkeypatch.setattr(
-        "core.context_processors.latest_changelog_summary",
-        lambda max_items=2: ChangelogSummary(version="1.2.3", items=("Item one",)),
+        "core.context_processors.latest_changelog_summaries",
+        lambda max_items=2, max_sections=2: (
+            ChangelogSummary(version="1.2.3", items=("Item one",)),
+        ),
     )
 
     assert motd_banner(request) == {}
@@ -70,8 +75,10 @@ def test_motd_banner_uses_session_last_login(monkeypatch) -> None:
     modified_at = datetime(2025, 1, 2, tzinfo=timezone.utc)
     monkeypatch.setattr("core.context_processors.changelog_modified_at", lambda: modified_at)
     monkeypatch.setattr(
-        "core.context_processors.latest_changelog_summary",
-        lambda max_items=2: ChangelogSummary(version="1.2.3", items=("Item one",)),
+        "core.context_processors.latest_changelog_summaries",
+        lambda max_items=2, max_sections=2: (
+            ChangelogSummary(version="1.2.3", items=("Item one",)),
+        ),
     )
 
     payload = motd_banner(request)
@@ -90,8 +97,10 @@ def test_motd_banner_shows_for_first_login_session(monkeypatch) -> None:
     modified_at = datetime(2024, 12, 1, tzinfo=timezone.utc)
     monkeypatch.setattr("core.context_processors.changelog_modified_at", lambda: modified_at)
     monkeypatch.setattr(
-        "core.context_processors.latest_changelog_summary",
-        lambda max_items=2: ChangelogSummary(version="1.2.3", items=("Item one",)),
+        "core.context_processors.latest_changelog_summaries",
+        lambda max_items=2, max_sections=2: (
+            ChangelogSummary(version="1.2.3", items=("Item one",)),
+        ),
     )
 
     payload = motd_banner(request)

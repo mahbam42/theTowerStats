@@ -2425,7 +2425,7 @@ CLOSED: [2025-12-22 Mon 15:31]
 - [X] fetch_wiki_data and rebuild_wiki_definitions should have a pretty summary of deltas at the end.
   Especially when using --target all.
 
-*** Bugs/Enhancements [78/84]
+*** Bugs/Enhancements [83/84]
 
 **** DONE [#B] Error Updating Guardian Upgrade Table                 :bug:
 CLOSED: [2025-12-22 Mon 18:51]
@@ -3597,18 +3597,24 @@ CLOSED: [2026-01-10 Sat 16:24]
 **** TODO [#B] Deploy Command for Railway                          :chore:
 Run migrations, rebuild_wiki_definitions, reparse_battle_reports
 
-**** IN PROGRESS [#C] Standardized/Enforce Unit Display              :bug:
+**** DONE [#C] Standardized/Enforce Unit Display                     :bug:
+CLOSED: [2026-01-10 Sat 19:37]
+- State "DONE"       from "IN PROGRESS" [2026-01-10 Sat 19:37]
 - State "IN PROGRESS" from "TODO"       [2026-01-10 Sat 17:42] \\
   coins per real hour
 In Modals Especially
 And Compare/Advice Results
 
-**** IN PROGRESS [#C] Player Preferences                     :enhancement:
+**** DONE [#C] Player Preferences                            :enhancement:
+CLOSED: [2026-01-10 Sat 19:37]
+- State "DONE"       from "IN PROGRESS" [2026-01-10 Sat 19:37]
 - State "IN PROGRESS" from "TODO"       [2026-01-10 Sat 17:56]
 Store Favorite Charts for Charts Dashboard
 Store Chart Builder creations 
 
-**** IN PROGRESS [#B] MOTD with latest changelog entry       :enhancement:
+**** DONE [#B] MOTD with latest changelog entry              :enhancement:
+CLOSED: [2026-01-10 Sat 19:37]
+- State "DONE"       from "IN PROGRESS" [2026-01-10 Sat 19:37]
 - State "IN PROGRESS" from "TODO"       [2026-01-10 Sat 17:56]
 Add to getting_started as well (between quick start and self host)
 
@@ -3640,16 +3646,20 @@ CLOSED: [2026-01-10 Sat 19:10]
 - State "DONE"       from "TODO"       [2026-01-10 Sat 19:10]
 Next to the isTournament checkbox add a dropdown to select Tournament Rank (Copper, Silver, Gold, Platinum, Champions, and Legends). 
 
-**** TODO prompt52.md Tweaks
+**** DONE prompt52.md Tweaks
+CLOSED: [2026-01-10 Sat 19:37]
+- State "DONE"       from "TODO"       [2026-01-10 Sat 19:37]
 - [X] Task 75: On Battle History, coins per real hour needs to be standardized.
-- [-] Task 76:
+- [X] Task 76:
   - [X] Move helper text "applies the section..." and 'Apply to Dashboard'/'Clear builder' to be below 'Saved Charts' section. It can all be under the heading 'Step 4 - Apply'
-  - [ ] Make 'save chart builder entry' and 'delete...' side by side
-- [ ] Task 77
+  - [X] Make 'save chart builder entry' and 'delete...' side by side
+- [X] Task 77
   - MOTD Banner did not display when logging in as an existing user, or after creating a new user. Should definitely appear for new/first time users
 - [X] Task 78 - 82 all look good 
 
-**** TODO [#B] Update Changelog and MOTD
+**** DONE [#B] Update Changelog and MOTD
+CLOSED: [2026-01-10 Sat 19:47]
+- State "DONE"       from "TODO"       [2026-01-10 Sat 19:47]
 Run git log --oneline d1533c1...HEAD
 
 Update Changelog and Readme to 0.7.1, MOTD should include 0.6.2 as well. You can condense and summarize the commits with "ci:"

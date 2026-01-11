@@ -2,7 +2,19 @@
 
 This project follows Semantic Versioning.
 
-## [0.6.2] (in progress)
+## [0.7.1]
+
+- Charts: add tournament rank filters, tournament scopes in Compare, and combined tier/tournament context selection.
+- Charts: add snapshot filters and past-N-runs context filters that combine with date ranges.
+- Charts: add ordered favorites and saved Chart Builder entries editable in the modal.
+- Battle History: require tournament rank on new imports and show tournament rank badges.
+- UI: standardize unit formatting in Compare, Battle History coins/hour, and Battle Report modal metrics.
+- Ops: add a Railway deploy command that runs migrations, wiki rebuild, and Battle Report reparse.
+- MOTD: show a one-time banner on deploy and surface the latest changelog summary on Getting Started.
+- Docs: update Charts, Compare, Battle History, Chart Builder, and user guide for new filters and preferences.
+- ci: consolidate test/stability updates for deployment readiness and environment parity.
+
+## [0.6.2]
 
 - Battle History: show coins per real hour in the table and modal when reported.
 - Battle History: fall back to import timestamps for missing battle dates and label imported dates in the UI.

@@ -8,7 +8,7 @@ from django.conf import settings
 from django.http import HttpRequest
 from django.utils import timezone
 
-from core.changelog import changelog_modified_at, latest_changelog_summary
+from core.changelog import changelog_modified_at, latest_changelog_summaries
 
 from core.demo import demo_mode_enabled
 from core.session_keys import MOTD_LAST_LOGIN_SESSION_KEY
@@ -62,14 +62,24 @@ def motd_banner(request: HttpRequest) -> dict[str, object]:
     token = modified_at.isoformat()
     if request.session.get("motd_seen") == token:
         return {}
-    summary = latest_changelog_summary(max_items=2)
-    if summary is None:
+    summaries = latest_changelog_summaries(max_items=2, max_sections=2)
+    if not summaries:
         return {}
     request.session["motd_seen"] = token
+    items: list[str] = []
+    include_versions = len(summaries) > 1
+    for summary in summaries:
+        if not summary.items:
+            continue
+        if include_versions:
+            for item in summary.items:
+                items.append(f"{summary.version}: {item}")
+        else:
+            items.extend(summary.items)
     return {
         "motd": {
-            "version": summary.version,
-            "items": summary.items,
+            "version": summaries[0].version,
+            "items": tuple(items),
             "changelog_url": getattr(settings, "CHANGELOG_GITHUB_URL", ""),
         }
     }

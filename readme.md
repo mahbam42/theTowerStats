@@ -46,12 +46,15 @@ Guiding principles:
 
 - Coins per hour and other precomputed series (no client-side math)
 - Filter charts by **date range**, **tier**, **preset**, and overlays
+- Save ordered favorite charts and reusable Chart Builder entries per player
+- Apply snapshot filters and past-N-run scopes alongside date ranges
 - Default chart window uses the current **Event window**, with navigation controls
 - Default chart granularity is **By battle log**, with an optional switch to **By date**
 - Chart run labels follow Battle History ordering for consistent comparisons
 - Export derived metrics to CSV and download chart images as PNG snapshots
 - Full-screen chart modal and tooltip links to open Battle Report details
 - Guided walkthrough available in demo mode or on first login
+- Compare scopes by tier, preset, tournament rank, or custom run selections
 
 ### 🎯 Goals Dashboard
 
@@ -110,8 +113,8 @@ This app is about:
 
 ## Current Progress
 
-- Current development: **v0.6.2**
-- Latest release: **v0.6.2**
+- Current development: **v0.7.1**
+- Latest release: **v0.7.1**
 - Changelog: `CHANGELOG.md`
 - Stable: Battle Report import, Battle History, Charts (including snapshots and compare scopes), and collection progress dashboards
 - Multi-user: Each signed-in account has its own isolated dataset

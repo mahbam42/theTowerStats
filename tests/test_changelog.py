@@ -34,6 +34,30 @@ def test_latest_changelog_summary_reads_latest_section(tmp_path, monkeypatch) ->
 
 
 @pytest.mark.unit
+def test_latest_changelog_summaries_returns_multiple_sections(tmp_path, monkeypatch) -> None:
+    """Return summaries for multiple changelog sections."""
+
+    content = "\n".join(
+        [
+            "# Changelog",
+            "",
+            "## [1.2.3]",
+            "- Added new chart filters.",
+            "",
+            "## [1.2.2]",
+            "- Older entry.",
+        ]
+    )
+    path = tmp_path / "CHANGELOG.md"
+    path.write_text(content, encoding="utf-8")
+    monkeypatch.setattr(changelog, "changelog_path", lambda: path)
+
+    summaries = changelog.latest_changelog_summaries(max_items=1, max_sections=2)
+    assert summaries[0].version == "1.2.3"
+    assert summaries[1].version == "1.2.2"
+
+
+@pytest.mark.unit
 def test_changelog_modified_at_returns_none_when_missing(tmp_path, monkeypatch) -> None:
     """Return None when the changelog file is missing."""
 
