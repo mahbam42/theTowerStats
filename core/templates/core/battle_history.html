@@ -260,7 +260,7 @@
                           {{ row.run.run_progress.coins_earned_raw|default:"—" }}
                         {% elif column.key == "coins_per_hour" %}
                           {% if row.metric %}
-                            {{ row.metric.coins_per_hour|floatformat:2 }}
+                            <span class="metric-value" data-format="unit-value" data-unit="coins/hour" data-value="{{ row.metric.coins_per_hour }}"></span>
                           {% else %}
                             <span class="muted">—</span>
                           {% endif %}

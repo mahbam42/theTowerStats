@@ -2425,7 +2425,7 @@ CLOSED: [2025-12-22 Mon 15:31]
 - [X] fetch_wiki_data and rebuild_wiki_definitions should have a pretty summary of deltas at the end.
   Especially when using --target all.
 
-*** Bugs/Enhancements [72/83]
+*** Bugs/Enhancements [78/84]
 
 **** DONE [#B] Error Updating Guardian Upgrade Table                 :bug:
 CLOSED: [2025-12-22 Mon 18:51]
@@ -3239,7 +3239,9 @@ Parameters column is showing a level ahead of current unlock progress. The colum
 CLOSED: [2026-01-08 Thu 15:20]
 - State "DONE"       from "TODO"       [2026-01-08 Thu 15:20]
 We never did anything with the Run* models, or Units in Game Definitions
-**** IN PROGRESS [#B] Dark Mode Cleanup                              :bug:
+**** DONE [#B] Dark Mode Cleanup                                     :bug:
+CLOSED: [2026-01-10 Sat 17:31]
+- State "DONE"       from "IN PROGRESS" [2026-01-10 Sat 17:31]
 - State "IN PROGRESS" from "TODO"       [2026-01-08 Thu 15:20]
 - Demo Mode Alert Bar (multiple pages) – After enabling demo mode by clicking “Try demo data” on the home page, the site shows a persistent banner at the top of most pages (“Demo mode — You are viewing sample data…”). This banner has a dark brown background with black text, which is hard to read against the dark UI and clearly inherits the light theme. The banner appears in the same form on the Charts, Battle History, Goals, Cards, Ultimate Weapons, Guardian Chips and Bots pages.
 - Chart‑Builder Modal “Selection constraints” message – On the Charts page, clicking the Chart Builder button opens a modal to build a custom chart. At the top of this modal, there is a box labeled “Selection constraints” that tells you to select at least one metric. This box has an amber/tan background with black text, which clashes badly with the dark modal and is difficult to read. This looks like a light‑theme component that hasn’t been restyled for dark mode.
@@ -3595,39 +3597,62 @@ CLOSED: [2026-01-10 Sat 16:24]
 **** TODO [#B] Deploy Command for Railway                          :chore:
 Run migrations, rebuild_wiki_definitions, reparse_battle_reports
 
-**** TODO [#C] Standardized/Enforce Unit Display                     :bug:
+**** IN PROGRESS [#C] Standardized/Enforce Unit Display              :bug:
+- State "IN PROGRESS" from "TODO"       [2026-01-10 Sat 17:42] \\
+  coins per real hour
 In Modals Especially
 And Compare/Advice Results
 
-**** TODO [#C] Player Preferences                            :enhancement:
+**** IN PROGRESS [#C] Player Preferences                     :enhancement:
+- State "IN PROGRESS" from "TODO"       [2026-01-10 Sat 17:56]
 Store Favorite Charts for Charts Dashboard
 Store Chart Builder creations 
 
-**** TODO [#B] MOTD with latest changelog entry              :enhancement:
+**** IN PROGRESS [#B] MOTD with latest changelog entry       :enhancement:
+- State "IN PROGRESS" from "TODO"       [2026-01-10 Sat 17:56]
 Add to getting_started as well (between quick start and self host)
 
-**** TODO [#C] Compare Scopes needs to include Tournaments           :bug:
+**** DONE [#C] Compare Scopes needs to include Tournaments           :bug:
+CLOSED: [2026-01-10 Sat 19:10]
+- State "DONE"       from "TODO"       [2026-01-10 Sat 19:10]
 In the Run Select List, Tournaments should be available. 
 
-**** TODO [#C] On Charts Dashboard in Context Tier Select needs to include tournaments :bug:
+**** DONE [#C] On Charts Dashboard in Context Tier Select needs to include tournaments :bug:
+CLOSED: [2026-01-10 Sat 19:10]
+- State "DONE"       from "TODO"       [2026-01-10 Sat 19:10]
 Replace with a dropdown list of recorded tiers and 'tournament's 
 
-**** TODO [#B] Add Ability to Filter  by Snapshot or View Past N Runs on Chart Dashboard :enhancement:
+**** DONE [#B] Add Ability to Filter  by Snapshot or View Past N Runs on Chart Dashboard :enhancement:
+CLOSED: [2026-01-10 Sat 19:10]
+- State "DONE"       from "TODO"       [2026-01-10 Sat 19:10]
 In the Context panel in addition to the date, tier and preset selects. 
 
-**** TODO [#A] Improve Snapshots Implementation              :enhancement:
+**** DONE [#A] Improve Snapshots Implementation              :enhancement:
+CLOSED: [2026-01-10 Sat 19:10]
+- State "DONE"       from "TODO"       [2026-01-10 Sat 19:10]
 This feature will be aided by the previous task elevating it out of the Admin and on to the dashboards.
 Needs to be feaured on index.md.
 
 Snapshots date back to phase 7. They are not just "Snapshots persist a versioned `ChartConfigDTO` payload (`ChartSnapshot.config`) plus a dashboard `target`." Snapshots allow players to set custom milestones and progress markers, e.g. before unlocking X (UW, Bot, Relic, Lab, etc). This allows players to separate data beyond what is currently tracked in the app. Since it's player defined, it can be applied to Relics or Card Tiers. This can also apply to Tournament Ranks (Copper, Silver, Gold, etc). 
 
-**** TODO [#A] Add Tournament Rank to Battle Report Import
+**** DONE [#A] Add Tournament Rank to Battle Report Import
+CLOSED: [2026-01-10 Sat 19:10]
+- State "DONE"       from "TODO"       [2026-01-10 Sat 19:10]
 Next to the isTournament checkbox add a dropdown to select Tournament Rank (Copper, Silver, Gold, Platinum, Champions, and Legends). 
+
+**** TODO prompt52.md Tweaks
+- [X] Task 75: On Battle History, coins per real hour needs to be standardized.
+- [-] Task 76:
+  - [X] Move helper text "applies the section..." and 'Apply to Dashboard'/'Clear builder' to be below 'Saved Charts' section. It can all be under the heading 'Step 4 - Apply'
+  - [ ] Make 'save chart builder entry' and 'delete...' side by side
+- [ ] Task 77
+  - MOTD Banner did not display when logging in as an existing user, or after creating a new user. Should definitely appear for new/first time users
+- [X] Task 78 - 82 all look good 
 
 **** TODO [#B] Update Changelog and MOTD
 Run git log --oneline d1533c1...HEAD
 
-Update Changelog and Readme to 0.7.1, MOTD should include 0.6.2 as well.
+Update Changelog and Readme to 0.7.1, MOTD should include 0.6.2 as well. You can condense and summarize the commits with "ci:"
 
 Readme should be revised to include recently added features like, player preferences, snapshots, Compare
 ** Backlog [4/8]

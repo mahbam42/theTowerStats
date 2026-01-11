@@ -170,7 +170,9 @@ def test_battle_history_displays_coins_per_real_hour(auth_client, player) -> Non
     assert response.status_code == 200
 
     content = response.content.decode("utf-8")
-    assert "1000000.00" in content
+    assert 'data-format="unit-value"' in content
+    assert 'data-unit="coins/hour"' in content
+    assert 'data-value="1000000' in content
 
 
 @pytest.mark.django_db

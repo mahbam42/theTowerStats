@@ -1336,15 +1336,6 @@
             </div>
           </div>
 
-          <div id="builder-step-4" class="margin-top-1" hidden>
-            <h5 class="margin-bottom-0">Step 4 — Apply</h5>
-            <p class="muted margin-top-0">Applies the selection to the dashboard URL parameters.</p>
-            <div class="button-group expanded stack-for-small">
-              <button class="button" type="button" id="apply-chart-builder">Apply to dashboard</button>
-              <a class="button secondary" href="{% url 'core:dashboard' %}">Clear builder</a>
-            </div>
-          </div>
-
           <div class="margin-top-1">
             <h5 class="margin-bottom-0">Saved charts</h5>
             <p class="muted margin-top-0">Save Chart Builder selections for reuse or editing.</p>
@@ -1361,38 +1352,55 @@
               <button class="button secondary" type="button" id="delete-saved-chart">Delete</button>
             </div>
             {% if not demo_mode %}
-              <form method="post" id="saved-chart-form" class="margin-top-1">
-                {% csrf_token %}
-                <input type="hidden" name="action" value="save_chart_builder_creation">
-                <input type="hidden" name="saved_id" id="saved-chart-id" value="">
-                <label>Saved chart name
-                  <input type="text" name="name" id="saved-chart-name" maxlength="120" placeholder="e.g. Farming comparison">
-                </label>
-                <input type="hidden" name="chart_type" id="saved-chart-chart-type-hidden" value="">
-                <input type="hidden" name="x_axis" id="saved-chart-x-axis-hidden" value="">
-                <input type="hidden" name="group_by" id="saved-chart-group-by-hidden" value="">
-                <input type="hidden" name="comparison" id="saved-chart-comparison-hidden" value="">
-                <input type="hidden" name="smoothing" id="saved-chart-smoothing-hidden" value="">
-                <input type="hidden" name="run_a" id="saved-chart-run-a-hidden" value="">
-                <input type="hidden" name="run_b" id="saved-chart-run-b-hidden" value="">
-                <input type="hidden" name="window_a_start" id="saved-chart-window-a-start-hidden" value="">
-                <input type="hidden" name="window_a_end" id="saved-chart-window-a-end-hidden" value="">
-                <input type="hidden" name="window_b_start" id="saved-chart-window-b-start-hidden" value="">
-                <input type="hidden" name="window_b_end" id="saved-chart-window-b-end-hidden" value="">
-                <div id="saved-chart-metric-keys-hidden"></div>
-                <button class="button expanded" type="submit">Save chart builder entry</button>
-              </form>
-              <form method="post" id="delete-saved-chart-form" class="margin-top-1">
-                {% csrf_token %}
-                <input type="hidden" name="action" value="delete_chart_builder_creation">
-                <input type="hidden" name="saved_id" id="delete-saved-chart-id" value="">
-                <button class="button secondary expanded" type="submit">Delete saved chart</button>
-              </form>
+              <div class="margin-top-1">
+                <form method="post" id="saved-chart-form">
+                  {% csrf_token %}
+                  <input type="hidden" name="action" value="save_chart_builder_creation">
+                  <input type="hidden" name="saved_id" id="saved-chart-id" value="">
+                  <label>Saved chart name
+                    <input type="text" name="name" id="saved-chart-name" maxlength="120" placeholder="e.g. Farming comparison">
+                  </label>
+                  <input type="hidden" name="chart_type" id="saved-chart-chart-type-hidden" value="">
+                  <input type="hidden" name="x_axis" id="saved-chart-x-axis-hidden" value="">
+                  <input type="hidden" name="group_by" id="saved-chart-group-by-hidden" value="">
+                  <input type="hidden" name="comparison" id="saved-chart-comparison-hidden" value="">
+                  <input type="hidden" name="smoothing" id="saved-chart-smoothing-hidden" value="">
+                  <input type="hidden" name="run_a" id="saved-chart-run-a-hidden" value="">
+                  <input type="hidden" name="run_b" id="saved-chart-run-b-hidden" value="">
+                  <input type="hidden" name="window_a_start" id="saved-chart-window-a-start-hidden" value="">
+                  <input type="hidden" name="window_a_end" id="saved-chart-window-a-end-hidden" value="">
+                  <input type="hidden" name="window_b_start" id="saved-chart-window-b-start-hidden" value="">
+                  <input type="hidden" name="window_b_end" id="saved-chart-window-b-end-hidden" value="">
+                  <div id="saved-chart-metric-keys-hidden"></div>
+                </form>
+                <div class="grid-x grid-margin-x">
+                  <div class="cell medium-6">
+                    <button class="button expanded" type="submit" form="saved-chart-form">Save chart builder entry</button>
+                  </div>
+                  <div class="cell medium-6">
+                    <form method="post" id="delete-saved-chart-form">
+                      {% csrf_token %}
+                      <input type="hidden" name="action" value="delete_chart_builder_creation">
+                      <input type="hidden" name="saved_id" id="delete-saved-chart-id" value="">
+                      <button class="button secondary expanded" type="submit">Delete saved chart</button>
+                    </form>
+                  </div>
+                </div>
+              </div>
             {% else %}
               <div class="callout warning margin-top-1" role="status">
                 Saved charts are disabled in demo mode.
               </div>
             {% endif %}
+          </div>
+
+          <div id="builder-step-4" class="margin-top-1" hidden>
+            <h5 class="margin-bottom-0">Step 4 — Apply</h5>
+            <p class="muted margin-top-0">Applies the selection to the dashboard URL parameters.</p>
+            <div class="button-group expanded stack-for-small">
+              <button class="button" type="button" id="apply-chart-builder">Apply to dashboard</button>
+              <a class="button secondary" href="{% url 'core:dashboard' %}">Clear builder</a>
+            </div>
           </div>
 
           <hr>

@@ -142,6 +142,7 @@ from core.uw_sync import build_uw_sync_payload
 from core.uw_usage import count_observed_uw_runs
 from core.redirects import safe_redirect
 from core.services import ingest_battle_report
+from core.session_keys import MOTD_LAST_LOGIN_SESSION_KEY
 
 WALKTHROUGH_FIRST_LOGIN_SESSION_KEY = "tts_walkthrough_first_login"
 WALKTHROUGH_CHANGELOG_URL = "https://github.com/mahbam42/theTowerStats/blob/main/CHANGELOG.md"
@@ -267,6 +268,9 @@ def login_view(request: HttpRequest) -> HttpResponse:
                         },
                     )
                 user = signup_form.save()
+                request.session[MOTD_LAST_LOGIN_SESSION_KEY] = (
+                    user.last_login.isoformat() if user.last_login else ""
+                )
                 request.session[WALKTHROUGH_FIRST_LOGIN_SESSION_KEY] = True
                 auth_login(request, user)
                 return safe_redirect(
@@ -278,6 +282,9 @@ def login_view(request: HttpRequest) -> HttpResponse:
             login_form = AuthenticationForm(request, data=request.POST)
             if login_form.is_valid():
                 user = login_form.get_user()
+                request.session[MOTD_LAST_LOGIN_SESSION_KEY] = (
+                    user.last_login.isoformat() if user.last_login else ""
+                )
                 if user.last_login is None:
                     request.session[WALKTHROUGH_FIRST_LOGIN_SESSION_KEY] = True
                 else:
