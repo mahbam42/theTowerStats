@@ -36,6 +36,16 @@ Testing conventions, markers, and running instructions are documented on the ded
 
 See: [Testing](testing.md)
 
+## Repository docs in MkDocs
+
+MkDocs includes repo-root GitHub Markdown files (for example, `CHANGELOG.md` and
+`CONTRIBUTING.md`) via `mkdocs-gen-files` instead of symlinks.
+
+To add another repo document:
+
+1. Add the filename to `REPO_FILES` in `scripts/mkdocs_gen_repo_docs.py`.
+2. Add a matching entry under the `Project` section in `mkdocs.yml`.
+
 Guided Walkthrough testing note: if the walkthrough does not appear in demo mode, clear local storage keys `tts_walkthrough_dismissed` and `tts_walkthrough_completed_at` via DevTools → Application → Local Storage for the current site.
 
 ## Migrations

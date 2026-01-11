@@ -113,7 +113,7 @@ This project follows Semantic Versioning.
 
 ## [0.1.0]
 
-- Developer documentation: [Phase 8](docs/phase8.md), [Phase 9](docs/phase9.md)
+- Developer documentation: Phase 8, Phase 9
 - Battle Report import with deduplication and safe handling of unknown labels
 - Charts with filters, snapshots, and exports (CSV, PNG)
 - Read-only progress dashboards for cards, ultimate weapons, guardian chips, and bots

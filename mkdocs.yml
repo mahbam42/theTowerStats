@@ -18,6 +18,9 @@ theme:
 
 plugins:
   - search
+  - gen-files:
+      scripts:
+        - scripts/mkdocs_gen_repo_docs.py
   - mkdocstrings:
       handlers:
         python:
@@ -56,10 +59,19 @@ nav:
       - Ultimate Weapons: ultimate_weapons.md
       - Guardian Chips: guardian_chips.md
       - Bots: bots.md
+  - Project:
+      - Changelog: repo/CHANGELOG.md
+      - Readme: repo/readme.md
+      - Contributing: repo/CONTRIBUTING.md
+      - Versioning: repo/VERSIONING.md
+      - Security: repo/SECURITY.md
+      - App Philosophy: philosophy.md
+      - Design Philosophy: design_philosophy.md
+      - Code of Conduct: repo/CODE_OF_CONDUCT.md
   - Wiki Population: wiki_population.md
   - Development:
-      - Design Philosophy: design_philosophy.md
       - Project Structure: project_structure.md
+      - Design Philosophy: design_philosophy.md
       - Admin Panel: admin_panel.md
       - Progress: 
           - Phase 1: phase1.md
