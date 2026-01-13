@@ -21,7 +21,7 @@ Explore helps you build your own questions about past runs and see aggregated an
 6. Select a **Wave minimum/maximum** or a **Death cause** when needed.
 7. Select a **Primary breakdown** (and an optional **Secondary breakdown**).
 8. Select a **Metric** and an **Aggregation** (Sum or Count).
-9. Select an **Output** type.
+9. Select an **Output** type when you want an optional chart or KPI.
 10. Select **Run query**.
 
 ## How to Read the Results
@@ -30,7 +30,8 @@ Explore helps you build your own questions about past runs and see aggregated an
 - **Breakdowns** define the groups you are comparing.
 - **Sum** adds the selected metric across runs in each group.
 - **Count** shows how many runs contributed a value to each group.
-- Bar and donut charts show the same totals as the table, grouped by your breakdown.
+- The table always shows the grouped totals for your query.
+- Bar and donut charts repeat the same totals as the table, grouped by your breakdown.
 - Donut charts show percent contribution, not raw totals.
 
 ## Notes & Limitations

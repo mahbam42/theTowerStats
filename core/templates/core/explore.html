@@ -184,40 +184,38 @@
           </div>
         {% endif %}
 
-        {% if explore_results.visualization == "table" %}
-          <div class="card-shell margin-top-1">
-            {% if explore_results.rows %}
-              <div class="table-scroll">
-                <table class="stack">
-                  <thead>
-                    <tr>
-                      {% for header in explore_results.breakdown_headers %}
-                        <th scope="col">{{ header }}</th>
-                      {% endfor %}
-                      <th scope="col">Value</th>
-                      <th scope="col">Runs counted</th>
-                    </tr>
-                  </thead>
-                  <tbody>
-                    {% for row in explore_results.rows %}
-                      <tr>
-                        {% for label in row.breakdown %}
-                          <td>{{ label }}</td>
-                        {% endfor %}
-                        <td>
-                          <span class="metric-value" data-format="unit-value" data-unit="{{ explore_results.metric_unit }}" data-value="{{ row.value }}"></span>
-                        </td>
-                        <td>{{ row.sample_count }}</td>
-                      </tr>
+        <div class="card-shell margin-top-1">
+          {% if explore_results.rows %}
+            <div class="table-scroll">
+              <table class="stack">
+                <thead>
+                  <tr>
+                    {% for header in explore_results.breakdown_headers %}
+                      <th scope="col">{{ header }}</th>
                     {% endfor %}
-                  </tbody>
-                </table>
-              </div>
-            {% else %}
-              <div class="empty-state" role="status">No results for the current query.</div>
-            {% endif %}
-          </div>
-        {% endif %}
+                    <th scope="col">Value</th>
+                    <th scope="col">Runs counted</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {% for row in explore_results.rows %}
+                    <tr>
+                      {% for label in row.breakdown %}
+                        <td>{{ label }}</td>
+                      {% endfor %}
+                      <td>
+                        <span class="metric-value" data-format="unit-value" data-unit="{{ explore_results.metric_unit }}" data-value="{{ row.value }}"></span>
+                      </td>
+                      <td>{{ row.sample_count }}</td>
+                    </tr>
+                  {% endfor %}
+                </tbody>
+              </table>
+            </div>
+          {% else %}
+            <div class="empty-state" role="status">No results for the current query.</div>
+          {% endif %}
+        </div>
       {% else %}
         <div class="card-shell">
           <div class="empty-state" role="status">Run a query to see results.</div>
