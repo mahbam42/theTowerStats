@@ -2425,7 +2425,7 @@ CLOSED: [2025-12-22 Mon 15:31]
 - [X] fetch_wiki_data and rebuild_wiki_definitions should have a pretty summary of deltas at the end.
   Especially when using --target all.
 
-*** Bugs/Enhancements [83/84]
+*** Bugs/Enhancements [84/90]
 
 **** DONE [#B] Error Updating Guardian Upgrade Table                 :bug:
 CLOSED: [2025-12-22 Mon 18:51]
@@ -3665,11 +3665,187 @@ Run git log --oneline d1533c1...HEAD
 Update Changelog and Readme to 0.7.1, MOTD should include 0.6.2 as well. You can condense and summarize the commits with "ci:"
 
 Readme should be revised to include recently added features like, player preferences, snapshots, Compare
-** Backlog [4/8]
+
+**** DONE [#C] Add Repo Docs to Docs/
+CLOSED: [2026-01-11 Sun 15:29]
+- State "DONE"       from              [2026-01-11 Sun 15:29]
+
+
+1. Make a new section called 'Project' (after 'Bots' and above 'Development') and include links to the following docs: 
+    *Changelog (repo root)
+    * Readme
+    * Contributing (repo root)
+    * Versioning (repo root)
+    * Security (repo root)
+    * App Philosophy
+    * Design Philosophy
+    * Code of Conduct (repo root)
+2. Resolve these warnings by removing the links:
+    >  WARNING -  Doc file 'repo/CHANGELOG.md' contains a link       'docs/phase8.md', but the target 'repo/docs/phase8.md' isnot found among documentation files.
+    > WARNING -  Doc file 'repo/CHANGELOG.md' contains a link 'docs/phase9.md', but the target 'repo/docs/phase9.md' is not found among documentation files.
+3. Add mkdocs-gen-files to requirements-dev.txt
+
+
+**** TODO [#A] Enforce Level 0 Bot Parameter Levels                  :bug:
+- State "TODO"       from "WAIT"       [2026-01-11 Sun 15:31] \\
+  Proven issue, moved up from Backlog
+- State "WAIT"       from "TODO"       [2026-01-10 Sat 13:31] \\
+  Might not break when rebuilt
+It's not cleanly scrapable from the wiki, but should be in the DB for progress tracking. rebuild_wiki_definitions removed the level 0 objects I had manually entered via Admin (likely because there was no wiki source). These are important and should be injected into the database (either via code or a migration) that isn't overwritten when running rebuild_wiki_definitions.
+
+UWs and Guardian Chips already correctly show a level 1 with 0 upgrade cost.
+
+Note this fix in the developer docs in case it changes in the future. 
+
+***** Bots Level 0
+Thunder Bot
+Duration 5.0s 0 
+Cooldown 120s 0
+Linger 20% 0
+Range 28m 0
+
+Flame Bot
+Damage Reduction 20%
+Cooldown 75s
+Damage x50
+Range 30m
+
+Golden Bot
+Duration 20s
+Cooldown 120s
+Bonus 2.0x
+Range 20m 
+
+Amplify Bot
+Duration 20s
+Cooldown 120s
+Bonus 3.50%
+Range 25m 
+
+**** TODO [#B] Add 'Recovery Packages' to Battle Dashboard         :patch:
+Hidden by Default, can be shown via Columns Menu
+
+**** TODO [#B] On charts dashboard add control to context to exclude multiple presets
+To prevent exceptional runs from diluting what's shown in charts.
+
+Will need to update documentation to clearly define the new behavior for Presets beyond card groupings.
+**** TODO [#C] Add note to user docs that 'imported' Battle Logs are timestamped in UTC :bug:
+
+**** TODO [#C] Hide Deathwave and/or Golden Bot on UW Sync Chart   :patch:
+
+Add an optional toggle to show/hide the Death Wave and/or Golden Bot activation markers (so the schedule focuses on GT/BH overlap), while still keeping everything descriptive.
+** Backlog [3/6]
 “Out of Scope”:
 - Cloud sync
 - Real-time scraping
+*** Add an “Explore Battles” surface (separate dashboard)            :feat:
+Think pseudo-queries, not SQL.
 
+A. Structure it as: Filter → Breakdown → Measure
+Filters (WHERE)
+Simple, stackable:
+
+- Tier (multi-select)
+- Date range
+- Wave range
+- Death cause
+- Preset runs (saved scopes from Charts Dashboard)
+
+Breakdown (GROUP BY)
+Exactly one primary dimension:
+
+- Damage Source
+- Enemy Type
+- Coin Source
+- Guardian Outcome
+- Run (per-battle)
+- Optional secondary breakdown (advanced toggle).
+
+Measure (METRIC)
+One numeric output at a time:
+
+- Sum
+- Average
+- % of total
+- Per hour
+- Per wave
+
+
+Use semantic field groups, not raw fields
+The raw model is excellent — do not expose it directly.
+
+Create a thin semantic layer:
+
+Output types (keep it opinionated)
+Limit visualization choices:
+
+- Table (sortable, exportable)
+- Bar chart
+- Donut (only for % contribution)
+- Single KPI card (for comparisons)
+
+No free-form chart builder. Guardrails matter. And we already have a full chart builder.
+
+**Guardrails you should enforce (strongly)**
+
+Based on our philosophy:
+
+- No ranking against other players
+- No “best build” conclusions
+- No auto-recommendations
+- No cross-player data
+- No recommendations
+- No rankings
+- No prescriptive labels (“best”, “optimal”)
+- No auto-joining unrelated dimensions
+- Emphasize inspection, not prescription
+- Let users draw conclusions
+-  Make assumptions explicit in UI copy
+*** WAIT [#B] Add Card Slots to Goals                               :patch:
+
+- State "WAIT"       from "TODO"       [2026-01-12 Mon 10:37] \\
+  This doesn't make sense until we expand the types of goals supported
+**Option 1 — Separate by Goal Kind (strongest alignment)**
+
+Introduce a non-judgmental grouping in the goal picker, e.g.:
+- Performance Parameters
+- Progression / Capacity
+- Utility / Unlocks
+
+No ranking. No ordering. Just semantic labeling.
+
+This preserves:
+- User agency
+- Transparency
+- Non-prescription
+
+And it makes the app more honest, not less.
+
+**Option 2 — Allow it, but don’t surface it elsewhere**
+
+We already have:
+
+> “Bots, Guardian Chips, and Ultimate Weapons dashboards render a small goals widget” 
+
+If Card Slots:
+- Can be added as a goal
+- But never appear in cross-dashboard widgets
+
+This avoids the “this is as important as DPS” visual cue.
+
+This is a pragmatic, low-impact solution.
+
+**Option 3 — Let the user opt into seeing “non-performance goals”**
+
+This works, but it’s heavier UX for marginal gain unless you’re already adding preferences.
+
+What not to do (still true):
+- Don’t auto-suggest Card Slot goals
+- Don’t prefill them
+- Don’t include them in any summary like “Top remaining costs”
+- Don’t co-mingle them in language that implies impact (“biggest gains”)
+
+That would violate our own Explainability over Optimization rule.
 *** TODO [#A] Exploratory Pattern Analysis (v0.X.0)    :kMeans:enhancement:
 
 Guiding Principles:
@@ -3850,87 +4026,25 @@ K-means belongs entirely inside of analysis
 - It never implies success
 
 *** TODO [#B] Draft a “This app is done” release note
-Cite philosophy.md and mention k-means as the next big feature
-*** WAIT Add Card Slots to Goals
-- State "WAIT"       from              [2026-01-09 Fri 12:09] \\
-  Thinking about it
 
+> It turns Battle Reports into history, charts, and comparisons so you can see what changed, when it changed, and under what conditions.
 
-**Option 1 — Separate by Goal Kind (strongest alignment)**
+> No leaderboards
+> No “best build” claims
+> No hidden assumptions
+> No telling you how to play
+> Everything is based on your data, shown with clear context and stated assumptions. If there isn’t enough data to support a conclusion, the app says so explicitly.
 
-Introduce a non-judgmental grouping in the goal picker, e.g.:
-- Performance Parameters
-- Progression / Capacity
-- Utility / Unlocks
+> It’s a mirror, not a meta.
+- Cite philosophy.md/design_philosophy.md
+- Call Out:
+  - Goals
+  - Cards, Bots, UWs, Guardian Chip Unlock/Upgrade Tracking
+  - Presets
+- Looking for Feedback and Feature Requests
 
-No ranking. No ordering. Just semantic labeling.
+- Mention k-means as the next big feature if we collect enough users
 
-This preserves:
-- User agency
-- Transparency
-- Non-prescription
-
-And it makes the app more honest, not less.
-
-**Option 2 — Allow it, but don’t surface it elsewhere**
-
-We already have:
-
-> “Bots, Guardian Chips, and Ultimate Weapons dashboards render a small goals widget” 
-
-If Card Slots:
-- Can be added as a goal
-- But never appear in cross-dashboard widgets
-
-This avoids the “this is as important as DPS” visual cue.
-
-This is a pragmatic, low-impact solution.
-
-**Option 3 — Let the user opt into seeing “non-performance goals”**
-
-This works, but it’s heavier UX for marginal gain unless you’re already adding preferences.
-
-What not to do (still true):
-- Don’t auto-suggest Card Slot goals
-- Don’t prefill them
-- Don’t include them in any summary like “Top remaining costs”
-- Don’t co-mingle them in language that implies impact (“biggest gains”)
-
-That would violate our own Explainability over Optimization rule.
-*** WAIT [#B] Enforce Level 0 Bot/UW/Guardian Chip Parameter Levels
-- State "WAIT"       from "TODO"       [2026-01-10 Sat 13:31] \\
-  Might not break when rebuilt
-It's not cleanly scrapable from the wiki, but should be in the DB for progress tracking.
-**** Bots Level 0
-Thunder Bot
-Duration 5.0s 0 
-Cooldown 120s 0
-Linger 20% 0
-Range 28m 0
-
-Flame Bot
-Damage Reduction 20%
-Cooldown 75s
-Damage x50
-Range 30m
-
-Golden Bot
-Duration 20s
-Cooldown 120s
-Bonus 2.0x
-Range 20m 
-
-Amplify Bot
-Duration 20s
-Cooldown 120s
-Bonus 3.50%
-Range 25m 
-
-*** CANCELED [#C] Hide Deathwave on UW Sync Chart
-CLOSED: [2026-01-07 Wed 16:29]
-- State "CANCELED"   from "TODO"       [2026-01-07 Wed 16:29] \\
-  don't need it
-Add an optional toggle to show/hide the Death Wave activation markers (so the schedule focuses on GT/BH overlap), while still keeping everything descriptive.
 *** CANCELED [#C] Required Doc Type Header (Must Prepend to All Docs)
 CLOSED: [2026-01-07 Wed 16:28]
 - State "CANCELED"   from "TODO"       [2026-01-07 Wed 16:28] \\
