@@ -25,8 +25,9 @@ Battle History helps you review your past runs in a table so you can compare res
 9. Select **Columns** to choose which columns appear, then select **Save columns**.
 10. Select a column header to sort the table by that column.
 11. Select a run row to open the Battle Report Modal. For details, see [Battle Report Modal](battle_report_modal.md).
-12. To change a run’s preset later, select a value in the **Preset** selector inside that row.
-13. To filter by a preset, select a value in **Preset** under **Filters**, or select a preset badge in the table.
+12. Select **Explore similar runs** to open Explore with your current filters.
+13. To change a run’s preset later, select a value in the **Preset** selector inside that row.
+14. To filter by a preset, select a value in **Preset** under **Filters**, or select a preset badge in the table.
 
 ## How to Read the Results
 

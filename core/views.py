@@ -7,7 +7,7 @@ import csv
 import io
 from dataclasses import dataclass
 from datetime import date, timedelta
-from typing import Any, cast
+from typing import Any, Literal, cast
 from collections.abc import Iterable
 
 from django.contrib import messages
@@ -33,6 +33,20 @@ from analysis.chart_config_validator import validate_chart_config_dto
 from analysis.deltas import delta
 from analysis.event_windows import coerce_window_bounds, event_window_for_date, shift_event_window
 from analysis.engine import analyze_metric_series, analyze_runs
+from analysis.explore_engine import execute_explore_query
+from analysis.explore_registry import DEFAULT_BREAKDOWNS, ExploreMetricDefinition, build_explore_metric_registry
+from analysis.explore_schema import (
+    FilterOperator,
+    SCHEMA_VERSION,
+    ExploreBreakdown,
+    ExploreFilter,
+    ExploreMetricSelection,
+    ExploreQuery,
+    ExploreScope,
+    VisualizationHint,
+    build_query_payload,
+    validate_explore_query,
+)
 from analysis.dto import RunAnalysis
 from analysis.metrics import get_metric_definition
 from analysis.quantity import UnitType
@@ -74,6 +88,7 @@ from core.forms import (
     ChartContextForm,
     CardsFilterForm,
     ComparisonForm,
+    ExploreQueryForm,
     GoalTargetUpdateForm,
     GoalsFilterForm,
     UpgradeableEntityProgressFilterForm,
@@ -118,6 +133,7 @@ from player_state.models import (
     ChartBuilderSavedConfig,
     ChartDashboardPreference,
     ChartSnapshot,
+    ExploreQuery as ExploreQueryModel,
     GoalTarget,
     GoalType,
     MAX_ACTIVE_GUARDIAN_CHIPS,
@@ -977,6 +993,14 @@ def dashboard(request: HttpRequest) -> HttpResponse:
         "chart_empty_state": chart_empty_state,
         "scope_summary": scope_summary,
         "why_panel": why_panel,
+        "explore_modal": {
+            "start_date": chart_form.cleaned_data.get("start_date"),
+            "end_date": chart_form.cleaned_data.get("end_date"),
+            "tier": chart_form.cleaned_data.get("tier"),
+            "preset_id": getattr(chart_form.cleaned_data.get("preset"), "id", None),
+            "snapshot_id": getattr(chart_form.cleaned_data.get("context_snapshot"), "id", None),
+            "past_n_runs": chart_form.cleaned_data.get("past_runs"),
+        },
         "event_window_start": chart_form.cleaned_data.get("start_date"),
         "event_window_end": chart_form.cleaned_data.get("end_date"),
         "walkthrough_enabled": walkthrough_enabled,
@@ -1664,6 +1688,142 @@ def _chart_builder_payload(builder_form: ChartBuilderForm) -> dict[str, object]:
         "window_b_start": window_b_start.isoformat() if window_b_start else "",
         "window_b_end": window_b_end.isoformat() if window_b_end else "",
     }
+
+
+@login_required
+def explore_dashboard(request: HttpRequest) -> HttpResponse:
+    """Render the Explore dashboard for player-authored queries."""
+
+    player = _request_player(request)
+    if request.method == "POST" and demo_mode_enabled(request):
+        return _reject_demo_write(request)
+
+    explore_registry = build_explore_metric_registry()
+    saved_queries = ExploreQueryModel.objects.filter(player=player).order_by("name", "id")
+    loaded_query: ExploreQueryModel | None = None
+    loaded_payload: dict[str, object] | None = None
+    if request.method == "GET" and request.GET.get("query_id"):
+        try:
+            query_id = int(request.GET.get("query_id") or 0)
+        except ValueError:
+            query_id = 0
+        if query_id:
+            loaded_query = saved_queries.filter(id=query_id).first()
+            if loaded_query is not None:
+                loaded_payload = dict(loaded_query.query or {})
+
+    form_data: QueryDict | None = None
+    initial: dict[str, object] = {}
+    if loaded_payload:
+        initial = _explore_form_initial_from_payload(loaded_payload)
+        if loaded_query is not None:
+            initial["query_id"] = loaded_query.id
+    if not initial and request.method == "GET" and request.GET and not request.GET.get("run"):
+        initial = _explore_form_initial_from_request(request.GET)
+    if request.method == "POST":
+        form_data = request.POST
+    elif request.method == "GET" and request.GET.get("run"):
+        form_data = request.GET
+
+    form = ExploreQueryForm(form_data, player=player, initial=initial)
+
+    validation_errors: list[str] = []
+    validation_warnings: list[str] = []
+    results: dict[str, object] | None = None
+    query_payload: dict[str, object] | None = None
+
+    if not form.is_bound and loaded_payload:
+        loaded_query_data = _explore_query_from_payload(loaded_payload)
+        validation = validate_explore_query(
+            loaded_query_data,
+            metric_registry=explore_registry,
+            breakdown_registry=DEFAULT_BREAKDOWNS,
+        )
+        validation_errors.extend(validation.errors)
+        validation_warnings.extend(validation.warnings)
+        query_payload = loaded_payload
+        if not validation.errors:
+            results = _explore_execute_query(loaded_query_data, player=player, registry=explore_registry)
+            if results["run_count"] == 0:
+                validation_warnings.append("Empty scope: no runs match the current scope and filters.")
+            if not results["rows"]:
+                validation_warnings.append("Missing data: no matching metric values were found.")
+            if results["missing_count"]:
+                validation_warnings.append(
+                    f"Missing data: {results['missing_count']} run values were unavailable for the selected metric."
+                )
+
+    if form.is_bound and form.is_valid():
+        query = _explore_query_from_form(form, player=player)
+        validation = validate_explore_query(
+            query,
+            metric_registry=explore_registry,
+            breakdown_registry=DEFAULT_BREAKDOWNS,
+        )
+        validation_errors.extend(validation.errors)
+        validation_warnings.extend(validation.warnings)
+        query_payload = build_query_payload(query)
+
+        if not validation.errors:
+            execution_query = query
+            if query.visualization_hint == "kpi":
+                execution_query = ExploreQuery(
+                    schema_version=query.schema_version,
+                    player_id=query.player_id,
+                    name=query.name,
+                    scope=query.scope,
+                    filters=query.filters,
+                    breakdowns=(),
+                    metric=query.metric,
+                    visualization_hint=query.visualization_hint,
+                )
+            results = _explore_execute_query(execution_query, player=player, registry=explore_registry)
+            if results["run_count"] == 0:
+                validation_warnings.append("Empty scope: no runs match the current scope and filters.")
+            if not results["rows"]:
+                validation_warnings.append("Missing data: no matching metric values were found.")
+            if results["missing_count"]:
+                validation_warnings.append(
+                    f"Missing data: {results['missing_count']} run values were unavailable for the selected metric."
+                )
+
+        if request.method == "POST" and request.POST.get("action") == "save_explore_query":
+            if validation.errors:
+                messages.error(request, "Could not save query: validation failed.")
+            else:
+                saved_id = form.cleaned_data.get("query_id")
+                existing = (
+                    ExploreQueryModel.objects.filter(player=player, id=saved_id).first()
+                    if saved_id
+                    else None
+                )
+                name = query.name
+                conflict = ExploreQueryModel.objects.filter(player=player, name=name)
+                if existing is not None:
+                    conflict = conflict.exclude(id=existing.id)
+                if conflict.exists():
+                    messages.error(request, "A query with this name already exists.")
+                else:
+                    if existing is None:
+                        existing = ExploreQueryModel(player=player, name=name)
+                    existing.schema_version = SCHEMA_VERSION
+                    existing.name = name
+                    existing.query = query_payload or {}
+                    existing.save()
+                    messages.success(request, "Explore query saved.")
+                    target = f"{reverse('core:explore')}?query_id={existing.id}"
+                    return safe_redirect(request, candidates=[request.POST.get("next")], fallback=target)
+
+    context = {
+        "form": form,
+        "saved_queries": saved_queries,
+        "loaded_query": loaded_query,
+        "query_payload": query_payload,
+        "explore_results": results,
+        "explore_errors": tuple(validation_errors),
+        "explore_warnings": tuple(validation_warnings),
+    }
+    return render(request, "core/explore.html", context)
 
 
 @login_required
@@ -4438,6 +4598,508 @@ def _parse_context_str(value: object) -> str | None:
         return None
     cleaned = str(value).strip()
     return cleaned or None
+
+
+def _explore_form_initial_from_payload(payload: dict[str, object]) -> dict[str, object]:
+    """Return form initial values derived from a stored Explore payload."""
+
+    scope_raw = payload.get("scope")
+    scope = scope_raw if isinstance(scope_raw, dict) else {}
+    date_range_raw = scope.get("date_range")
+    date_range = date_range_raw if isinstance(date_range_raw, dict) else {}
+    metric_raw = payload.get("metric")
+    metric = metric_raw if isinstance(metric_raw, dict) else {}
+    breakdowns_raw = payload.get("breakdowns")
+    breakdown_entries = [
+        entry
+        for entry in (breakdowns_raw if isinstance(breakdowns_raw, list) else [])
+        if isinstance(entry, dict)
+    ]
+    breakdowns = sorted(
+        breakdown_entries,
+        key=lambda entry: int(entry.get("order") or 0),
+    )
+
+    initial: dict[str, object] = {
+        "name": payload.get("name") or "",
+        "start_date": date_range.get("start") or "",
+        "end_date": date_range.get("end") or "",
+        "preset": scope.get("preset") or "",
+        "snapshot": scope.get("snapshot") or "",
+        "past_n_runs": scope.get("past_n_runs") or "",
+        "metric_key": metric.get("key") or "",
+        "aggregation": metric.get("aggregation") or "sum",
+        "visualization": payload.get("visualization_hint") or "table",
+    }
+
+    if breakdowns:
+        initial["primary_breakdown"] = breakdowns[0].get("dimension") or ""
+    if len(breakdowns) > 1:
+        initial["secondary_breakdown"] = breakdowns[1].get("dimension") or ""
+
+    tier_values: list[str] = []
+    filters_raw = payload.get("filters")
+    filter_entries = [
+        entry
+        for entry in (filters_raw if isinstance(filters_raw, list) else [])
+        if isinstance(entry, dict)
+    ]
+    for entry in filter_entries:
+        field = entry.get("field")
+        operator = entry.get("operator")
+        value = entry.get("value")
+        if field == "tier" and operator == "in" and isinstance(value, list):
+            tier_values = [str(v) for v in value if v is not None]
+        if field == "tier" and operator == ">=":
+            initial["tier_min"] = value
+        if field == "tier" and operator == "<=":
+            initial["tier_max"] = value
+        if field == "wave" and operator == ">=":
+            initial["wave_min"] = value
+        if field == "wave" and operator == "<=":
+            initial["wave_max"] = value
+        if field == "wave" and operator == "range" and isinstance(value, dict):
+            initial["wave_min"] = value.get("min")
+            initial["wave_max"] = value.get("max")
+        if field == "death_cause":
+            initial["death_cause"] = value or "__missing__"
+        if field == "date_range" and operator == "range" and isinstance(value, dict):
+            initial["start_date"] = value.get("start") or initial.get("start_date") or ""
+            initial["end_date"] = value.get("end") or initial.get("end_date") or ""
+        if field == "preset" and operator == "=":
+            initial["preset"] = value or ""
+    if tier_values:
+        initial["tier_values"] = tier_values
+
+    return initial
+
+
+def _explore_form_initial_from_request(params: QueryDict) -> dict[str, object]:
+    """Return form initial values from Explore query parameters."""
+
+    initial: dict[str, object] = {}
+    tier_values = [value for value in params.getlist("tier_values") if value]
+    if tier_values:
+        initial["tier_values"] = tier_values
+    for field in ("start_date", "end_date", "preset", "snapshot", "past_n_runs", "death_cause"):
+        if params.get(field):
+            initial[field] = params.get(field)
+    return initial
+
+
+def _explore_query_from_payload(payload: dict[str, object]) -> ExploreQuery:
+    """Parse a stored Explore payload into a typed ExploreQuery."""
+
+    scope_raw = payload.get("scope")
+    scope = scope_raw if isinstance(scope_raw, dict) else {}
+    date_range_raw = scope.get("date_range")
+    date_range = date_range_raw if isinstance(date_range_raw, dict) else {}
+    filters_raw = payload.get("filters")
+    filter_entries = [
+        entry
+        for entry in (filters_raw if isinstance(filters_raw, list) else [])
+        if isinstance(entry, dict)
+    ]
+    filters = tuple(
+        ExploreFilter(
+            field=str(entry.get("field") or ""),
+            operator=cast(FilterOperator, str(entry.get("operator") or "=")),
+            value=entry.get("value"),
+        )
+        for entry in filter_entries
+    )
+    breakdowns_raw = payload.get("breakdowns")
+    breakdown_entries = [
+        entry
+        for entry in (breakdowns_raw if isinstance(breakdowns_raw, list) else [])
+        if isinstance(entry, dict)
+    ]
+    breakdowns = tuple(
+        ExploreBreakdown(
+            dimension=str(entry.get("dimension") or ""),
+            order=int(entry.get("order") or 0),
+        )
+        for entry in breakdown_entries
+    )
+    metric_raw = payload.get("metric")
+    metric = metric_raw if isinstance(metric_raw, dict) else {}
+    return ExploreQuery(
+        schema_version=str(payload.get("schema_version") or ""),
+        player_id=str(payload.get("player_id") or ""),
+        name=str(payload.get("name") or ""),
+        scope=ExploreScope(
+            start_date=_parse_context_date(date_range.get("start")),
+            end_date=_parse_context_date(date_range.get("end")),
+            tier=_parse_context_int(scope.get("tier")),
+            preset_id=_parse_context_int(scope.get("preset")),
+            snapshot_id=_parse_context_int(scope.get("snapshot")),
+            past_n_runs=_parse_context_int(scope.get("past_n_runs")),
+        ),
+        filters=filters,
+        breakdowns=breakdowns,
+        metric=ExploreMetricSelection(
+            key=str(metric.get("key") or ""),
+            aggregation=cast(Literal["sum", "count"], str(metric.get("aggregation") or "sum")),
+        ),
+        visualization_hint=cast(
+            VisualizationHint,
+            str(payload.get("visualization_hint") or "table"),
+        ),
+    )
+
+
+def _explore_query_from_form(form: ExploreQueryForm, *, player: Player) -> ExploreQuery:
+    """Build an ExploreQuery from validated form data."""
+
+    cleaned = form.cleaned_data
+    tier_values = [int(value) for value in cleaned.get("tier_values") or [] if str(value).isdigit()]
+    tier_min = cleaned.get("tier_min")
+    tier_max = cleaned.get("tier_max")
+
+    scope_tier = None
+    if len(tier_values) == 1 and not tier_min and not tier_max:
+        scope_tier = tier_values[0]
+
+    scope = ExploreScope(
+        start_date=cleaned.get("start_date"),
+        end_date=cleaned.get("end_date"),
+        tier=scope_tier,
+        preset_id=getattr(cleaned.get("preset"), "id", None),
+        snapshot_id=getattr(cleaned.get("snapshot"), "id", None),
+        past_n_runs=cleaned.get("past_n_runs"),
+    )
+
+    filters: list[ExploreFilter] = []
+    if cleaned.get("start_date") or cleaned.get("end_date"):
+        filters.append(
+            ExploreFilter(
+                field="date_range",
+                operator="range",
+                value={
+                    "start": cleaned.get("start_date").isoformat() if cleaned.get("start_date") else None,
+                    "end": cleaned.get("end_date").isoformat() if cleaned.get("end_date") else None,
+                },
+            )
+        )
+    if tier_values:
+        filters.append(ExploreFilter(field="tier", operator="in", value=tier_values))
+    if tier_min:
+        filters.append(ExploreFilter(field="tier", operator=">=", value=int(tier_min)))
+    if tier_max:
+        filters.append(ExploreFilter(field="tier", operator="<=", value=int(tier_max)))
+
+    wave_min = cleaned.get("wave_min")
+    wave_max = cleaned.get("wave_max")
+    if wave_min and wave_max:
+        filters.append(
+            ExploreFilter(field="wave", operator="range", value={"min": int(wave_min), "max": int(wave_max)})
+        )
+    elif wave_min:
+        filters.append(ExploreFilter(field="wave", operator=">=", value=int(wave_min)))
+    elif wave_max:
+        filters.append(ExploreFilter(field="wave", operator="<=", value=int(wave_max)))
+
+    death_cause = cleaned.get("death_cause")
+    if death_cause:
+        if death_cause == "__missing__":
+            filters.append(ExploreFilter(field="death_cause", operator="=", value=None))
+        else:
+            filters.append(ExploreFilter(field="death_cause", operator="=", value=str(death_cause)))
+
+    preset = cleaned.get("preset")
+    if preset is not None:
+        filters.append(ExploreFilter(field="preset", operator="=", value=int(preset.id)))
+
+    breakdowns: list[ExploreBreakdown] = []
+    primary = str(cleaned.get("primary_breakdown") or "")
+    secondary = str(cleaned.get("secondary_breakdown") or "")
+    if primary:
+        breakdowns.append(ExploreBreakdown(dimension=primary, order=1))
+    if secondary:
+        breakdowns.append(ExploreBreakdown(dimension=secondary, order=2))
+
+    metric = ExploreMetricSelection(
+        key=str(cleaned.get("metric_key") or ""),
+        aggregation=cast(Literal["sum", "count"], str(cleaned.get("aggregation") or "sum")),
+    )
+
+    return ExploreQuery(
+        schema_version=SCHEMA_VERSION,
+        player_id=str(player.id),
+        name=str(cleaned.get("name") or "").strip(),
+        scope=scope,
+        filters=tuple(filters),
+        breakdowns=tuple(breakdowns),
+        metric=metric,
+        visualization_hint=cast(
+            VisualizationHint,
+            str(cleaned.get("visualization") or "table"),
+        ),
+    )
+
+
+def _explore_runs_queryset(*, player: Player) -> QuerySet[BattleReport]:
+    """Return a player-scoped Explore queryset with effective dates."""
+
+    runs = BattleReport.objects.filter(player=player).select_related(
+        "run_progress",
+        "run_progress__preset",
+        "derived_metrics",
+    )
+    runs = _with_effective_battle_date(runs)
+    return runs.order_by("effective_battle_date", "id")
+
+
+def _apply_explore_scope(
+    runs: QuerySet[BattleReport],
+    *,
+    scope: ExploreScope,
+    snapshot_id: int | None,
+) -> QuerySet[BattleReport]:
+    """Apply scope filters to an Explore queryset."""
+
+    snapshot = (
+        ChartSnapshot.objects.filter(id=snapshot_id).first()
+        if snapshot_id is not None
+        else None
+    )
+    snapshot_context = _snapshot_context_from_filter(snapshot)
+    force_tournaments = bool(
+        snapshot_context and (snapshot_context.tournament_filter or snapshot_context.include_tournaments)
+    )
+    if not force_tournaments:
+        runs = runs.exclude(Q(run_progress__tier__isnull=True) | Q(run_progress__is_tournament=True))
+    if scope.start_date:
+        runs = runs.filter(effective_battle_date__date__gte=scope.start_date)
+    if scope.end_date:
+        runs = runs.filter(effective_battle_date__date__lte=scope.end_date)
+    if scope.tier:
+        runs = runs.filter(run_progress__tier=scope.tier)
+    if scope.preset_id:
+        runs = runs.filter(run_progress__preset_id=scope.preset_id)
+    runs = _apply_snapshot_context_filters(runs, snapshot_context=snapshot_context)
+    if scope.past_n_runs:
+        runs = _apply_rolling_window(
+            runs,
+            kind="last_runs",
+            n=int(scope.past_n_runs),
+            end_date=scope.end_date,
+        )
+    return runs
+
+
+def _apply_explore_filters(
+    runs: QuerySet[BattleReport],
+    *,
+    filters: Iterable[ExploreFilter],
+) -> QuerySet[BattleReport]:
+    """Apply filter entries to an Explore queryset."""
+
+    for entry in filters:
+        if entry.field == "tier":
+            if entry.operator == "in" and isinstance(entry.value, list):
+                values = [int(v) for v in entry.value if str(v).isdigit()]
+                if values:
+                    runs = runs.filter(run_progress__tier__in=values)
+            if entry.operator == ">=" and entry.value is not None:
+                value_int = _parse_context_int(entry.value)
+                if value_int is not None:
+                    runs = runs.filter(run_progress__tier__gte=value_int)
+            if entry.operator == "<=" and entry.value is not None:
+                value_int = _parse_context_int(entry.value)
+                if value_int is not None:
+                    runs = runs.filter(run_progress__tier__lte=value_int)
+        if entry.field == "wave":
+            if entry.operator == "range" and isinstance(entry.value, dict):
+                wave_min = _parse_context_int(entry.value.get("min"))
+                wave_max = _parse_context_int(entry.value.get("max"))
+                if wave_min is not None:
+                    runs = runs.filter(run_progress__wave__gte=wave_min)
+                if wave_max is not None:
+                    runs = runs.filter(run_progress__wave__lte=wave_max)
+            if entry.operator == ">=" and entry.value is not None:
+                value_int = _parse_context_int(entry.value)
+                if value_int is not None:
+                    runs = runs.filter(run_progress__wave__gte=value_int)
+            if entry.operator == "<=" and entry.value is not None:
+                value_int = _parse_context_int(entry.value)
+                if value_int is not None:
+                    runs = runs.filter(run_progress__wave__lte=value_int)
+        if entry.field == "death_cause":
+            if entry.value is None:
+                runs = runs.filter(Q(run_progress__killed_by__isnull=True) | Q(run_progress__killed_by=""))
+            else:
+                runs = runs.filter(run_progress__killed_by=str(entry.value))
+        if entry.field == "date_range" and isinstance(entry.value, dict):
+            start = _parse_context_date(entry.value.get("start"))
+            end = _parse_context_date(entry.value.get("end"))
+            if start:
+                runs = runs.filter(effective_battle_date__date__gte=start)
+            if end:
+                runs = runs.filter(effective_battle_date__date__lte=end)
+        if entry.field == "preset" and entry.value is not None:
+            preset_id = _parse_context_int(entry.value)
+            if preset_id is not None:
+                runs = runs.filter(run_progress__preset_id=preset_id)
+    return runs
+
+
+def _explore_execute_query(
+    query: ExploreQuery,
+    *,
+    player: Player,
+    registry: dict[str, ExploreMetricDefinition],
+) -> dict[str, object]:
+    """Execute an Explore query and build template payloads."""
+
+    runs = _explore_runs_queryset(player=player)
+    runs = _apply_explore_scope(runs, scope=query.scope, snapshot_id=query.scope.snapshot_id)
+    runs = _apply_explore_filters(runs, filters=query.filters)
+    result = execute_explore_query(
+        tuple(runs),
+        query=query,
+        metric_registry=registry,
+        breakdown_registry=DEFAULT_BREAKDOWNS,
+    )
+    metric = registry.get(query.metric.key)
+    unit = metric.unit if metric else ""
+    metric_label = metric.label if metric else query.metric.key
+    breakdown_defs = [
+        DEFAULT_BREAKDOWNS.get(breakdown.dimension)
+        for breakdown in query.breakdowns
+        if DEFAULT_BREAKDOWNS.get(breakdown.dimension) is not None
+    ]
+    breakdown_headers = [definition.label for definition in breakdown_defs if definition is not None]
+
+    rows = [
+        {
+            "breakdown": row.breakdown,
+            "value": row.value,
+            "sample_count": row.sample_count,
+        }
+        for row in result.rows
+    ]
+
+    labels = [" • ".join(row.breakdown) if row.breakdown else "Total" for row in result.rows]
+    values = [row.value or 0.0 for row in result.rows]
+    chart_unit = unit
+    if query.visualization_hint == "donut":
+        total = sum(values)
+        chart_unit = "percent"
+        values = [(value / total * 100.0) if total else 0.0 for value in values]
+
+    return {
+        "rows": rows,
+        "breakdown_headers": breakdown_headers,
+        "metric_label": metric_label,
+        "metric_unit": unit,
+        "aggregation": query.metric.aggregation,
+        "visualization": query.visualization_hint,
+        "run_count": result.run_count,
+        "missing_count": result.missing_count,
+        "total_value": result.total_value,
+        "chart": {"labels": labels, "values": values, "unit": chart_unit},
+        "explainability": _explore_explainability(
+            query,
+            player=player,
+            run_count=result.run_count,
+            metric_label=metric_label,
+        ),
+    }
+
+
+def _explore_explainability(
+    query: ExploreQuery,
+    *,
+    player: Player,
+    run_count: int,
+    metric_label: str,
+) -> tuple[str, ...]:
+    """Return plain-language explainability lines for Explore outputs."""
+
+    lines: list[str] = [f"Runs in scope: {run_count}"]
+
+    if query.scope.start_date or query.scope.end_date:
+        start = query.scope.start_date.isoformat() if query.scope.start_date else "Any"
+        end = query.scope.end_date.isoformat() if query.scope.end_date else "Any"
+        lines.append(f"Date range: {start} to {end}.")
+
+    if query.scope.tier:
+        lines.append(f"Tier scope: Tier {query.scope.tier}.")
+
+    if query.scope.preset_id:
+        preset = Preset.objects.filter(player=player, id=query.scope.preset_id).first()
+        if preset is not None:
+            lines.append(f"Preset scope: {preset.name}.")
+
+    if query.scope.snapshot_id:
+        snapshot = ChartSnapshot.objects.filter(player=player, id=query.scope.snapshot_id).first()
+        if snapshot is not None:
+            lines.append(f"Preset run scope: {snapshot.name}.")
+
+    if query.scope.past_n_runs:
+        lines.append(f"Past N runs: {query.scope.past_n_runs}.")
+
+    filter_lines = _describe_explore_filters(query.filters, player=player)
+    if filter_lines:
+        lines.extend(filter_lines)
+
+    breakdown_labels = [DEFAULT_BREAKDOWNS[entry.dimension].label for entry in query.breakdowns if entry.dimension in DEFAULT_BREAKDOWNS]
+    if breakdown_labels:
+        lines.append(f"Breakdowns: {', '.join(breakdown_labels)}.")
+    else:
+        lines.append("Breakdowns: none.")
+
+    lines.append(f"Metric: {metric_label}.")
+    lines.append(f"Aggregation: {query.metric.aggregation}.")
+    return tuple(lines)
+
+
+def _describe_explore_filters(
+    filters: Iterable[ExploreFilter],
+    *,
+    player: Player | None = None,
+) -> list[str]:
+    """Return human-readable filter descriptions."""
+
+    lines: list[str] = []
+    for entry in filters:
+        if entry.field == "tier":
+            if entry.operator == "in" and isinstance(entry.value, list):
+                tiers = ", ".join(f"Tier {v}" for v in entry.value if v is not None)
+                lines.append(f"Tier filter: {tiers}.")
+            if entry.operator == ">=" and entry.value is not None:
+                lines.append(f"Tier minimum: {entry.value}.")
+            if entry.operator == "<=" and entry.value is not None:
+                lines.append(f"Tier maximum: {entry.value}.")
+        if entry.field == "wave":
+            if entry.operator == "range" and isinstance(entry.value, dict):
+                wave_min = entry.value.get("min")
+                wave_max = entry.value.get("max")
+                lines.append(f"Wave range: {wave_min} to {wave_max}.")
+            if entry.operator == ">=" and entry.value is not None:
+                lines.append(f"Wave minimum: {entry.value}.")
+            if entry.operator == "<=" and entry.value is not None:
+                lines.append(f"Wave maximum: {entry.value}.")
+        if entry.field == "death_cause":
+            if entry.value is None:
+                lines.append("Death cause: Not recorded.")
+            else:
+                lines.append(f"Death cause: {entry.value}.")
+        if entry.field == "preset" and entry.value is not None:
+            preset_label = str(entry.value)
+            if player is not None:
+                preset_id = _parse_context_int(entry.value)
+                if preset_id is not None:
+                    preset = Preset.objects.filter(player=player, id=preset_id).first()
+                    if preset is not None:
+                        preset_label = preset.name
+            lines.append(f"Preset filter: {preset_label}.")
+        if entry.field == "date_range" and isinstance(entry.value, dict):
+            start = entry.value.get("start") or "Any"
+            end = entry.value.get("end") or "Any"
+            lines.append(f"Date filter: {start} to {end}.")
+    return lines
 
 
 def _context_filtered_runs(filter_form: ChartContextForm, *, player: Player) -> QuerySet[BattleReport]:

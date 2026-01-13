@@ -226,6 +226,37 @@ class ChartBuilderSavedConfig(models.Model):
         return f"ChartBuilderSavedConfig({self.name})"
 
 
+class ExploreQuery(models.Model):
+    """Player-authored Explore query stored as a versioned schema."""
+
+    player = models.ForeignKey(
+        Player,
+        on_delete=models.CASCADE,
+        related_name="explore_queries",
+    )
+    name = models.CharField(max_length=120)
+    schema_version = models.CharField(max_length=20, default="1.0")
+    query = models.JSONField(
+        default=dict,
+        help_text="Versioned Explore query payload (schema-driven).",
+    )
+    created_at = models.DateTimeField(auto_now_add=True)
+    updated_at = models.DateTimeField(auto_now=True)
+
+    class Meta:
+        constraints = [
+            models.UniqueConstraint(
+                fields=["player", "name"],
+                name="uniq_player_explore_query_name",
+            )
+        ]
+
+    def __str__(self) -> str:
+        """Return a concise display string for admin contexts."""
+
+        return f"ExploreQuery({self.name})"
+
+
 class PlayerCard(models.Model):
     """Player card unlock state.
 

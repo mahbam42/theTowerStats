@@ -231,6 +231,13 @@ METRICS: Final[dict[str, MetricDefinition]] = {
         category=MetricCategory.economy,
         kind="derived",
     ),
+    "recovery_packages": MetricDefinition(
+        key="recovery_packages",
+        label="Recovery Packages",
+        unit="count",
+        category=MetricCategory.utility,
+        kind="derived",
+    ),
     "coins_from_other_sources": MetricDefinition(
         key="coins_from_other_sources",
         label="Other coins",
@@ -705,6 +712,10 @@ def compute_metric_value(
 
     if metric_key in ("reroll_shards_earned", "reroll_dice_earned"):
         return (float(reroll_shards) if reroll_shards is not None else None, (), ())
+
+    if metric_key == "recovery_packages":
+        recovery_packages = derived_values.get("recovery_packages")
+        return (float(recovery_packages) if recovery_packages is not None else None, (), ())
 
     if metric_key == "waves_reached":
         return (float(wave) if wave is not None else None, (), ())

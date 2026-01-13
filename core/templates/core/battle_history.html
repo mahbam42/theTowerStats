@@ -17,6 +17,7 @@
           </div>
           <div class="cell shrink text-right">
             <a class="button secondary" href="{% url 'core:dashboard' %}">Charts</a>
+            <button class="button secondary" type="button" id="open-explore-modal">Explore similar runs</button>
           </div>
         </div>
       </div>
@@ -421,6 +422,27 @@
         <h5 class="margin-bottom-0">Raw Battle Report</h5>
         <pre class="battle-report-raw" id="battle-report-raw"></pre>
       </div>
+    </div>
+  </div>
+
+  <div class="modal-backdrop" id="explore-modal" aria-hidden="true">
+    <div class="modal-shell" role="dialog" aria-modal="true" aria-label="Explore similar runs">
+      <div class="grid-x align-middle">
+        <div class="cell auto">
+          <h4 class="margin-0">Explore similar runs</h4>
+        </div>
+        <div class="cell shrink">
+          <button class="button secondary tiny" type="button" data-close-modal>Close</button>
+        </div>
+      </div>
+      <p class="muted">This opens Explore with your current Battle History filters.</p>
+      <form method="get" action="{% url 'core:explore' %}" class="stacked">
+        <input type="hidden" name="tier_values" value="{{ filter_form.tier.value|default_if_none:'' }}">
+        <input type="hidden" name="preset" value="{{ filter_form.preset.value|default_if_none:'' }}">
+        <input type="hidden" name="snapshot" value="{{ filter_form.snapshot.value|default_if_none:'' }}">
+        <input type="hidden" name="death_cause" value="{{ filter_form.killed_by.value|default_if_none:'' }}">
+        <button class="button expanded" type="submit">Open Explore dashboard</button>
+      </form>
     </div>
   </div>
 {% endblock %}

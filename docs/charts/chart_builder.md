@@ -74,6 +74,7 @@ This table lists the metrics available in Chart Builder along with their sources
 | free_defense_upgrades | Free Defense Upgrade | BattleReport (observed) | sum of free_defense_upgrades | Battle Report utility breakdown: free defense upgrades. |
 | free_utility_upgrades | Free Utility Upgrade | BattleReport (observed) | sum of free_utility_upgrades | Battle Report utility breakdown: free utility upgrades. |
 | free_upgrades_total | Free Upgrades (Total) | BattleReport (derived) | sum of free_attack_upgrades + free_defense_upgrades + free_utility_upgrades | Derived total across free upgrade types. |
+| recovery_packages | Recovery Packages | BattleReport (derived) | sum of recovery_packages | Derived from the Recovery Packages line in the Battle Report. |
 | cooldown_reduction_effective | Effective cooldown | Planned (not yet ingested) | avg of effective_cooldown_seconds | Ultimate Weapon cooldown reductions are planned and not populated yet. |
 | damage_dealt | Damage dealt | BattleReport (observed) | sum of damage_dealt | Total damage dealt from Battle Reports. |
 | death_ray_damage | Death Ray Damage | BattleReport (observed) | sum of death_ray_damage |  |

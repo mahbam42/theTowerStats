@@ -16,6 +16,7 @@ from django import forms
 
 from analysis.event_windows import event_window_for_date
 from analysis.chart_config_dto import ChartScopeDTO
+from analysis.explore_registry import build_explore_metric_registry, list_explore_breakdowns, list_explore_metrics
 from analysis.series_registry import DEFAULT_REGISTRY
 from core.charting.configs import default_selected_chart_ids, list_selectable_chart_configs
 from core.charting.builder import (
@@ -1030,6 +1031,142 @@ class ChartBuilderForm(forms.Form):
                 end_date=selection.scope_b.end_date,
             ),
         )
+
+
+class ExploreQueryForm(forms.Form):
+    """Validate Explore query builder selections."""
+
+    query_id = forms.IntegerField(required=False, widget=forms.HiddenInput)
+    name = forms.CharField(required=True, max_length=120, label="Query name")
+
+    start_date = forms.DateField(
+        required=False,
+        widget=forms.DateInput(attrs={"type": "date"}),
+        label="Start date",
+    )
+    end_date = forms.DateField(
+        required=False,
+        widget=forms.DateInput(attrs={"type": "date"}),
+        label="End date",
+    )
+    tier_values = forms.MultipleChoiceField(
+        required=False,
+        choices=(),
+        label="Tier (multi-select)",
+        widget=forms.SelectMultiple(attrs={"size": 6}),
+    )
+    tier_min = forms.IntegerField(required=False, min_value=1, label="Tier minimum")
+    tier_max = forms.IntegerField(required=False, min_value=1, label="Tier maximum")
+    wave_min = forms.IntegerField(required=False, min_value=1, label="Wave minimum")
+    wave_max = forms.IntegerField(required=False, min_value=1, label="Wave maximum")
+    death_cause = forms.ChoiceField(required=False, choices=(), label="Death cause")
+
+    preset = forms.ModelChoiceField(
+        required=False,
+        queryset=Preset.objects.none(),
+        label="Preset",
+        empty_label="All presets",
+    )
+    snapshot = forms.ModelChoiceField(
+        required=False,
+        queryset=ChartSnapshot.objects.none(),
+        label="Preset run (snapshot)",
+        empty_label="No snapshot",
+    )
+    past_n_runs = forms.IntegerField(
+        required=False,
+        min_value=1,
+        max_value=365,
+        label="Past N runs",
+    )
+
+    primary_breakdown = forms.ChoiceField(required=False, choices=(), label="Primary breakdown")
+    secondary_breakdown = forms.ChoiceField(required=False, choices=(), label="Secondary breakdown")
+    metric_key = forms.ChoiceField(required=True, choices=(), label="Metric")
+    aggregation = forms.ChoiceField(
+        required=True,
+        choices=(("sum", "Sum"), ("count", "Count")),
+        label="Aggregation",
+    )
+    visualization = forms.ChoiceField(
+        required=True,
+        choices=(
+            ("table", "Table"),
+            ("bar", "Bar chart"),
+            ("donut", "Donut chart"),
+            ("kpi", "KPI card"),
+        ),
+        label="Output",
+    )
+
+    def __init__(self, *args, **kwargs) -> None:
+        """Initialize Explore query choices from player data."""
+
+        player: Player | None = kwargs.pop("player", None)
+        super().__init__(*args, **kwargs)
+
+        if player is None:
+            self.fields["preset"].queryset = Preset.objects.order_by("name")
+            self.fields["snapshot"].queryset = ChartSnapshot.objects.order_by("name")
+            tier_queryset = BattleReportProgress.objects.filter(tier__isnull=False)
+        else:
+            self.fields["preset"].queryset = Preset.objects.filter(player=player).order_by("name")
+            self.fields["snapshot"].queryset = ChartSnapshot.objects.filter(
+                player=player, target="charts"
+            ).order_by("name")
+            tier_queryset = BattleReportProgress.objects.filter(player=player, tier__isnull=False)
+
+        recorded_tiers = (
+            tier_queryset.order_by("tier").values_list("tier", flat=True).distinct()
+        )
+        tier_choices: list[tuple[str, str]] = []
+        tier_choices.extend((str(int(tier)), f"Tier {int(tier)}") for tier in recorded_tiers)
+        self.fields["tier_values"].choices = tier_choices
+
+        death_queryset = BattleReportProgress.objects.filter(killed_by__isnull=False)
+        if player is not None:
+            death_queryset = death_queryset.filter(player=player)
+        death_causes = sorted(
+            {
+                str(value).strip()
+                for value in death_queryset.values_list("killed_by", flat=True).distinct()
+                if value
+            }
+        )
+        death_choices: list[tuple[str, str]] = [("", "Any cause")]
+        death_choices.extend((cause, cause) for cause in death_causes)
+        death_choices.append(("__missing__", "Not recorded"))
+        self.fields["death_cause"].choices = death_choices
+
+        explore_metrics = list_explore_metrics(build_explore_metric_registry())
+        self.fields["metric_key"].choices = [
+            (metric.key, f"{metric.label} ({metric.unit})") for metric in explore_metrics
+        ]
+
+        breakdowns = list_explore_breakdowns()
+        breakdown_choices: list[tuple[str, str]] = [("", "No breakdown")]
+        breakdown_choices.extend((entry.key, entry.label) for entry in breakdowns)
+        self.fields["primary_breakdown"].choices = breakdown_choices
+        self.fields["secondary_breakdown"].choices = breakdown_choices
+
+    def clean(self) -> dict[str, object]:
+        """Validate Explore query builder invariants."""
+
+        cleaned = super().clean()
+        primary = str(cleaned.get("primary_breakdown") or "")
+        secondary = str(cleaned.get("secondary_breakdown") or "")
+        visualization = str(cleaned.get("visualization") or "table")
+
+        if primary and secondary and primary == secondary:
+            self.add_error("secondary_breakdown", "Secondary breakdown must be different.")
+
+        if visualization != "kpi" and not primary:
+            self.add_error("primary_breakdown", "Select a primary breakdown.")
+
+        if visualization == "donut" and secondary:
+            self.add_error("secondary_breakdown", "Donut charts support one breakdown only.")
+
+        return cleaned
 
 
 class GoalsFilterForm(forms.Form):

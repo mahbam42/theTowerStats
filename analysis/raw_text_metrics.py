@@ -21,6 +21,7 @@ RAW_TEXT_METRIC_SPECS: Final[dict[str, tuple[str, UnitType]]] = {
     "free_attack_upgrades": ("Free Attack Upgrade", UnitType.count),
     "free_defense_upgrades": ("Free Defense Upgrade", UnitType.count),
     "free_utility_upgrades": ("Free Utility Upgrade", UnitType.count),
+    "recovery_packages": ("Recovery Packages", UnitType.count),
     "damage_dealt": ("Damage dealt", UnitType.damage),
     "projectiles_damage": ("Projectiles Damage", UnitType.damage),
     "thorn_damage": ("Thorn Damage", UnitType.damage),

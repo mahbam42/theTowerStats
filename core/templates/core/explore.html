@@ -1,0 +1,268 @@
+{% extends "core/base.html" %}
+
+{% block title %}Explore • theTowerStats{% endblock %}
+
+{% block head %}
+  <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+{% endblock %}
+
+{% block content %}
+  <div class="grid-x grid-margin-x">
+    <div class="cell">
+      <div class="card-shell">
+        <div class="grid-x grid-margin-x align-middle">
+          <div class="cell auto">
+            <h2 class="margin-0">Explore Battles</h2>
+            <p class="muted margin-0">Build a query to explore your runs without changing Battle History.</p>
+          </div>
+          <div class="cell shrink text-right">
+            <a class="button secondary" href="{% url 'core:battle_history' %}">Battle History</a>
+            <a class="button secondary" href="{% url 'core:dashboard' %}">Charts</a>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div class="grid-x grid-margin-x">
+    <div class="cell large-4 medium-5 dashboard-sidebar">
+      <div class="card-shell">
+        <h4>Saved Queries</h4>
+        <form method="get" class="stacked">
+          <label>Saved query
+            <select name="query_id">
+              <option value="">Select a saved query</option>
+              {% for query in saved_queries %}
+                <option value="{{ query.id }}"{% if loaded_query and loaded_query.id == query.id %} selected{% endif %}>{{ query.name }}</option>
+              {% endfor %}
+            </select>
+          </label>
+          <button class="button secondary expanded" type="submit">Load query</button>
+        </form>
+      </div>
+
+      <div class="card-shell margin-top-1">
+        <h4>Build Query</h4>
+        <form method="post" class="stacked">
+          {% csrf_token %}
+          {{ form.query_id }}
+          <input type="hidden" name="next" value="{{ request.get_full_path }}">
+          <label>{{ form.name.label }}
+            {{ form.name }}
+            {% if form.name.errors %}
+              <span class="form-error is-visible">{{ form.name.errors|striptags }}</span>
+            {% endif %}
+          </label>
+
+          <h5 class="margin-top-1">Scope</h5>
+          <label>{{ form.start_date.label }}
+            {{ form.start_date }}
+          </label>
+          <label>{{ form.end_date.label }}
+            {{ form.end_date }}
+          </label>
+          <label>{{ form.preset.label }}
+            {{ form.preset }}
+          </label>
+          <label>{{ form.snapshot.label }}
+            {{ form.snapshot }}
+          </label>
+          <label>{{ form.past_n_runs.label }}
+            {{ form.past_n_runs }}
+          </label>
+
+          <h5 class="margin-top-1">Filters</h5>
+          <label>{{ form.tier_values.label }}
+            {{ form.tier_values }}
+          </label>
+          <label>{{ form.tier_min.label }}
+            {{ form.tier_min }}
+          </label>
+          <label>{{ form.tier_max.label }}
+            {{ form.tier_max }}
+          </label>
+          <label>{{ form.wave_min.label }}
+            {{ form.wave_min }}
+          </label>
+          <label>{{ form.wave_max.label }}
+            {{ form.wave_max }}
+          </label>
+          <label>{{ form.death_cause.label }}
+            {{ form.death_cause }}
+          </label>
+
+          <h5 class="margin-top-1">Breakdowns</h5>
+          <label>{{ form.primary_breakdown.label }}
+            {{ form.primary_breakdown }}
+            {% if form.primary_breakdown.errors %}
+              <span class="form-error is-visible">{{ form.primary_breakdown.errors|striptags }}</span>
+            {% endif %}
+          </label>
+          <label>{{ form.secondary_breakdown.label }}
+            {{ form.secondary_breakdown }}
+            {% if form.secondary_breakdown.errors %}
+              <span class="form-error is-visible">{{ form.secondary_breakdown.errors|striptags }}</span>
+            {% endif %}
+          </label>
+
+          <h5 class="margin-top-1">Measure</h5>
+          <label>{{ form.metric_key.label }}
+            {{ form.metric_key }}
+          </label>
+          <label>{{ form.aggregation.label }}
+            {{ form.aggregation }}
+          </label>
+
+          <h5 class="margin-top-1">Output</h5>
+          <label>{{ form.visualization.label }}
+            {{ form.visualization }}
+          </label>
+
+          <div class="button-group expanded stack-for-small margin-top-1">
+            <button class="button" type="submit" name="action" value="run_explore_query">Run query</button>
+            <button class="button secondary" type="submit" name="action" value="save_explore_query">Save query</button>
+          </div>
+        </form>
+      </div>
+    </div>
+
+    <div class="cell large-8 medium-7 dashboard-main">
+      {% if explore_errors %}
+        <div class="callout alert">
+          <p class="margin-0"><strong>Explore validation</strong></p>
+          <ul class="margin-0">
+            {% for err in explore_errors %}
+              <li>{{ err }}</li>
+            {% endfor %}
+          </ul>
+        </div>
+      {% endif %}
+
+      {% if explore_warnings %}
+        <div class="callout warning">
+          <p class="margin-0"><strong>Explore notes</strong></p>
+          <ul class="margin-0">
+            {% for warn in explore_warnings %}
+              <li>{{ warn }}</li>
+            {% endfor %}
+          </ul>
+        </div>
+      {% endif %}
+
+      {% if explore_results %}
+        <div class="card-shell">
+          <h4 class="margin-bottom-0">Results</h4>
+          <p class="muted margin-top-0">
+            {{ explore_results.metric_label }} • {{ explore_results.aggregation|title }}
+          </p>
+          <p class="muted margin-top-0">Runs in scope: {{ explore_results.run_count }}</p>
+          {% if explore_results.visualization == "kpi" %}
+            <div class="callout secondary">
+              <p class="margin-0">Total</p>
+              <h3 class="margin-0">
+                <span class="metric-value" data-format="unit-value" data-unit="{{ explore_results.metric_unit }}" data-value="{{ explore_results.total_value }}"></span>
+              </h3>
+            </div>
+          {% endif %}
+        </div>
+
+        {% if explore_results.explainability %}
+          <div class="card-shell margin-top-1">
+            <h5 class="margin-bottom-0">Why am I seeing this?</h5>
+            <ul class="margin-top-0">
+              {% for line in explore_results.explainability %}
+                <li>{{ line }}</li>
+              {% endfor %}
+            </ul>
+          </div>
+        {% endif %}
+
+        {% if explore_results.visualization == "bar" or explore_results.visualization == "donut" %}
+          <div class="card-shell margin-top-1">
+            <canvas id="explore-chart" height="240"></canvas>
+            {{ explore_results.chart|json_script:"explore-chart-data" }}
+          </div>
+        {% endif %}
+
+        {% if explore_results.visualization == "table" %}
+          <div class="card-shell margin-top-1">
+            {% if explore_results.rows %}
+              <div class="table-scroll">
+                <table class="stack">
+                  <thead>
+                    <tr>
+                      {% for header in explore_results.breakdown_headers %}
+                        <th scope="col">{{ header }}</th>
+                      {% endfor %}
+                      <th scope="col">Value</th>
+                      <th scope="col">Runs counted</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {% for row in explore_results.rows %}
+                      <tr>
+                        {% for label in row.breakdown %}
+                          <td>{{ label }}</td>
+                        {% endfor %}
+                        <td>
+                          <span class="metric-value" data-format="unit-value" data-unit="{{ explore_results.metric_unit }}" data-value="{{ row.value }}"></span>
+                        </td>
+                        <td>{{ row.sample_count }}</td>
+                      </tr>
+                    {% endfor %}
+                  </tbody>
+                </table>
+              </div>
+            {% else %}
+              <div class="empty-state" role="status">No results for the current query.</div>
+            {% endif %}
+          </div>
+        {% endif %}
+      {% else %}
+        <div class="card-shell">
+          <div class="empty-state" role="status">Run a query to see results.</div>
+        </div>
+      {% endif %}
+    </div>
+  </div>
+  {% if explore_results %}
+    {% if explore_results.visualization == "bar" or explore_results.visualization == "donut" %}
+      <script>
+        (function() {
+          const dataEl = document.getElementById("explore-chart-data");
+          const canvas = document.getElementById("explore-chart");
+          if (!dataEl || !canvas || !window.Chart) return;
+          const payload = JSON.parse(dataEl.textContent || "{}");
+          const labels = payload.labels || [];
+          const values = payload.values || [];
+          const unit = payload.unit || "";
+          const type = "{{ explore_results.visualization }}";
+          const chartType = type === "donut" ? "doughnut" : "bar";
+          new Chart(canvas.getContext("2d"), {
+            type: chartType,
+            data: {
+              labels,
+              datasets: [
+                {
+                  label: unit ? `${unit}` : "Value",
+                  data: values,
+                  backgroundColor: type === "donut" ? ["#f4a261", "#2a9d8f", "#e76f51", "#264653", "#e9c46a"] : "#2a9d8f",
+                },
+              ],
+            },
+            options: {
+              plugins: {
+                legend: { display: type === "donut" },
+              },
+              scales: type === "donut" ? {} : {
+                y: {
+                  beginAtZero: true,
+                },
+              },
+            },
+          });
+        })();
+      </script>
+    {% endif %}
+  {% endif %}
+{% endblock %}

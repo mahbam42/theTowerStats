@@ -113,6 +113,25 @@ def test_free_upgrades_metrics_extract_and_total() -> None:
     assert total.points[0].value == 191.0
 
 
+@pytest.mark.golden
+def test_recovery_packages_extract_from_raw_text() -> None:
+    """Extract recovery packages from raw Battle Report text."""
+
+    raw_text = "\n".join(
+        [
+            "Battle Report",
+            "Battle Date\tDec 14, 2025 01:39",
+            "Recovery Packages\t573",
+            "",
+        ]
+    )
+
+    extracted = extract_raw_text_metrics(raw_text)
+
+    assert extracted["recovery_packages"].raw_value == "573"
+    assert extracted["recovery_packages"].value == 573.0
+
+
 def test_enemies_destroyed_total_ignores_battle_report_totals() -> None:
     """Derive enemies destroyed by summing per-type rows (ignoring Total Enemies/Elites)."""
 

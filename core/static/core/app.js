@@ -449,6 +449,34 @@
     window.openBattleReportModal = openForRun;
   }
 
+  function initializeExploreModal() {
+    const modal = document.getElementById("explore-modal");
+    if (!modal) return;
+    const openBtn = document.getElementById("open-explore-modal");
+    const closeBtn = modal.querySelector("[data-close-modal]");
+
+    function openModal() {
+      modal.classList.add("is-open");
+      modal.setAttribute("aria-hidden", "false");
+    }
+
+    function closeModal() {
+      modal.classList.remove("is-open");
+      modal.setAttribute("aria-hidden", "true");
+    }
+
+    if (openBtn) openBtn.addEventListener("click", openModal);
+    if (closeBtn) closeBtn.addEventListener("click", closeModal);
+    modal.addEventListener("click", (event) => {
+      if (event.target === modal) closeModal();
+    });
+    window.addEventListener("keydown", (event) => {
+      if (event.key === "Escape" && modal.getAttribute("aria-hidden") === "false") {
+        closeModal();
+      }
+    });
+  }
+
   function initializeGuidedWalkthrough() {
     const container = document.getElementById("guided-walkthrough");
     if (!container) return;
@@ -730,6 +758,7 @@
         initializeFoundation();
         initializeGlobalSearch();
         initializeBattleReportModal();
+        initializeExploreModal();
         initializeUnitFormatting();
         initializeGuidedWalkthrough();
       },
@@ -741,6 +770,7 @@
   initializeFoundation();
   initializeGlobalSearch();
   initializeBattleReportModal();
+  initializeExploreModal();
   initializeUnitFormatting();
   initializeGuidedWalkthrough();
 })();

@@ -16,6 +16,7 @@ def _assert_nav_links(response) -> None:
     expected_hrefs = [
         reverse("core:battle_history"),
         reverse("core:dashboard"),
+        reverse("core:explore"),
         reverse("core:cards"),
         reverse("core:ultimate_weapon_progress"),
         reverse("core:guardian_progress"),
@@ -30,6 +31,7 @@ def _assert_nav_links(response) -> None:
     "url_name",
     [
         "core:dashboard",
+        "core:explore",
         "core:battle_history",
         "core:cards",
         "core:ultimate_weapon_progress",
