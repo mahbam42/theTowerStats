@@ -5068,6 +5068,28 @@ def _apply_explore_filters(
             preset_id = _parse_context_int(entry.value)
             if preset_id is not None:
                 runs = runs.filter(run_progress__preset_id=preset_id)
+        if entry.field == "tournament" and entry.operator == "=":
+            if entry.value is False:
+                runs = runs.exclude(run_progress__is_tournament=True)
+            if entry.value is True:
+                runs = runs.filter(run_progress__is_tournament=True)
+        if entry.field == "date_exclude" and entry.operator == "in" and isinstance(entry.value, list):
+            excluded_dates = [_parse_context_date(value) for value in entry.value]
+            dates = [value for value in excluded_dates if value is not None]
+            if dates:
+                runs = runs.exclude(effective_battle_date__date__in=dates)
+        if entry.field == "preset_name_include" and entry.operator == "in" and isinstance(entry.value, list):
+            names = [str(value) for value in entry.value if value]
+            if names:
+                preset_query = Q()
+                for name in names:
+                    preset_query |= Q(run_progress__preset__name__iexact=name)
+                runs = runs.filter(preset_query)
+        if entry.field == "preset_name_exclude" and entry.operator == "in" and isinstance(entry.value, list):
+            names = [str(value) for value in entry.value if value]
+            if names:
+                for name in names:
+                    runs = runs.exclude(run_progress__preset__name__iexact=name)
     return runs
 
 

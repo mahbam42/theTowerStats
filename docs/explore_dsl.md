@@ -20,6 +20,10 @@ Optional lines:
 - `scope preset <id> "Label"`
 - `scope snapshot <id> "Label"`
 - `scope past_n_runs <value>`
+- `scope tier >= <value> and not tournament`
+- `scope date <start>..<end> not <YYYY-MM-DD>[, <YYYY-MM-DD>]`
+- `scope preset <Preset Name>[, <Preset Name>]`
+- `scope preset <Preset Name> not <Preset Name>`
 - `filter tier in <v1, v2, ...>`
 - `filter tier >= <value>`
 - `filter tier <= <value>`
@@ -48,6 +52,9 @@ When placeholders are present or a scope line is omitted, parsing falls back to 
 - Lines beginning with `#` are ignored as comments.
 - The first `name` line wins; missing names yield a validation error.
 - `breakdown by` accepts comma-separated values and `then` as a separator.
+- `and` and `&` are accepted as scope modifiers.
+- `not tournament` can be appended to a scope line and is parsed as a tournament exclusion filter.
+- `not` can also exclude specific dates on the date scope line and preset names on the preset scope line.
 - `output` defaults to `table` when not supplied.
 - `metric` supports `sum` and `count` only.
 - Placeholders do not override prefilled defaults.

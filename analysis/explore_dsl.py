@@ -5,6 +5,7 @@ from __future__ import annotations
 from dataclasses import dataclass
 from datetime import date
 import re
+from typing import cast
 
 from .explore_registry import ExploreBreakdownDefinition, ExploreMetricDefinition
 from .explore_schema import (
@@ -59,13 +60,62 @@ def format_explore_dsl(
 
     start = scope.start_date if scope.start_date else default_scope.start_date
     end = scope.end_date if scope.end_date else default_scope.end_date
-    lines.append(f"scope date {_date_or_placeholder(start)}..{_date_or_placeholder(end)}")
+
+    date_excludes: list[str] = []
+    preset_excludes: list[str] = []
+    preset_includes: list[str] = []
+
+    tier_filter = None
+    tournament_excluded = False
+    remaining_filters: list[ExploreFilter] = []
+    if query:
+        for entry in query.filters:
+            if entry.field == "tournament" and entry.operator == "=" and entry.value is False:
+                tournament_excluded = True
+                continue
+            if entry.field == "tier" and entry.operator in (">=", "<="):
+                tier_filter = entry
+                continue
+            if entry.field == "tier" and entry.operator == "range" and isinstance(entry.value, dict):
+                tier_filter = entry
+                continue
+            if entry.field == "date_exclude" and entry.operator == "in" and isinstance(entry.value, list):
+                date_excludes = [str(value) for value in entry.value if value]
+                continue
+            if entry.field == "preset_name_include" and entry.operator == "in" and isinstance(entry.value, list):
+                preset_includes = [str(value) for value in entry.value if value]
+                continue
+            if entry.field == "preset_name_exclude" and entry.operator == "in" and isinstance(entry.value, list):
+                preset_excludes = [str(value) for value in entry.value if value]
+                continue
+            remaining_filters.append(entry)
+
+    date_line = f"scope date {_date_or_placeholder(start)}..{_date_or_placeholder(end)}"
+    if date_excludes:
+        date_line = f"{date_line} not {', '.join(_format_name(value) for value in date_excludes)}"
+    lines.append(date_line)
 
     tier = scope.tier if scope.tier is not None else default_scope.tier
-    lines.append(f"scope tier {_value_or_placeholder(tier, '[tier:—]')}")
+    tier_line = f"scope tier {_value_or_placeholder(tier, '[tier:—]')}"
+    if tier_filter is not None:
+        if tier_filter.operator == "range" and isinstance(tier_filter.value, dict):
+            tier_min = tier_filter.value.get("min")
+            tier_max = tier_filter.value.get("max")
+            tier_line = f"scope tier {tier_min}..{tier_max}"
+        elif tier_filter.operator in (">=", "<="):
+            tier_line = f"scope tier {tier_filter.operator}{tier_filter.value}"
+    if tournament_excluded:
+        tier_line = f"{tier_line} not tournament"
+    lines.append(tier_line)
 
     preset = scope.preset_id if scope.preset_id is not None else default_scope.preset_id
-    lines.append(f"scope preset {_value_or_placeholder(preset, '[preset:—]')}")
+    if preset_includes:
+        preset_line = f"scope preset {', '.join(_format_name(value) for value in preset_includes)}"
+    else:
+        preset_line = f"scope preset {_value_or_placeholder(preset, '[preset:—]')}"
+    if preset_excludes:
+        preset_line = f"{preset_line} not {', '.join(_format_name(value) for value in preset_excludes)}"
+    lines.append(preset_line)
 
     snapshot = scope.snapshot_id if scope.snapshot_id is not None else default_scope.snapshot_id
     lines.append(f"scope snapshot {_value_or_placeholder(snapshot, '[snapshot:—]')}")
@@ -74,7 +124,7 @@ def format_explore_dsl(
     lines.append(f"scope past_n_runs {_value_or_placeholder(past_n, '[runs:—]')}")
 
     if query:
-        for entry in query.filters:
+        for entry in remaining_filters:
             lines.extend(_format_filter(entry))
 
         if query.breakdowns:
@@ -82,7 +132,10 @@ def format_explore_dsl(
             lines.append(f"breakdown by {breakdown_line}")
 
         lines.append(f"metric {query.metric.key} {query.metric.aggregation}")
-        lines.append(f"output {query.visualization_hint}")
+        if query.visualization_hint != "table":
+            lines.append(f"output {query.visualization_hint}")
+        else:
+            lines.append("# output bar | donut | kpi")
 
     return "\n".join(lines)
 
@@ -114,13 +167,14 @@ def parse_explore_dsl(
             continue
 
         if match := _SCOPE_RE.match(line):
-            scope, scope_errors = _parse_scope_line(
+            scope, scope_filters, scope_errors = _parse_scope_line(
                 match.group("field").strip(),
                 match.group("value").strip(),
                 scope,
                 default_scope,
             )
             errors.extend(scope_errors)
+            filters.extend(scope_filters)
             continue
 
         if match := _FILTER_RE.match(line):
@@ -177,6 +231,17 @@ def parse_explore_dsl(
     return ExploreDslParseResult(query=query, errors=tuple(errors), warnings=tuple(warnings))
 
 
+def _format_name(value: str) -> str:
+    """Return a DSL-safe name token."""
+
+    token = value.strip()
+    if not token:
+        return token
+    if " " in token or "," in token:
+        return f"\"{token}\""
+    return token
+
+
 def build_explore_autocomplete(
     metric_registry: dict[str, ExploreMetricDefinition],
     breakdown_registry: dict[str, ExploreBreakdownDefinition],
@@ -190,6 +255,10 @@ def build_explore_autocomplete(
         "breakdown",
         "metric",
         "output",
+        "and",
+        "not",
+        "tournament",
+        "tournaments",
         "by",
         "sum",
         "count",
@@ -251,13 +320,32 @@ def _parse_scope_line(
     value: str,
     scope: ExploreScope,
     default_scope: ExploreScope,
-) -> tuple[ExploreScope, list[str]]:
+) -> tuple[ExploreScope, list[ExploreFilter], list[str]]:
     """Parse a scope line into an ExploreScope."""
 
     errors: list[str] = []
+    filters: list[ExploreFilter] = []
+    normalized = value.replace("&", " and ")
+    tournament_excluded = False
+    tournament_match = re.search(r"\bnot\s+(tournament|tournaments|tournament_rank)\b", normalized, re.I)
+    if tournament_match:
+        tournament_excluded = True
+        normalized = re.sub(
+            r"\bnot\s+(tournament|tournaments|tournament_rank)\b",
+            "",
+            normalized,
+            flags=re.I,
+        ).strip()
+    normalized = re.sub(r"\band\b", "", normalized, flags=re.I).strip()
+    main_value, not_clause = _split_not_clause(normalized) if field in {"date", "preset"} else (normalized, None)
     if field == "date":
-        start, end, date_errors = _parse_date_range(value)
+        start, end, date_errors = _parse_date_range(main_value)
         errors.extend(date_errors)
+        if not_clause:
+            dates, date_errors = _parse_date_list(not_clause)
+            errors.extend(date_errors)
+            if dates:
+                filters.append(ExploreFilter(field="date_exclude", operator="in", value=dates))
         scope = ExploreScope(
             start_date=start if start is not None else default_scope.start_date,
             end_date=end if end is not None else default_scope.end_date,
@@ -267,17 +355,52 @@ def _parse_scope_line(
             past_n_runs=scope.past_n_runs,
         )
     elif field == "tier":
-        tier_value = _parse_int(value)
-        scope = ExploreScope(
-            start_date=scope.start_date,
-            end_date=scope.end_date,
-            tier=tier_value if tier_value is not None else default_scope.tier,
-            preset_id=scope.preset_id,
-            snapshot_id=scope.snapshot_id,
-            past_n_runs=scope.past_n_runs,
-        )
+        operator_match = re.match(r"^(>=|<=|>|<|=)?\s*(.+)?$", normalized)
+        operator = (operator_match.group(1) or "").strip() if operator_match else ""
+        raw_value = (operator_match.group(2) or "").strip() if operator_match else normalized
+        tier_value = _parse_int(raw_value)
+        if operator in (">", "<") and tier_value is not None:
+            if operator == ">":
+                tier_value += 1
+                operator = ">="
+            else:
+                tier_value -= 1
+                operator = "<="
+        if operator in (">=", "<=") and tier_value is not None:
+            filters.append(
+                ExploreFilter(
+                    field="tier",
+                    operator=cast(FilterOperator, operator),
+                    value=tier_value,
+                )
+            )
+        else:
+            scope = ExploreScope(
+                start_date=scope.start_date,
+                end_date=scope.end_date,
+                tier=tier_value if tier_value is not None else default_scope.tier,
+                preset_id=scope.preset_id,
+                snapshot_id=scope.snapshot_id,
+                past_n_runs=scope.past_n_runs,
+            )
     elif field == "preset":
-        preset_value = _parse_id_with_optional_label(value)
+        preset_value = _parse_id_with_optional_label(main_value)
+        if not_clause:
+            names, name_errors = _parse_name_list(not_clause)
+            errors.extend(name_errors)
+            if names:
+                filters.append(ExploreFilter(field="preset_name_exclude", operator="in", value=names))
+        if preset_value is None and main_value and not _is_placeholder(main_value):
+            include_names, include_errors = _parse_name_list(main_value)
+            errors.extend(include_errors)
+            if include_names:
+                filters.append(
+                    ExploreFilter(
+                        field="preset_name_include",
+                        operator="in",
+                        value=include_names,
+                    )
+                )
         scope = ExploreScope(
             start_date=scope.start_date,
             end_date=scope.end_date,
@@ -287,7 +410,7 @@ def _parse_scope_line(
             past_n_runs=scope.past_n_runs,
         )
     elif field == "snapshot":
-        snapshot_value = _parse_id_with_optional_label(value)
+        snapshot_value = _parse_id_with_optional_label(normalized)
         scope = ExploreScope(
             start_date=scope.start_date,
             end_date=scope.end_date,
@@ -297,7 +420,7 @@ def _parse_scope_line(
             past_n_runs=scope.past_n_runs,
         )
     elif field == "past_n_runs":
-        runs_value = _parse_int(value)
+        runs_value = _parse_int(normalized)
         scope = ExploreScope(
             start_date=scope.start_date,
             end_date=scope.end_date,
@@ -308,7 +431,9 @@ def _parse_scope_line(
         )
     else:
         errors.append(f"Unknown scope field: {field}.")
-    return scope, errors
+    if tournament_excluded:
+        filters.append(ExploreFilter(field="tournament", operator="=", value=False))
+    return scope, filters, errors
 
 
 def _parse_filter_line(field: str, value: str) -> tuple[list[ExploreFilter], list[str]]:
@@ -388,6 +513,51 @@ def _parse_date_range(value: str) -> tuple[date | None, date | None, list[str]]:
     start = _parse_date_token(match.group("start").strip())
     end = _parse_date_token(match.group("end").strip())
     return start, end, errors
+
+
+def _split_not_clause(value: str) -> tuple[str, str | None]:
+    """Split a value into a main value and a not-clause."""
+
+    match = re.search(r"\bnot\b(.+)$", value, re.I)
+    if not match:
+        return value.strip(), None
+    main = value[: match.start()].strip()
+    clause = match.group(1).strip()
+    return main, clause
+
+
+def _parse_date_list(value: str) -> tuple[list[str], list[str]]:
+    """Parse a comma/and-separated list of ISO dates."""
+
+    errors: list[str] = []
+    items: list[str] = []
+    for token in re.split(r"\s*(?:,|and)\s*", value):
+        cleaned = token.replace("not ", "").strip()
+        if not cleaned:
+            continue
+        parsed = _parse_date_token(cleaned)
+        if parsed is None:
+            errors.append(f"Invalid date exclusion: {cleaned}.")
+            continue
+        items.append(parsed.isoformat())
+    return items, errors
+
+
+def _parse_name_list(value: str) -> tuple[list[str], list[str]]:
+    """Parse a comma/and-separated list of names."""
+
+    errors: list[str] = []
+    items: list[str] = []
+    for token in re.split(r"\s*(?:,|and)\s*", value):
+        cleaned = token.replace("not ", "").strip()
+        if not cleaned:
+            continue
+        parsed = _parse_value(cleaned)
+        if parsed is None:
+            errors.append(f"Invalid preset exclusion: {cleaned}.")
+            continue
+        items.append(str(parsed))
+    return items, errors
 
 
 def _parse_date_token(value: str) -> date | None:
