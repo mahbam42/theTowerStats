@@ -455,14 +455,17 @@
           <p class="muted margin-0" data-explore-modal-summary>Preview appears after running a query.</p>
         </div>
         <div class="explore-modal-status" data-explore-modal-status></div>
-        <div class="table-scroll explore-modal-table" data-explore-modal-table hidden>
-          <table class="stack">
-            <thead>
-              <tr data-explore-modal-table-head></tr>
-            </thead>
-            <tbody data-explore-modal-table-body></tbody>
-          </table>
-        </div>
+            <div class="table-scroll explore-modal-table" data-explore-modal-table hidden>
+              <table class="stack">
+                <thead>
+                  <tr data-explore-modal-table-head></tr>
+                </thead>
+                <tbody data-explore-modal-table-body></tbody>
+                <tfoot>
+                  <tr data-explore-modal-table-total></tr>
+                </tfoot>
+              </table>
+            </div>
         <div class="explore-modal-chart" data-explore-modal-chart-wrap>
           <div class="empty-state" role="status" data-explore-modal-empty>Run a query to preview charts here.</div>
           <div class="explore-modal-kpi" data-explore-modal-kpi hidden>
@@ -473,6 +476,7 @@
           </div>
           <canvas data-explore-modal-chart height="220" hidden></canvas>
         </div>
+        <div class="explore-chart-legend" data-explore-modal-legend></div>
       </div>
     </div>
   </div>

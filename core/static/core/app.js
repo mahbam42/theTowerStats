@@ -507,15 +507,28 @@
     const tableWrap = modal.querySelector("[data-explore-modal-table]");
     const tableHead = modal.querySelector("[data-explore-modal-table-head]");
     const tableBody = modal.querySelector("[data-explore-modal-table-body]");
+    const tableTotal = modal.querySelector("[data-explore-modal-table-total]");
     const emptyEl = modal.querySelector("[data-explore-modal-empty]");
     const chartWrap = modal.querySelector("[data-explore-modal-chart-wrap]");
     const chartCanvas = modal.querySelector("[data-explore-modal-chart]");
     const kpiEl = modal.querySelector("[data-explore-modal-kpi]");
     const kpiValueEl = modal.querySelector("[data-explore-modal-kpi-value]");
+    const legendEl = modal.querySelector("[data-explore-modal-legend]");
     let chartInstance = null;
 
     const formatter = window.ttsFormatChartNumber || formatChartNumber;
-    const chartPalette = ["#f4a261", "#2a9d8f", "#e76f51", "#264653", "#e9c46a"];
+    function getChartPalette() {
+      const rootStyles = getComputedStyle(document.documentElement);
+      const pick = (name, fallback) => rootStyles.getPropertyValue(name).trim() || fallback;
+      return [
+        pick("--tts-color-accent", "#2b7de9"),
+        pick("--tts-color-success", "#3cb371"),
+        pick("--tts-color-warning", "#f5b14c"),
+        pick("--tts-color-danger", "#d35b52"),
+        pick("--tts-color-link", "#7ab7ff"),
+      ];
+    }
+    const chartPalette = getChartPalette();
 
     function clearPreview() {
       if (statusEl) statusEl.innerHTML = "";
@@ -523,9 +536,11 @@
       if (tableWrap) tableWrap.hidden = true;
       if (tableHead) tableHead.innerHTML = "";
       if (tableBody) tableBody.innerHTML = "";
+      if (tableTotal) tableTotal.innerHTML = "";
       if (emptyEl) emptyEl.hidden = false;
       if (kpiEl) kpiEl.hidden = true;
       if (chartCanvas) chartCanvas.hidden = true;
+      if (legendEl) legendEl.innerHTML = "";
       if (chartInstance) {
         chartInstance.destroy();
         chartInstance = null;
@@ -557,8 +572,8 @@
       renderCallout(warnings, "warning", "Explore notes");
     }
 
-    function renderTable(headers, rows, unit) {
-      if (!tableWrap || !tableHead || !tableBody) return;
+    function renderTable(headers, rows, unit, totalValue, totalCount) {
+      if (!tableWrap || !tableHead || !tableBody || !tableTotal) return;
       tableHead.innerHTML = "";
       const headerRow = document.createDocumentFragment();
       for (const header of headers || []) {
@@ -599,6 +614,22 @@
         tr.appendChild(countTd);
         tableBody.appendChild(tr);
       }
+      tableTotal.innerHTML = "";
+      const totalLabel = document.createElement("td");
+      const labelSpan = (headers || []).length ? headers.length : 1;
+      totalLabel.colSpan = labelSpan;
+      totalLabel.textContent = "Total";
+      tableTotal.appendChild(totalLabel);
+      const totalValueCell = document.createElement("td");
+      if (Number.isFinite(Number(totalValue))) {
+        totalValueCell.textContent = unit ? `${formatter(totalValue, unit)} ${unit}` : formatter(totalValue, unit);
+      } else {
+        totalValueCell.textContent = "—";
+      }
+      tableTotal.appendChild(totalValueCell);
+      const totalCountCell = document.createElement("td");
+      totalCountCell.textContent = totalCount ?? "—";
+      tableTotal.appendChild(totalCountCell);
       tableWrap.hidden = (rows || []).length === 0;
     }
 
@@ -652,6 +683,22 @@
           },
         },
       });
+      if (legendEl) {
+        legendEl.innerHTML = "";
+        const legendLabels = labels.length ? labels : [chartUnit || "Value"];
+        legendLabels.forEach((label, idx) => {
+          const item = document.createElement("div");
+          item.className = "explore-legend-item";
+          const swatch = document.createElement("span");
+          swatch.className = "explore-legend-swatch";
+          swatch.style.backgroundColor = visualization === "donut" ? chartPalette[idx % chartPalette.length] : "#2a9d8f";
+          const text = document.createElement("span");
+          text.textContent = label;
+          item.appendChild(swatch);
+          item.appendChild(text);
+          legendEl.appendChild(item);
+        });
+      }
     }
 
     async function runPreview() {
@@ -679,7 +726,13 @@
         if (summaryEl) {
           summaryEl.textContent = `${results.metric_label || "Metric"} • ${String(results.aggregation || "").toUpperCase()}`;
         }
-        renderTable(results.breakdown_headers, results.rows, results.metric_unit);
+        renderTable(
+          results.breakdown_headers,
+          results.rows,
+          results.metric_unit,
+          results.total_value,
+          results.total_sample_count
+        );
         renderChart(results.chart, results.visualization, results.metric_unit, results.total_value);
       } catch (_err) {
         clearPreview();

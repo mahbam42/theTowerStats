@@ -2000,6 +2000,7 @@ def _explore_preview_payload(
         "run_count": results.get("run_count"),
         "missing_count": results.get("missing_count"),
         "total_value": results.get("total_value"),
+        "total_sample_count": results.get("total_sample_count"),
         "chart": results.get("chart"),
     }
     return payload
@@ -5217,6 +5218,7 @@ def _explore_execute_query(
         }
         for row in result.rows
     ]
+    total_sample_count = sum(row.sample_count for row in result.rows)
 
     labels = [" • ".join(row.breakdown) if row.breakdown else "Total" for row in result.rows]
     values = [row.value or 0.0 for row in result.rows]
@@ -5236,6 +5238,7 @@ def _explore_execute_query(
         "run_count": result.run_count,
         "missing_count": result.missing_count,
         "total_value": result.total_value,
+        "total_sample_count": total_sample_count,
         "run_order": run_order,
         "chart": {"labels": labels, "values": values, "unit": chart_unit},
         "explainability": _explore_explainability(

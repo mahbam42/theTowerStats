@@ -135,6 +135,33 @@ a:focus {
   background: var(--tts-color-highlight);
 }
 
+.explore-results-total td {
+  font-weight: 600;
+  border-top: 1px solid var(--tts-color-border);
+}
+
+.explore-chart-legend {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--tts-space-2);
+  margin-top: var(--tts-space-2);
+}
+
+.explore-legend-item {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.4rem;
+  color: var(--tts-color-text-muted);
+  font-size: 0.9rem;
+}
+
+.explore-legend-swatch {
+  width: 0.85rem;
+  height: 0.85rem;
+  border-radius: 999px;
+  border: 1px solid var(--tts-color-border);
+}
+
 .explore-modal-shell {
   width: min(980px, 100%);
 }
