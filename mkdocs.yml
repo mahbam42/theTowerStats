@@ -75,7 +75,6 @@ nav:
       - Project Structure: project_structure.md
       - Design Philosophy: design_philosophy.md
       - Admin Panel: admin_panel.md
-      - Explore DSL: explore_dsl.md
       - Progress: 
           - Phase 1: phase1.md
           - Phase 2: phase2.md
@@ -96,6 +95,7 @@ nav:
       - Goals Dashboard: dev_goals.md
       - Development Notes: development.md
   - Reference:
+      - Explore DSL: explore_dsl.md
       - Management Commands: management_commands.md
       - Analytics: reference/analytics.md
       - Core Charting: reference/core_charting.md
