@@ -33,6 +33,7 @@ from analysis.chart_config_validator import validate_chart_config_dto
 from analysis.deltas import delta
 from analysis.event_windows import coerce_window_bounds, event_window_for_date, shift_event_window
 from analysis.engine import analyze_metric_series, analyze_runs
+from analysis.explore_dsl import build_explore_autocomplete, format_explore_dsl, parse_explore_dsl
 from analysis.explore_engine import execute_explore_query
 from analysis.explore_registry import DEFAULT_BREAKDOWNS, ExploreMetricDefinition, build_explore_metric_registry
 from analysis.explore_schema import (
@@ -1702,6 +1703,7 @@ def explore_dashboard(request: HttpRequest) -> HttpResponse:
     saved_queries = ExploreQueryModel.objects.filter(player=player).order_by("name", "id")
     loaded_query: ExploreQueryModel | None = None
     loaded_payload: dict[str, object] | None = None
+    prefill_scope = _explore_prefill_scope_from_request(request.GET)
     if request.method == "GET" and request.GET.get("query_id"):
         try:
             query_id = int(request.GET.get("query_id") or 0)
@@ -1720,7 +1722,9 @@ def explore_dashboard(request: HttpRequest) -> HttpResponse:
             initial["query_id"] = loaded_query.id
     if not initial and request.method == "GET" and request.GET and not request.GET.get("run"):
         initial = _explore_form_initial_from_request(request.GET)
-    if request.method == "POST":
+    dsl_input = request.POST.get("dsl_query") if request.method == "POST" else ""
+    uses_dsl = bool(dsl_input and dsl_input.strip())
+    if request.method == "POST" and not uses_dsl:
         form_data = request.POST
     elif request.method == "GET" and request.GET.get("run"):
         form_data = request.GET
@@ -1731,6 +1735,8 @@ def explore_dashboard(request: HttpRequest) -> HttpResponse:
     validation_warnings: list[str] = []
     results: dict[str, object] | None = None
     query_payload: dict[str, object] | None = None
+    dsl_text = ""
+    autocomplete_payload = build_explore_autocomplete(explore_registry, DEFAULT_BREAKDOWNS)
 
     if not form.is_bound and loaded_payload:
         loaded_query_data = _explore_query_from_payload(loaded_payload)
@@ -1752,6 +1758,89 @@ def explore_dashboard(request: HttpRequest) -> HttpResponse:
                 validation_warnings.append(
                     f"Missing data: {results['missing_count']} run values were unavailable for the selected metric."
                 )
+
+        dsl_text = format_explore_dsl(loaded_query_data, default_scope=prefill_scope)
+
+    if uses_dsl:
+        dsl_text = dsl_input
+        parse_result = parse_explore_dsl(
+            dsl_input,
+            player_id=str(player.id),
+            default_scope=prefill_scope,
+        )
+        validation_errors.extend(parse_result.errors)
+        validation_warnings.extend(parse_result.warnings)
+        if parse_result.query is not None and not parse_result.errors:
+            validation = validate_explore_query(
+                parse_result.query,
+                metric_registry=explore_registry,
+                breakdown_registry=DEFAULT_BREAKDOWNS,
+            )
+            validation_errors.extend(validation.errors)
+            validation_warnings.extend(validation.warnings)
+            query_payload = build_query_payload(parse_result.query)
+
+            if not validation.errors:
+                execution_query = parse_result.query
+                if parse_result.query.visualization_hint == "kpi":
+                    execution_query = ExploreQuery(
+                        schema_version=parse_result.query.schema_version,
+                        player_id=parse_result.query.player_id,
+                        name=parse_result.query.name,
+                        scope=parse_result.query.scope,
+                        filters=parse_result.query.filters,
+                        breakdowns=(),
+                        metric=parse_result.query.metric,
+                        visualization_hint=parse_result.query.visualization_hint,
+                    )
+                results = _explore_execute_query(
+                    execution_query,
+                    player=player,
+                    registry=explore_registry,
+                )
+                if results["run_count"] == 0:
+                    validation_warnings.append(
+                        "Empty scope: no runs match the current scope and filters."
+                    )
+                if not results["rows"]:
+                    validation_warnings.append(
+                        "Missing data: no matching metric values were found."
+                    )
+                if results["missing_count"]:
+                    validation_warnings.append(
+                        f"Missing data: {results['missing_count']} run values were unavailable for the selected metric."
+                    )
+
+            if request.method == "POST" and request.POST.get("action") == "save_explore_query":
+                if validation_errors:
+                    messages.error(request, "Could not save query: validation failed.")
+                else:
+                    saved_id = request.POST.get("query_id")
+                    existing = (
+                        ExploreQueryModel.objects.filter(player=player, id=saved_id).first()
+                        if saved_id
+                        else None
+                    )
+                    name = parse_result.query.name
+                    conflict = ExploreQueryModel.objects.filter(player=player, name=name)
+                    if existing is not None:
+                        conflict = conflict.exclude(id=existing.id)
+                    if conflict.exists():
+                        messages.error(request, "A query with this name already exists.")
+                    else:
+                        if existing is None:
+                            existing = ExploreQueryModel(player=player, name=name)
+                        existing.schema_version = SCHEMA_VERSION
+                        existing.name = name
+                        existing.query = query_payload or {}
+                        existing.save()
+                        messages.success(request, "Explore query saved.")
+                        target = f"{reverse('core:explore')}?query_id={existing.id}"
+                        return safe_redirect(
+                            request,
+                            candidates=[request.POST.get("next")],
+                            fallback=target,
+                        )
 
     if form.is_bound and form.is_valid():
         query = _explore_query_from_form(form, player=player)
@@ -1814,11 +1903,30 @@ def explore_dashboard(request: HttpRequest) -> HttpResponse:
                     target = f"{reverse('core:explore')}?query_id={existing.id}"
                     return safe_redirect(request, candidates=[request.POST.get("next")], fallback=target)
 
+        if not dsl_text:
+            dsl_text = format_explore_dsl(query, default_scope=prefill_scope)
+
+    if not dsl_text:
+        default_metric = sorted(explore_registry.keys())[0]
+        default_query = ExploreQuery(
+            schema_version=SCHEMA_VERSION,
+            player_id=str(player.id),
+            name="New Explore Query",
+            scope=prefill_scope,
+            filters=(),
+            breakdowns=(ExploreBreakdown(dimension="run", order=1),),
+            metric=ExploreMetricSelection(key=default_metric, aggregation="sum"),
+            visualization_hint="table",
+        )
+        dsl_text = format_explore_dsl(default_query, default_scope=prefill_scope)
+
     context = {
         "form": form,
         "saved_queries": saved_queries,
         "loaded_query": loaded_query,
         "query_payload": query_payload,
+        "explore_dsl_text": dsl_text,
+        "explore_dsl_autocomplete": autocomplete_payload,
         "explore_results": results,
         "explore_errors": tuple(validation_errors),
         "explore_warnings": tuple(validation_warnings),
@@ -4685,6 +4793,25 @@ def _explore_form_initial_from_request(params: QueryDict) -> dict[str, object]:
         if params.get(field):
             initial[field] = params.get(field)
     return initial
+
+
+def _explore_prefill_scope_from_request(params: QueryDict) -> ExploreScope:
+    """Return Explore scope defaults derived from query parameters."""
+
+    start_date = _parse_context_date(params.get("start_date"))
+    end_date = _parse_context_date(params.get("end_date"))
+    tier = _parse_context_int(params.get("tier"))
+    preset_id = _parse_context_int(params.get("preset") or params.get("preset_id"))
+    snapshot_id = _parse_context_int(params.get("snapshot"))
+    past_n_runs = _parse_context_int(params.get("past_n_runs"))
+    return ExploreScope(
+        start_date=start_date,
+        end_date=end_date,
+        tier=tier,
+        preset_id=preset_id,
+        snapshot_id=snapshot_id,
+        past_n_runs=past_n_runs,
+    )
 
 
 def _explore_query_from_payload(payload: dict[str, object]) -> ExploreQuery:

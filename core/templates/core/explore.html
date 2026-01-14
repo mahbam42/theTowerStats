@@ -1,4 +1,5 @@
 {% extends "core/base.html" %}
+{% load static %}
 
 {% block title %}Explore • theTowerStats{% endblock %}
 
@@ -9,7 +10,7 @@
 {% block content %}
   <div class="grid-x grid-margin-x">
     <div class="cell">
-      <div class="card-shell">
+      <div class="card-shell explore-header">
         <div class="grid-x grid-margin-x align-middle">
           <div class="cell auto">
             <h2 class="margin-0">Explore Battles</h2>
@@ -25,25 +26,144 @@
   </div>
 
   <div class="grid-x grid-margin-x">
-    <div class="cell large-4 medium-5 dashboard-sidebar">
-      <div class="card-shell">
-        <h4>Saved Queries</h4>
-        <form method="get" class="stacked">
-          <label>Saved query
-            <select name="query_id">
-              <option value="">Select a saved query</option>
-              {% for query in saved_queries %}
-                <option value="{{ query.id }}"{% if loaded_query and loaded_query.id == query.id %} selected{% endif %}>{{ query.name }}</option>
-              {% endfor %}
-            </select>
-          </label>
-          <button class="button secondary expanded" type="submit">Load query</button>
+    <div class="cell">
+      <div class="card-shell explore-query-card">
+        <div class="explore-query-toolbar">
+          <div class="explore-query-meta">
+            <h4 class="margin-0">Query Builder</h4>
+            <p class="muted margin-0">Use the DSL below to define scope, filters, breakdowns, and metrics.</p>
+          </div>
+          <form method="get" class="explore-query-saved">
+            <label class="margin-0">Saved query
+              <select name="query_id" onchange="this.form.submit()">
+                <option value="">Select a saved query</option>
+                {% for query in saved_queries %}
+                  <option value="{{ query.id }}"{% if loaded_query and loaded_query.id == query.id %} selected{% endif %}>{{ query.name }}</option>
+                {% endfor %}
+              </select>
+            </label>
+          </form>
+        </div>
+        <form method="post" class="explore-query-form" data-explore-dsl-form>
+          {% csrf_token %}
+          <input type="hidden" name="query_id" value="{{ loaded_query.id|default:'' }}">
+          <input type="hidden" name="next" value="{{ request.get_full_path }}">
+          <div class="explore-query-editor" data-explore-dsl-editor>
+            <textarea id="explore-dsl-input" name="dsl_query">{{ explore_dsl_text }}</textarea>
+          </div>
+          <div class="explore-query-actions">
+            <button class="button" type="submit" name="action" value="run_explore_query">Run query</button>
+            <button class="button secondary" type="submit" name="action" value="save_explore_query">Save query</button>
+          </div>
         </form>
       </div>
+    </div>
+  </div>
 
-      <div class="card-shell margin-top-1">
-        <h4>Build Query</h4>
-        <form method="post" class="stacked">
+  <div class="grid-x grid-margin-x">
+    <div class="cell">
+      {% if explore_errors %}
+        <div class="callout alert">
+          <p class="margin-0"><strong>Explore validation</strong></p>
+          <ul class="margin-0">
+            {% for err in explore_errors %}
+              <li>{{ err }}</li>
+            {% endfor %}
+          </ul>
+        </div>
+      {% endif %}
+
+      {% if explore_warnings %}
+        <div class="callout warning">
+          <p class="margin-0"><strong>Explore notes</strong></p>
+          <ul class="margin-0">
+            {% for warn in explore_warnings %}
+              <li>{{ warn }}</li>
+            {% endfor %}
+          </ul>
+        </div>
+      {% endif %}
+
+      {% if explore_results %}
+        <div class="card-shell">
+          <h4 class="margin-bottom-0">Results</h4>
+          <p class="muted margin-top-0">
+            {{ explore_results.metric_label }} • {{ explore_results.aggregation|title }}
+          </p>
+          <p class="muted margin-top-0">Runs in scope: {{ explore_results.run_count }}</p>
+          {% if explore_results.visualization == "kpi" %}
+            <div class="callout secondary">
+              <p class="margin-0">Total</p>
+              <h3 class="margin-0">
+                <span class="metric-value" data-format="unit-value" data-unit="{{ explore_results.metric_unit }}" data-value="{{ explore_results.total_value }}"></span>
+              </h3>
+            </div>
+          {% endif %}
+        </div>
+
+        {% if explore_results.explainability %}
+          <div class="card-shell margin-top-1">
+            <h5 class="margin-bottom-0">Why am I seeing this?</h5>
+            <ul class="margin-top-0">
+              {% for line in explore_results.explainability %}
+                <li>{{ line }}</li>
+              {% endfor %}
+            </ul>
+          </div>
+        {% endif %}
+
+        <div class="card-shell margin-top-1">
+          {% if explore_results.rows %}
+            <div class="table-scroll">
+              <table class="stack">
+                <thead>
+                  <tr>
+                    {% for header in explore_results.breakdown_headers %}
+                      <th scope="col">{{ header }}</th>
+                    {% endfor %}
+                    <th scope="col">Value</th>
+                    <th scope="col">Runs counted</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {% for row in explore_results.rows %}
+                    <tr>
+                      {% for label in row.breakdown %}
+                        <td>{{ label }}</td>
+                      {% endfor %}
+                      <td>
+                        <span class="metric-value" data-format="unit-value" data-unit="{{ explore_results.metric_unit }}" data-value="{{ row.value }}"></span>
+                      </td>
+                      <td>{{ row.sample_count }}</td>
+                    </tr>
+                  {% endfor %}
+                </tbody>
+              </table>
+            </div>
+          {% else %}
+            <div class="empty-state" role="status">No results for the current query.</div>
+          {% endif %}
+        </div>
+
+        {% if explore_results.visualization == "bar" or explore_results.visualization == "donut" %}
+          <div class="card-shell margin-top-1">
+            <canvas id="explore-chart" height="240"></canvas>
+            {{ explore_results.chart|json_script:"explore-chart-data" }}
+          </div>
+        {% endif %}
+      {% else %}
+        <div class="card-shell">
+          <div class="empty-state" role="status">Run a query to see results.</div>
+        </div>
+      {% endif %}
+    </div>
+  </div>
+
+  <div class="grid-x grid-margin-x">
+    <div class="cell">
+      <details class="card-shell explore-advanced">
+        <summary>Advanced panel</summary>
+        <form method="post" class="stacked margin-top-1">
           {% csrf_token %}
           {{ form.query_id }}
           <input type="hidden" name="next" value="{{ request.get_full_path }}">
@@ -123,106 +243,12 @@
             <button class="button secondary" type="submit" name="action" value="save_explore_query">Save query</button>
           </div>
         </form>
-      </div>
-    </div>
-
-    <div class="cell large-8 medium-7 dashboard-main">
-      {% if explore_errors %}
-        <div class="callout alert">
-          <p class="margin-0"><strong>Explore validation</strong></p>
-          <ul class="margin-0">
-            {% for err in explore_errors %}
-              <li>{{ err }}</li>
-            {% endfor %}
-          </ul>
-        </div>
-      {% endif %}
-
-      {% if explore_warnings %}
-        <div class="callout warning">
-          <p class="margin-0"><strong>Explore notes</strong></p>
-          <ul class="margin-0">
-            {% for warn in explore_warnings %}
-              <li>{{ warn }}</li>
-            {% endfor %}
-          </ul>
-        </div>
-      {% endif %}
-
-      {% if explore_results %}
-        <div class="card-shell">
-          <h4 class="margin-bottom-0">Results</h4>
-          <p class="muted margin-top-0">
-            {{ explore_results.metric_label }} • {{ explore_results.aggregation|title }}
-          </p>
-          <p class="muted margin-top-0">Runs in scope: {{ explore_results.run_count }}</p>
-          {% if explore_results.visualization == "kpi" %}
-            <div class="callout secondary">
-              <p class="margin-0">Total</p>
-              <h3 class="margin-0">
-                <span class="metric-value" data-format="unit-value" data-unit="{{ explore_results.metric_unit }}" data-value="{{ explore_results.total_value }}"></span>
-              </h3>
-            </div>
-          {% endif %}
-        </div>
-
-        {% if explore_results.explainability %}
-          <div class="card-shell margin-top-1">
-            <h5 class="margin-bottom-0">Why am I seeing this?</h5>
-            <ul class="margin-top-0">
-              {% for line in explore_results.explainability %}
-                <li>{{ line }}</li>
-              {% endfor %}
-            </ul>
-          </div>
-        {% endif %}
-
-        {% if explore_results.visualization == "bar" or explore_results.visualization == "donut" %}
-          <div class="card-shell margin-top-1">
-            <canvas id="explore-chart" height="240"></canvas>
-            {{ explore_results.chart|json_script:"explore-chart-data" }}
-          </div>
-        {% endif %}
-
-        <div class="card-shell margin-top-1">
-          {% if explore_results.rows %}
-            <div class="table-scroll">
-              <table class="stack">
-                <thead>
-                  <tr>
-                    {% for header in explore_results.breakdown_headers %}
-                      <th scope="col">{{ header }}</th>
-                    {% endfor %}
-                    <th scope="col">Value</th>
-                    <th scope="col">Runs counted</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  {% for row in explore_results.rows %}
-                    <tr>
-                      {% for label in row.breakdown %}
-                        <td>{{ label }}</td>
-                      {% endfor %}
-                      <td>
-                        <span class="metric-value" data-format="unit-value" data-unit="{{ explore_results.metric_unit }}" data-value="{{ row.value }}"></span>
-                      </td>
-                      <td>{{ row.sample_count }}</td>
-                    </tr>
-                  {% endfor %}
-                </tbody>
-              </table>
-            </div>
-          {% else %}
-            <div class="empty-state" role="status">No results for the current query.</div>
-          {% endif %}
-        </div>
-      {% else %}
-        <div class="card-shell">
-          <div class="empty-state" role="status">Run a query to see results.</div>
-        </div>
-      {% endif %}
+      </details>
     </div>
   </div>
+
+  {{ explore_dsl_autocomplete|json_script:"explore-dsl-autocomplete" }}
+
   {% if explore_results %}
     {% if explore_results.visualization == "bar" or explore_results.visualization == "donut" %}
       <script>
@@ -263,4 +289,5 @@
       </script>
     {% endif %}
   {% endif %}
+  <script type="module" src="{% static 'core/explore_dsl.mjs' %}"></script>
 {% endblock %}

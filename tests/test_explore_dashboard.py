@@ -21,6 +21,7 @@ def test_explore_view_renders(auth_client, player) -> None:
     assert response.status_code == 200
     content = response.content.decode("utf-8")
     assert "Explore Battles" in content
+    assert "explore-dsl-input" in content
 
 
 @pytest.mark.django_db
@@ -47,14 +48,22 @@ def test_explore_query_runs_and_saves(auth_client, player) -> None:
         raw_values={"recovery_packages": "9"},
     )
 
+    dsl_query = (
+        'name "Recovery packages by tier"\n'
+        "scope date [date:YYYY-MM-DD]..[date:YYYY-MM-DD]\n"
+        "scope tier [tier:—]\n"
+        "scope preset [preset:—]\n"
+        "scope snapshot [snapshot:—]\n"
+        "scope past_n_runs [runs:—]\n"
+        "breakdown by tier\n"
+        "metric recovery_packages sum\n"
+        "output table\n"
+    )
+
     run_response = auth_client.post(
         reverse("core:explore"),
         data={
-            "name": "Recovery packages by tier",
-            "metric_key": "recovery_packages",
-            "aggregation": "sum",
-            "visualization": "table",
-            "primary_breakdown": "tier",
+            "dsl_query": dsl_query,
             "action": "run_explore_query",
         },
     )
@@ -65,11 +74,7 @@ def test_explore_query_runs_and_saves(auth_client, player) -> None:
     save_response = auth_client.post(
         reverse("core:explore"),
         data={
-            "name": "Recovery packages by tier",
-            "metric_key": "recovery_packages",
-            "aggregation": "sum",
-            "visualization": "table",
-            "primary_breakdown": "tier",
+            "dsl_query": dsl_query,
             "action": "save_explore_query",
         },
         follow=True,

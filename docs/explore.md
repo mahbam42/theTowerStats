@@ -14,15 +14,14 @@ Explore helps you build your own questions about past runs and see aggregated an
 ## How to Use
 
 1. Select **Explore** in the navigation.
-2. Select a **Query name** so you can save or edit it later.
-3. Select a **Start date** and **End date** when you want a time window.
-4. Select a **Preset** or **Preset run (snapshot)** when you want a saved scope.
-5. Select one or more **Tier** values or a **Tier minimum/maximum**.
-6. Select a **Wave minimum/maximum** or a **Death cause** when needed.
-7. Select a **Primary breakdown** (and an optional **Secondary breakdown**).
-8. Select a **Metric** and an **Aggregation** (Sum or Count).
-9. Select an **Output** type when you want an optional chart or KPI.
-10. Select **Run query**.
+2. Review the Query Builder text area at the top of the page.
+3. Enter a name on the first line so you can save or edit the query later.
+4. Review the Scope lines and replace any placeholders with real values when needed.
+5. Add Filter lines to narrow the runs in scope.
+6. Add a Breakdown line to group results.
+7. Add a Metric line and an Aggregation.
+8. Add an Output line when you want a chart or KPI.
+9. Select **Run query**.
 
 ## How to Read the Results
 
@@ -44,3 +43,6 @@ Explore helps you build your own questions about past runs and see aggregated an
 
 > ⚠️ Note
 > Queries are player-scoped. Results are based only on your own runs.
+
+> ⚠️ Note
+> Placeholders are shown in brackets to indicate a required format, such as a date or tier. Replace them with real values when you want to narrow the scope.

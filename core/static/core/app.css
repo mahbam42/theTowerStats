@@ -90,6 +90,63 @@ a:focus {
   background: transparent;
 }
 
+.explore-header {
+  margin-bottom: var(--tts-space-4);
+}
+
+.explore-query-card {
+  display: flex;
+  flex-direction: column;
+  gap: var(--tts-space-4);
+}
+
+.explore-query-toolbar {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--tts-space-4);
+  align-items: center;
+  justify-content: space-between;
+}
+
+.explore-query-meta h4 {
+  font-size: 1.1rem;
+}
+
+.explore-query-saved select {
+  min-width: 220px;
+}
+
+.explore-query-editor .cm-editor {
+  min-height: 180px;
+}
+
+.explore-query-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--tts-space-2);
+}
+
+.explore-advanced summary {
+  cursor: pointer;
+  font-weight: 600;
+  color: var(--tts-color-text);
+}
+
+.explore-advanced[open] summary {
+  margin-bottom: var(--tts-space-3);
+}
+
+.cm-placeholder {
+  color: var(--tts-color-warning);
+  background: rgba(245, 177, 76, 0.15);
+  border-radius: 4px;
+  padding: 0 0.2rem;
+}
+
+.cm-operator {
+  color: #9dccff;
+}
+
 .top-bar .dropdown.menu > li > a {
   border-radius: var(--tts-radius-1);
 }
