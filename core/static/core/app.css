@@ -117,7 +117,7 @@ a:focus {
 }
 
 .explore-query-editor .cm-editor {
-  min-height: 180px;
+  min-height: 16rem;
 }
 
 .explore-query-actions {

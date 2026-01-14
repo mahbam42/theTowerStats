@@ -1,6 +1,11 @@
-import { EditorState, EditorView, basicSetup } from "../vendor/codemirror/basic-setup.bundle.mjs";
-import { StreamLanguage } from "../vendor/codemirror/language.bundle.mjs";
-import { autocompletion, completeFromList } from "../vendor/codemirror/autocomplete.bundle.mjs";
+import {
+  EditorState,
+  EditorView,
+  StreamLanguage,
+  autocompletion,
+  basicSetup,
+  completeFromList,
+} from "../vendor/codemirror/explore.bundle.mjs";
 
 const textarea = document.getElementById("explore-dsl-input");
 const editorHost = document.querySelector("[data-explore-dsl-editor]");
@@ -50,12 +55,13 @@ if (textarea && editorHost) {
         backgroundColor: "var(--tts-color-surface)",
         border: "1px solid var(--tts-color-border)",
         borderRadius: "var(--tts-radius-2)",
-        fontFamily: "ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, 'Liberation Mono', 'Courier New', monospace",
+        fontFamily:
+          "ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, 'Liberation Mono', 'Courier New', monospace",
         fontSize: "0.95rem",
       },
       ".cm-content": {
         padding: "1rem",
-        minHeight: "10rem",
+        minHeight: "16rem",
       },
       ".cm-gutters": {
         backgroundColor: "transparent",
