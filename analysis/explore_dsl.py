@@ -233,9 +233,9 @@ def parse_explore_dsl(
                 metric_key, aggregation = tokens
                 aggregation = aggregation.lower()
             else:
-                errors.append("Metric line must be: metric <key> [sum|count].")
+                errors.append("Metric line must be: metric <key> [sum|count|avg].")
                 continue
-            if aggregation not in ("sum", "count"):
+            if aggregation not in ("sum", "count", "avg"):
                 errors.append(f"Aggregation {aggregation} is not supported.")
             metric = ExploreMetricSelection(key=metric_key, aggregation=aggregation)  # type: ignore[arg-type]
             continue
@@ -305,6 +305,7 @@ def build_explore_autocomplete(
         "by",
         "sum",
         "count",
+        "avg",
         "table",
         "bar",
         "donut",

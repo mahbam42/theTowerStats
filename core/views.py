@@ -5,6 +5,7 @@ from __future__ import annotations
 import json
 import csv
 import io
+import math
 from dataclasses import dataclass
 from datetime import date, timedelta
 from typing import Any, Literal, cast
@@ -49,7 +50,7 @@ from analysis.explore_schema import (
     validate_explore_query,
 )
 from analysis.dto import RunAnalysis
-from analysis.metrics import get_metric_definition
+from analysis.metrics import MetricComputeConfig, compute_metric_value, get_metric_definition
 from analysis.quantity import UnitType
 from analysis.rates import coins_per_hour as coins_per_hour_rate
 from analysis.series_registry import DEFAULT_REGISTRY
@@ -1704,6 +1705,230 @@ def _chart_builder_payload(builder_form: ChartBuilderForm) -> dict[str, object]:
         "window_a_end": window_a_end.isoformat() if window_a_end else "",
         "window_b_start": window_b_start.isoformat() if window_b_start else "",
         "window_b_end": window_b_end.isoformat() if window_b_end else "",
+    }
+
+
+FARMING_EFFICIENCY_QUERY_ID = "farming-efficiency-by-tier"
+FARMING_EFFICIENCY_QUERY_NAME = "Farming Efficiency by Tier"
+FARMING_MIN_RUNS = 3
+FARMING_PLATEAU_THRESHOLD = 0.05
+FARMING_VARIANCE_THRESHOLD = 0.4
+
+
+@dataclass(frozen=True, slots=True)
+class ExploreStoredQuery:
+    """Metadata for built-in Explore queries."""
+
+    id: str
+    name: str
+    dsl_text: str
+
+
+def _farming_efficiency_dsl(*, default_scope: ExploreScope) -> str:
+    """Return the DSL text for the farming efficiency stored query."""
+
+    start = default_scope.start_date.isoformat() if default_scope.start_date else "[date:YYYY-MM-DD]"
+    end = default_scope.end_date.isoformat() if default_scope.end_date else "[date:YYYY-MM-DD]"
+    preset = str(default_scope.preset_id) if default_scope.preset_id else "[preset:—]"
+    snapshot = str(default_scope.snapshot_id) if default_scope.snapshot_id else "[snapshot:—]"
+    past_runs = str(default_scope.past_n_runs) if default_scope.past_n_runs else "[runs:—]"
+
+    lines = [
+        f'name "{FARMING_EFFICIENCY_QUERY_NAME}"',
+        f"scope date {start}..{end}",
+        "scope tier all not tournament",
+        f"scope preset {preset}",
+        f"scope snapshot {snapshot}",
+        f"scope past_n_runs {past_runs}",
+        "breakdown by tier",
+        "metric coins_per_hour avg",
+        "# Optional secondary metrics (avg):",
+        "# metric coins_earned avg",
+        "# metric real_time_hours avg",
+        "# metric cells_earned avg",
+        "# metric reroll_shards_earned avg",
+        "# metric waves_reached avg",
+        "output table",
+    ]
+    return "\n".join(lines)
+
+
+def _explore_stored_queries(*, default_scope: ExploreScope) -> tuple[ExploreStoredQuery, ...]:
+    """Return built-in Explore queries for the saved query dropdown."""
+
+    return (
+        ExploreStoredQuery(
+            id=FARMING_EFFICIENCY_QUERY_ID,
+            name=FARMING_EFFICIENCY_QUERY_NAME,
+            dsl_text=_farming_efficiency_dsl(default_scope=default_scope),
+        ),
+    )
+
+
+def _explore_metric_value(record: BattleReport, *, metric_key: str) -> float | None:
+    """Return a computed Explore metric value for a BattleReport record."""
+
+    progress = getattr(record, "run_progress", record)
+    coins = getattr(progress, "coins_earned", None)
+    cash = getattr(progress, "cash_earned", None)
+    interest_earned = getattr(progress, "interest_earned", None)
+    cells = getattr(progress, "cells_earned", None)
+    reroll_shards = getattr(progress, "reroll_shards_earned", None)
+    wave = getattr(progress, "wave", None)
+    real_time_seconds = getattr(progress, "real_time_seconds", None)
+
+    value, _used, _assumptions = compute_metric_value(
+        metric_key,
+        record=record,
+        coins=coins,
+        cash=cash,
+        interest_earned=interest_earned,
+        cells=cells,
+        reroll_shards=reroll_shards,
+        wave=wave,
+        real_time_seconds=real_time_seconds,
+        context=None,
+        entity_type=None,
+        entity_name=None,
+        config=MetricComputeConfig(monte_carlo=None),
+    )
+    return value
+
+
+def _farming_efficiency_analysis(
+    runs: Iterable[BattleReport],
+    *,
+    metric_key: str,
+    min_runs: int,
+    plateau_threshold: float,
+    variance_threshold: float,
+) -> dict[str, object]:
+    """Return summary, warnings, and rows for farming efficiency output."""
+
+    tier_values: dict[int, list[float]] = {}
+    for run in runs:
+        progress = getattr(run, "run_progress", run)
+        tier = getattr(progress, "tier", None)
+        if tier is None:
+            continue
+        value = _explore_metric_value(run, metric_key=metric_key)
+        if value is None:
+            continue
+        tier_values.setdefault(int(tier), []).append(float(value))
+
+    tiers = sorted(tier_values.keys())
+    rows: list[dict[str, object]] = []
+    warnings: list[str] = []
+    if not tiers:
+        return {
+            "rows": (),
+            "warnings": (),
+            "best_tier": None,
+            "plateau_tier": None,
+            "insufficient": True,
+        }
+
+    tier_stats: list[dict[str, object]] = []
+    for tier in tiers:
+        values = tier_values[tier]
+        count = len(values)
+        avg_value = sum(values) / count if count else 0.0
+        variance = sum((value - avg_value) ** 2 for value in values) / count if count else 0.0
+        stddev = math.sqrt(variance)
+        cv = (stddev / avg_value) if avg_value else None
+        tier_stats.append(
+            {
+                "tier": tier,
+                "avg": avg_value,
+                "count": count,
+                "cv": cv,
+            }
+        )
+
+    low_sample = [stat for stat in tier_stats if stat["count"] < min_runs]
+    if low_sample:
+        low_labels = ", ".join(
+            f"Tier {stat['tier']} ({stat['count']} runs)" for stat in low_sample
+        )
+        warnings.append(f"Low sample size: {low_labels}. Minimum is {min_runs} runs.")
+
+    high_variance = [
+        stat
+        for stat in tier_stats
+        if stat["cv"] is not None and float(stat["cv"]) > variance_threshold
+    ]
+    if high_variance:
+        variance_labels = ", ".join(
+            f"Tier {stat['tier']} (CV {float(stat['cv']):.2f})" for stat in high_variance
+        )
+        warnings.append(
+            f"High variance: {variance_labels}. Threshold is {variance_threshold:.0%}."
+        )
+
+    missing_tiers = [
+        tier for tier in range(tiers[0], tiers[-1] + 1) if tier not in tier_values
+    ]
+    if missing_tiers:
+        gap_labels = ", ".join(f"Tier {tier}" for tier in missing_tiers)
+        warnings.append(f"Tier gaps detected: missing {gap_labels}.")
+
+    eligible = [stat for stat in tier_stats if stat["count"] >= min_runs]
+    best_tier = None
+    if eligible:
+        best_tier = max(eligible, key=lambda entry: float(entry["avg"]))["tier"]
+
+    plateau_tier = None
+    for idx, current in enumerate(eligible[:-1]):
+        next_stat = eligible[idx + 1]
+        if int(next_stat["tier"]) != int(current["tier"]) + 1:
+            continue
+        current_avg = float(current["avg"])
+        next_avg = float(next_stat["avg"])
+        delta_value = next_avg - current_avg
+        delta_percent = (delta_value / current_avg) if current_avg else None
+        if delta_value < 0 or (delta_percent is not None and delta_percent < plateau_threshold):
+            plateau_tier = next_stat["tier"]
+            break
+
+    previous_avg = None
+    previous_tier = None
+    for stat in tier_stats:
+        tier = int(stat["tier"])
+        avg_value = float(stat["avg"])
+        delta_value = None
+        delta_percent = None
+        delta_prefix = ""
+        delta_percent_display = None
+        if previous_avg is not None and previous_tier is not None and tier == previous_tier + 1:
+            delta_value = avg_value - previous_avg
+            delta_prefix = "+" if delta_value > 0 else ""
+            if previous_avg:
+                delta_percent = (delta_value / previous_avg) * 100.0
+                delta_percent_display = f"{delta_percent:+.1f}%"
+
+        rows.append(
+            {
+                "tier": tier,
+                "tier_label": f"Tier {tier}",
+                "avg": avg_value,
+                "run_count": int(stat["count"]),
+                "delta_value": delta_value,
+                "delta_prefix": delta_prefix,
+                "delta_percent_display": delta_percent_display,
+                "is_best": best_tier == tier if best_tier is not None else False,
+                "is_plateau": plateau_tier == tier if plateau_tier is not None else False,
+            }
+        )
+
+        previous_avg = avg_value
+        previous_tier = tier
+
+    return {
+        "rows": tuple(rows),
+        "warnings": tuple(warnings),
+        "best_tier": best_tier,
+        "plateau_tier": plateau_tier,
+        "insufficient": not bool(eligible),
     }
 
 

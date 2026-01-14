@@ -54,7 +54,7 @@ class ExploreMetricSelection:
     """Selected metric and aggregation for Explore queries."""
 
     key: str
-    aggregation: Literal["sum", "count"]
+    aggregation: Literal["sum", "count", "avg"]
 
 
 @dataclass(frozen=True, slots=True)

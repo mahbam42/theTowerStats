@@ -9,7 +9,7 @@ from .metrics import METRICS
 from .quantity import UnitType
 from .series_registry import DEFAULT_REGISTRY
 
-Aggregation = Literal["sum", "count"]
+Aggregation = Literal["sum", "count", "avg"]
 BreakdownKind = Literal["field", "metric_group"]
 
 
@@ -75,7 +75,7 @@ def _allowed_aggregations_for_unit(*, aggregation: str) -> tuple[Aggregation, ..
     """Return supported aggregations based on the chart registry default."""
 
     if aggregation == "sum":
-        return ("sum", "count")
+        return ("sum", "count", "avg")
     return ("count",)
 
 

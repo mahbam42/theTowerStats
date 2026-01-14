@@ -2425,7 +2425,7 @@ CLOSED: [2025-12-22 Mon 15:31]
 - [X] fetch_wiki_data and rebuild_wiki_definitions should have a pretty summary of deltas at the end.
   Especially when using --target all.
 
-*** Bugs/Enhancements [84/92]
+*** Bugs/Enhancements [90/94]
 
 **** DONE [#B] Error Updating Guardian Upgrade Table                 :bug:
 CLOSED: [2025-12-22 Mon 18:51]
@@ -3686,7 +3686,9 @@ CLOSED: [2026-01-11 Sun 15:29]
 3. Add mkdocs-gen-files to requirements-dev.txt
 
 
-**** TODO [#A] Add an “Explore Battles” surface (separate dashboard) :feat:
+**** DONE [#A] Add an “Explore Battles” surface (separate dashboard) :feat:
+CLOSED: [2026-01-14 Wed 16:04]
+- State "DONE"       from "TODO"       [2026-01-14 Wed 16:04]
 Think pseudo-queries, not SQL.
 
 A. Structure it as: Filter → Breakdown → Measure
@@ -3750,7 +3752,9 @@ Based on our philosophy:
 - Let users draw conclusions
 -  Make assumptions explicit in UI copy
 
-**** TODO [#A] Enforce Level 0 Bot Parameter Levels                  :bug:
+**** DONE [#A] Enforce Level 0 Bot Parameter Levels                  :bug:
+CLOSED: [2026-01-14 Wed 16:04]
+- State "DONE"       from "TODO"       [2026-01-14 Wed 16:04]
 - State "TODO"       from "WAIT"       [2026-01-11 Sun 15:31] \\
   Proven issue, moved up from Backlog
 - State "WAIT"       from "TODO"       [2026-01-10 Sat 13:31] \\
@@ -3786,27 +3790,57 @@ Cooldown 120s
 Bonus 3.50%
 Range 25m 
 
-**** TODO [#B] Add 'Recovery Packages' to Battle Dashboard         :patch:
+**** DONE [#B] Add 'Recovery Packages' to Battle Dashboard         :patch:
+CLOSED: [2026-01-14 Wed 16:04]
+- State "DONE"       from "TODO"       [2026-01-14 Wed 16:04]
 Hidden by Default, can be shown via Columns Menu
 
-**** TODO [#B] On charts dashboard add control to context to exclude multiple presets
+**** DONE [#B] On charts dashboard add control to context to exclude multiple presets
+CLOSED: [2026-01-14 Wed 16:04]
+- State "DONE"       from "TODO"       [2026-01-14 Wed 16:04]
 To prevent exceptional runs from diluting what's shown in charts.
 
 Will need to update documentation to clearly define the new behavior for Presets beyond card groupings.
-**** TODO [#C] Add note to user docs that 'imported' Battle Logs are timestamped in UTC :bug:
+**** DONE [#C] Add note to user docs that 'imported' Battle Logs are timestamped in UTC :bug:
+CLOSED: [2026-01-14 Wed 16:04]
 
-**** TODO [#C] Hide Deathwave and/or Golden Bot on UW Sync Chart   :patch:
+- State "DONE"       from "TODO"       [2026-01-14 Wed 16:04]
+**** DONE [#C] Hide Deathwave and/or Golden Bot on UW Sync Chart   :patch:
+CLOSED: [2026-01-14 Wed 16:04]
 
+- State "DONE"       from "TODO"       [2026-01-14 Wed 16:04]
 Add an optional toggle to show/hide the Death Wave and/or Golden Bot activation markers (so the schedule focuses on GT/BH overlap), while still keeping everything descriptive.
 
-**** TODO [#A] Update Readme and Changelog
+**** TODO Finish prompt55.md work 
+- Averages and rates
+
+- Percent-of-total metrics
+
+- Per hour / per wave metrics
+
+- Query templates
+
+- Rich, context-aware autocomplete (server-backed suggestions and validation)
+
+- ~~Advice or simulation hooks~~
+
+- ~~Sharing queries between players~~
+**** TODO [#A] Implement Work left over from Prompt53.md
+
+
+**** IN PROGRESS [#A] Update Readme and Changelog
+- State "IN PROGRESS" from "TODO"       [2026-01-14 Wed 16:04] \\
+  little bit of scope creep adding a feature on a feature
 git log --oneline f13b0b9...HEAD
+
 ** Backlog [3/7]
 “Out of Scope”:
 - Cloud sync
 - Real-time scraping
 
 *** TODO [#A] Expand Future Work section from prompt53.md into Backlog Tasks
+
+*** [#C] Auto-migration of stored queries
 *** WAIT [#B] Add Card Slots to Goals                               :patch:
 
 - State "WAIT"       from "TODO"       [2026-01-12 Mon 10:37] \\
@@ -4256,6 +4290,10 @@ Mostly a visual tweak, but adds context and history for the player to interpert 
 - [X] prompt46.md
 - [X] prompt47.md
 - [X] prompt50.md
-- [ ] prompt51.md
+- [X] prompt51.md
+- [X] prompt52.md Deploy Command, Bug Fixes
+- [X] prompt53.md Add Query Builder 
+- [X] prompt54.md Bug Fixes
+- [ ] prompt55.md Farming Efficiency and Multi-metric Queries
   
 - [ ] version1.0.md 

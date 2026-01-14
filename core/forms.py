@@ -1096,7 +1096,7 @@ class ExploreQueryForm(forms.Form):
     metric_key = forms.ChoiceField(required=True, choices=(), label="Metric")
     aggregation = forms.ChoiceField(
         required=True,
-        choices=(("sum", "Sum"), ("count", "Count")),
+        choices=(("sum", "Sum"), ("count", "Count"), ("avg", "Average")),
         label="Aggregation",
     )
     visualization = forms.ChoiceField(

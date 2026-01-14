@@ -92,9 +92,13 @@ def execute_explore_query(
             bucket.count += 1.0
 
     rows: list[ExploreResultRow] = []
+    total_sum = 0.0
+    total_count = 0.0
     for key, data in buckets.items():
         if query.metric.aggregation == "count":
             value = float(data.count)
+        elif query.metric.aggregation == "avg":
+            value = float(data.value) / float(data.count) if data.count else None
         else:
             value = float(data.value)
         rows.append(
@@ -105,11 +109,16 @@ def execute_explore_query(
                 run_id=data.run_id,
             )
         )
+        total_sum += float(data.value)
+        total_count += float(data.count)
 
     rows.sort(key=lambda row: row.breakdown)
     total_value = None
     if rows:
-        total_value = sum(row.value or 0.0 for row in rows)
+        if query.metric.aggregation == "avg":
+            total_value = (total_sum / total_count) if total_count else None
+        else:
+            total_value = sum(row.value or 0.0 for row in rows)
 
     return ExploreExecutionResult(
         rows=tuple(rows),
