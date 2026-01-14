@@ -136,7 +136,7 @@ a:focus {
   margin-bottom: var(--tts-space-3);
 }
 
-.cm-placeholder {
+.cm-meta {
   color: var(--tts-color-warning);
   background: rgba(245, 177, 76, 0.15);
   border-radius: 4px;

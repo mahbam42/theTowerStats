@@ -3,8 +3,10 @@ import {
   EditorView,
   StreamLanguage,
   autocompletion,
-  basicSetup,
   completeFromList,
+  lineNumbers,
+  syntaxHighlighting,
+  defaultHighlightStyle,
 } from "../vendor/codemirror/explore.bundle.mjs";
 
 const textarea = document.getElementById("explore-dsl-input");
@@ -33,7 +35,7 @@ if (textarea && editorHost) {
     token(stream) {
       if (stream.eatSpace()) return null;
       if (stream.match(/#[^\n]*/, true)) return "comment";
-      if (stream.match(/\[[^\]]+\]/, true)) return "placeholder";
+      if (stream.match(/\[[^\]]+\]/, true)) return "meta";
       if (stream.match(/"(?:[^"\\]|\\.)*"/, true)) return "string";
       if (stream.match(/>=|<=|!=|=|\.\./, true)) return "operator";
       if (stream.match(/\d+/, true)) return "number";
@@ -84,8 +86,9 @@ if (textarea && editorHost) {
   const startState = EditorState.create({
     doc: textarea.value || "",
     extensions: [
-      basicSetup,
+      lineNumbers(),
       dslLanguage,
+      syntaxHighlighting(defaultHighlightStyle, { fallback: true }),
       autocompletion({ override: [completeFromList(completions)] }),
       editorTheme,
       updateListener,
