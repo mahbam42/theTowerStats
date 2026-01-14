@@ -296,6 +296,47 @@ def test_battle_history_column_preferences_limit_columns(auth_client, player) ->
 
 
 @pytest.mark.django_db
+def test_battle_history_recovery_packages_column_is_hidden_by_default(auth_client, player) -> None:
+    """Recovery packages stays hidden until selected in column preferences."""
+
+    ingest_battle_report(
+        "\n".join(
+            [
+                "Battle Report",
+                "Battle Date: 2025-12-01 10:00:00",
+                "Tier: 6",
+                "Wave: 123",
+                "Real Time: 1h 0m 0s",
+                "Coins Earned: 1.00M",
+                "Recovery Packages\t68",
+            ]
+        ),
+        player=player,
+    )
+
+    response = auth_client.get(reverse("core:battle_history"))
+    assert response.status_code == 200
+    visible_keys = [column["key"] for column in response.context["visible_column_views"]]
+    assert "recovery_packages" not in visible_keys
+
+    response = auth_client.post(
+        reverse("core:battle_history"),
+        data={
+            "action": "update_column_preferences",
+            "columns": ["run_number", "recovery_packages"],
+            "next": reverse("core:battle_history"),
+        },
+        follow=True,
+    )
+    assert response.status_code == 200
+    visible_keys = [column["key"] for column in response.context["visible_column_views"]]
+    assert visible_keys == ["run_number", "recovery_packages"]
+    content = response.content.decode("utf-8")
+    assert "Recovery packages" in content
+    assert "68" in content
+
+
+@pytest.mark.django_db
 @pytest.mark.regression
 def test_battle_history_sorts_by_coins_per_hour(auth_client, player) -> None:
     """Coins/hour sorting orders rows using the analysis-derived metric."""

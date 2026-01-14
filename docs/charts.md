@@ -23,9 +23,10 @@ Charts help you review how your run results change over time using the same valu
 5. In **Context**, select a **Tier or Tournament** and **Preset** to narrow the scope.
   A. Choose a tournament rank when you want only that tournament bracket.
   B. Toggle **Include tournaments** to include tournament runs in the charts.
-6. (Optional) In **Context**, select a **Snapshot** or enter **Past N runs** to tighten the scope.
-7. Select **Apply** to refresh the dashboard.
-8. Select **Query Explorer** to open Explore with your current scope.
+6. In **Context**, select **Exclude presets** to remove runs with those preset labels from charts.
+7. (Optional) In **Context**, select a **Snapshot** or enter **Past N runs** to tighten the scope.
+8. Select **Apply** to refresh the dashboard.
+9. Select **Query Explorer** to open Explore with your current scope.
 
 
 * Open **More options** to refine charts, windowing, and item filters. For details, see [More Options](charts/more_options.md).
@@ -55,6 +56,7 @@ Charts help you review how your run results change over time using the same valu
 - For per-hour charts (such as coins/real hour), the rate uses the run’s **Real Time** duration as reported in the Battle Report.
 - Snapshot filters apply alongside date ranges and other scope controls, so you can combine them.
 - When a chart includes multiple lines, each line label tells you what group it represents (for example, a tier or a preset label).
+- Excluded presets are removed from the scope even if they match other filters.
 - If a value is missing in the underlying Battle Report, the chart may show a gap for that date.
 - Scatter charts compare two values per run. Each dot represents a single run in your current filters.
 - Area charts emphasize momentum over time by shading the space under the line.

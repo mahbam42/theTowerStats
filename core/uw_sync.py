@@ -101,11 +101,18 @@ def _effective_value_raw(player_param: _PlayerParameterLike | None) -> str:
     return str(getattr(min_row, "value_raw", "") or "")
 
 
-def build_uw_sync_payload(*, player: Player) -> UWSyncPayload | None:
+def build_uw_sync_payload(
+    *,
+    player: Player,
+    show_death_wave: bool = True,
+    show_golden_bot: bool = True,
+) -> UWSyncPayload | None:
     """Return a UW sync chart payload when required inputs are available.
 
     Args:
         player: Player used to look up Ultimate Weapon parameter state.
+        show_death_wave: Whether Death Wave activation markers should render.
+        show_golden_bot: Whether Golden Bot activation markers should render.
 
     Returns:
         UWSyncPayload when Golden Tower, Black Hole, and Death Wave are unlocked
@@ -166,7 +173,7 @@ def build_uw_sync_payload(*, player: Player) -> UWSyncPayload | None:
         timings.append(UWTiming(name=display, cooldown_seconds=cooldown, duration_seconds=duration))
 
     golden_bot_timing = _golden_bot_timing(player=player)
-    if golden_bot_timing is not None:
+    if golden_bot_timing is not None and show_golden_bot:
         timings.append(golden_bot_timing)
 
     timeline = compute_uw_sync_timeline(
@@ -188,8 +195,12 @@ def build_uw_sync_payload(*, player: Player) -> UWSyncPayload | None:
     overlap_percent_final = timeline.overlap_percent_cumulative[-1] if timeline.overlap_percent_cumulative else 0.0
     overlap_windows = _overlap_windows(timeline.labels, timeline.overlap_all)
 
-    chart_labels = [name for _slug, name, _uw in uws]
-    if golden_bot_timing is not None:
+    chart_labels = [
+        name
+        for _slug, name, _uw in uws
+        if show_death_wave or name != "Death Wave"
+    ]
+    if golden_bot_timing is not None and show_golden_bot:
         chart_labels.append("Golden Bot")
     chart_labels.append("All overlap")
     bar_datasets = _build_bar_datasets(
@@ -209,6 +220,8 @@ def build_uw_sync_payload(*, player: Player) -> UWSyncPayload | None:
             "horizon_seconds": timeline.horizon_seconds,
             "overlap_percent": overlap_percent_final,
             "includes_golden_bot": bool(golden_bot_timing is not None),
+            "show_golden_bot": bool(show_golden_bot and golden_bot_timing is not None),
+            "show_death_wave": bool(show_death_wave),
         },
     )
 

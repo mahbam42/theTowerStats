@@ -148,6 +148,13 @@ class ChartContextForm(forms.Form):
         label="Preset",
         empty_label="All presets",
     )
+    exclude_presets = forms.ModelMultipleChoiceField(
+        required=False,
+        queryset=Preset.objects.none(),
+        label="Exclude presets",
+        help_text="Optional: remove runs with these presets from charts.",
+        widget=forms.SelectMultiple(attrs={"size": 4}),
+    )
     context_snapshot = forms.ModelChoiceField(
         required=False,
         queryset=ChartSnapshot.objects.none(),
@@ -243,8 +250,12 @@ class ChartContextForm(forms.Form):
         self._tournament_filter: str | None = None
         if player is None:
             self.fields["preset"].queryset = Preset.objects.order_by("name")
+            self.fields["exclude_presets"].queryset = Preset.objects.order_by("name")
         else:
             self.fields["preset"].queryset = Preset.objects.filter(player=player).order_by("name")
+            self.fields["exclude_presets"].queryset = (
+                Preset.objects.filter(player=player).order_by("name")
+            )
         self.fields["ultimate_weapon"].queryset = UltimateWeaponDefinition.objects.order_by("name")
         self.fields["guardian_chip"].queryset = GuardianChipDefinition.objects.order_by("name")
         self.fields["bot"].queryset = BotDefinition.objects.order_by("name")

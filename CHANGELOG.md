@@ -2,6 +2,24 @@
 
 This project follows Semantic Versioning.
 
+## [0.8.1]
+
+### Added
+- Explore dashboard with query schema, DSL editor, and Query Explorer modal preview.
+- Explore DSL support for preset name include/exclude, wildcards, and enemy group metrics.
+- Battle History column for Recovery Packages (hidden by default via Columns).
+- Charts context control to exclude multiple presets.
+- UW Sync chart toggles to show/hide Death Wave and Golden Bot activation markers.
+
+### Changed
+- Explore results rendering to always show the table, with optional chart outputs, legends, and totals.
+- Explore DSL docs moved to reference, and docs navigation reorganized for project links.
+- Docs note that imported Battle Logs use UTC timestamps.
+
+### Fixed
+- Bot rebuilds now preserve configured Level 0 bot parameter rows.
+- Explore DSL editor bundling to eliminate CodeMirror state mismatch.
+
 ## [0.7.1]
 
 - Charts: add tournament rank filters, tournament scopes in Compare, and combined tier/tournament context selection.

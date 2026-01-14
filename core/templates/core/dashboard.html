@@ -83,6 +83,12 @@
 
         <div class="grid-x grid-margin-x align-middle margin-top-1">
           <div class="cell medium-4">
+            <label class="margin-bottom-0">Exclude presets
+              {{ chart_form.exclude_presets }}
+            </label>
+            <p class="help-text muted">Exclude runs tagged with the selected presets.</p>
+          </div>
+          <div class="cell medium-4">
             <label class="margin-bottom-0">Snapshot
               {{ chart_form.context_snapshot }}
             </label>
@@ -802,6 +808,14 @@
           }
         }
 
+        const excludeEl = form.elements["exclude_presets"];
+        const excludedPresets = [];
+        if (excludeEl && excludeEl.options) {
+          for (const option of excludeEl.options) {
+            if (option.selected) excludedPresets.push(option.text);
+          }
+        }
+
         const snapshotEl = form.elements["context_snapshot"];
         const snapshotLabel =
           snapshotEl && snapshotEl.selectedIndex >= 0 ? snapshotEl.options[snapshotEl.selectedIndex].text : null;
@@ -813,6 +827,7 @@
           granularity: getValue("granularity"),
           tier: getValue("tier"),
           preset: presetLabel && presetLabel !== "All presets" ? presetLabel : null,
+          excluded_presets: excludedPresets.length ? excludedPresets.join(", ") : null,
           snapshot: snapshotLabel && snapshotLabel !== "No snapshot filter" ? snapshotLabel : null,
           moving_average_window: getValue("moving_average_window"),
           window_kind: getValue("window_kind"),
@@ -827,12 +842,15 @@
         const granularity = context.granularity === "per_run" ? "By battle log" : "By date";
         const tier = formatTierLabel(context.tier);
         const preset = context.preset ? `Preset: ${context.preset}` : "All presets";
+        const excluded = context.excluded_presets
+          ? `Exclude presets: ${context.excluded_presets}`
+          : "Exclude presets: none";
         const snapshot = context.snapshot ? `Snapshot: ${context.snapshot}` : "Snapshot: none";
         const ma = context.moving_average_window ? `MA window: ${context.moving_average_window}` : "MA window: default";
         const window = context.window_kind
           ? `${context.window_kind.replace("_", " ")}: ${context.window_n || "?"}`
           : "Rolling window: none";
-        return `${charts} • ${granularity} • ${tier} • ${preset} • ${snapshot} • ${start} → ${end} • ${ma} • ${window}`;
+        return `${charts} • ${granularity} • ${tier} • ${preset} • ${excluded} • ${snapshot} • ${start} → ${end} • ${ma} • ${window}`;
       }
 
       function updateContextSummary() {
@@ -919,6 +937,9 @@
                     const lines = [];
                     if (context.tier) lines.push(`Filter: ${formatTierLabel(context.tier)}`);
                     if (context.preset) lines.push(`Filter preset: ${context.preset}`);
+                    if (context.excluded_presets) {
+                      lines.push(`Excluded presets: ${context.excluded_presets}`);
+                    }
                     if (context.snapshot) lines.push(`Snapshot: ${context.snapshot}`);
                     if (context.start_date || context.end_date) {
                       lines.push(`Date range: ${context.start_date || "…"} → ${context.end_date || "…"}`);

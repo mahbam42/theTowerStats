@@ -25,7 +25,8 @@ The Ultimate Weapons page helps you track which Ultimate Weapons you have unlock
 8. Select **Level Down** on a parameter to reduce its level by 1.
 9. Review **Total Stones invested** to compare overall investment between weapons.
 10. (Optional) View the **Sync graph** section to see when Golden Tower, Black Hole, and Death Wave are active at the same time.
-11. (Optional) Select a saved snapshot in **Ultimate Weapons snapshot** to render a chart above the table.
+11. (Optional) Select **Show Death Wave** or **Show Golden Bot** in the **Sync graph** section to toggle those activation markers.
+12. (Optional) Select a saved snapshot in **Ultimate Weapons snapshot** to render a chart above the table.
 
 ## How to Read the Results
 
@@ -83,6 +84,9 @@ The Ultimate Weapons page helps you track which Ultimate Weapons you have unlock
 
 > **Caution**
 > Cooldown and duration values are based on external wiki tables and are shown in seconds. Wiki values can be inaccurate or drift over time.
+
+> **Note**
+> Sync graph toggles affect which activation markers are shown. They do not change your stored data.
 
 > **Note**
 > Ultimate Weapons snapshots are created from the **Charts** page by saving a snapshot and selecting **Ultimate Weapons** as the snapshot target.

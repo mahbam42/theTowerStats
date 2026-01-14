@@ -275,6 +275,12 @@
                           {{ row.run.run_progress.cells_earned|default:"—" }}
                         {% elif column.key == "reroll_shards" %}
                           {{ row.run.run_progress.reroll_shards_earned|default:"—" }}
+                        {% elif column.key == "recovery_packages" %}
+                          {% if row.recovery_packages_raw is not None and row.recovery_packages_raw != "" %}
+                            {{ row.recovery_packages_raw }}
+                          {% else %}
+                            <span class="muted">—</span>
+                          {% endif %}
                         {% elif column.key == "preset" %}
                           {% if row.run.run_progress.preset %}
                             <a

@@ -41,11 +41,13 @@ Guiding principles:
 - Automatic deduplication (no accidental double imports)
 - Gracefully handles new or unknown stat labels after game updates
 - Each signed-in account is isolated; your imports are scoped to your user.
+- Optional Recovery Packages column in Battle History (hidden by default).
 
 ### 📊 Track Progress Over Time
 
 - Coins per hour and other precomputed series (no client-side math)
 - Filter charts by **date range**, **tier**, **preset**, and overlays
+- Exclude one or more presets to remove runs from the chart scope
 - Save ordered favorite charts and reusable Chart Builder entries per player
 - Apply snapshot filters and past-N-run scopes alongside date ranges
 - Default chart window uses the current **Event window**, with navigation controls
@@ -55,6 +57,12 @@ Guiding principles:
 - Full-screen chart modal and tooltip links to open Battle Report details
 - Guided walkthrough available in demo mode or on first login
 - Compare scopes by tier, preset, tournament rank, or custom run selections
+
+### 🔎 Explore Dashboard
+
+- Build player-authored queries to aggregate run metrics without changing Battle History
+- Use the Explore DSL to filter, group, and summarize your imported runs
+- Preview Explore output in the Query Explorer modal from Battle History or Charts
 
 ### 🎯 Goals Dashboard
 
@@ -113,8 +121,8 @@ This app is about:
 
 ## Current Progress
 
-- Current development: **v0.7.1**
-- Latest release: **v0.7.1**
+- Current development: **v0.8.1**
+- Latest release: **v0.8.1**
 - Changelog: `CHANGELOG.md`
 - Stable: Battle Report import, Battle History, Charts (including snapshots and compare scopes), and collection progress dashboards
 - Multi-user: Each signed-in account has its own isolated dataset

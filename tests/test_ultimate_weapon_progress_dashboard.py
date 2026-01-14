@@ -2,20 +2,30 @@
 
 from __future__ import annotations
 
+import json
+from uuid import uuid4
+
 import pytest
 from django.urls import reverse
-from uuid import uuid4
 
 from core.services import ingest_battle_report
 from definitions.models import (
+    BotDefinition,
+    BotParameterDefinition,
     Currency,
     ParameterKey,
     UltimateWeaponDefinition,
     UltimateWeaponParameterDefinition,
     UltimateWeaponParameterLevel,
+    Unit,
     WikiData,
 )
-from player_state.models import PlayerUltimateWeapon, PlayerUltimateWeaponParameter
+from player_state.models import (
+    PlayerBot,
+    PlayerBotParameter,
+    PlayerUltimateWeapon,
+    PlayerUltimateWeaponParameter,
+)
 
 pytestmark = pytest.mark.integration
 
@@ -69,6 +79,82 @@ def _uw_with_three_parameters(*, slug: str, name: str) -> UltimateWeaponDefiniti
             source_wikidata=wiki,
         )
     return uw
+
+
+def _create_sync_ready_uws(*, player, include_golden_bot: bool = True) -> None:
+    """Create Ultimate Weapon and Bot parameters required for the sync chart."""
+
+    for slug, name in (("golden_tower", "Golden Tower"), ("black_hole", "Black Hole"), ("death_wave", "Death Wave")):
+        uw_def = UltimateWeaponDefinition.objects.create(name=name, slug=slug)
+        cooldown = UltimateWeaponParameterDefinition.objects.create(
+            ultimate_weapon_definition=uw_def,
+            key=ParameterKey.COOLDOWN.value,
+            display_name="Cooldown",
+            unit_kind=Unit.Kind.SECONDS,
+        )
+        duration = UltimateWeaponParameterDefinition.objects.create(
+            ultimate_weapon_definition=uw_def,
+            key=ParameterKey.DURATION.value,
+            display_name="Duration",
+            unit_kind=Unit.Kind.SECONDS,
+        )
+        player_uw = PlayerUltimateWeapon.objects.create(
+            player=player,
+            ultimate_weapon_definition=uw_def,
+            ultimate_weapon_slug=slug,
+            unlocked=True,
+        )
+        PlayerUltimateWeaponParameter.objects.create(
+            player=player,
+            player_ultimate_weapon=player_uw,
+            parameter_definition=cooldown,
+            level=1,
+            effective_value_raw="120",
+        )
+        PlayerUltimateWeaponParameter.objects.create(
+            player=player,
+            player_ultimate_weapon=player_uw,
+            parameter_definition=duration,
+            level=1,
+            effective_value_raw="20",
+        )
+
+    if not include_golden_bot:
+        return
+
+    bot_def = BotDefinition.objects.create(name="Golden Bot", slug="golden_bot")
+    cooldown = BotParameterDefinition.objects.create(
+        bot_definition=bot_def,
+        key=ParameterKey.COOLDOWN.value,
+        display_name="Cooldown",
+        unit_kind=Unit.Kind.SECONDS,
+    )
+    duration = BotParameterDefinition.objects.create(
+        bot_definition=bot_def,
+        key=ParameterKey.DURATION.value,
+        display_name="Duration",
+        unit_kind=Unit.Kind.SECONDS,
+    )
+    player_bot = PlayerBot.objects.create(
+        player=player,
+        bot_definition=bot_def,
+        bot_slug="golden_bot",
+        unlocked=True,
+    )
+    PlayerBotParameter.objects.create(
+        player=player,
+        player_bot=player_bot,
+        parameter_definition=cooldown,
+        level=1,
+        effective_value_raw="90",
+    )
+    PlayerBotParameter.objects.create(
+        player=player,
+        player_bot=player_bot,
+        parameter_definition=duration,
+        level=1,
+        effective_value_raw="15",
+    )
 
 
 @pytest.mark.django_db
@@ -218,6 +304,28 @@ def test_uw_dashboard_omits_invalid_uw_in_production(auth_client, player, settin
     response = auth_client.get(url)
     assert response.status_code == 200
     assert all(tile["slug"] != "bad_uw" for tile in response.context["ultimate_weapons"])
+
+
+@pytest.mark.django_db
+def test_uw_sync_toggles_hide_rows_and_persist(auth_client, player) -> None:
+    """Sync toggle state is preserved in the response and filters chart labels."""
+
+    _create_sync_ready_uws(player=player, include_golden_bot=True)
+
+    response = auth_client.get(
+        reverse("core:ultimate_weapon_progress"),
+        {"show_death_wave": "0", "show_golden_bot": "0"},
+    )
+    assert response.status_code == 200
+
+    summary = response.context["uw_sync_summary"]
+    assert summary["show_death_wave"] is False
+    assert summary["show_golden_bot"] is False
+
+    chart_data = json.loads(response.context["uw_sync_chart_json"])
+    labels = chart_data["labels"]
+    assert "Death Wave" not in labels
+    assert "Golden Bot" not in labels
 
 
 @pytest.mark.django_db

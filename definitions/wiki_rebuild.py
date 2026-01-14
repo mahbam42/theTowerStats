@@ -65,6 +65,33 @@ _GUARDIAN_EXPECTED_PARAMETER_KEYS: dict[str, tuple[str, str, str]] = {
     ),
 }
 
+_BOT_LEVEL_ZERO_VALUES: dict[str, dict[str, str]] = {
+    "thunder_bot": {
+        ParameterKey.DURATION.value: "5.0s",
+        ParameterKey.COOLDOWN.value: "120s",
+        ParameterKey.LINGER.value: "20%",
+        ParameterKey.RANGE.value: "28m",
+    },
+    "flame_bot": {
+        ParameterKey.DAMAGE_REDUCTION.value: "20%",
+        ParameterKey.COOLDOWN.value: "75s",
+        ParameterKey.DAMAGE.value: "x50",
+        ParameterKey.RANGE.value: "30m",
+    },
+    "golden_bot": {
+        ParameterKey.DURATION.value: "20s",
+        ParameterKey.COOLDOWN.value: "120s",
+        ParameterKey.MULTIPLIER.value: "2.0x",
+        ParameterKey.RANGE.value: "20m",
+    },
+    "amplify_bot": {
+        ParameterKey.DURATION.value: "20s",
+        ParameterKey.COOLDOWN.value: "120s",
+        ParameterKey.MULTIPLIER.value: "3.50%",
+        ParameterKey.RANGE.value: "25m",
+    },
+}
+
 
 def _dedupe_occurrence(header: str) -> tuple[str, int]:
     """Return the base header and its occurrence index.
@@ -328,6 +355,19 @@ def rebuild_bots_from_wikidata(*, write: bool, parse_version: str = "bots_v1") -
                         source_wikidata=row,
                     )
                     created_levels += 1
+                level_zero_raw = _bot_level_zero_value(bot_slug=bot.slug, parameter_key=param_def.key)
+                if level_zero_raw is not None and not BotParameterLevel.objects.filter(
+                    parameter_definition=param_def, level=0
+                ).exists():
+                    BotParameterLevel.objects.create(
+                        parameter_definition=param_def,
+                        level=0,
+                        value_raw=level_zero_raw,
+                        cost_raw="0",
+                        currency=Currency.MEDALS,
+                        source_wikidata=None,
+                    )
+                    created_levels += 1
                 summary = replace(
                     summary,
                     created_parameter_levels=summary.created_parameter_levels + created_levels,
@@ -586,6 +626,20 @@ def _bot_unit_kind(key: str) -> str:
     if key == ParameterKey.DAMAGE.value:
         return "count"
     return "multiplier"
+
+
+def _bot_level_zero_value(*, bot_slug: str, parameter_key: str) -> str | None:
+    """Return a configured level 0 value for a bot parameter when available.
+
+    Args:
+        bot_slug: Stable bot slug (e.g., "golden_bot").
+        parameter_key: ParameterKey value for the bot parameter.
+
+    Returns:
+        Raw value string for level 0, or None when no override is defined.
+    """
+
+    return _BOT_LEVEL_ZERO_VALUES.get(bot_slug, {}).get(parameter_key)
 
 
 def _uw_value_headers_for_slug(slug: str) -> dict[str, str]:

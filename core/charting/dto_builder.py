@@ -24,12 +24,16 @@ def build_chart_config_dto(*, context_form: ChartContextForm, builder_form: Char
         raise ValueError("Both context_form and builder_form must be valid before building ChartConfigDTO.")
 
     preset = context_form.cleaned_data.get("preset")
+    excluded_presets = tuple(context_form.cleaned_data.get("exclude_presets") or ())
     context = ChartContextDTO(
         start_date=context_form.cleaned_data.get("start_date"),
         end_date=context_form.cleaned_data.get("end_date"),
         tier=context_form.cleaned_data.get("tier"),
         tournament_filter=context_form.cleaned_data.get("tournament_filter"),
         preset_id=(preset.id if preset is not None else None),
+        excluded_preset_ids=tuple(
+            preset_row.id for preset_row in excluded_presets if getattr(preset_row, "id", None)
+        ),
         include_tournaments=bool(context_form.cleaned_data.get("include_tournaments") or False),
     )
     selection = builder_form.selection()

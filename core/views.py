@@ -1404,6 +1404,8 @@ def _runs_for_chart_context_dto(*, player: Player, context: ChartContextDTO) -> 
         runs = runs.filter(run_progress__tier=context.tier)
     if context.preset_id:
         runs = runs.filter(run_progress__preset_id=context.preset_id)
+    if context.excluded_preset_ids:
+        runs = runs.exclude(run_progress__preset_id__in=context.excluded_preset_ids)
     runs = _apply_tournament_filter(runs, tournament_filter=context.tournament_filter)
     return runs
 
@@ -1454,6 +1456,7 @@ def _battle_history_columns() -> tuple[BattleHistoryColumn, ...]:
         BattleHistoryColumn("gem_blocks", "Gem blocks", sort_key="run_progress__gem_blocks_tapped", default_visible=True),
         BattleHistoryColumn("cells_earned", "Cells earned", sort_key="run_progress__cells_earned", default_visible=True),
         BattleHistoryColumn("reroll_shards", "Reroll shards", sort_key="run_progress__reroll_shards_earned", default_visible=True),
+        BattleHistoryColumn("recovery_packages", "Recovery packages"),
         BattleHistoryColumn("preset", "Preset", sort_key="run_progress__preset__name", default_visible=True),
     )
 
@@ -2209,9 +2212,13 @@ def battle_history(request: HttpRequest) -> HttpResponse:
         tournament_rank = getattr(progress, "tournament_rank", None) if progress else None
         battle_date_fallback = False
         battle_date_display = None
+        recovery_packages_raw = None
         if progress is not None:
             battle_date_display = getattr(progress, "battle_date", None)
             battle_date_fallback = battle_date_is_fallback(run.raw_text or "")
+        derived = getattr(run, "derived_metrics", None)
+        if derived is not None and isinstance(derived.raw_values, dict):
+            recovery_packages_raw = derived.raw_values.get("recovery_packages")
         page_rows.append(
             {
                 "run": run,
@@ -2225,6 +2232,7 @@ def battle_history(request: HttpRequest) -> HttpResponse:
                 "is_tournament": manual_tournament or is_tournament(run),
                 "tournament_bracket": tournament_bracket(run),
                 "tournament_rank": tournament_rank,
+                "recovery_packages_raw": recovery_packages_raw,
             }
         )
 
@@ -3395,7 +3403,23 @@ def ultimate_weapon_progress(request: HttpRequest) -> HttpResponse:
             }
         )
 
-    uw_sync = build_uw_sync_payload(player=player)
+    show_death_wave_param = request.GET.get("show_death_wave")
+    show_golden_bot_param = request.GET.get("show_golden_bot")
+    show_death_wave = (
+        True
+        if show_death_wave_param is None
+        else str(show_death_wave_param).strip().casefold() in {"1", "true", "yes", "on"}
+    )
+    show_golden_bot = (
+        True
+        if show_golden_bot_param is None
+        else str(show_golden_bot_param).strip().casefold() in {"1", "true", "yes", "on"}
+    )
+    uw_sync = build_uw_sync_payload(
+        player=player,
+        show_death_wave=show_death_wave,
+        show_golden_bot=show_golden_bot,
+    )
     uw_snapshots = ChartSnapshot.objects.filter(player=player, target="ultimate_weapons").order_by("-created_at")
     uw_snapshot_id = request.GET.get("snapshot_id") or request.GET.get("uw_snapshot_id")
     uw_snapshot_chart_json = None
@@ -4628,6 +4652,7 @@ def _filtered_runs(filter_form: ChartContextForm, *, player: Player) -> QuerySet
     end_date = filter_form.cleaned_data.get("end_date")
     tier = filter_form.cleaned_data.get("tier")
     preset = filter_form.cleaned_data.get("preset")
+    exclude_presets = tuple(filter_form.cleaned_data.get("exclude_presets") or ())
     window_kind = filter_form.cleaned_data.get("window_kind")
     window_n = filter_form.cleaned_data.get("window_n")
     if start_date:
@@ -4638,6 +4663,8 @@ def _filtered_runs(filter_form: ChartContextForm, *, player: Player) -> QuerySet
         runs = runs.filter(run_progress__tier=tier)
     if preset:
         runs = runs.filter(run_progress__preset=preset)
+    if exclude_presets:
+        runs = runs.exclude(run_progress__preset__in=exclude_presets)
     runs = _apply_tournament_filter(runs, tournament_filter=tournament_filter)
     runs = _apply_snapshot_context_filters(runs, snapshot_context=snapshot_context)
     if window_kind and window_n:
@@ -4730,6 +4757,9 @@ def _snapshot_context_from_filter(snapshot: ChartSnapshot | None) -> ChartContex
         tier=_parse_context_int(raw_context.get("tier")),
         tournament_filter=_parse_context_str(raw_context.get("tournament_filter")),
         preset_id=_parse_context_int(raw_context.get("preset_id") or raw_context.get("preset")),
+        excluded_preset_ids=_parse_context_int_list(
+            raw_context.get("excluded_preset_ids") or raw_context.get("exclude_presets")
+        ),
         include_tournaments=_parse_context_bool(raw_context.get("include_tournaments")),
     )
 
@@ -4749,6 +4779,8 @@ def _apply_snapshot_context_filters(
         runs = runs.filter(run_progress__tier=snapshot_context.tier)
     if snapshot_context.preset_id:
         runs = runs.filter(run_progress__preset_id=snapshot_context.preset_id)
+    if snapshot_context.excluded_preset_ids:
+        runs = runs.exclude(run_progress__preset_id__in=snapshot_context.excluded_preset_ids)
     return _apply_tournament_filter(runs, tournament_filter=snapshot_context.tournament_filter)
 
 
@@ -4774,6 +4806,22 @@ def _parse_context_int(value: object) -> int | None:
         return int(str(value))
     except ValueError:
         return None
+
+
+def _parse_context_int_list(value: object) -> tuple[int, ...]:
+    """Parse a list of int values from snapshot context payloads."""
+
+    if value is None:
+        return ()
+    if isinstance(value, (list, tuple, set)):
+        parsed: list[int] = []
+        for entry in value:
+            item = _parse_context_int(entry)
+            if item is None:
+                continue
+            parsed.append(item)
+        return tuple(parsed)
+    return ()
 
 
 def _parse_context_bool(value: object) -> bool:
@@ -5372,10 +5420,13 @@ def _context_filtered_runs(filter_form: ChartContextForm, *, player: Player) -> 
 
     tier = filter_form.cleaned_data.get("tier")
     preset = filter_form.cleaned_data.get("preset")
+    exclude_presets = tuple(filter_form.cleaned_data.get("exclude_presets") or ())
     if tier:
         runs = runs.filter(run_progress__tier=tier)
     if preset:
         runs = runs.filter(run_progress__preset=preset)
+    if exclude_presets:
+        runs = runs.exclude(run_progress__preset__in=exclude_presets)
     runs = _apply_tournament_filter(runs, tournament_filter=tournament_filter)
     runs = _apply_snapshot_context_filters(runs, snapshot_context=snapshot_context)
     return runs
@@ -5845,6 +5896,7 @@ def _form_has_filters(form: ChartContextForm) -> bool:
         form.cleaned_data.get("tier")
         or form.cleaned_data.get("tournament_filter")
         or form.cleaned_data.get("preset")
+        or form.cleaned_data.get("exclude_presets")
         or form.cleaned_data.get("context_snapshot")
         or form.cleaned_data.get("past_runs")
     ):
@@ -5872,6 +5924,7 @@ def _chart_context_summary(
             "granularity": None,
             "tier": None,
             "preset": None,
+            "excluded_presets": None,
             "moving_average_window": None,
             "ev_trials": None,
             "ev_seed": None,
@@ -5886,6 +5939,9 @@ def _chart_context_summary(
     granularity = form.cleaned_data.get("granularity")
     tier = form.data.get("tier") if hasattr(form, "data") else None
     preset = form.cleaned_data.get("preset")
+    excluded_presets = tuple(form.cleaned_data.get("exclude_presets") or ())
+    excluded_labels = [preset.name for preset in excluded_presets if getattr(preset, "name", None)]
+    excluded_display = ", ".join(excluded_labels)
     snapshot = form.cleaned_data.get("context_snapshot")
     moving_average_window = form.cleaned_data.get("moving_average_window")
     ev_trials = form.cleaned_data.get("ev_trials")
@@ -5898,6 +5954,7 @@ def _chart_context_summary(
         "granularity": str(granularity) if granularity else None,
         "tier": str(tier) if tier else None,
         "preset": preset.name if preset else None,
+        "excluded_presets": excluded_display or None,
         "snapshot": snapshot.name if snapshot else None,
         "moving_average_window": str(moving_average_window) if moving_average_window else None,
         "ev_trials": str(ev_trials) if ev_trials else None,
@@ -5993,6 +6050,8 @@ def _why_am_i_seeing_this_payload(
     if chart_context.get("preset"):
         included.append(f"Preset: {chart_context['preset']}")
         excluded.append("Runs with other presets (or no preset).")
+    if chart_context.get("excluded_presets"):
+        excluded.append(f"Excluded presets: {chart_context['excluded_presets']}.")
 
     if not included:
         included.append("All imported runs in the default date window.")

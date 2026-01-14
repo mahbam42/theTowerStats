@@ -34,17 +34,49 @@
   <div class="card-shell margin-top-1" id="uw-sync">
     <p class="muted margin-0">Sync graph</p>
     {% if uw_sync_chart_json %}
-      {% if uw_sync_summary.includes_golden_bot %}
+      {% if uw_sync_summary.show_golden_bot and uw_sync_summary.show_death_wave %}
         <h3 class="margin-0">Golden Tower • Black Hole • Death Wave • Golden Bot</h3>
-      {% else %}
+      {% elif uw_sync_summary.show_golden_bot %}
+        <h3 class="margin-0">Golden Tower • Black Hole • Golden Bot</h3>
+      {% elif uw_sync_summary.show_death_wave %}
         <h3 class="margin-0">Golden Tower • Black Hole • Death Wave</h3>
+      {% else %}
+        <h3 class="margin-0">Golden Tower • Black Hole</h3>
       {% endif %}
       {% if uw_sync_summary %}
         <p class="muted margin-0">Horizon: {{ uw_sync_summary.horizon_seconds }}s • Cumulative overlap: {{ uw_sync_summary.overlap_percent }}%</p>
       {% endif %}
+      <div class="grid-x grid-margin-x align-middle margin-top-1">
+        <div class="cell shrink">
+          <label class="margin-bottom-0">
+            <input
+              type="checkbox"
+              id="uw-sync-toggle-death-wave"
+              data-uw-sync-toggle="show_death_wave"
+              value="1"
+              {% if uw_sync_summary.show_death_wave %}checked{% endif %}
+            >
+            Show Death Wave
+          </label>
+        </div>
+        {% if uw_sync_summary.includes_golden_bot %}
+          <div class="cell shrink">
+            <label class="margin-bottom-0">
+              <input
+                type="checkbox"
+                id="uw-sync-toggle-golden-bot"
+                data-uw-sync-toggle="show_golden_bot"
+                value="1"
+                {% if uw_sync_summary.show_golden_bot %}checked{% endif %}
+              >
+              Show Golden Bot
+            </label>
+          </div>
+        {% endif %}
+      </div>
       <canvas id="uw-sync-chart" width="900" height="280"></canvas>
       <p class="muted margin-top-1 margin-bottom-0">
-        Death Wave is shown as an activation marker. Its on-map persistence can vary and is not modeled. Cumulative overlap excludes Death Wave.
+        When shown, Death Wave is displayed as an activation marker. Its on-map persistence can vary and is not modeled. Cumulative overlap excludes Death Wave.
       </p>
     {% else %}
       <h3 class="margin-0">Unavailable</h3>
@@ -252,6 +284,21 @@
         };
 
         new Chart(ctx, config);
+      })();
+    </script>
+    <script>
+      (function() {
+        const toggles = document.querySelectorAll("[data-uw-sync-toggle]");
+        if (!toggles.length) return;
+        toggles.forEach((toggle) => {
+          toggle.addEventListener("change", () => {
+            const key = toggle.getAttribute("data-uw-sync-toggle");
+            if (!key) return;
+            const params = new URLSearchParams(window.location.search);
+            params.set(key, toggle.checked ? "1" : "0");
+            window.location.search = params.toString();
+          });
+        });
       })();
     </script>
   {% endif %}

@@ -33,6 +33,9 @@ The Battle Report Modal lets you view the full raw report for a single run while
 > Navigation follows the current sorting and filters from Battle History or the current order on the chart.
 
 > ⚠️ Note
+> Imported timestamps use UTC.
+
+> ⚠️ Note
 > Some report keys do not have a matching chart. Those values appear without links.
 
 > ⚠️ Note

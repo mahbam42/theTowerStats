@@ -24,6 +24,7 @@ def encode_chart_config_dto(config: ChartConfigDTO) -> dict[str, Any]:
         "tier": config.context.tier,
         "tournament_filter": config.context.tournament_filter,
         "preset_id": config.context.preset_id,
+        "excluded_preset_ids": list(config.context.excluded_preset_ids),
         "include_tournaments": bool(config.context.include_tournaments),
     }
     payload: dict[str, Any] = {
@@ -70,6 +71,7 @@ def decode_chart_config_dto(payload: dict[str, Any]) -> ChartConfigDTO:
         tier=_parse_int(context_raw.get("tier")),
         tournament_filter=_parse_str(context_raw.get("tournament_filter")),
         preset_id=_parse_int(context_raw.get("preset_id")),
+        excluded_preset_ids=_parse_int_list(context_raw.get("excluded_preset_ids")),
         include_tournaments=_parse_bool(context_raw.get("include_tournaments")),
     )
     scopes_raw = payload.get("scopes")
@@ -154,3 +156,19 @@ def _parse_str(value: object) -> str | None:
         return None
     cleaned = str(value).strip()
     return cleaned or None
+
+
+def _parse_int_list(value: object) -> tuple[int, ...]:
+    """Best-effort list parsing for integer arrays in snapshot payloads."""
+
+    if value is None:
+        return ()
+    if isinstance(value, (list, tuple, set)):
+        parsed: list[int] = []
+        for entry in value:
+            item = _parse_int(entry)
+            if item is None:
+                continue
+            parsed.append(item)
+        return tuple(parsed)
+    return ()

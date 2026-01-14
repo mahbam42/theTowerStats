@@ -41,6 +41,7 @@ Battle History helps you review your past runs in a table so you can compare res
 - **Coins/real hour** divides coins earned by the run’s **Real Time** duration as reported by the game.
 - **Real time** shows the run duration as reported by the game.
 - **Gem blocks**, **Cells earned**, and **Reroll shards** show run resources that may be missing in older or incomplete reports.
+- **Recovery packages** shows how many Recovery Packages the run recorded, when present in the report.
 - **Preset** is an optional label you can use to group runs for review. The game currently allows 5 presets, and this app lets you save more. Presets do not change any gameplay results.
 - **Top 3 Tournament Logs** shows your three best tournament-marked runs by highest wave.
 - Tournament badges show **Tournament** with the recorded rank when available.
@@ -53,6 +54,9 @@ Battle History helps you review your past runs in a table so you can compare res
 
 > **Note**
 > Some Battle Reports do not include a Battle Date. In those cases, Battle History uses the time you imported the report for the date and marks it as **Imported**. Charts use the same timestamp to place the run on time-based charts.
+
+> **Note**
+> Imported timestamps use UTC.
 
 > **Note**
 > Tournament rounds can be marked in-game without appearing in the copied Battle Report text. The app cannot detect tournament runs automatically from pasted text, so use **Tournament run** during import to exclude those runs from charts and history by default.
