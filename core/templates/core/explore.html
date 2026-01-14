@@ -127,7 +127,7 @@
                 </thead>
                 <tbody>
                   {% for row in explore_results.rows %}
-                    <tr>
+                    <tr class="explore-result-row{% if row.run_id %} is-clickable{% endif %}"{% if row.run_id %} data-run-id="{{ row.run_id }}" tabindex="0"{% endif %}>
                       {% for label in row.breakdown %}
                         <td>{{ label }}</td>
                       {% endfor %}
@@ -290,4 +290,43 @@
     {% endif %}
   {% endif %}
   <script type="module" src="{% static 'core/explore_dsl.mjs' %}"></script>
+
+  {% if explore_results %}
+    {{ explore_results.run_order|json_script:"battle-report-order" }}
+  {% endif %}
+
+  <div
+    class="modal-backdrop"
+    id="battle-report-modal"
+    aria-hidden="true"
+    data-endpoint-template="{% url 'core:battle_report_modal' 0 %}"
+    data-charts-url="{% url 'core:dashboard' %}"
+    data-context-note="Navigation follows the current Explore scope."
+  >
+    <div class="modal-shell" role="dialog" aria-modal="true" aria-label="Battle Report">
+      <div class="grid-x grid-margin-x align-middle">
+        <div class="cell auto">
+          <h4 class="margin-0" id="battle-report-modal-title">Battle Report</h4>
+          <p class="muted margin-0" id="battle-report-order-note"></p>
+        </div>
+        <div class="cell shrink">
+          <div class="button-group">
+            <button class="button secondary" type="button" id="battle-report-prev">Previous</button>
+            <button class="button secondary" type="button" id="battle-report-next">Next</button>
+            <button class="button secondary" type="button" id="battle-report-close">Close</button>
+          </div>
+        </div>
+      </div>
+
+      <div class="margin-top-1">
+        <h5 class="margin-bottom-0">Metrics</h5>
+        <div class="battle-report-metrics" id="battle-report-metrics"></div>
+      </div>
+
+      <div class="margin-top-1">
+        <h5 class="margin-bottom-0">Raw Battle Report</h5>
+        <pre class="battle-report-raw" id="battle-report-raw"></pre>
+      </div>
+    </div>
+  </div>
 {% endblock %}

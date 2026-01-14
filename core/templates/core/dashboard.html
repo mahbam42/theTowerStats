@@ -1460,7 +1460,7 @@
           </div>
         </div>
         <div class="explore-modal-body margin-top-1">
-          <form method="post" action="{% url 'core:explore' %}" class="stacked">
+          <form method="post" action="{% url 'core:explore' %}" class="stacked" data-explore-modal-form>
             {% csrf_token %}
             <input type="hidden" name="next" value="{% url 'core:explore' %}">
             <label>Query Bar
@@ -1472,13 +1472,29 @@
               <a class="button secondary" href="{% url 'core:explore' %}">Go to dashboard</a>
             </div>
           </form>
-          <div class="card-shell explore-modal-output margin-top-1">
+          <div class="card-shell explore-modal-output margin-top-1" data-explore-modal-output>
             <div class="explore-modal-output-header">
               <h5 class="margin-0">Output chart</h5>
-              <p class="muted margin-0">Preview appears after running a query.</p>
+              <p class="muted margin-0" data-explore-modal-summary>Preview appears after running a query.</p>
             </div>
-            <div class="explore-modal-chart">
-              <div class="empty-state" role="status">Run a query to preview charts here.</div>
+            <div class="explore-modal-status" data-explore-modal-status></div>
+            <div class="table-scroll explore-modal-table" data-explore-modal-table hidden>
+              <table class="stack">
+                <thead>
+                  <tr data-explore-modal-table-head></tr>
+                </thead>
+                <tbody data-explore-modal-table-body></tbody>
+              </table>
+            </div>
+            <div class="explore-modal-chart" data-explore-modal-chart-wrap>
+              <div class="empty-state" role="status" data-explore-modal-empty>Run a query to preview charts here.</div>
+              <div class="explore-modal-kpi" data-explore-modal-kpi hidden>
+                <p class="margin-0">Total</p>
+                <h3 class="margin-0">
+                  <span class="metric-value" data-explore-modal-kpi-value></span>
+                </h3>
+              </div>
+              <canvas data-explore-modal-chart height="220" hidden></canvas>
             </div>
           </div>
         </div>

@@ -423,9 +423,32 @@
     }
 
     const battleHistoryOrder = readJsonScript("battle-report-order");
-    const battleHistoryNote = "Navigation follows the current Battle History sorting and filters.";
+    const battleHistoryNote =
+      modal.dataset.contextNote || "Navigation follows the current Battle History sorting and filters.";
     const rows = document.querySelectorAll(".battle-report-row");
     for (const row of rows) {
+      const runId = Number(row.dataset.runId);
+      if (!Number.isInteger(runId)) continue;
+
+      function shouldIgnore(target) {
+        return Boolean(target.closest("a, button, input, select, textarea, label"));
+      }
+
+      row.addEventListener("click", (event) => {
+        if (shouldIgnore(event.target)) return;
+        openForRun(runId, battleHistoryOrder || [], battleHistoryNote);
+      });
+
+      row.addEventListener("keydown", (event) => {
+        if (event.key !== "Enter" && event.key !== " ") return;
+        if (shouldIgnore(event.target)) return;
+        event.preventDefault();
+        openForRun(runId, battleHistoryOrder || [], battleHistoryNote);
+      });
+    }
+
+    const exploreRows = document.querySelectorAll(".explore-result-row");
+    for (const row of exploreRows) {
       const runId = Number(row.dataset.runId);
       if (!Number.isInteger(runId)) continue;
 
@@ -454,6 +477,7 @@
     if (!modal) return;
     const openBtn = document.getElementById("open-explore-modal");
     const closeBtn = modal.querySelector("[data-close-modal]");
+    const form = modal.querySelector("[data-explore-modal-form]");
 
     function openModal() {
       modal.classList.add("is-open");
@@ -474,6 +498,200 @@
       if (event.key === "Escape" && modal.getAttribute("aria-hidden") === "false") {
         closeModal();
       }
+    });
+
+    if (!form) return;
+
+    const statusEl = modal.querySelector("[data-explore-modal-status]");
+    const summaryEl = modal.querySelector("[data-explore-modal-summary]");
+    const tableWrap = modal.querySelector("[data-explore-modal-table]");
+    const tableHead = modal.querySelector("[data-explore-modal-table-head]");
+    const tableBody = modal.querySelector("[data-explore-modal-table-body]");
+    const emptyEl = modal.querySelector("[data-explore-modal-empty]");
+    const chartWrap = modal.querySelector("[data-explore-modal-chart-wrap]");
+    const chartCanvas = modal.querySelector("[data-explore-modal-chart]");
+    const kpiEl = modal.querySelector("[data-explore-modal-kpi]");
+    const kpiValueEl = modal.querySelector("[data-explore-modal-kpi-value]");
+    let chartInstance = null;
+
+    const formatter = window.ttsFormatChartNumber || formatChartNumber;
+    const chartPalette = ["#f4a261", "#2a9d8f", "#e76f51", "#264653", "#e9c46a"];
+
+    function clearPreview() {
+      if (statusEl) statusEl.innerHTML = "";
+      if (summaryEl) summaryEl.textContent = "Preview appears after running a query.";
+      if (tableWrap) tableWrap.hidden = true;
+      if (tableHead) tableHead.innerHTML = "";
+      if (tableBody) tableBody.innerHTML = "";
+      if (emptyEl) emptyEl.hidden = false;
+      if (kpiEl) kpiEl.hidden = true;
+      if (chartCanvas) chartCanvas.hidden = true;
+      if (chartInstance) {
+        chartInstance.destroy();
+        chartInstance = null;
+      }
+    }
+
+    function renderStatus(errors, warnings) {
+      if (!statusEl) return;
+      statusEl.innerHTML = "";
+      const renderCallout = (items, kind, title) => {
+        if (!items || !items.length) return;
+        const callout = document.createElement("div");
+        callout.className = `callout ${kind}`;
+        const heading = document.createElement("p");
+        heading.className = "margin-0";
+        heading.innerHTML = `<strong>${title}</strong>`;
+        callout.appendChild(heading);
+        const list = document.createElement("ul");
+        list.className = "margin-0";
+        for (const item of items) {
+          const li = document.createElement("li");
+          li.textContent = item;
+          list.appendChild(li);
+        }
+        callout.appendChild(list);
+        statusEl.appendChild(callout);
+      };
+      renderCallout(errors, "alert", "Explore validation");
+      renderCallout(warnings, "warning", "Explore notes");
+    }
+
+    function renderTable(headers, rows, unit) {
+      if (!tableWrap || !tableHead || !tableBody) return;
+      tableHead.innerHTML = "";
+      const headerRow = document.createDocumentFragment();
+      for (const header of headers || []) {
+        const th = document.createElement("th");
+        th.scope = "col";
+        th.textContent = header;
+        headerRow.appendChild(th);
+      }
+      const valueTh = document.createElement("th");
+      valueTh.scope = "col";
+      valueTh.textContent = "Value";
+      headerRow.appendChild(valueTh);
+      const countTh = document.createElement("th");
+      countTh.scope = "col";
+      countTh.textContent = "Runs counted";
+      headerRow.appendChild(countTh);
+      tableHead.appendChild(headerRow);
+
+      tableBody.innerHTML = "";
+      for (const row of rows || []) {
+        const tr = document.createElement("tr");
+        const breakdown = row.breakdown || [];
+        for (const label of breakdown) {
+          const td = document.createElement("td");
+          td.textContent = label;
+          tr.appendChild(td);
+        }
+        const valueTd = document.createElement("td");
+        const value = row.value;
+        if (Number.isFinite(Number(value))) {
+          valueTd.textContent = unit ? `${formatter(value, unit)} ${unit}` : formatter(value, unit);
+        } else {
+          valueTd.textContent = "—";
+        }
+        tr.appendChild(valueTd);
+        const countTd = document.createElement("td");
+        countTd.textContent = row.sample_count ?? "—";
+        tr.appendChild(countTd);
+        tableBody.appendChild(tr);
+      }
+      tableWrap.hidden = (rows || []).length === 0;
+    }
+
+    function renderChart(chart, visualization, unit, totalValue) {
+      if (!chartCanvas || !chartWrap) return;
+      if (chartInstance) {
+        chartInstance.destroy();
+        chartInstance = null;
+      }
+      if (visualization === "kpi") {
+        if (emptyEl) emptyEl.hidden = true;
+        if (kpiEl && kpiValueEl) {
+          kpiEl.hidden = false;
+          kpiValueEl.textContent = Number.isFinite(Number(totalValue))
+            ? (unit ? `${formatter(totalValue, unit)} ${unit}` : formatter(totalValue, unit))
+            : "—";
+        }
+        if (chartCanvas) chartCanvas.hidden = true;
+        return;
+      }
+      if (visualization !== "bar" && visualization !== "donut") {
+        if (emptyEl) emptyEl.hidden = false;
+        if (chartCanvas) chartCanvas.hidden = true;
+        return;
+      }
+      if (emptyEl) emptyEl.hidden = true;
+      if (!window.Chart) return;
+      chartCanvas.hidden = false;
+      const labels = (chart && chart.labels) || [];
+      const values = (chart && chart.values) || [];
+      const chartUnit = (chart && chart.unit) || unit || "";
+      const chartType = visualization === "donut" ? "doughnut" : "bar";
+      chartInstance = new Chart(chartCanvas.getContext("2d"), {
+        type: chartType,
+        data: {
+          labels,
+          datasets: [
+            {
+              label: chartUnit || "Value",
+              data: values,
+              backgroundColor: visualization === "donut" ? chartPalette : "#2a9d8f",
+            },
+          ],
+        },
+        options: {
+          plugins: {
+            legend: { display: visualization === "donut" },
+          },
+          scales: visualization === "donut" ? {} : {
+            y: { beginAtZero: true },
+          },
+        },
+      });
+    }
+
+    async function runPreview() {
+      if (!summaryEl) return;
+      summaryEl.textContent = "Running query...";
+      const formData = new FormData(form);
+      formData.set("action", "run_explore_query");
+      try {
+        const response = await fetch(form.action, {
+          method: "POST",
+          credentials: "same-origin",
+          headers: { "X-Requested-With": "XMLHttpRequest" },
+          body: formData,
+        });
+        if (!response.ok) {
+          throw new Error("Request failed");
+        }
+        const payload = await response.json();
+        renderStatus(payload.errors || [], payload.warnings || []);
+        if (!payload.results) {
+          clearPreview();
+          return;
+        }
+        const results = payload.results;
+        if (summaryEl) {
+          summaryEl.textContent = `${results.metric_label || "Metric"} • ${String(results.aggregation || "").toUpperCase()}`;
+        }
+        renderTable(results.breakdown_headers, results.rows, results.metric_unit);
+        renderChart(results.chart, results.visualization, results.metric_unit, results.total_value);
+      } catch (_err) {
+        clearPreview();
+        renderStatus(["Unable to run the query preview."], []);
+      }
+    }
+
+    form.addEventListener("submit", (event) => {
+      if (!event.submitter || event.submitter.value !== "run_explore_query") return;
+      event.preventDefault();
+      clearPreview();
+      runPreview();
     });
   }
 

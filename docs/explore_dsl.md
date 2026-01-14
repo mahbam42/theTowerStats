@@ -6,37 +6,35 @@ This page is **Developer Documentation**. It defines the Explore DSL grammar, pl
 
 The Explore DSL allows player-authored queries to map into the Explore schema without exposing raw model fields. The editor is a thin layer over the existing Explore query schema and registry.
 
-## Grammar Summary
+## Grammar Summary (Glossary)
 
 The DSL is line-based. Lines are parsed in any order.
 
-Required lines:
-- `name "..."`
-- `metric <metric_key> <sum|count>`
-
-Optional lines:
-- `scope date <start>..<end>`
-- `scope date all`
-- `scope tier <value>`
-- `scope tier all`
-- `scope preset <id> "Label"`
-- `scope snapshot <id> "Label"`
-- `scope past_n_runs <value>`
-- `scope tier >= <value> and not tournament`
-- `scope date <start>..<end> not <YYYY-MM-DD>[, <YYYY-MM-DD>]`
-- `scope preset <Preset Name>[, <Preset Name>]`
-- `scope preset <Preset Name> not <Preset Name>`
-- `scope <field> *`
-- `filter tier in <v1, v2, ...>`
-- `filter tier >= <value>`
-- `filter tier <= <value>`
-- `filter wave <min>..<max>`
-- `filter wave >= <value>`
-- `filter wave <= <value>`
-- `filter death_cause = "Label"`
-- `filter preset = <id>`
-- `breakdown by <dimension>[, <dimension>]`
-- `output <table|bar|donut|kpi>`
+| Line | Purpose | Example |
+| --- | --- | --- |
+| `name` | Names the query (required). | `name "Weekly runs"` |
+| `metric` | Selects the metric and aggregation (required). | `metric coins_earned sum` |
+| `scope date` | Sets a date range. | `scope date 2025-01-01..2025-01-31` |
+| `scope date all` | Clears the date scope. | `scope date all` |
+| `scope tier` | Sets a tier value. | `scope tier 8` |
+| `scope tier all` | Clears the tier scope. | `scope tier all` |
+| `scope preset` | Targets presets by id or name. | `scope preset 12 "Farm"` |
+| `scope snapshot` | Targets a snapshot by id. | `scope snapshot 4 "Phase 9"` |
+| `scope past_n_runs` | Limits to the most recent runs. | `scope past_n_runs 20` |
+| `scope ... not tournament` | Excludes tournament runs. | `scope tier >= 7 not tournament` |
+| `scope date ... not` | Excludes specific dates. | `scope date 2025-01-01..2025-01-31 not 2025-01-15` |
+| `scope preset ... not` | Excludes preset names. | `scope preset farm not speed run` |
+| `scope <field> *` | Clears a scope value. | `scope snapshot *` |
+| `filter tier in` | Filters tiers by list. | `filter tier in 6, 7, 8` |
+| `filter tier >=` | Filters tier lower bound. | `filter tier >= 9` |
+| `filter tier <=` | Filters tier upper bound. | `filter tier <= 10` |
+| `filter wave <min>..<max>` | Filters wave range. | `filter wave 800..1200` |
+| `filter wave >=` | Filters wave lower bound. | `filter wave >= 600` |
+| `filter wave <=` | Filters wave upper bound. | `filter wave <= 1200` |
+| `filter death_cause =` | Filters by death cause. | `filter death_cause = "Fast"` |
+| `filter preset =` | Filters by preset id. | `filter preset = 5` |
+| `breakdown by` | Groups results by dimensions. | `breakdown by run, tier` |
+| `output` | Selects a chart or KPI output. | `output bar` |
 
 ## Placeholders
 

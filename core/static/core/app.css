@@ -126,6 +126,15 @@ a:focus {
   gap: var(--tts-space-2);
 }
 
+.explore-result-row.is-clickable {
+  cursor: pointer;
+}
+
+.explore-result-row.is-clickable:hover,
+.explore-result-row.is-clickable:focus {
+  background: var(--tts-color-highlight);
+}
+
 .explore-modal-shell {
   width: min(980px, 100%);
 }
@@ -138,6 +147,18 @@ a:focus {
   display: flex;
   flex-direction: column;
   gap: var(--tts-space-3);
+}
+
+.explore-modal-status .callout {
+  margin: 0;
+}
+
+.explore-modal-kpi {
+  background: var(--tts-color-surface-muted);
+  border: 1px solid var(--tts-color-border);
+  border-radius: var(--tts-radius-2);
+  padding: var(--tts-space-3);
+  width: 100%;
 }
 
 .explore-modal-chart {

@@ -81,3 +81,55 @@ def test_explore_query_runs_and_saves(auth_client, player) -> None:
     )
     assert save_response.status_code == 200
     assert ExploreQuery.objects.filter(player=player, name="Recovery packages by tier").exists()
+
+
+@pytest.mark.django_db
+def test_explore_preview_returns_json(auth_client, player) -> None:
+    """Explore previews return JSON payloads for modal rendering."""
+
+    report = BattleReport.objects.create(
+        player=player,
+        raw_text="Battle Report\nRecovery Packages\t4\n",
+        checksum="explore-preview".ljust(64, "y"),
+    )
+    BattleReportProgress.objects.create(
+        battle_report=report,
+        player=player,
+        battle_date=datetime(2025, 12, 6, tzinfo=timezone.utc),
+        tier=6,
+        wave=80,
+        real_time_seconds=240,
+    )
+    BattleReportDerivedMetrics.objects.create(
+        player=player,
+        battle_report=report,
+        values={"recovery_packages": 4},
+        raw_values={"recovery_packages": "4"},
+    )
+
+    dsl_query = (
+        'name "Recovery packages by run"\n'
+        "scope date [date:YYYY-MM-DD]..[date:YYYY-MM-DD]\n"
+        "scope tier [tier:—]\n"
+        "scope preset [preset:—]\n"
+        "scope snapshot [snapshot:—]\n"
+        "scope past_n_runs [runs:—]\n"
+        "breakdown by run\n"
+        "metric recovery_packages sum\n"
+        "output table\n"
+    )
+
+    response = auth_client.post(
+        reverse("core:explore"),
+        data={
+            "dsl_query": dsl_query,
+            "action": "run_explore_query",
+        },
+        HTTP_X_REQUESTED_WITH="XMLHttpRequest",
+    )
+
+    assert response.status_code == 200
+    payload = response.json()
+    assert payload["ok"] is True
+    assert payload["results"]["rows"]
+    assert payload["results"]["rows"][0]["run_id"] == report.id

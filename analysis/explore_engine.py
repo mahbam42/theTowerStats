@@ -18,6 +18,7 @@ class ExploreResultRow:
     breakdown: tuple[str, ...]
     value: float | None
     sample_count: int
+    run_id: int | None
 
 
 @dataclass(frozen=True, slots=True)
@@ -28,6 +29,15 @@ class ExploreExecutionResult:
     run_count: int
     missing_count: int
     total_value: float | None
+
+
+@dataclass(slots=True)
+class _ExploreBucket:
+    """Mutable aggregation bucket for Explore execution."""
+
+    value: float
+    count: float
+    run_id: int | None
 
 
 def execute_explore_query(
@@ -47,18 +57,20 @@ def execute_explore_query(
     group_breakdown = group_breakdowns[0] if group_breakdowns else None
     field_breakdowns = [bd for bd in breakdown_defs if bd.kind == "field"]
 
-    buckets: dict[tuple[str, ...], dict[str, float]] = {}
+    buckets: dict[tuple[str, ...], _ExploreBucket] = {}
     missing_count = 0
     run_count = 0
 
     metric_key = query.metric.key
     metric_keys = group_breakdown.metric_keys if group_breakdown and group_breakdown.metric_keys else (metric_key,)
+    includes_run_breakdown = any(bd.kind == "field" and bd.field == "run" for bd in breakdown_defs)
 
     for record in records:
         run_count += 1
         field_labels = {
             bd.key: _field_label(record, field=bd.field or bd.key) for bd in field_breakdowns
         }
+        run_id = getattr(record, "id", None) if includes_run_breakdown else None
 
         for current_key in metric_keys:
             value = _metric_value(record, metric_key=current_key)
@@ -73,21 +85,24 @@ def execute_explore_query(
                 else:
                     labels.append(field_labels.get(bd.key, "Unknown"))
             bucket_key = tuple(labels) if breakdown_defs else ()
-            bucket = buckets.setdefault(bucket_key, {"value": 0.0, "count": 0.0})
-            bucket["value"] += float(value)
-            bucket["count"] += 1.0
+            bucket = buckets.setdefault(bucket_key, _ExploreBucket(value=0.0, count=0.0, run_id=run_id))
+            if includes_run_breakdown and bucket.run_id != run_id:
+                bucket.run_id = None
+            bucket.value += float(value)
+            bucket.count += 1.0
 
     rows: list[ExploreResultRow] = []
     for key, data in buckets.items():
         if query.metric.aggregation == "count":
-            value = float(data["count"])
+            value = float(data.count)
         else:
-            value = float(data["value"])
+            value = float(data.value)
         rows.append(
             ExploreResultRow(
                 breakdown=key,
                 value=value,
-                sample_count=int(data["count"]),
+                sample_count=int(data.count),
+                run_id=data.run_id,
             )
         )
 
@@ -193,4 +208,3 @@ def _metric_value(record: object, *, metric_key: str) -> float | None:
         config=MetricComputeConfig(monte_carlo=None),
     )
     return value
-

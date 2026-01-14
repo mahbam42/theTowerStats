@@ -15,18 +15,19 @@ Explore helps you build your own questions about past runs and see aggregated an
 
 1. Select **Explore** in the navigation.
 2. Review the Query Builder text area at the top of the page.
-3. Enter a name on the first line so you can save or edit the query later.
-4. Review the Scope lines and replace any placeholders with real values when needed.
-5. Use all or * when you want a scope line to stay open.
-6. Add Filter lines to narrow the runs in scope.
-7. To exclude tournaments, add not tournament to the Tier scope line.
-8. To exclude specific dates, add not followed by one or more ISO dates on the date scope line.
-9. To include presets by name, list one or more preset names on the preset scope line.
-10. To exclude presets by name, add not followed by one or more preset names on the preset scope line.
-11. Add a Breakdown line to group results.
-12. Add a Metric line and an Aggregation.
-13. Add an Output line when you want a chart or KPI.
-14. Select **Run query**.
+3. Review the [Explore DSL](explore_dsl.md) reference if you want the full syntax list.
+4. Enter a name on the first line so you can save or edit the query later.
+5. Review the Scope lines and replace any placeholders with real values when needed.
+6. Use all or * when you want a scope line to stay open.
+7. Add Filter lines to narrow the runs in scope.
+8. To exclude tournaments, add not tournament to the Tier scope line.
+9. To exclude specific dates, add not followed by one or more ISO dates on the date scope line.
+10. To include presets by name, list one or more preset names on the preset scope line.
+11. To exclude presets by name, add not followed by one or more preset names on the preset scope line.
+12. Add a Breakdown line to group results.
+13. Add a Metric line and an Aggregation.
+14. Add an Output line when you want a chart or KPI.
+15. Select **Run query**.
 
 ## How to Read the Results
 

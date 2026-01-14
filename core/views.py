@@ -1933,6 +1933,15 @@ def explore_dashboard(request: HttpRequest) -> HttpResponse:
         )
         dsl_text = format_explore_dsl(default_query, default_scope=prefill_scope)
 
+    if request.method == "POST" and request.headers.get("X-Requested-With") == "XMLHttpRequest":
+        return JsonResponse(
+            _explore_preview_payload(
+                results,
+                errors=validation_errors,
+                warnings=validation_warnings,
+            )
+        )
+
     context = {
         "form": form,
         "saved_queries": saved_queries,
@@ -1963,6 +1972,37 @@ def _explore_modal_dsl_text(*, player_id: str, scope: ExploreScope) -> str:
         visualization_hint="table",
     )
     return format_explore_dsl(default_query, default_scope=scope)
+
+
+def _explore_preview_payload(
+    results: dict[str, object] | None,
+    *,
+    errors: list[str],
+    warnings: list[str],
+) -> dict[str, object]:
+    """Return JSON-friendly preview payload for Explore modal requests."""
+
+    payload: dict[str, object] = {
+        "ok": not errors,
+        "errors": errors,
+        "warnings": warnings,
+        "results": None,
+    }
+    if results is None:
+        return payload
+    payload["results"] = {
+        "rows": results.get("rows", []),
+        "breakdown_headers": results.get("breakdown_headers", []),
+        "metric_label": results.get("metric_label"),
+        "metric_unit": results.get("metric_unit"),
+        "aggregation": results.get("aggregation"),
+        "visualization": results.get("visualization"),
+        "run_count": results.get("run_count"),
+        "missing_count": results.get("missing_count"),
+        "total_value": results.get("total_value"),
+        "chart": results.get("chart"),
+    }
+    return payload
 
 
 @login_required
@@ -5150,8 +5190,10 @@ def _explore_execute_query(
     runs = _explore_runs_queryset(player=player)
     runs = _apply_explore_scope(runs, scope=query.scope, snapshot_id=query.scope.snapshot_id)
     runs = _apply_explore_filters(runs, filters=query.filters)
+    run_list = list(runs)
+    run_order = [run.id for run in run_list if getattr(run, "id", None) is not None]
     result = execute_explore_query(
-        tuple(runs),
+        run_list,
         query=query,
         metric_registry=registry,
         breakdown_registry=DEFAULT_BREAKDOWNS,
@@ -5171,6 +5213,7 @@ def _explore_execute_query(
             "breakdown": row.breakdown,
             "value": row.value,
             "sample_count": row.sample_count,
+            "run_id": row.run_id,
         }
         for row in result.rows
     ]
@@ -5193,6 +5236,7 @@ def _explore_execute_query(
         "run_count": result.run_count,
         "missing_count": result.missing_count,
         "total_value": result.total_value,
+        "run_order": run_order,
         "chart": {"labels": labels, "values": values, "unit": chart_unit},
         "explainability": _explore_explainability(
             query,
