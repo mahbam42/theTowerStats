@@ -110,3 +110,44 @@ def test_parse_explore_dsl_all_tokens_clear_defaults() -> None:
         entry.field == "date_exclude" and entry.operator == "in" and entry.value == ["2025-01-05"]
         for entry in result.query.filters
     )
+
+
+def test_parse_explore_dsl_defaults_metric_aggregation() -> None:
+    """Metric lines without aggregation default to sum."""
+
+    default_scope = ExploreScope(
+        start_date=None,
+        end_date=None,
+        tier=None,
+        preset_id=None,
+        snapshot_id=None,
+        past_n_runs=None,
+    )
+    dsl_text = 'name "Metric default"\nmetric coins_earned\nbreakdown by run\n'
+
+    result = parse_explore_dsl(dsl_text, player_id="player-1", default_scope=default_scope)
+
+    assert result.errors == ()
+    assert result.query is not None
+    assert result.query.metric.key == "coins_earned"
+    assert result.query.metric.aggregation == "sum"
+
+
+def test_parse_explore_dsl_breakdown_accepts_and_separator() -> None:
+    """Breakdown lines accept 'and' as a separator."""
+
+    default_scope = ExploreScope(
+        start_date=None,
+        end_date=None,
+        tier=None,
+        preset_id=None,
+        snapshot_id=None,
+        past_n_runs=None,
+    )
+    dsl_text = 'name "Breakdown and"\nbreakdown by run and tier\nmetric coins_earned\n'
+
+    result = parse_explore_dsl(dsl_text, player_id="player-1", default_scope=default_scope)
+
+    assert result.errors == ()
+    assert result.query is not None
+    assert [entry.dimension for entry in result.query.breakdowns] == ["run", "tier"]

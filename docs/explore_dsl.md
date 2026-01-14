@@ -52,12 +52,13 @@ When placeholders are present or a scope line is omitted, parsing falls back to 
 
 - Lines beginning with `#` are ignored as comments.
 - The first `name` line wins; missing names yield a validation error.
-- `breakdown by` accepts comma-separated values and `then` as a separator.
+- `breakdown by` accepts comma-separated values plus `then` or `and` as separators.
 - `and` and `&` are accepted as scope modifiers.
 - `not tournament` can be appended to a scope line and is parsed as a tournament exclusion filter.
 - `not` can also exclude specific dates on the date scope line and preset names on the preset scope line.
 - `output` defaults to `table` when not supplied.
-- `metric` supports `sum` and `count` only.
+- `metric` supports `sum` and `count` only; when omitted, aggregation defaults to `sum`.
+- Explore v1 supports a single metric per query.
 - Placeholders do not override prefilled defaults.
 - `all` or `*` clears a prefilled scope value and keeps the scope open.
 

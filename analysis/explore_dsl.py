@@ -33,7 +33,6 @@ _NAME_RE = re.compile(r'^name\s+"(?P<name>.+)"\s*$', re.IGNORECASE)
 _SCOPE_RE = re.compile(r"^scope\s+(?P<field>[a-z_]+)\s+(?P<value>.+)$", re.IGNORECASE)
 _FILTER_RE = re.compile(r"^filter\s+(?P<field>[a-z_]+)\s+(?P<value>.+)$", re.IGNORECASE)
 _BREAKDOWN_RE = re.compile(r"^breakdown(?:\s+by)?\s+(?P<value>.+)$", re.IGNORECASE)
-_METRIC_RE = re.compile(r"^metric\s+(?P<key>[a-z0-9_]+)\s+(?P<agg>[a-z]+)$", re.IGNORECASE)
 _OUTPUT_RE = re.compile(r"^output\s+(?P<value>[a-z]+)$", re.IGNORECASE)
 _DATE_RANGE_RE = re.compile(r"^(?P<start>.+)\.\.(?P<end>.+)$")
 _ID_WITH_LABEL_RE = re.compile(r'^(?P<id>\d+)(?:\s+"[^"]+")?$')
@@ -218,9 +217,24 @@ def parse_explore_dsl(
             errors.extend(breakdown_errors)
             continue
 
-        if match := _METRIC_RE.match(line):
-            metric_key = match.group("key").strip()
-            aggregation = match.group("agg").strip().lower()
+        if line.lower().startswith("metric "):
+            raw_metric = line[len("metric ") :].strip()
+            if not raw_metric:
+                errors.append("Metric selection is required.")
+                continue
+            tokens = raw_metric.split()
+            if "and" in tokens:
+                errors.append("Explore v1 supports one metric per query.")
+                continue
+            if len(tokens) == 1:
+                metric_key = tokens[0]
+                aggregation = "sum"
+            elif len(tokens) == 2:
+                metric_key, aggregation = tokens
+                aggregation = aggregation.lower()
+            else:
+                errors.append("Metric line must be: metric <key> [sum|count].")
+                continue
             if aggregation not in ("sum", "count"):
                 errors.append(f"Aggregation {aggregation} is not supported.")
             metric = ExploreMetricSelection(key=metric_key, aggregation=aggregation)  # type: ignore[arg-type]
@@ -544,6 +558,7 @@ def _parse_breakdown_line(value: str) -> tuple[list[ExploreBreakdown], list[str]
     errors: list[str] = []
     breakdowns: list[ExploreBreakdown] = []
     normalized = value.replace(" then ", ",")
+    normalized = re.sub(r"\s+and\s+", ",", normalized, flags=re.IGNORECASE)
     raw_breakdowns = [entry.strip() for entry in normalized.split(",") if entry.strip()]
     if not raw_breakdowns:
         errors.append("Breakdown line is empty.")
