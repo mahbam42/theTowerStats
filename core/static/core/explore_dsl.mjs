@@ -38,6 +38,7 @@ if (textarea && editorHost) {
       if (stream.match(/\[[^\]]+\]/, true)) return "meta";
       if (stream.match(/"(?:[^"\\]|\\.)*"/, true)) return "string";
       if (stream.match(/>=|<=|!=|=|\.\./, true)) return "operator";
+      if (stream.match(/\*/, true)) return "operator";
       if (stream.match(/\d+/, true)) return "number";
       if (stream.match(/[A-Za-z_][A-Za-z0-9_]*/, true)) {
         const word = stream.current().toLowerCase();

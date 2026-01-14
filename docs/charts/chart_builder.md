@@ -87,6 +87,9 @@ This table lists the metrics available in Chart Builder along with their sources
 | enemies_destroyed_by_orbs | Destroyed By Orbs | BattleReport (observed) | sum of enemies_destroyed_by_orbs |  |
 | enemies_destroyed_by_thorns | Destroyed by Thorns | BattleReport (observed) | sum of enemies_destroyed_by_thorns |  |
 | enemies_destroyed_commander | Commander | BattleReport (observed) | sum of enemies_destroyed_commander |  |
+| enemies_destroyed_common | Enemies destroyed (common) | BattleReport (derived) | sum of common enemy counts | Derived from Basic, Fast, Ranged, Tank, and Protector counts. |
+| enemies_destroyed_elite | Enemies destroyed (elite) | BattleReport (derived) | sum of elite enemy counts | Derived from Vampire, Ray, and Scatter counts. |
+| enemies_destroyed_fleet | Enemies destroyed (fleet) | BattleReport (derived) | sum of fleet enemy counts | Derived from Saboteur, Commander, and Overcharge counts. |
 | enemies_destroyed_fast | Fast | BattleReport (observed) | sum of enemies_destroyed_fast |  |
 | enemies_destroyed_in_golden_bot | Destroyed in Golden Bot | BattleReport (observed) | sum of enemies_destroyed_in_golden_bot |  |
 | enemies_destroyed_in_spotlight | Destroyed in Spotlight | BattleReport (observed) | sum of enemies_destroyed_in_spotlight |  |

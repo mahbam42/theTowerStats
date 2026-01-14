@@ -364,6 +364,27 @@ METRICS: Final[dict[str, MetricDefinition]] = {
         category=MetricCategory.enemy_destruction,
         kind="derived",
     ),
+    "enemies_destroyed_common": MetricDefinition(
+        key="enemies_destroyed_common",
+        label="Enemies destroyed (common)",
+        unit="count",
+        category=MetricCategory.enemy_destruction,
+        kind="derived",
+    ),
+    "enemies_destroyed_elite": MetricDefinition(
+        key="enemies_destroyed_elite",
+        label="Enemies destroyed (elite)",
+        unit="count",
+        category=MetricCategory.enemy_destruction,
+        kind="derived",
+    ),
+    "enemies_destroyed_fleet": MetricDefinition(
+        key="enemies_destroyed_fleet",
+        label="Enemies destroyed (fleet)",
+        unit="count",
+        category=MetricCategory.enemy_destruction,
+        kind="derived",
+    ),
     "enemies_destroyed_basic": MetricDefinition(
         key="enemies_destroyed_basic",
         label="Basic",
@@ -813,6 +834,47 @@ def compute_metric_value(
             return None, (), ()
         return (float(total), (), ("Derived total: sums per-type destroyed counts; ignores game-reported totals.",))
 
+    if metric_key == "enemies_destroyed_common":
+        total = _compute_enemies_destroyed_group_from_values(
+            derived_values,
+            keys=(
+                "enemies_destroyed_basic",
+                "enemies_destroyed_fast",
+                "enemies_destroyed_ranged",
+                "enemies_destroyed_tank",
+                "enemies_destroyed_protector",
+            ),
+        )
+        if total is None:
+            return None, (), ()
+        return (float(total), (), ("Derived total: sums common enemy destroyed counts.",))
+
+    if metric_key == "enemies_destroyed_elite":
+        total = _compute_enemies_destroyed_group_from_values(
+            derived_values,
+            keys=(
+                "enemies_destroyed_vampires",
+                "enemies_destroyed_rays",
+                "enemies_destroyed_scatters",
+            ),
+        )
+        if total is None:
+            return None, (), ()
+        return (float(total), (), ("Derived total: sums elite enemy destroyed counts.",))
+
+    if metric_key == "enemies_destroyed_fleet":
+        total = _compute_enemies_destroyed_group_from_values(
+            derived_values,
+            keys=(
+                "enemies_destroyed_saboteur",
+                "enemies_destroyed_commander",
+                "enemies_destroyed_overcharge",
+            ),
+        )
+        if total is None:
+            return None, (), ()
+        return (float(total), (), ("Derived total: sums fleet enemy destroyed counts.",))
+
     if metric_key == "coins_from_other_sources":
         if coins is None:
             return None, (), ()
@@ -932,9 +994,19 @@ def _compute_enemies_destroyed_total_from_values(derived_values: dict[str, float
         "enemies_destroyed_overcharge",
     )
 
+    return _compute_enemies_destroyed_group_from_values(derived_values, keys=metric_keys)
+
+
+def _compute_enemies_destroyed_group_from_values(
+    derived_values: dict[str, float],
+    *,
+    keys: tuple[str, ...],
+) -> int | None:
+    """Compute enemies destroyed totals for a group of per-type metrics."""
+
     total = 0.0
     has_any = False
-    for key in metric_keys:
+    for key in keys:
         observed = derived_values.get(key)
         if observed is None:
             continue

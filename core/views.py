@@ -949,6 +949,18 @@ def dashboard(request: HttpRequest) -> HttpResponse:
         has_filters=has_filters,
         chart_empty_state=chart_empty_state,
     )
+    explore_modal_scope = ExploreScope(
+        start_date=chart_form.cleaned_data.get("start_date"),
+        end_date=chart_form.cleaned_data.get("end_date"),
+        tier=chart_form.cleaned_data.get("tier"),
+        preset_id=getattr(chart_form.cleaned_data.get("preset"), "id", None),
+        snapshot_id=getattr(chart_form.cleaned_data.get("context_snapshot"), "id", None),
+        past_n_runs=chart_form.cleaned_data.get("past_runs"),
+    )
+    explore_modal_dsl = _explore_modal_dsl_text(
+        player_id=str(player.id),
+        scope=explore_modal_scope,
+    )
 
     context = {
         "import_form": import_form,
@@ -1002,6 +1014,7 @@ def dashboard(request: HttpRequest) -> HttpResponse:
             "snapshot_id": getattr(chart_form.cleaned_data.get("context_snapshot"), "id", None),
             "past_n_runs": chart_form.cleaned_data.get("past_runs"),
         },
+        "explore_modal_dsl": explore_modal_dsl,
         "event_window_start": chart_form.cleaned_data.get("start_date"),
         "event_window_end": chart_form.cleaned_data.get("end_date"),
         "walkthrough_enabled": walkthrough_enabled,
@@ -1934,6 +1947,24 @@ def explore_dashboard(request: HttpRequest) -> HttpResponse:
     return render(request, "core/explore.html", context)
 
 
+def _explore_modal_dsl_text(*, player_id: str, scope: ExploreScope) -> str:
+    """Return default DSL text for Explore modal launchers."""
+
+    explore_registry = build_explore_metric_registry()
+    default_metric = sorted(explore_registry.keys())[0]
+    default_query = ExploreQuery(
+        schema_version=SCHEMA_VERSION,
+        player_id=player_id,
+        name="New Explore Query",
+        scope=scope,
+        filters=(),
+        breakdowns=(ExploreBreakdown(dimension="run", order=1),),
+        metric=ExploreMetricSelection(key=default_metric, aggregation="sum"),
+        visualization_hint="table",
+    )
+    return format_explore_dsl(default_query, default_scope=scope)
+
+
 @login_required
 def battle_history(request: HttpRequest) -> HttpResponse:
     """Render the Battle History dashboard with filters and pagination."""
@@ -2190,6 +2221,20 @@ def battle_history(request: HttpRequest) -> HttpResponse:
         querystring.pop("page")
     base_querystring = querystring.urlencode()
     battle_report_order_json = json.dumps(_ordered_battle_report_ids(runs_for_pagination))
+    modal_preset = filter_form.cleaned_data.get("preset") if filter_form.is_valid() else None
+    modal_snapshot = filter_form.cleaned_data.get("snapshot") if filter_form.is_valid() else None
+    explore_modal_scope = ExploreScope(
+        start_date=None,
+        end_date=None,
+        tier=filter_form.cleaned_data.get("tier") if filter_form.is_valid() else None,
+        preset_id=getattr(modal_preset, "id", None),
+        snapshot_id=getattr(modal_snapshot, "id", None),
+        past_n_runs=None,
+    )
+    explore_modal_dsl = _explore_modal_dsl_text(
+        player_id=str(player.id),
+        scope=explore_modal_scope,
+    )
 
     return render(
         request,
@@ -2212,6 +2257,7 @@ def battle_history(request: HttpRequest) -> HttpResponse:
             "current_sort": sort_key,
             "killed_by_donut_json": killed_by_donut_json,
             "battle_report_order_json": battle_report_order_json,
+            "explore_modal_dsl": explore_modal_dsl,
         },
     )
 

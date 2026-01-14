@@ -25,7 +25,7 @@ Charts help you review how your run results change over time using the same valu
   B. Toggle **Include tournaments** to include tournament runs in the charts.
 6. (Optional) In **Context**, select a **Snapshot** or enter **Past N runs** to tighten the scope.
 7. Select **Apply** to refresh the dashboard.
-8. Select **Explore similar runs** to open Explore with your current scope.
+8. Select **Query Explorer** to open Explore with your current scope.
 
 
 * Open **More options** to refine charts, windowing, and item filters. For details, see [More Options](charts/more_options.md).

@@ -176,6 +176,55 @@ def test_enemies_destroyed_total_ignores_battle_report_totals() -> None:
     assert result.points[0].value == 78_876.0
 
 
+@pytest.mark.golden
+def test_enemies_destroyed_group_totals() -> None:
+    """Derive grouped enemy totals for common, elite, and fleet types."""
+
+    raw_text = "\n".join(
+        [
+            "Battle Report",
+            "Battle Date\tDec 21, 2025 13:18",
+            "Real Time\t2h 46m 15s",
+            "Tier\t8",
+            "Wave\t1141",
+            "Enemies Destroyed",
+            "Total Enemies\t79462",
+            "Basic\t49365",
+            "Fast\t10418",
+            "Tank\t11021",
+            "Ranged\t7777",
+            "Boss\t114",
+            "Protector\t130",
+            "Total Elites\t51",
+            "Vampires\t19",
+            "Rays\t12",
+            "Scatters\t20",
+            "Saboteur\t0",
+            "Commander\t0",
+            "Overcharge\t0",
+            "",
+        ]
+    )
+    record = Record(
+        raw_text=raw_text,
+        parsed_at=datetime(2025, 12, 21, 13, 20, tzinfo=timezone.utc),
+        run_progress=Progress(
+            battle_date=datetime(2025, 12, 21, 13, 18, tzinfo=timezone.utc),
+            wave=1141,
+            real_time_seconds=60,
+        ),
+        derived_metrics=_derived_metrics(raw_text),
+    )
+
+    common = analyze_metric_series([record], metric_key="enemies_destroyed_common")
+    elite = analyze_metric_series([record], metric_key="enemies_destroyed_elite")
+    fleet = analyze_metric_series([record], metric_key="enemies_destroyed_fleet")
+
+    assert common.points[0].value == 78_711.0
+    assert elite.points[0].value == 51.0
+    assert fleet.points[0].value == 0.0
+
+
 @pytest.mark.regression
 def test_cash_residual_derived_from_named_sources() -> None:
     """Compute residual cash as cash earned minus interest and Golden Tower cash."""

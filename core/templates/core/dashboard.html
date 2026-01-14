@@ -115,7 +115,7 @@
             <button class="button secondary" type="button" id="open-chart-builder">Chart Builder</button>
           </div>
           <div class="cell shrink">
-            <button class="button secondary" type="button" id="open-explore-modal">Explore similar runs</button>
+            <button class="button secondary" type="button" id="open-explore-modal">Query Explorer</button>
           </div>
           <div class="cell shrink">
             <button class="button" type="submit">Apply</button>
@@ -1449,25 +1449,39 @@
     </div>
 
     <div class="modal-backdrop" id="explore-modal" aria-hidden="true">
-      <div class="modal-shell" role="dialog" aria-modal="true" aria-label="Explore similar runs">
+      <div class="modal-shell explore-modal-shell" role="dialog" aria-modal="true" aria-label="Query Explorer">
         <div class="grid-x grid-margin-x align-middle">
           <div class="cell auto">
-            <h4 class="margin-0">Explore similar runs</h4>
-            <p class="muted margin-0">This opens Explore with your current Charts scope.</p>
+            <h4 class="margin-0">Query Explorer</h4>
+            <p class="muted margin-0">Build a query from your current Charts scope.</p>
           </div>
           <div class="cell shrink">
             <button class="button secondary" type="button" data-close-modal>Close</button>
           </div>
         </div>
-        <form method="get" action="{% url 'core:explore' %}" class="stacked margin-top-1">
-          <input type="hidden" name="start_date" value="{{ explore_modal.start_date|date:'Y-m-d' }}">
-          <input type="hidden" name="end_date" value="{{ explore_modal.end_date|date:'Y-m-d' }}">
-          <input type="hidden" name="tier_values" value="{{ explore_modal.tier|default_if_none:'' }}">
-          <input type="hidden" name="preset" value="{{ explore_modal.preset_id|default_if_none:'' }}">
-          <input type="hidden" name="snapshot" value="{{ explore_modal.snapshot_id|default_if_none:'' }}">
-          <input type="hidden" name="past_n_runs" value="{{ explore_modal.past_n_runs|default_if_none:'' }}">
-          <button class="button expanded" type="submit">Open Explore dashboard</button>
-        </form>
+        <div class="explore-modal-body margin-top-1">
+          <form method="post" action="{% url 'core:explore' %}" class="stacked">
+            {% csrf_token %}
+            <input type="hidden" name="next" value="{% url 'core:explore' %}">
+            <label>Query Bar
+              <textarea class="explore-modal-textarea" name="dsl_query">{{ explore_modal_dsl }}</textarea>
+            </label>
+            <div class="explore-query-actions">
+              <button class="button" type="submit" name="action" value="run_explore_query">Run query</button>
+              <button class="button secondary" type="submit" name="action" value="save_explore_query">Store query</button>
+              <a class="button secondary" href="{% url 'core:explore' %}">Go to dashboard</a>
+            </div>
+          </form>
+          <div class="card-shell explore-modal-output margin-top-1">
+            <div class="explore-modal-output-header">
+              <h5 class="margin-0">Output chart</h5>
+              <p class="muted margin-0">Preview appears after running a query.</p>
+            </div>
+            <div class="explore-modal-chart">
+              <div class="empty-state" role="status">Run a query to preview charts here.</div>
+            </div>
+          </div>
+        </div>
       </div>
     </div>
 

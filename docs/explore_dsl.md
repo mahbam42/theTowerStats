@@ -16,7 +16,9 @@ Required lines:
 
 Optional lines:
 - `scope date <start>..<end>`
+- `scope date all`
 - `scope tier <value>`
+- `scope tier all`
 - `scope preset <id> "Label"`
 - `scope snapshot <id> "Label"`
 - `scope past_n_runs <value>`
@@ -24,6 +26,7 @@ Optional lines:
 - `scope date <start>..<end> not <YYYY-MM-DD>[, <YYYY-MM-DD>]`
 - `scope preset <Preset Name>[, <Preset Name>]`
 - `scope preset <Preset Name> not <Preset Name>`
+- `scope <field> *`
 - `filter tier in <v1, v2, ...>`
 - `filter tier >= <value>`
 - `filter tier <= <value>`
@@ -58,6 +61,7 @@ When placeholders are present or a scope line is omitted, parsing falls back to 
 - `output` defaults to `table` when not supplied.
 - `metric` supports `sum` and `count` only.
 - Placeholders do not override prefilled defaults.
+- `all` or `*` clears a prefilled scope value and keeps the scope open.
 
 ## Integration Notes
 

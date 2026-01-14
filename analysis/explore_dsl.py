@@ -48,18 +48,35 @@ def format_explore_dsl(
     """Format an ExploreQuery into DSL text."""
 
     scope = query.scope if query else default_scope
+    use_all_tokens = query is not None
 
     def _date_or_placeholder(value: date | None) -> str:
         return value.isoformat() if value else "[date:YYYY-MM-DD]"
 
-    def _value_or_placeholder(value: object | None, placeholder: str) -> str:
+    def _value_or_placeholder(
+        value: object | None,
+        *,
+        placeholder: str,
+        default_value: object | None,
+    ) -> str:
+        if use_all_tokens and value is None and default_value is not None:
+            return "all"
         return str(value) if value is not None else placeholder
+
+    def _date_range_value() -> str:
+        if (
+            use_all_tokens
+            and scope.start_date is None
+            and scope.end_date is None
+            and (default_scope.start_date or default_scope.end_date)
+        ):
+            return "all"
+        start = scope.start_date if scope.start_date is not None else default_scope.start_date
+        end = scope.end_date if scope.end_date is not None else default_scope.end_date
+        return f"{_date_or_placeholder(start)}..{_date_or_placeholder(end)}"
 
     name = query.name if query else "New Explore Query"
     lines: list[str] = [f'name "{name}"']
-
-    start = scope.start_date if scope.start_date else default_scope.start_date
-    end = scope.end_date if scope.end_date else default_scope.end_date
 
     date_excludes: list[str] = []
     preset_excludes: list[str] = []
@@ -90,13 +107,12 @@ def format_explore_dsl(
                 continue
             remaining_filters.append(entry)
 
-    date_line = f"scope date {_date_or_placeholder(start)}..{_date_or_placeholder(end)}"
+    date_line = f"scope date {_date_range_value()}"
     if date_excludes:
         date_line = f"{date_line} not {', '.join(_format_name(value) for value in date_excludes)}"
     lines.append(date_line)
 
-    tier = scope.tier if scope.tier is not None else default_scope.tier
-    tier_line = f"scope tier {_value_or_placeholder(tier, '[tier:—]')}"
+    tier_line = f"scope tier {_value_or_placeholder(scope.tier, placeholder='[tier:—]', default_value=default_scope.tier)}"
     if tier_filter is not None:
         if tier_filter.operator == "range" and isinstance(tier_filter.value, dict):
             tier_min = tier_filter.value.get("min")
@@ -108,20 +124,31 @@ def format_explore_dsl(
         tier_line = f"{tier_line} not tournament"
     lines.append(tier_line)
 
-    preset = scope.preset_id if scope.preset_id is not None else default_scope.preset_id
     if preset_includes:
         preset_line = f"scope preset {', '.join(_format_name(value) for value in preset_includes)}"
     else:
-        preset_line = f"scope preset {_value_or_placeholder(preset, '[preset:—]')}"
+        preset_line = f"scope preset {_value_or_placeholder(scope.preset_id, placeholder='[preset:—]', default_value=default_scope.preset_id)}"
     if preset_excludes:
         preset_line = f"{preset_line} not {', '.join(_format_name(value) for value in preset_excludes)}"
     lines.append(preset_line)
 
-    snapshot = scope.snapshot_id if scope.snapshot_id is not None else default_scope.snapshot_id
-    lines.append(f"scope snapshot {_value_or_placeholder(snapshot, '[snapshot:—]')}")
+    lines.append(
+        "scope snapshot "
+        + _value_or_placeholder(
+            scope.snapshot_id,
+            placeholder="[snapshot:—]",
+            default_value=default_scope.snapshot_id,
+        )
+    )
 
-    past_n = scope.past_n_runs if scope.past_n_runs is not None else default_scope.past_n_runs
-    lines.append(f"scope past_n_runs {_value_or_placeholder(past_n, '[runs:—]')}")
+    lines.append(
+        "scope past_n_runs "
+        + _value_or_placeholder(
+            scope.past_n_runs,
+            placeholder="[runs:—]",
+            default_value=default_scope.past_n_runs,
+        )
+    )
 
     if query:
         for entry in remaining_filters:
@@ -257,6 +284,8 @@ def build_explore_autocomplete(
         "output",
         "and",
         "not",
+        "all",
+        "*",
         "tournament",
         "tournaments",
         "by",
@@ -339,58 +368,79 @@ def _parse_scope_line(
     normalized = re.sub(r"\band\b", "", normalized, flags=re.I).strip()
     main_value, not_clause = _split_not_clause(normalized) if field in {"date", "preset"} else (normalized, None)
     if field == "date":
-        start, end, date_errors = _parse_date_range(main_value)
-        errors.extend(date_errors)
+        all_token = _is_all_token(main_value)
+        if all_token:
+            start = None
+            end = None
+        else:
+            start, end, date_errors = _parse_date_range(main_value)
+            errors.extend(date_errors)
         if not_clause:
             dates, date_errors = _parse_date_list(not_clause)
             errors.extend(date_errors)
             if dates:
                 filters.append(ExploreFilter(field="date_exclude", operator="in", value=dates))
         scope = ExploreScope(
-            start_date=start if start is not None else default_scope.start_date,
-            end_date=end if end is not None else default_scope.end_date,
+            start_date=None if all_token else (start if start is not None else default_scope.start_date),
+            end_date=None if all_token else (end if end is not None else default_scope.end_date),
             tier=scope.tier,
             preset_id=scope.preset_id,
             snapshot_id=scope.snapshot_id,
             past_n_runs=scope.past_n_runs,
         )
     elif field == "tier":
-        operator_match = re.match(r"^(>=|<=|>|<|=)?\s*(.+)?$", normalized)
-        operator = (operator_match.group(1) or "").strip() if operator_match else ""
-        raw_value = (operator_match.group(2) or "").strip() if operator_match else normalized
-        tier_value = _parse_int(raw_value)
-        if operator in (">", "<") and tier_value is not None:
-            if operator == ">":
-                tier_value += 1
-                operator = ">="
-            else:
-                tier_value -= 1
-                operator = "<="
-        if operator in (">=", "<=") and tier_value is not None:
-            filters.append(
-                ExploreFilter(
-                    field="tier",
-                    operator=cast(FilterOperator, operator),
-                    value=tier_value,
-                )
-            )
-        else:
+        if _is_all_token(normalized):
             scope = ExploreScope(
                 start_date=scope.start_date,
                 end_date=scope.end_date,
-                tier=tier_value if tier_value is not None else default_scope.tier,
+                tier=None,
                 preset_id=scope.preset_id,
                 snapshot_id=scope.snapshot_id,
                 past_n_runs=scope.past_n_runs,
             )
+        else:
+            operator_match = re.match(r"^(>=|<=|>|<|=)?\s*(.+)?$", normalized)
+            operator = (operator_match.group(1) or "").strip() if operator_match else ""
+            raw_value = (operator_match.group(2) or "").strip() if operator_match else normalized
+            tier_value = _parse_int(raw_value)
+            if operator in (">", "<") and tier_value is not None:
+                if operator == ">":
+                    tier_value += 1
+                    operator = ">="
+                else:
+                    tier_value -= 1
+                    operator = "<="
+            if operator in (">=", "<=") and tier_value is not None:
+                filters.append(
+                    ExploreFilter(
+                        field="tier",
+                        operator=cast(FilterOperator, operator),
+                        value=tier_value,
+                    )
+                )
+            else:
+                scope = ExploreScope(
+                    start_date=scope.start_date,
+                    end_date=scope.end_date,
+                    tier=tier_value if tier_value is not None else default_scope.tier,
+                    preset_id=scope.preset_id,
+                    snapshot_id=scope.snapshot_id,
+                    past_n_runs=scope.past_n_runs,
+                )
     elif field == "preset":
-        preset_value = _parse_id_with_optional_label(main_value)
+        all_token = _is_all_token(main_value)
+        preset_value = None if all_token else _parse_id_with_optional_label(main_value)
         if not_clause:
             names, name_errors = _parse_name_list(not_clause)
             errors.extend(name_errors)
             if names:
                 filters.append(ExploreFilter(field="preset_name_exclude", operator="in", value=names))
-        if preset_value is None and main_value and not _is_placeholder(main_value):
+        if (
+            preset_value is None
+            and main_value
+            and not _is_placeholder(main_value)
+            and not _is_all_token(main_value)
+        ):
             include_names, include_errors = _parse_name_list(main_value)
             errors.extend(include_errors)
             if include_names:
@@ -405,29 +455,31 @@ def _parse_scope_line(
             start_date=scope.start_date,
             end_date=scope.end_date,
             tier=scope.tier,
-            preset_id=preset_value if preset_value is not None else default_scope.preset_id,
+            preset_id=None if all_token else (preset_value if preset_value is not None else default_scope.preset_id),
             snapshot_id=scope.snapshot_id,
             past_n_runs=scope.past_n_runs,
         )
     elif field == "snapshot":
-        snapshot_value = _parse_id_with_optional_label(normalized)
+        all_token = _is_all_token(normalized)
+        snapshot_value = None if all_token else _parse_id_with_optional_label(normalized)
         scope = ExploreScope(
             start_date=scope.start_date,
             end_date=scope.end_date,
             tier=scope.tier,
             preset_id=scope.preset_id,
-            snapshot_id=snapshot_value if snapshot_value is not None else default_scope.snapshot_id,
+            snapshot_id=None if all_token else (snapshot_value if snapshot_value is not None else default_scope.snapshot_id),
             past_n_runs=scope.past_n_runs,
         )
     elif field == "past_n_runs":
-        runs_value = _parse_int(normalized)
+        all_token = _is_all_token(normalized)
+        runs_value = None if all_token else _parse_int(normalized)
         scope = ExploreScope(
             start_date=scope.start_date,
             end_date=scope.end_date,
             tier=scope.tier,
             preset_id=scope.preset_id,
             snapshot_id=scope.snapshot_id,
-            past_n_runs=runs_value if runs_value is not None else default_scope.past_n_runs,
+            past_n_runs=None if all_token else (runs_value if runs_value is not None else default_scope.past_n_runs),
         )
     else:
         errors.append(f"Unknown scope field: {field}.")
@@ -609,3 +661,10 @@ def _is_placeholder(value: str) -> bool:
     """Return True when a value represents a placeholder token."""
 
     return bool(_PLACEHOLDER_RE.match(value.strip()))
+
+
+def _is_all_token(value: str) -> bool:
+    """Return True when a value represents the all wildcard."""
+
+    normalized = value.strip().casefold()
+    return normalized in {"all", "*"}

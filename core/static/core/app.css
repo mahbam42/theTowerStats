@@ -126,6 +126,29 @@ a:focus {
   gap: var(--tts-space-2);
 }
 
+.explore-modal-shell {
+  width: min(980px, 100%);
+}
+
+.explore-modal-textarea {
+  min-height: 12rem;
+}
+
+.explore-modal-output {
+  display: flex;
+  flex-direction: column;
+  gap: var(--tts-space-3);
+}
+
+.explore-modal-chart {
+  min-height: 12rem;
+  display: grid;
+  place-items: center;
+  border: 1px dashed var(--tts-color-border-muted);
+  border-radius: var(--tts-radius-2);
+  padding: var(--tts-space-3);
+}
+
 .explore-advanced summary {
   cursor: pointer;
   font-weight: 600;
@@ -458,6 +481,12 @@ input[type="datetime-local"]::placeholder,
 input[type="password"]::placeholder,
 textarea::placeholder {
   color: var(--tts-color-text-muted);
+}
+
+input[type="date"]::-webkit-calendar-picker-indicator,
+input[type="datetime-local"]::-webkit-calendar-picker-indicator {
+  filter: invert(0.85);
+  opacity: 0.8;
 }
 
 input[type="text"]:focus,
