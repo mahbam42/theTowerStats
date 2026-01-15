@@ -8,8 +8,8 @@ import io
 import math
 from dataclasses import dataclass
 from datetime import date, timedelta
-from typing import Any, Literal, cast
-from collections.abc import Iterable
+from typing import Any, Literal, TypedDict, cast
+from collections.abc import Iterable, Sequence
 
 from django.contrib import messages
 from django.contrib.auth import login as auth_login
@@ -36,7 +36,12 @@ from analysis.event_windows import coerce_window_bounds, event_window_for_date, 
 from analysis.engine import analyze_metric_series, analyze_runs
 from analysis.explore_dsl import build_explore_autocomplete, format_explore_dsl, parse_explore_dsl
 from analysis.explore_engine import execute_explore_query
-from analysis.explore_registry import DEFAULT_BREAKDOWNS, ExploreMetricDefinition, build_explore_metric_registry
+from analysis.explore_registry import (
+    DEFAULT_BREAKDOWNS,
+    ExploreBreakdownDefinition,
+    ExploreMetricDefinition,
+    build_explore_metric_registry,
+)
 from analysis.explore_schema import (
     FilterOperator,
     SCHEMA_VERSION,
@@ -1734,6 +1739,18 @@ class FarmingTierStats:
     cv: float | None
 
 
+class ExploreResultRowPayload(TypedDict):
+    """Serialized Explore result row payload for templates."""
+
+    breakdown: tuple[str, ...]
+    value: float | None
+    values: list[float | None]
+    sample_count: int
+    sample_counts: list[int]
+    metric_cells: list[dict[str, object]]
+    run_id: int | None
+
+
 def _farming_efficiency_dsl(*, default_scope: ExploreScope) -> str:
     """Return the DSL text for the farming efficiency stored query."""
 
@@ -1810,8 +1827,9 @@ def _is_farming_efficiency_query(query: ExploreQuery) -> bool:
 
     breakdowns = tuple(sorted(query.breakdowns, key=lambda entry: entry.order))
     return (
-        query.metric.key == "coins_per_hour"
-        and query.metric.aggregation == "avg"
+        len(query.metrics) == 1
+        and query.metrics[0].key == "coins_per_hour"
+        and query.metrics[0].aggregation == "avg"
         and query.visualization_hint == "table"
         and len(breakdowns) == 1
         and breakdowns[0].dimension == "tier"
@@ -2019,10 +2037,7 @@ def explore_dashboard(request: HttpRequest) -> HttpResponse:
                 validation_warnings.append("Empty scope: no runs match the current scope and filters.")
             if not results["rows"]:
                 validation_warnings.append("Missing data: no matching metric values were found.")
-            if results["missing_count"]:
-                validation_warnings.append(
-                    f"Missing data: {results['missing_count']} run values were unavailable for the selected metric."
-                )
+            _append_explore_missing_warnings(results, validation_warnings)
 
         dsl_text = format_explore_dsl(loaded_query_data, default_scope=prefill_scope)
 
@@ -2054,7 +2069,7 @@ def explore_dashboard(request: HttpRequest) -> HttpResponse:
                         scope=parse_result.query.scope,
                         filters=parse_result.query.filters,
                         breakdowns=(),
-                        metric=parse_result.query.metric,
+                        metrics=parse_result.query.metrics,
                         visualization_hint=parse_result.query.visualization_hint,
                     )
                 results = _explore_execute_query(
@@ -2071,10 +2086,7 @@ def explore_dashboard(request: HttpRequest) -> HttpResponse:
                     validation_warnings.append(
                         "Missing data: no matching metric values were found."
                     )
-                if results["missing_count"]:
-                    validation_warnings.append(
-                        f"Missing data: {results['missing_count']} run values were unavailable for the selected metric."
-                    )
+                _append_explore_missing_warnings(results, validation_warnings)
 
     if uses_dsl:
         dsl_text = dsl_input
@@ -2105,7 +2117,7 @@ def explore_dashboard(request: HttpRequest) -> HttpResponse:
                         scope=parse_result.query.scope,
                         filters=parse_result.query.filters,
                         breakdowns=(),
-                        metric=parse_result.query.metric,
+                        metrics=parse_result.query.metrics,
                         visualization_hint=parse_result.query.visualization_hint,
                     )
                 results = _explore_execute_query(
@@ -2122,10 +2134,7 @@ def explore_dashboard(request: HttpRequest) -> HttpResponse:
                     validation_warnings.append(
                         "Missing data: no matching metric values were found."
                     )
-                if results["missing_count"]:
-                    validation_warnings.append(
-                        f"Missing data: {results['missing_count']} run values were unavailable for the selected metric."
-                    )
+                _append_explore_missing_warnings(results, validation_warnings)
 
             if request.method == "POST" and request.POST.get("action") == "save_explore_query":
                 if validation_errors:
@@ -2179,7 +2188,7 @@ def explore_dashboard(request: HttpRequest) -> HttpResponse:
                     scope=query.scope,
                     filters=query.filters,
                     breakdowns=(),
-                    metric=query.metric,
+                    metrics=query.metrics,
                     visualization_hint=query.visualization_hint,
                 )
             results = _explore_execute_query(execution_query, player=player, registry=explore_registry)
@@ -2188,10 +2197,7 @@ def explore_dashboard(request: HttpRequest) -> HttpResponse:
                 validation_warnings.append("Empty scope: no runs match the current scope and filters.")
             if not results["rows"]:
                 validation_warnings.append("Missing data: no matching metric values were found.")
-            if results["missing_count"]:
-                validation_warnings.append(
-                    f"Missing data: {results['missing_count']} run values were unavailable for the selected metric."
-                )
+            _append_explore_missing_warnings(results, validation_warnings)
 
         if request.method == "POST" and request.POST.get("action") == "save_explore_query":
             if validation.errors:
@@ -2232,7 +2238,7 @@ def explore_dashboard(request: HttpRequest) -> HttpResponse:
             scope=prefill_scope,
             filters=(),
             breakdowns=(ExploreBreakdown(dimension="run", order=1),),
-            metric=ExploreMetricSelection(key=default_metric, aggregation="sum"),
+            metrics=(ExploreMetricSelection(key=default_metric, aggregation="sum"),),
             visualization_hint="table",
         )
         dsl_text = format_explore_dsl(default_query, default_scope=prefill_scope)
@@ -2247,7 +2253,7 @@ def explore_dashboard(request: HttpRequest) -> HttpResponse:
         farming_runs = _apply_explore_filters(farming_runs, filters=executed_query.filters)
         farming_summary = _farming_efficiency_analysis(
             farming_runs,
-            metric_key=executed_query.metric.key,
+            metric_key=executed_query.metrics[0].key if executed_query.metrics else "",
             min_runs=FARMING_MIN_RUNS,
             plateau_threshold=FARMING_PLATEAU_THRESHOLD,
             variance_threshold=FARMING_VARIANCE_THRESHOLD,
@@ -2291,7 +2297,7 @@ def _explore_modal_dsl_text(*, player_id: str, scope: ExploreScope) -> str:
         scope=scope,
         filters=(),
         breakdowns=(ExploreBreakdown(dimension="run", order=1),),
-        metric=ExploreMetricSelection(key=default_metric, aggregation="sum"),
+        metrics=(ExploreMetricSelection(key=default_metric, aggregation="sum"),),
         visualization_hint="table",
     )
     return format_explore_dsl(default_query, default_scope=scope)
@@ -2318,12 +2324,20 @@ def _explore_preview_payload(
         "breakdown_headers": results.get("breakdown_headers", []),
         "metric_label": results.get("metric_label"),
         "metric_unit": results.get("metric_unit"),
+        "metric_labels": results.get("metric_labels", []),
+        "metric_units": results.get("metric_units", []),
+        "metric_aggregations": results.get("metric_aggregations", []),
+        "metrics": results.get("metrics", []),
         "aggregation": results.get("aggregation"),
         "visualization": results.get("visualization"),
         "run_count": results.get("run_count"),
         "missing_count": results.get("missing_count"),
+        "missing_counts": results.get("missing_counts", []),
         "total_value": results.get("total_value"),
+        "total_values": results.get("total_values", []),
         "total_sample_count": results.get("total_sample_count"),
+        "total_sample_counts": results.get("total_sample_counts", []),
+        "total_cells": results.get("total_cells", []),
         "chart": results.get("chart"),
     }
     return payload
@@ -5170,8 +5184,16 @@ def _explore_form_initial_from_payload(payload: dict[str, object]) -> dict[str, 
     scope = scope_raw if isinstance(scope_raw, dict) else {}
     date_range_raw = scope.get("date_range")
     date_range = date_range_raw if isinstance(date_range_raw, dict) else {}
-    metric_raw = payload.get("metric")
-    metric = metric_raw if isinstance(metric_raw, dict) else {}
+    metrics_raw = payload.get("metrics")
+    metric_entries = [
+        entry
+        for entry in (metrics_raw if isinstance(metrics_raw, list) else [])
+        if isinstance(entry, dict)
+    ]
+    metric = metric_entries[0] if metric_entries else {}
+    if not metric:
+        metric_raw = payload.get("metric")
+        metric = metric_raw if isinstance(metric_raw, dict) else {}
     breakdowns_raw = payload.get("breakdowns")
     breakdown_entries = [
         entry
@@ -5303,8 +5325,24 @@ def _explore_query_from_payload(payload: dict[str, object]) -> ExploreQuery:
         )
         for entry in breakdown_entries
     )
-    metric_raw = payload.get("metric")
-    metric = metric_raw if isinstance(metric_raw, dict) else {}
+    metrics_raw = payload.get("metrics")
+    metric_entries = [
+        entry
+        for entry in (metrics_raw if isinstance(metrics_raw, list) else [])
+        if isinstance(entry, dict)
+    ]
+    if not metric_entries:
+        metric_raw = payload.get("metric")
+        metric = metric_raw if isinstance(metric_raw, dict) else {}
+        metric_entries = [metric] if metric else []
+    metrics = tuple(
+        ExploreMetricSelection(
+            key=str(entry.get("key") or ""),
+            aggregation=cast(Literal["sum", "count", "avg"], str(entry.get("aggregation") or "sum")),
+        )
+        for entry in metric_entries
+        if entry
+    )
     return ExploreQuery(
         schema_version=str(payload.get("schema_version") or ""),
         player_id=str(payload.get("player_id") or ""),
@@ -5319,10 +5357,7 @@ def _explore_query_from_payload(payload: dict[str, object]) -> ExploreQuery:
         ),
         filters=filters,
         breakdowns=breakdowns,
-        metric=ExploreMetricSelection(
-            key=str(metric.get("key") or ""),
-            aggregation=cast(Literal["sum", "count"], str(metric.get("aggregation") or "sum")),
-        ),
+        metrics=metrics,
         visualization_hint=cast(
             VisualizationHint,
             str(payload.get("visualization_hint") or "table"),
@@ -5402,7 +5437,7 @@ def _explore_query_from_form(form: ExploreQueryForm, *, player: Player) -> Explo
 
     metric = ExploreMetricSelection(
         key=str(cleaned.get("metric_key") or ""),
-        aggregation=cast(Literal["sum", "count"], str(cleaned.get("aggregation") or "sum")),
+        aggregation=cast(Literal["sum", "count", "avg"], str(cleaned.get("aggregation") or "sum")),
     )
 
     return ExploreQuery(
@@ -5412,7 +5447,7 @@ def _explore_query_from_form(form: ExploreQueryForm, *, player: Player) -> Explo
         scope=scope,
         filters=tuple(filters),
         breakdowns=tuple(breakdowns),
-        metric=metric,
+        metrics=(metric,),
         visualization_hint=cast(
             VisualizationHint,
             str(cleaned.get("visualization") or "table"),
@@ -5561,61 +5596,161 @@ def _explore_execute_query(
     runs = _apply_explore_filters(runs, filters=query.filters)
     run_list = list(runs)
     run_order = [run.id for run in run_list if getattr(run, "id", None) is not None]
-    result = execute_explore_query(
-        run_list,
-        query=query,
-        metric_registry=registry,
-        breakdown_registry=DEFAULT_BREAKDOWNS,
-    )
-    metric = registry.get(query.metric.key)
-    unit = metric.unit if metric else ""
-    metric_label = metric.label if metric else query.metric.key
-    breakdown_defs = [
-        DEFAULT_BREAKDOWNS.get(breakdown.dimension)
-        for breakdown in query.breakdowns
-        if DEFAULT_BREAKDOWNS.get(breakdown.dimension) is not None
+    metric_selections = query.metrics
+    metric_defs = [registry.get(selection.key) for selection in metric_selections]
+    metric_labels = [metric.label if metric else selection.key for metric, selection in zip(metric_defs, metric_selections)]
+    metric_units = [metric.unit if metric else "" for metric in metric_defs]
+    metric_aggregations = [selection.aggregation for selection in metric_selections]
+    metric_entries = [
+        {"label": label, "unit": unit, "aggregation": aggregation}
+        for label, unit, aggregation in zip(metric_labels, metric_units, metric_aggregations)
     ]
+    per_metric_results = [
+        execute_explore_query(
+            run_list,
+            query=query,
+            metric_selection=selection,
+            metric_registry=registry,
+            breakdown_registry=DEFAULT_BREAKDOWNS,
+        )
+        for selection in metric_selections
+    ]
+    primary_result = per_metric_results[0] if per_metric_results else None
+    breakdown_defs: list[ExploreBreakdownDefinition] = []
+    for breakdown in query.breakdowns:
+        definition = DEFAULT_BREAKDOWNS.get(breakdown.dimension)
+        if definition is not None:
+            breakdown_defs.append(definition)
     breakdown_headers = [definition.label for definition in breakdown_defs if definition is not None]
 
-    rows = [
-        {
-            "breakdown": row.breakdown,
-            "value": row.value,
-            "sample_count": row.sample_count,
-            "run_id": row.run_id,
-        }
-        for row in result.rows
-    ]
-    total_sample_count = sum(row.sample_count for row in result.rows)
+    breakdown_map: dict[tuple[str, ...], dict[str, object]] = {}
+    for metric_idx, result in enumerate(per_metric_results):
+        for row in result.rows:
+            bucket = breakdown_map.setdefault(
+                row.breakdown,
+                {
+                    "breakdown": row.breakdown,
+                    "values": [None for _ in metric_selections],
+                    "sample_counts": [0 for _ in metric_selections],
+                    "run_id": row.run_id,
+                },
+            )
+            values = bucket["values"]
+            counts = bucket["sample_counts"]
+            if isinstance(values, list):
+                values[metric_idx] = row.value
+            if isinstance(counts, list):
+                counts[metric_idx] = row.sample_count
+            if bucket.get("run_id") != row.run_id:
+                bucket["run_id"] = None
 
-    labels = [" • ".join(row.breakdown) if row.breakdown else "Total" for row in result.rows]
-    values = [row.value or 0.0 for row in result.rows]
-    chart_unit = unit
-    if query.visualization_hint == "donut":
-        total = sum(values)
-        chart_unit = "percent"
-        values = [(value / total * 100.0) if total else 0.0 for value in values]
+    rows: list[ExploreResultRowPayload] = []
+    for bucket in breakdown_map.values():
+        values = bucket.get("values")
+        counts = bucket.get("sample_counts")
+        breakdown_value = bucket.get("breakdown")
+        breakdown_labels = breakdown_value if isinstance(breakdown_value, tuple) else ()
+        run_id_value = bucket.get("run_id")
+        run_id = run_id_value if isinstance(run_id_value, int) else None
+        metric_cells = [
+            {
+                "value": values[idx] if isinstance(values, list) and idx < len(values) else None,
+                "sample_count": counts[idx] if isinstance(counts, list) and idx < len(counts) else 0,
+                "unit": entry["unit"],
+                "label": entry["label"],
+                "aggregation": entry["aggregation"],
+            }
+            for idx, entry in enumerate(metric_entries)
+        ]
+        rows.append(
+            {
+                "breakdown": breakdown_labels,
+                "value": values[0] if isinstance(values, list) and values else None,
+                "values": values if isinstance(values, list) else [],
+                "sample_count": counts[0] if isinstance(counts, list) and counts else 0,
+                "sample_counts": counts if isinstance(counts, list) else [],
+                "metric_cells": metric_cells,
+                "run_id": run_id,
+            }
+        )
+    if breakdown_defs:
+        rows = sorted(rows, key=lambda row: _explore_breakdown_sort_key(row["breakdown"], breakdown_defs))
+
+    total_sample_counts = [
+        sum(row.sample_count for row in result.rows) for result in per_metric_results
+    ]
+    missing_counts = [result.missing_count for result in per_metric_results]
+    total_values = [result.total_value for result in per_metric_results]
+    total_cells = [
+        {
+            "value": total_values[idx] if idx < len(total_values) else None,
+            "sample_count": total_sample_counts[idx] if idx < len(total_sample_counts) else 0,
+            "unit": entry["unit"],
+            "label": entry["label"],
+            "aggregation": entry["aggregation"],
+        }
+        for idx, entry in enumerate(metric_entries)
+    ]
+
+    labels = [" • ".join(row["breakdown"]) if row["breakdown"] else "Total" for row in rows]
+    values = [row["value"] or 0.0 for row in rows]
+    chart_unit = metric_units[0] if metric_units else ""
+    chart_payload: dict[str, object] | None = None
+    if len(metric_selections) == 1 and primary_result is not None:
+        if query.visualization_hint == "donut":
+            total = sum(values)
+            chart_unit = "percent"
+            values = [(value / total * 100.0) if total else 0.0 for value in values]
+        chart_payload = {"labels": labels, "values": values, "unit": chart_unit}
 
     return {
         "rows": rows,
         "breakdown_headers": breakdown_headers,
-        "metric_label": metric_label,
-        "metric_unit": unit,
-        "aggregation": query.metric.aggregation,
+        "metric_label": metric_labels[0] if metric_labels else "",
+        "metric_unit": metric_units[0] if metric_units else "",
+        "metric_labels": metric_labels,
+        "metric_units": metric_units,
+        "metric_aggregations": metric_aggregations,
+        "metrics": metric_entries,
+        "aggregation": metric_aggregations[0] if metric_aggregations else "",
         "visualization": query.visualization_hint,
-        "run_count": result.run_count,
-        "missing_count": result.missing_count,
-        "total_value": result.total_value,
-        "total_sample_count": total_sample_count,
+        "run_count": primary_result.run_count if primary_result else 0,
+        "missing_count": sum(missing_counts),
+        "missing_counts": missing_counts,
+        "total_value": total_values[0] if total_values else None,
+        "total_values": total_values,
+        "total_sample_count": total_sample_counts[0] if total_sample_counts else 0,
+        "total_sample_counts": total_sample_counts,
+        "total_cells": total_cells,
         "run_order": run_order,
-        "chart": {"labels": labels, "values": values, "unit": chart_unit},
+        "chart": chart_payload,
         "explainability": _explore_explainability(
             query,
             player=player,
-            run_count=result.run_count,
-            metric_label=metric_label,
+            run_count=primary_result.run_count if primary_result else 0,
+            metric_labels=metric_labels,
+            metric_aggregations=metric_aggregations,
         ),
     }
+
+
+def _append_explore_missing_warnings(results: dict[str, object], warnings: list[str]) -> None:
+    """Append missing data warnings for Explore results."""
+
+    missing_counts = results.get("missing_counts")
+    metric_labels = results.get("metric_labels")
+    if isinstance(missing_counts, list) and isinstance(metric_labels, list):
+        for count, label in zip(missing_counts, metric_labels):
+            if count:
+                warnings.append(
+                    f"Missing data: {count} run values were unavailable for metric {label}."
+                )
+        return
+    missing_count = results.get("missing_count")
+    if isinstance(missing_count, int) and missing_count:
+        warnings.append(
+            f"Missing data: {missing_count} run values were unavailable for the selected metric."
+        )
 
 
 def _explore_explainability(
@@ -5623,7 +5758,8 @@ def _explore_explainability(
     *,
     player: Player,
     run_count: int,
-    metric_label: str,
+    metric_labels: Sequence[str],
+    metric_aggregations: Sequence[str],
 ) -> tuple[str, ...]:
     """Return plain-language explainability lines for Explore outputs."""
 
@@ -5660,9 +5796,44 @@ def _explore_explainability(
     else:
         lines.append("Breakdowns: none.")
 
-    lines.append(f"Metric: {metric_label}.")
-    lines.append(f"Aggregation: {query.metric.aggregation}.")
+    if metric_labels:
+        labels = ", ".join(metric_labels)
+        lines.append(f"Metrics: {labels}.")
+    if metric_aggregations:
+        aggs = ", ".join(metric_aggregations)
+        lines.append(f"Aggregation: {aggs}.")
     return tuple(lines)
+
+
+def _explore_breakdown_sort_key(
+    breakdown: tuple[str, ...],
+    definitions: list[ExploreBreakdownDefinition],
+) -> tuple[tuple[object, ...], ...]:
+    """Return a stable sort key for Explore breakdown labels."""
+
+    key_parts: list[tuple[object, ...]] = []
+    for idx, label in enumerate(breakdown):
+        definition = definitions[idx] if idx < len(definitions) else None
+        if definition is not None and definition.key == "tier":
+            tier_value = _parse_tier_label(label)
+            key_parts.append((0, tier_value if tier_value is not None else 0, label))
+        else:
+            key_parts.append((1, label))
+    return tuple(key_parts)
+
+
+def _parse_tier_label(label: str) -> int | None:
+    """Return a tier number parsed from a label like 'Tier 11'."""
+
+    token = label.strip()
+    if not token.lower().startswith("tier"):
+        return None
+    parts = token.split()
+    if len(parts) < 2:
+        return None
+    if parts[1].isdigit():
+        return int(parts[1])
+    return None
 
 
 def _describe_explore_filters(

@@ -157,7 +157,11 @@ def format_explore_dsl(
             breakdown_line = ", ".join(breakdown.dimension for breakdown in query.breakdowns)
             lines.append(f"breakdown by {breakdown_line}")
 
-        lines.append(f"metric {query.metric.key} {query.metric.aggregation}")
+        metric_tokens = []
+        for metric in query.metrics:
+            metric_tokens.append(f"{metric.key} {metric.aggregation}")
+        if metric_tokens:
+            lines.append(f"metric {' and '.join(metric_tokens)}")
         if query.visualization_hint != "table":
             lines.append(f"output {query.visualization_hint}")
         else:
@@ -180,7 +184,7 @@ def parse_explore_dsl(
     scope = default_scope
     filters: list[ExploreFilter] = []
     breakdowns: list[ExploreBreakdown] = []
-    metric: ExploreMetricSelection | None = None
+    metrics: list[ExploreMetricSelection] = []
     visualization: VisualizationHint = "table"
 
     for raw_line in text.splitlines():
@@ -222,22 +226,9 @@ def parse_explore_dsl(
             if not raw_metric:
                 errors.append("Metric selection is required.")
                 continue
-            tokens = raw_metric.split()
-            if "and" in tokens:
-                errors.append("Explore v1 supports one metric per query.")
-                continue
-            if len(tokens) == 1:
-                metric_key = tokens[0]
-                aggregation = "sum"
-            elif len(tokens) == 2:
-                metric_key, aggregation = tokens
-                aggregation = aggregation.lower()
-            else:
-                errors.append("Metric line must be: metric <key> [sum|count|avg].")
-                continue
-            if aggregation not in ("sum", "count", "avg"):
-                errors.append(f"Aggregation {aggregation} is not supported.")
-            metric = ExploreMetricSelection(key=metric_key, aggregation=aggregation)  # type: ignore[arg-type]
+            metric_entries, metric_errors = _parse_metric_line(raw_metric)
+            metrics.extend(metric_entries)
+            errors.extend(metric_errors)
             continue
 
         if match := _OUTPUT_RE.match(line):
@@ -252,13 +243,12 @@ def parse_explore_dsl(
 
     if not name:
         errors.append("Query name is required.")
-    if metric is None:
+    if not metrics:
         errors.append("Metric selection is required.")
 
     if errors:
         return ExploreDslParseResult(query=None, errors=tuple(errors), warnings=tuple(warnings))
 
-    assert metric is not None
     query = ExploreQuery(
         schema_version="1.0",
         player_id=player_id,
@@ -266,7 +256,7 @@ def parse_explore_dsl(
         scope=scope,
         filters=tuple(filters),
         breakdowns=tuple(breakdowns),
-        metric=metric,
+        metrics=tuple(metrics),
         visualization_hint=visualization,
     )
     return ExploreDslParseResult(query=query, errors=tuple(errors), warnings=tuple(warnings))
@@ -357,6 +347,34 @@ def _format_filter(entry: ExploreFilter) -> list[str]:
         end = entry.value.get("end") or "[date:YYYY-MM-DD]"
         return [f"filter date_range {start}..{end}"]
     return []
+
+
+def _parse_metric_line(value: str) -> tuple[list[ExploreMetricSelection], list[str]]:
+    """Parse a metric line into ExploreMetricSelection entries."""
+
+    tokens = value.split()
+    if not tokens:
+        return [], ["Metric selection is required."]
+
+    selections: list[ExploreMetricSelection] = []
+    errors: list[str] = []
+    idx = 0
+    while idx < len(tokens):
+        token = tokens[idx]
+        if token.lower() == "and":
+            idx += 1
+            continue
+        metric_key = token
+        aggregation = "sum"
+        if idx + 1 < len(tokens) and tokens[idx + 1].lower() not in {"and"}:
+            aggregation = tokens[idx + 1].lower()
+            idx += 1
+        if aggregation not in ("sum", "count", "avg"):
+            errors.append(f"Aggregation {aggregation} is not supported.")
+        selections.append(ExploreMetricSelection(key=metric_key, aggregation=aggregation))  # type: ignore[arg-type]
+        idx += 1
+
+    return selections, errors
 
 
 def _parse_scope_line(

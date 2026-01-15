@@ -54,6 +54,9 @@ Explore helps you build your own questions about past runs and see aggregated an
 > Queries are player-scoped. Results are based only on your own runs.
 
 > ⚠️ Note
+> Multi-metric queries are displayed in tables only. Charts and KPI outputs require a single metric.
+
+> ⚠️ Note
 > Farming efficiency summaries describe observed results only and do not provide recommendations.
 
 > ⚠️ Note

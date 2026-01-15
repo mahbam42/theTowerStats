@@ -71,8 +71,8 @@ def test_parse_explore_dsl_with_placeholders_uses_defaults() -> None:
     assert result.query.scope.past_n_runs == 30
     assert result.query.breakdowns[0].dimension == "tier"
     assert result.query.breakdowns[1].dimension == "run"
-    assert result.query.metric.key == "recovery_packages"
-    assert result.query.metric.aggregation == "sum"
+    assert result.query.metrics[0].key == "recovery_packages"
+    assert result.query.metrics[0].aggregation == "sum"
 
 
 def test_parse_explore_dsl_all_tokens_clear_defaults() -> None:
@@ -129,8 +129,8 @@ def test_parse_explore_dsl_defaults_metric_aggregation() -> None:
 
     assert result.errors == ()
     assert result.query is not None
-    assert result.query.metric.key == "coins_earned"
-    assert result.query.metric.aggregation == "sum"
+    assert result.query.metrics[0].key == "coins_earned"
+    assert result.query.metrics[0].aggregation == "sum"
 
 
 def test_parse_explore_dsl_breakdown_accepts_and_separator() -> None:
@@ -170,5 +170,30 @@ def test_parse_explore_dsl_supports_avg_aggregation() -> None:
 
     assert result.errors == ()
     assert result.query is not None
-    assert result.query.metric.key == "coins_per_hour"
-    assert result.query.metric.aggregation == "avg"
+    assert result.query.metrics[0].key == "coins_per_hour"
+    assert result.query.metrics[0].aggregation == "avg"
+
+
+def test_parse_explore_dsl_supports_multiple_metrics() -> None:
+    """Metric lines accept multiple metrics joined by and."""
+
+    default_scope = ExploreScope(
+        start_date=None,
+        end_date=None,
+        tier=None,
+        preset_id=None,
+        snapshot_id=None,
+        past_n_runs=None,
+    )
+    dsl_text = (
+        'name "Multi metrics"\n'
+        "metric coins_per_hour avg and cells_earned avg\n"
+        "breakdown by tier\n"
+    )
+
+    result = parse_explore_dsl(dsl_text, player_id="player-1", default_scope=default_scope)
+
+    assert result.errors == ()
+    assert result.query is not None
+    assert [metric.key for metric in result.query.metrics] == ["coins_per_hour", "cells_earned"]
+    assert [metric.aggregation for metric in result.query.metrics] == ["avg", "avg"]

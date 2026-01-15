@@ -13,8 +13,8 @@ The DSL is line-based. Lines are parsed in any order.
 | Line | Purpose | Example |
 | --- | --- | --- |
 | `name` | Names the query (required). | `name "Weekly runs"` |
-| `metric` | Selects the metric and aggregation (required). | `metric coins_earned sum` |
-| `metric` | Computes an average for the selected metric. | `metric coins_per_hour avg` |
+| `metric` | Selects one or more metrics and aggregations (required). | `metric coins_earned sum` |
+| `metric` | Computes averages for multiple metrics. | `metric coins_per_hour avg and cells_earned avg` |
 | `scope date` | Sets a date range. | `scope date 2025-01-01..2025-01-31` |
 | `scope date all` | Clears the date scope. | `scope date all` |
 | `scope tier` | Sets a tier value. | `scope tier 8` |
@@ -59,7 +59,8 @@ When placeholders are present or a scope line is omitted, parsing falls back to 
 - `not` can also exclude specific dates on the date scope line and preset names on the preset scope line.
 - `output` defaults to `table` when not supplied.
 - `metric` supports `sum`, `count`, and `avg`; when omitted, aggregation defaults to `sum`.
-- Explore v1 supports a single metric per query.
+- `and` joins multiple metrics on the same line; multiple metric lines are also accepted.
+- Multi-metric queries must use table output.
 - Placeholders do not override prefilled defaults.
 - `all` or `*` clears a prefilled scope value and keeps the scope open.
 

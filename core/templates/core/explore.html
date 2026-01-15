@@ -98,9 +98,18 @@
       {% if explore_results %}
         <div class="card-shell">
           <h4 class="margin-bottom-0">Results</h4>
-          <p class="muted margin-top-0">
-            {{ explore_results.metric_label }} • {{ explore_results.aggregation|title }}
-          </p>
+          {% if explore_results.metrics|length > 1 %}
+            <p class="muted margin-top-0">
+              Metrics:
+              {% for metric in explore_results.metrics %}
+                {{ metric.label }} ({{ metric.aggregation|title }}){% if not forloop.last %}, {% endif %}
+              {% endfor %}
+            </p>
+          {% else %}
+            <p class="muted margin-top-0">
+              {{ explore_results.metric_label }} • {{ explore_results.aggregation|title }}
+            </p>
+          {% endif %}
           <p class="muted margin-top-0">Runs in scope: {{ explore_results.run_count }}</p>
           {% if explore_results.visualization == "kpi" %}
             <div class="callout secondary">
@@ -200,8 +209,15 @@
                       {% for header in explore_results.breakdown_headers %}
                         <th scope="col">{{ header }}</th>
                       {% endfor %}
-                      <th scope="col">Value</th>
-                      <th scope="col">Runs counted</th>
+                      {% if explore_results.metrics|length > 1 %}
+                        {% for metric in explore_results.metrics %}
+                          <th scope="col">{{ metric.label }} ({{ metric.aggregation|title }})</th>
+                          <th scope="col">Runs counted</th>
+                        {% endfor %}
+                      {% else %}
+                        <th scope="col">Value</th>
+                        <th scope="col">Runs counted</th>
+                      {% endif %}
                     </tr>
                   </thead>
                   <tbody>
@@ -210,10 +226,19 @@
                         {% for label in row.breakdown %}
                           <td>{{ label }}</td>
                         {% endfor %}
-                        <td>
-                          <span class="metric-value" data-format="unit-value" data-unit="{{ explore_results.metric_unit }}" data-value="{{ row.value }}"></span>
-                        </td>
-                        <td>{{ row.sample_count }}</td>
+                        {% if explore_results.metrics|length > 1 %}
+                          {% for cell in row.metric_cells %}
+                            <td>
+                              <span class="metric-value" data-format="unit-value" data-unit="{{ cell.unit }}" data-value="{{ cell.value }}"></span>
+                            </td>
+                            <td>{{ cell.sample_count }}</td>
+                          {% endfor %}
+                        {% else %}
+                          <td>
+                            <span class="metric-value" data-format="unit-value" data-unit="{{ explore_results.metric_unit }}" data-value="{{ row.value }}"></span>
+                          </td>
+                          <td>{{ row.sample_count }}</td>
+                        {% endif %}
                       </tr>
                     {% endfor %}
                   </tbody>
@@ -224,10 +249,19 @@
                       {% else %}
                         <td>Total</td>
                       {% endif %}
-                      <td>
-                        <span class="metric-value" data-format="unit-value" data-unit="{{ explore_results.metric_unit }}" data-value="{{ explore_results.total_value }}"></span>
-                      </td>
-                      <td>{{ explore_results.total_sample_count }}</td>
+                      {% if explore_results.metrics|length > 1 %}
+                        {% for cell in explore_results.total_cells %}
+                          <td>
+                            <span class="metric-value" data-format="unit-value" data-unit="{{ cell.unit }}" data-value="{{ cell.value }}"></span>
+                          </td>
+                          <td>{{ cell.sample_count }}</td>
+                        {% endfor %}
+                      {% else %}
+                        <td>
+                          <span class="metric-value" data-format="unit-value" data-unit="{{ explore_results.metric_unit }}" data-value="{{ explore_results.total_value }}"></span>
+                        </td>
+                        <td>{{ explore_results.total_sample_count }}</td>
+                      {% endif %}
                     </tr>
                   </tfoot>
                 </table>
@@ -238,7 +272,7 @@
           {% endif %}
         </div>
 
-        {% if explore_results.visualization == "bar" or explore_results.visualization == "donut" %}
+        {% if explore_results.chart and explore_results.visualization == "bar" or explore_results.chart and explore_results.visualization == "donut" %}
           <div class="card-shell margin-top-1">
             <canvas id="explore-chart" height="240"></canvas>
             {{ explore_results.chart|json_script:"explore-chart-data" }}
@@ -344,7 +378,7 @@
   {{ explore_dsl_autocomplete|json_script:"explore-dsl-autocomplete" }}
 
   {% if explore_results %}
-    {% if explore_results.visualization == "bar" or explore_results.visualization == "donut" %}
+    {% if explore_results.chart and explore_results.visualization == "bar" or explore_results.chart and explore_results.visualization == "donut" %}
       <script>
         (function() {
           const dataEl = document.getElementById("explore-chart-data");

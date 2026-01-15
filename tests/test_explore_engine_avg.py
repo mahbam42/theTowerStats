@@ -45,7 +45,7 @@ def test_execute_explore_query_avg_aggregation() -> None:
         ),
         filters=(),
         breakdowns=(ExploreBreakdown(dimension="tier", order=1),),
-        metric=ExploreMetricSelection(key="coins_per_hour", aggregation="avg"),
+        metrics=(ExploreMetricSelection(key="coins_per_hour", aggregation="avg"),),
         visualization_hint="table",
     )
     registry = build_explore_metric_registry()
@@ -53,6 +53,7 @@ def test_execute_explore_query_avg_aggregation() -> None:
     result = execute_explore_query(
         records,
         query=query,
+        metric_selection=query.metrics[0],
         metric_registry=registry,
         breakdown_registry=DEFAULT_BREAKDOWNS,
     )

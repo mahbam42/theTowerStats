@@ -67,7 +67,7 @@ class ExploreQuery:
     scope: ExploreScope
     filters: tuple[ExploreFilter, ...]
     breakdowns: tuple[ExploreBreakdown, ...]
-    metric: ExploreMetricSelection
+    metrics: tuple[ExploreMetricSelection, ...]
     visualization_hint: VisualizationHint
 
 
@@ -113,17 +113,23 @@ def validate_explore_query(
     if query.visualization_hint not in ("table", "bar", "donut", "kpi"):
         errors.append("Visualization hint is invalid.")
 
-    metric = metric_registry.get(query.metric.key)
-    if metric is None:
-        errors.append(f"Unknown metric: {query.metric.key}.")
-    else:
+    if not query.metrics:
+        errors.append("Metric selection is required.")
+
+    metrics_by_key: dict[str, ExploreMetricDefinition] = {}
+    for selection in query.metrics:
+        metric = metric_registry.get(selection.key)
+        if metric is None:
+            errors.append(f"Unknown metric: {selection.key}.")
+            continue
+        metrics_by_key[selection.key] = metric
         if metric.deprecated_in_version:
             warnings.append(
                 f"Metric {metric.label} is deprecated in {metric.deprecated_in_version} and may not render."
             )
-        if query.metric.aggregation not in metric.allowed_aggregations:
+        if selection.aggregation not in metric.allowed_aggregations:
             errors.append(
-                f"Aggregation {query.metric.aggregation} is not allowed for metric {metric.label}."
+                f"Aggregation {selection.aggregation} is not allowed for metric {metric.label}."
             )
 
     if not query.breakdowns and query.visualization_hint != "kpi":
@@ -143,24 +149,27 @@ def validate_explore_query(
                 errors.append(
                     f"Breakdown {definition.label} mixes incompatible units: {', '.join(sorted(units))}."
                 )
-            if metric is not None and metric.unit not in units:
-                errors.append(
-                    f"Metric {metric.label} is incompatible with breakdown {definition.label}."
-                )
-            if (
-                metric is not None
-                and definition.compatible_metric_keys
-                and metric.key not in definition.compatible_metric_keys
-            ):
-                errors.append(
-                    f"Metric {metric.label} is not supported for breakdown {definition.label}."
-                )
+            for metric in metrics_by_key.values():
+                if metric.unit not in units:
+                    errors.append(
+                        f"Metric {metric.label} is incompatible with breakdown {definition.label}."
+                    )
+                if (
+                    definition.compatible_metric_keys
+                    and metric.key not in definition.compatible_metric_keys
+                ):
+                    errors.append(
+                        f"Metric {metric.label} is not supported for breakdown {definition.label}."
+                    )
 
     if metric_group_breakdowns > 1:
         errors.append("Only one metric-group breakdown is supported at a time.")
 
     if query.visualization_hint == "donut" and len(query.breakdowns) > 1:
         errors.append("Donut charts support a single breakdown.")
+
+    if query.visualization_hint in {"bar", "donut", "kpi"} and len(query.metrics) > 1:
+        errors.append("Multiple metrics require table output.")
 
     if query.visualization_hint == "kpi" and query.breakdowns:
         warnings.append("KPI output ignores breakdowns and uses the total across the scope.")
@@ -214,6 +223,12 @@ def parse_metric(metric: ExploreMetricSelection) -> dict[str, str]:
     return {"key": metric.key, "aggregation": metric.aggregation}
 
 
+def parse_metrics(metrics: Iterable[ExploreMetricSelection]) -> list[dict[str, str]]:
+    """Return serialized metric selections."""
+
+    return [parse_metric(metric) for metric in metrics]
+
+
 def build_query_payload(query: ExploreQuery) -> dict[str, object]:
     """Serialize an ExploreQuery to a JSON-friendly payload."""
 
@@ -224,6 +239,7 @@ def build_query_payload(query: ExploreQuery) -> dict[str, object]:
         "scope": parse_scope(query.scope),
         "filters": parse_filters(query.filters),
         "breakdowns": parse_breakdowns(query.breakdowns),
-        "metric": parse_metric(query.metric),
+        "metric": parse_metric(query.metrics[0]) if query.metrics else None,
+        "metrics": parse_metrics(query.metrics),
         "visualization_hint": query.visualization_hint,
     }

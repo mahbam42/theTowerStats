@@ -3812,7 +3812,11 @@ CLOSED: [2026-01-14 Wed 16:04]
 Add an optional toggle to show/hide the Death Wave and/or Golden Bot activation markers (so the schedule focuses on GT/BH overlap), while still keeping everything descriptive.
 
 **** TODO Finish prompt55.md work 
-
+- [X] numeric ordering
+- [ ] multiple metrics
+  1. We can remove the v1 warning about single metric only since we now support multiple metrics. Using AND should be allowed. Also, if you uncomment another metric, the results only show the last metric in the query.
+  2. "Secondary metrics are only present as commented DSL suggestions (not active by default)." That isn't the intention of the feature, we're showing a suggestion to the user so uncommenting the secondary metrics should include them in the Query. 
+- [ ] Where is the 'best tier' and 'plateau' shown to the user?
 **** TODO [#A] Implement Work left over from Prompt53.md
 Auto-migration of stored queries has already been moved to the backlog and two items have been canceled from the todo list. We won't be supporting sharing Queries any time soon or adding Advice or Simulations. 
 

@@ -8,7 +8,7 @@ from typing import Iterable
 
 from .metrics import MetricComputeConfig, compute_metric_value
 from .explore_registry import ExploreBreakdownDefinition, ExploreMetricDefinition, DEFAULT_BREAKDOWNS
-from .explore_schema import ExploreQuery
+from .explore_schema import ExploreMetricSelection, ExploreQuery
 
 
 @dataclass(frozen=True, slots=True)
@@ -44,6 +44,7 @@ def execute_explore_query(
     records: Iterable[object],
     *,
     query: ExploreQuery,
+    metric_selection: ExploreMetricSelection,
     metric_registry: dict[str, ExploreMetricDefinition],
     breakdown_registry: dict[str, ExploreBreakdownDefinition] | None = None,
 ) -> ExploreExecutionResult:
@@ -61,7 +62,7 @@ def execute_explore_query(
     missing_count = 0
     run_count = 0
 
-    metric_key = query.metric.key
+    metric_key = metric_selection.key
     metric_keys = group_breakdown.metric_keys if group_breakdown and group_breakdown.metric_keys else (metric_key,)
     includes_run_breakdown = any(bd.kind == "field" and bd.field == "run" for bd in breakdown_defs)
 
@@ -95,9 +96,9 @@ def execute_explore_query(
     total_sum = 0.0
     total_count = 0.0
     for key, data in buckets.items():
-        if query.metric.aggregation == "count":
+        if metric_selection.aggregation == "count":
             value = float(data.count)
-        elif query.metric.aggregation == "avg":
+        elif metric_selection.aggregation == "avg":
             value = float(data.value) / float(data.count) if data.count else None
         else:
             value = float(data.value)
@@ -115,7 +116,7 @@ def execute_explore_query(
     rows.sort(key=lambda row: row.breakdown)
     total_value = None
     if rows:
-        if query.metric.aggregation == "avg":
+        if metric_selection.aggregation == "avg":
             total_value = (total_sum / total_count) if total_count else None
         else:
             total_value = sum(row.value or 0.0 for row in rows)
