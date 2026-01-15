@@ -2425,7 +2425,7 @@ CLOSED: [2025-12-22 Mon 15:31]
 - [X] fetch_wiki_data and rebuild_wiki_definitions should have a pretty summary of deltas at the end.
   Especially when using --target all.
 
-*** Bugs/Enhancements [95/95]
+*** Bugs/Enhancements [95/98]
 
 **** DONE [#B] Error Updating Guardian Upgrade Table                 :bug:
 CLOSED: [2025-12-22 Mon 18:51]
@@ -3849,7 +3849,40 @@ CLOSED: [2026-01-15 Thu 17:16]
 - State "IN PROGRESS" from "TODO"       [2026-01-14 Wed 16:04] \\
   little bit of scope creep adding a feature on a feature
 git log --oneline f13b0b9...HEAD
+**** TODO [#A] Polynomial regular expression used on uncontrolled data
+This regular expression that depends on a user-provided value may run slow on strings starting with 'scope _ ' and with many repetitions of ' '.
 
+Some regular expressions take a long time to match certain input strings to the point where the time it takes to match a string of length n is proportional to nk or even 2n. Such regular expressions can negatively affect performance, or even allow a malicious user to perform a Denial of Service ("DoS") attack by crafting an expensive input string for the regular expression to match.
+
+The regular expression engine provided by Python uses a backtracking non-deterministic finite automata to implement regular expression matching. While this approach is space-efficient and allows supporting advanced features like capture groups, it is not time-efficient in general. The worst-case time complexity of such an automaton can be polynomial or even exponential, meaning that for strings of a certain shape, increasing the input length by ten characters may make the automaton about 1000 times slower.
+
+Typically, a regular expression is affected by this problem if it contains a repetition of the form r* or r+ where the sub-expression r is ambiguous in the sense that it can match some string in multiple ways. More information about the precise circumstances can be found in the references.
+
+Recommendation:
+Modify the regular expression to remove the ambiguity, or ensure that the strings matched with the regular expression are short enough that the time-complexity does not matter.
+
+Occurances:
+- analysis/explore_dsl.py:202
+- analysis/explore_dsl.py :213
+- analysis/explore_dsl.py :222
+- analysis/explore_dsl.py :456
+- analysis/explore_dsl.py :554
+- analysis/explore_dsl.py :601
+- analysis/explore_dsl.py :615
+- analysis/explore_dsl.py :641
+- analysis/explore_dsl.py :658
+**** TODO Useless regular-expression character escape
+core/static/vendor/codemirror/explore.bundle.mjs:6299
+
+The escape sequence '\b' is a backspace, and not a word-boundary assertion when it is used in a regular expression.
+
+When a character in a string literal or regular expression literal is preceded by a backslash, it is interpreted as part of an escape sequence. For example, the escape sequence \n in a string literal corresponds to a single newline character, and not the \ and n characters. However, not all characters change meaning when used in an escape sequence. In this case, the backslash just makes the character appear to mean something else, and the backslash actually has no effect. For example, the escape sequence \k in a string literal just means k. Such superfluous escape sequences are usually benign, and do not change the behavior of the program.
+**** TODO Incomplete string escaping or encoding
+core/static/vendor/codemirror/explore.bundle.mjs:1827
+
+This replaces only the first occurrence of /&/.
+
+Sanitizing untrusted input is a common technique for preventing injection attacks such as SQL injection or cross-site scripting. Usually, this is done by escaping meta-characters such as quotes in a domain-specific way so that they are treated as normal characters.
 ** Backlog [3/9]
 “Out of Scope”:
 - Cloud sync
