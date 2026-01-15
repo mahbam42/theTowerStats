@@ -1724,6 +1724,16 @@ class ExploreStoredQuery:
     dsl_text: str
 
 
+@dataclass(frozen=True, slots=True)
+class FarmingTierStats:
+    """Per-tier statistics for farming efficiency summaries."""
+
+    tier: int
+    avg: float
+    count: int
+    cv: float | None
+
+
 def _farming_efficiency_dsl(*, default_scope: ExploreScope) -> str:
     """Return the DSL text for the farming efficiency stored query."""
 
@@ -1795,6 +1805,19 @@ def _explore_metric_value(record: BattleReport, *, metric_key: str) -> float | N
     return value
 
 
+def _is_farming_efficiency_query(query: ExploreQuery) -> bool:
+    """Return True when a query matches the farming efficiency template."""
+
+    breakdowns = tuple(sorted(query.breakdowns, key=lambda entry: entry.order))
+    return (
+        query.metric.key == "coins_per_hour"
+        and query.metric.aggregation == "avg"
+        and query.visualization_hint == "table"
+        and len(breakdowns) == 1
+        and breakdowns[0].dimension == "tier"
+    )
+
+
 def _farming_efficiency_analysis(
     runs: Iterable[BattleReport],
     *,
@@ -1828,7 +1851,7 @@ def _farming_efficiency_analysis(
             "insufficient": True,
         }
 
-    tier_stats: list[dict[str, object]] = []
+    tier_stats: list[FarmingTierStats] = []
     for tier in tiers:
         values = tier_values[tier]
         count = len(values)
@@ -1836,30 +1859,19 @@ def _farming_efficiency_analysis(
         variance = sum((value - avg_value) ** 2 for value in values) / count if count else 0.0
         stddev = math.sqrt(variance)
         cv = (stddev / avg_value) if avg_value else None
-        tier_stats.append(
-            {
-                "tier": tier,
-                "avg": avg_value,
-                "count": count,
-                "cv": cv,
-            }
-        )
+        tier_stats.append(FarmingTierStats(tier=tier, avg=avg_value, count=count, cv=cv))
 
-    low_sample = [stat for stat in tier_stats if stat["count"] < min_runs]
+    low_sample = [stat for stat in tier_stats if stat.count < min_runs]
     if low_sample:
         low_labels = ", ".join(
-            f"Tier {stat['tier']} ({stat['count']} runs)" for stat in low_sample
+            f"Tier {stat.tier} ({stat.count} runs)" for stat in low_sample
         )
         warnings.append(f"Low sample size: {low_labels}. Minimum is {min_runs} runs.")
 
-    high_variance = [
-        stat
-        for stat in tier_stats
-        if stat["cv"] is not None and float(stat["cv"]) > variance_threshold
-    ]
+    high_variance = [stat for stat in tier_stats if stat.cv is not None and stat.cv > variance_threshold]
     if high_variance:
         variance_labels = ", ".join(
-            f"Tier {stat['tier']} (CV {float(stat['cv']):.2f})" for stat in high_variance
+            f"Tier {stat.tier} (CV {stat.cv:.2f})" for stat in high_variance
         )
         warnings.append(
             f"High variance: {variance_labels}. Threshold is {variance_threshold:.0%}."
@@ -1872,33 +1884,35 @@ def _farming_efficiency_analysis(
         gap_labels = ", ".join(f"Tier {tier}" for tier in missing_tiers)
         warnings.append(f"Tier gaps detected: missing {gap_labels}.")
 
-    eligible = [stat for stat in tier_stats if stat["count"] >= min_runs]
+    eligible = [stat for stat in tier_stats if stat.count >= min_runs]
     best_tier = None
     if eligible:
-        best_tier = max(eligible, key=lambda entry: float(entry["avg"]))["tier"]
+        best_tier = max(eligible, key=lambda entry: entry.avg).tier
 
     plateau_tier = None
     for idx, current in enumerate(eligible[:-1]):
         next_stat = eligible[idx + 1]
-        if int(next_stat["tier"]) != int(current["tier"]) + 1:
+        if next_stat.tier != current.tier + 1:
             continue
-        current_avg = float(current["avg"])
-        next_avg = float(next_stat["avg"])
-        delta_value = next_avg - current_avg
-        delta_percent = (delta_value / current_avg) if current_avg else None
-        if delta_value < 0 or (delta_percent is not None and delta_percent < plateau_threshold):
-            plateau_tier = next_stat["tier"]
+        current_avg = current.avg
+        next_avg = next_stat.avg
+        plateau_delta_value = next_avg - current_avg
+        plateau_delta_percent = (plateau_delta_value / current_avg) if current_avg else None
+        if plateau_delta_value < 0 or (
+            plateau_delta_percent is not None and plateau_delta_percent < plateau_threshold
+        ):
+            plateau_tier = next_stat.tier
             break
 
-    previous_avg = None
-    previous_tier = None
+    previous_avg: float | None = None
+    previous_tier: int | None = None
     for stat in tier_stats:
-        tier = int(stat["tier"])
-        avg_value = float(stat["avg"])
-        delta_value = None
-        delta_percent = None
+        tier = stat.tier
+        avg_value = stat.avg
+        delta_value: float | None = None
+        delta_percent: float | None = None
         delta_prefix = ""
-        delta_percent_display = None
+        delta_percent_display: str | None = None
         if previous_avg is not None and previous_tier is not None and tier == previous_tier + 1:
             delta_value = avg_value - previous_avg
             delta_prefix = "+" if delta_value > 0 else ""
@@ -1911,7 +1925,7 @@ def _farming_efficiency_analysis(
                 "tier": tier,
                 "tier_label": f"Tier {tier}",
                 "avg": avg_value,
-                "run_count": int(stat["count"]),
+                "run_count": stat.count,
                 "delta_value": delta_value,
                 "delta_prefix": delta_prefix,
                 "delta_percent_display": delta_percent_display,
@@ -1945,15 +1959,22 @@ def explore_dashboard(request: HttpRequest) -> HttpResponse:
     loaded_query: ExploreQueryModel | None = None
     loaded_payload: dict[str, object] | None = None
     prefill_scope = _explore_prefill_scope_from_request(request.GET)
+    stored_queries = _explore_stored_queries(default_scope=prefill_scope)
+    stored_query_map = {query.id: query for query in stored_queries}
+    stored_query: ExploreStoredQuery | None = None
     if request.method == "GET" and request.GET.get("query_id"):
-        try:
-            query_id = int(request.GET.get("query_id") or 0)
-        except ValueError:
-            query_id = 0
-        if query_id:
-            loaded_query = saved_queries.filter(id=query_id).first()
-            if loaded_query is not None:
-                loaded_payload = dict(loaded_query.query or {})
+        query_id_raw = request.GET.get("query_id") or ""
+        if query_id_raw in stored_query_map:
+            stored_query = stored_query_map[query_id_raw]
+        else:
+            try:
+                query_id = int(query_id_raw or 0)
+            except ValueError:
+                query_id = 0
+            if query_id:
+                loaded_query = saved_queries.filter(id=query_id).first()
+                if loaded_query is not None:
+                    loaded_payload = dict(loaded_query.query or {})
 
     form_data: QueryDict | None = None
     initial: dict[str, object] = {}
@@ -1977,6 +1998,8 @@ def explore_dashboard(request: HttpRequest) -> HttpResponse:
     results: dict[str, object] | None = None
     query_payload: dict[str, object] | None = None
     dsl_text = ""
+    executed_query: ExploreQuery | None = None
+    farming_summary: dict[str, object] | None = None
     autocomplete_payload = build_explore_autocomplete(explore_registry, DEFAULT_BREAKDOWNS)
 
     if not form.is_bound and loaded_payload:
@@ -1991,6 +2014,7 @@ def explore_dashboard(request: HttpRequest) -> HttpResponse:
         query_payload = loaded_payload
         if not validation.errors:
             results = _explore_execute_query(loaded_query_data, player=player, registry=explore_registry)
+            executed_query = loaded_query_data
             if results["run_count"] == 0:
                 validation_warnings.append("Empty scope: no runs match the current scope and filters.")
             if not results["rows"]:
@@ -2001,6 +2025,56 @@ def explore_dashboard(request: HttpRequest) -> HttpResponse:
                 )
 
         dsl_text = format_explore_dsl(loaded_query_data, default_scope=prefill_scope)
+
+    if stored_query is not None and not form.is_bound:
+        dsl_text = stored_query.dsl_text
+        parse_result = parse_explore_dsl(
+            dsl_text,
+            player_id=str(player.id),
+            default_scope=prefill_scope,
+        )
+        validation_errors.extend(parse_result.errors)
+        validation_warnings.extend(parse_result.warnings)
+        if parse_result.query is not None and not parse_result.errors:
+            validation = validate_explore_query(
+                parse_result.query,
+                metric_registry=explore_registry,
+                breakdown_registry=DEFAULT_BREAKDOWNS,
+            )
+            validation_errors.extend(validation.errors)
+            validation_warnings.extend(validation.warnings)
+            query_payload = build_query_payload(parse_result.query)
+            if not validation.errors:
+                execution_query = parse_result.query
+                if parse_result.query.visualization_hint == "kpi":
+                    execution_query = ExploreQuery(
+                        schema_version=parse_result.query.schema_version,
+                        player_id=parse_result.query.player_id,
+                        name=parse_result.query.name,
+                        scope=parse_result.query.scope,
+                        filters=parse_result.query.filters,
+                        breakdowns=(),
+                        metric=parse_result.query.metric,
+                        visualization_hint=parse_result.query.visualization_hint,
+                    )
+                results = _explore_execute_query(
+                    execution_query,
+                    player=player,
+                    registry=explore_registry,
+                )
+                executed_query = execution_query
+                if results["run_count"] == 0:
+                    validation_warnings.append(
+                        "Empty scope: no runs match the current scope and filters."
+                    )
+                if not results["rows"]:
+                    validation_warnings.append(
+                        "Missing data: no matching metric values were found."
+                    )
+                if results["missing_count"]:
+                    validation_warnings.append(
+                        f"Missing data: {results['missing_count']} run values were unavailable for the selected metric."
+                    )
 
     if uses_dsl:
         dsl_text = dsl_input
@@ -2039,6 +2113,7 @@ def explore_dashboard(request: HttpRequest) -> HttpResponse:
                     player=player,
                     registry=explore_registry,
                 )
+                executed_query = execution_query
                 if results["run_count"] == 0:
                     validation_warnings.append(
                         "Empty scope: no runs match the current scope and filters."
@@ -2108,6 +2183,7 @@ def explore_dashboard(request: HttpRequest) -> HttpResponse:
                     visualization_hint=query.visualization_hint,
                 )
             results = _explore_execute_query(execution_query, player=player, registry=explore_registry)
+            executed_query = execution_query
             if results["run_count"] == 0:
                 validation_warnings.append("Empty scope: no runs match the current scope and filters.")
             if not results["rows"]:
@@ -2161,6 +2237,22 @@ def explore_dashboard(request: HttpRequest) -> HttpResponse:
         )
         dsl_text = format_explore_dsl(default_query, default_scope=prefill_scope)
 
+    if executed_query and results and _is_farming_efficiency_query(executed_query):
+        farming_runs = _explore_runs_queryset(player=player)
+        farming_runs = _apply_explore_scope(
+            farming_runs,
+            scope=executed_query.scope,
+            snapshot_id=executed_query.scope.snapshot_id,
+        )
+        farming_runs = _apply_explore_filters(farming_runs, filters=executed_query.filters)
+        farming_summary = _farming_efficiency_analysis(
+            farming_runs,
+            metric_key=executed_query.metric.key,
+            min_runs=FARMING_MIN_RUNS,
+            plateau_threshold=FARMING_PLATEAU_THRESHOLD,
+            variance_threshold=FARMING_VARIANCE_THRESHOLD,
+        )
+
     if request.method == "POST" and request.headers.get("X-Requested-With") == "XMLHttpRequest":
         return JsonResponse(
             _explore_preview_payload(
@@ -2174,12 +2266,15 @@ def explore_dashboard(request: HttpRequest) -> HttpResponse:
         "form": form,
         "saved_queries": saved_queries,
         "loaded_query": loaded_query,
+        "stored_queries": stored_queries,
+        "stored_query_id": stored_query.id if stored_query is not None else "",
         "query_payload": query_payload,
         "explore_dsl_text": dsl_text,
         "explore_dsl_autocomplete": autocomplete_payload,
         "explore_results": results,
         "explore_errors": tuple(validation_errors),
         "explore_warnings": tuple(validation_warnings),
+        "explore_farming": farming_summary,
     }
     return render(request, "core/explore.html", context)
 

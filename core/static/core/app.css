@@ -140,6 +140,34 @@ a:focus {
   border-top: 1px solid var(--tts-color-border);
 }
 
+.explore-farming-table th,
+.explore-farming-table td {
+  vertical-align: middle;
+}
+
+.explore-farming-row.is-best {
+  background: rgba(60, 179, 113, 0.15);
+}
+
+.explore-farming-row.is-plateau {
+  background: rgba(245, 177, 76, 0.18);
+}
+
+.explore-farming-delta {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.35rem;
+}
+
+.explore-farming-delta.is-negative {
+  color: var(--tts-color-danger);
+}
+
+.explore-farming-delta-percent {
+  color: var(--tts-color-text-muted);
+  font-size: 0.85rem;
+}
+
 .explore-chart-legend {
   display: flex;
   flex-wrap: wrap;

@@ -37,9 +37,20 @@
             <label class="margin-0">Saved query
               <select name="query_id" onchange="this.form.submit()">
                 <option value="">Select a saved query</option>
-                {% for query in saved_queries %}
-                  <option value="{{ query.id }}"{% if loaded_query and loaded_query.id == query.id %} selected{% endif %}>{{ query.name }}</option>
-                {% endfor %}
+                {% if stored_queries %}
+                  <optgroup label="Built-in">
+                    {% for query in stored_queries %}
+                      <option value="{{ query.id }}"{% if stored_query_id == query.id %} selected{% endif %}>{{ query.name }}</option>
+                    {% endfor %}
+                  </optgroup>
+                {% endif %}
+                {% if saved_queries %}
+                  <optgroup label="Saved">
+                    {% for query in saved_queries %}
+                      <option value="{{ query.id }}"{% if loaded_query and loaded_query.id == query.id %} selected{% endif %}>{{ query.name }}</option>
+                    {% endfor %}
+                  </optgroup>
+                {% endif %}
               </select>
             </label>
           </form>
@@ -112,46 +123,115 @@
           </div>
         {% endif %}
 
+        {% if explore_farming %}
+          <div class="card-shell margin-top-1">
+            <h5 class="margin-bottom-0">Farming efficiency summary</h5>
+            {% if explore_farming.insufficient %}
+              <p class="margin-top-0">Insufficient data to determine farming efficiency.</p>
+            {% else %}
+              <p class="margin-top-0">
+                <strong>Best observed tier:</strong> Tier {{ explore_farming.best_tier }}
+              </p>
+              <p class="margin-top-0">
+                <strong>Efficiency plateaus starting at:</strong>
+                {% if explore_farming.plateau_tier %}Tier {{ explore_farming.plateau_tier }}{% else %}Not observed{% endif %}
+              </p>
+            {% endif %}
+            <p class="muted margin-top-0">Observed results only.</p>
+            <p class="muted margin-top-0">
+              This report summarizes your past runs only. Results depend on presets, timing, and playstyle.
+            </p>
+          </div>
+
+          {% if explore_farming.warnings %}
+            <div class="callout warning">
+              <p class="margin-0"><strong>Farming efficiency notes</strong></p>
+              <ul class="margin-0">
+                {% for warn in explore_farming.warnings %}
+                  <li>{{ warn }}</li>
+                {% endfor %}
+              </ul>
+            </div>
+          {% endif %}
+        {% endif %}
+
         <div class="card-shell margin-top-1">
           {% if explore_results.rows %}
             <div class="table-scroll">
-              <table class="stack">
-                <thead>
-                  <tr>
-                    {% for header in explore_results.breakdown_headers %}
-                      <th scope="col">{{ header }}</th>
-                    {% endfor %}
-                    <th scope="col">Value</th>
-                    <th scope="col">Runs counted</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  {% for row in explore_results.rows %}
-                    <tr class="explore-result-row{% if row.run_id %} is-clickable{% endif %}"{% if row.run_id %} data-run-id="{{ row.run_id }}" tabindex="0"{% endif %}>
-                      {% for label in row.breakdown %}
-                        <td>{{ label }}</td>
-                      {% endfor %}
-                      <td>
-                        <span class="metric-value" data-format="unit-value" data-unit="{{ explore_results.metric_unit }}" data-value="{{ row.value }}"></span>
-                      </td>
-                      <td>{{ row.sample_count }}</td>
+              {% if explore_farming %}
+                <table class="stack explore-farming-table">
+                  <thead>
+                    <tr>
+                      <th scope="col">Tier</th>
+                      <th scope="col">Coins / Real Hour (avg)</th>
+                      <th scope="col">Δ vs previous tier</th>
+                      <th scope="col">Runs in tier</th>
                     </tr>
-                  {% endfor %}
-                </tbody>
-                <tfoot>
-                  <tr class="explore-results-total">
-                    {% if explore_results.breakdown_headers %}
-                      <td colspan="{{ explore_results.breakdown_headers|length }}">Total</td>
-                    {% else %}
-                      <td>Total</td>
-                    {% endif %}
-                    <td>
-                      <span class="metric-value" data-format="unit-value" data-unit="{{ explore_results.metric_unit }}" data-value="{{ explore_results.total_value }}"></span>
-                    </td>
-                    <td>{{ explore_results.total_sample_count }}</td>
-                  </tr>
-                </tfoot>
-              </table>
+                  </thead>
+                  <tbody>
+                    {% for row in explore_farming.rows %}
+                      <tr class="explore-result-row explore-farming-row{% if row.is_best %} is-best{% endif %}{% if row.is_plateau %} is-plateau{% endif %}">
+                        <td>{{ row.tier_label }}</td>
+                        <td>
+                          <span class="metric-value" data-format="unit-value" data-unit="{{ explore_results.metric_unit }}" data-value="{{ row.avg }}"></span>
+                        </td>
+                        <td>
+                          {% if row.delta_value is not None %}
+                            <span class="explore-farming-delta{% if row.delta_value < 0 %} is-negative{% endif %}">
+                              {{ row.delta_prefix }}
+                              <span data-format="unit-value" data-unit="{{ explore_results.metric_unit }}" data-value="{{ row.delta_value }}"></span>
+                              {% if row.delta_percent_display %}
+                                <span class="explore-farming-delta-percent">({{ row.delta_percent_display }})</span>
+                              {% endif %}
+                            </span>
+                          {% else %}
+                            —
+                          {% endif %}
+                        </td>
+                        <td>{{ row.run_count }}</td>
+                      </tr>
+                    {% endfor %}
+                  </tbody>
+                </table>
+              {% else %}
+                <table class="stack">
+                  <thead>
+                    <tr>
+                      {% for header in explore_results.breakdown_headers %}
+                        <th scope="col">{{ header }}</th>
+                      {% endfor %}
+                      <th scope="col">Value</th>
+                      <th scope="col">Runs counted</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {% for row in explore_results.rows %}
+                      <tr class="explore-result-row{% if row.run_id %} is-clickable{% endif %}"{% if row.run_id %} data-run-id="{{ row.run_id }}" tabindex="0"{% endif %}>
+                        {% for label in row.breakdown %}
+                          <td>{{ label }}</td>
+                        {% endfor %}
+                        <td>
+                          <span class="metric-value" data-format="unit-value" data-unit="{{ explore_results.metric_unit }}" data-value="{{ row.value }}"></span>
+                        </td>
+                        <td>{{ row.sample_count }}</td>
+                      </tr>
+                    {% endfor %}
+                  </tbody>
+                  <tfoot>
+                    <tr class="explore-results-total">
+                      {% if explore_results.breakdown_headers %}
+                        <td colspan="{{ explore_results.breakdown_headers|length }}">Total</td>
+                      {% else %}
+                        <td>Total</td>
+                      {% endif %}
+                      <td>
+                        <span class="metric-value" data-format="unit-value" data-unit="{{ explore_results.metric_unit }}" data-value="{{ explore_results.total_value }}"></span>
+                      </td>
+                      <td>{{ explore_results.total_sample_count }}</td>
+                    </tr>
+                  </tfoot>
+                </table>
+              {% endif %}
             </div>
           {% else %}
             <div class="empty-state" role="status">No results for the current query.</div>

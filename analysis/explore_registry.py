@@ -76,6 +76,8 @@ def _allowed_aggregations_for_unit(*, aggregation: str) -> tuple[Aggregation, ..
 
     if aggregation == "sum":
         return ("sum", "count", "avg")
+    if aggregation == "avg":
+        return ("avg", "count")
     return ("count",)
 
 

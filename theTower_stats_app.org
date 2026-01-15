@@ -3812,6 +3812,10 @@ CLOSED: [2026-01-14 Wed 16:04]
 Add an optional toggle to show/hide the Death Wave and/or Golden Bot activation markers (so the schedule focuses on GT/BH overlap), while still keeping everything descriptive.
 
 **** TODO Finish prompt55.md work 
+
+**** TODO [#A] Implement Work left over from Prompt53.md
+Auto-migration of stored queries has already been moved to the backlog and two items have been canceled from the todo list. We won't be supporting sharing Queries any time soon or adding Advice or Simulations. 
+
 - Averages and rates
 
 - Percent-of-total metrics
@@ -3825,8 +3829,6 @@ Add an optional toggle to show/hide the Death Wave and/or Golden Bot activation 
 - ~~Advice or simulation hooks~~
 
 - ~~Sharing queries between players~~
-**** TODO [#A] Implement Work left over from Prompt53.md
-
 
 **** IN PROGRESS [#A] Update Readme and Changelog
 - State "IN PROGRESS" from "TODO"       [2026-01-14 Wed 16:04] \\
@@ -3838,9 +3840,7 @@ git log --oneline f13b0b9...HEAD
 - Cloud sync
 - Real-time scraping
 
-*** TODO [#A] Expand Future Work section from prompt53.md into Backlog Tasks
-
-*** [#C] Auto-migration of stored queries
+*** TODO [#C] Auto-migration of stored queries
 *** WAIT [#B] Add Card Slots to Goals                               :patch:
 
 - State "WAIT"       from "TODO"       [2026-01-12 Mon 10:37] \\
@@ -4081,9 +4081,11 @@ K-means belongs entirely inside of analysis
   - Goals
   - Cards, Bots, UWs, Guardian Chip Unlock/Upgrade Tracking
   - Presets
+  - Query Builder 
+    
 - Looking for Feedback and Feature Requests
 
-- Mention k-means as the next big feature if we collect enough users
+- Mention k-means as a future big feature if we collect enough users
 
 *** CANCELED [#C] Required Doc Type Header (Must Prepend to All Docs)
 CLOSED: [2026-01-07 Wed 16:28]
@@ -4218,6 +4220,10 @@ This keeps it defensible.
 
 
 *** Complete
+**** DONE [#A] Expand Future Work section from prompt53.md into Backlog Tasks
+CLOSED: [2026-01-14 Wed 16:19]
+
+- State "DONE"       from "TODO"       [2026-01-14 Wed 16:19]
 **** DONE [#A] Review Docs and Note Revisions                        :Max:
 CLOSED: [2025-12-19 Fri 17:24]
 

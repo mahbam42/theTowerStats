@@ -15,19 +15,20 @@ Explore helps you build your own questions about past runs and see aggregated an
 
 1. Select **Explore** in the navigation.
 2. Review the Query Builder text area at the top of the page.
-3. Review the [Explore DSL](explore_dsl.md) reference if you want the full syntax list.
-4. Enter a name on the first line so you can save or edit the query later.
-5. Review the Scope lines and replace any placeholders with real values when needed.
-6. Use all or * when you want a scope line to stay open.
-7. Add Filter lines to narrow the runs in scope.
-8. To exclude tournaments, add not tournament to the Tier scope line.
-9. To exclude specific dates, add not followed by one or more ISO dates on the date scope line.
-10. To include presets by name, list one or more preset names on the preset scope line.
-11. To exclude presets by name, add not followed by one or more preset names on the preset scope line.
-12. Add a Breakdown line to group results.
-13. Add a Metric line and an Aggregation.
-14. Add an Output line when you want a chart or KPI.
-15. Select **Run query**.
+3. Use the Saved query dropdown to load a built-in query such as Farming Efficiency by Tier.
+4. Review the [Explore DSL](explore_dsl.md) reference if you want the full syntax list.
+5. Enter a name on the first line so you can save or edit the query later.
+6. Review the Scope lines and replace any placeholders with real values when needed.
+7. Use all or * when you want a scope line to stay open.
+8. Add Filter lines to narrow the runs in scope.
+9. To exclude tournaments, add not tournament to the Tier scope line.
+10. To exclude specific dates, add not followed by one or more ISO dates on the date scope line.
+11. To include presets by name, list one or more preset names on the preset scope line.
+12. To exclude presets by name, add not followed by one or more preset names on the preset scope line.
+13. Add a Breakdown line to group results.
+14. Add a Metric line and an Aggregation.
+15. Add an Output line when you want a chart or KPI.
+16. Select **Run query**.
 
 ## How to Read the Results
 
@@ -35,9 +36,11 @@ Explore helps you build your own questions about past runs and see aggregated an
 - **Breakdowns** define the groups you are comparing.
 - **Sum** adds the selected metric across runs in each group.
 - **Count** shows how many runs contributed a value to each group.
+- **Average** shows the per-run mean for the selected metric within each group.
 - The table always shows the grouped totals for your query.
 - Bar and donut charts repeat the same totals as the table, grouped by your breakdown.
 - Donut charts show percent contribution, not raw totals.
+- Farming Efficiency by Tier adds a summary of the best observed tier, the plateau point, and any warnings.
 
 ## Notes & Limitations
 
@@ -49,6 +52,9 @@ Explore helps you build your own questions about past runs and see aggregated an
 
 > ⚠️ Note
 > Queries are player-scoped. Results are based only on your own runs.
+
+> ⚠️ Note
+> Farming efficiency summaries describe observed results only and do not provide recommendations.
 
 > ⚠️ Note
 > Placeholders are shown in brackets to indicate a required format, such as a date or tier. Replace them with real values when you want to narrow the scope.

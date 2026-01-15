@@ -7,6 +7,7 @@ This project follows Semantic Versioning.
 ### Added
 - Explore dashboard with query schema, DSL editor, and Query Explorer modal preview.
 - Explore DSL support for preset name include/exclude, wildcards, and enemy group metrics.
+- Explore DSL support for avg aggregation and a built-in Farming Efficiency by Tier query with summaries and warnings.
 - Battle History column for Recovery Packages (hidden by default via Columns).
 - Charts context control to exclude multiple presets.
 - UW Sync chart toggles to show/hide Death Wave and Golden Bot activation markers.

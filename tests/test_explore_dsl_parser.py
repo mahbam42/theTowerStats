@@ -151,3 +151,24 @@ def test_parse_explore_dsl_breakdown_accepts_and_separator() -> None:
     assert result.errors == ()
     assert result.query is not None
     assert [entry.dimension for entry in result.query.breakdowns] == ["run", "tier"]
+
+
+def test_parse_explore_dsl_supports_avg_aggregation() -> None:
+    """Metric lines accept avg aggregation."""
+
+    default_scope = ExploreScope(
+        start_date=None,
+        end_date=None,
+        tier=None,
+        preset_id=None,
+        snapshot_id=None,
+        past_n_runs=None,
+    )
+    dsl_text = 'name "Average coins per hour"\nmetric coins_per_hour avg\nbreakdown by tier\n'
+
+    result = parse_explore_dsl(dsl_text, player_id="player-1", default_scope=default_scope)
+
+    assert result.errors == ()
+    assert result.query is not None
+    assert result.query.metric.key == "coins_per_hour"
+    assert result.query.metric.aggregation == "avg"
