@@ -5,20 +5,26 @@ This project follows Semantic Versioning.
 ## [0.8.1]
 
 ### Added
-- Explore dashboard with query schema, DSL editor, and Query Explorer modal preview.
-- Explore DSL support for preset name include/exclude, wildcards, and enemy group metrics.
-- Explore DSL support for avg aggregation and a built-in Farming Efficiency by Tier query with summaries and warnings.
+- Explore dashboard with query schema, query registry, DSL editor, and Query Explorer modal preview.
+- Explore results link back to runs from the Query Explorer modal preview.
+- Explore DSL support for preset name include/exclude, wildcards, all/* selectors, and enemy group metrics.
+- Explore DSL support for avg aggregation, multi-metric outputs, percent-of-total metrics, and a built-in Farming Efficiency by Tier query with summaries and warnings.
+- Explore DSL editor autocomplete backed by server query metadata.
 - Battle History column for Recovery Packages (hidden by default via Columns).
 - Charts context control to exclude multiple presets.
 - UW Sync chart toggles to show/hide Death Wave and Golden Bot activation markers.
 
 ### Changed
-- Explore results rendering to always show the table, with optional chart outputs, legends, and totals.
-- Explore DSL docs moved to reference, and docs navigation reorganized for project links.
+- Explore results rendering to always show the table, with optional chart outputs, legends, totals, and theme palette styling.
+- Explore Farming Efficiency summary now includes secondary metrics.
+- Explore DSL docs moved to reference, and docs navigation reorganized for project links and ordering.
+- API docs now list current JSON endpoints.
+- Roadmap documentation updated.
 - Docs note that imported Battle Logs use UTC timestamps.
 
 ### Fixed
 - Bot rebuilds now preserve configured Level 0 bot parameter rows.
+- Explore DSL metric parsing and breakdown separators.
 - Explore DSL editor bundling to eliminate CodeMirror state mismatch.
 
 ## [0.7.1]

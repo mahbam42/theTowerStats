@@ -2425,7 +2425,7 @@ CLOSED: [2025-12-22 Mon 15:31]
 - [X] fetch_wiki_data and rebuild_wiki_definitions should have a pretty summary of deltas at the end.
   Especially when using --target all.
 
-*** Bugs/Enhancements [93/95]
+*** Bugs/Enhancements [95/95]
 
 **** DONE [#B] Error Updating Guardian Upgrade Table                 :bug:
 CLOSED: [2025-12-22 Mon 18:51]
@@ -3594,7 +3594,9 @@ CLOSED: [2026-01-10 Sat 16:24]
 - State "DONE"       from "IN PROGRESS" [2026-01-10 Sat 16:24]
 - State "IN PROGRESS" from "DONE"       [2026-01-10 Sat 08:28] \\
   needs to be deployed
-**** TODO [#B] Deploy Command for Railway                          :chore:
+**** DONE [#B] Deploy Command for Railway                          :chore:
+CLOSED: [2026-01-15 Thu 17:16]
+- State "DONE"       from "TODO"       [2026-01-15 Thu 17:16]
 Run migrations, rebuild_wiki_definitions, reparse_battle_reports
 
 **** DONE [#C] Standardized/Enforce Unit Display                     :bug:
@@ -3841,7 +3843,9 @@ Auto-migration of stored queries has already been moved to the backlog and two i
 CLOSED: [2026-01-15 Thu 16:51]
 - State "DONE"       from              [2026-01-15 Thu 16:51]
 Document endpoints and populate based on the promises currently in the doc. 
-**** IN PROGRESS [#A] Update Readme and Changelog
+**** DONE [#A] Update Readme and Changelog
+CLOSED: [2026-01-15 Thu 17:16]
+- State "DONE"       from "IN PROGRESS" [2026-01-15 Thu 17:16]
 - State "IN PROGRESS" from "TODO"       [2026-01-14 Wed 16:04] \\
   little bit of scope creep adding a feature on a feature
 git log --oneline f13b0b9...HEAD
