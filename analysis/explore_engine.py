@@ -121,6 +121,31 @@ def execute_explore_query(
         else:
             total_value = sum(row.value or 0.0 for row in rows)
 
+    if metric_selection.percent_of_total:
+        base_total = total_count if metric_selection.aggregation == "count" else total_sum
+        if base_total:
+            rows = [
+                ExploreResultRow(
+                    breakdown=row.breakdown,
+                    value=(float(row.value or 0.0) / float(base_total)) * 100.0,
+                    sample_count=row.sample_count,
+                    run_id=row.run_id,
+                )
+                for row in rows
+            ]
+            total_value = 100.0
+        else:
+            rows = [
+                ExploreResultRow(
+                    breakdown=row.breakdown,
+                    value=None,
+                    sample_count=row.sample_count,
+                    run_id=row.run_id,
+                )
+                for row in rows
+            ]
+            total_value = None
+
     return ExploreExecutionResult(
         rows=tuple(rows),
         run_count=run_count,

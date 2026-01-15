@@ -1099,6 +1099,10 @@ class ExploreQueryForm(forms.Form):
         choices=(("sum", "Sum"), ("count", "Count"), ("avg", "Average")),
         label="Aggregation",
     )
+    percent_of_total = forms.BooleanField(
+        required=False,
+        label="Percent of total",
+    )
     visualization = forms.ChoiceField(
         required=True,
         choices=(
@@ -1176,6 +1180,13 @@ class ExploreQueryForm(forms.Form):
 
         if visualization == "donut" and secondary:
             self.add_error("secondary_breakdown", "Donut charts support one breakdown only.")
+
+        percent_of_total = bool(cleaned.get("percent_of_total"))
+        aggregation = str(cleaned.get("aggregation") or "sum")
+        if percent_of_total and aggregation not in {"sum", "count"}:
+            self.add_error("aggregation", "Percent-of-total requires sum or count aggregation.")
+        if percent_of_total and visualization == "kpi":
+            self.add_error("visualization", "Percent-of-total requires a breakdown output.")
 
         return cleaned
 

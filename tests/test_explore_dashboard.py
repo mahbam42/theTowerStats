@@ -8,7 +8,7 @@ import pytest
 from django.urls import reverse
 
 from gamedata.models import BattleReport, BattleReportDerivedMetrics, BattleReportProgress
-from player_state.models import ExploreQuery
+from player_state.models import ExploreQuery, Preset
 
 pytestmark = pytest.mark.integration
 
@@ -22,6 +22,42 @@ def test_explore_view_renders(auth_client, player) -> None:
     content = response.content.decode("utf-8")
     assert "Explore Battles" in content
     assert "explore-dsl-input" in content
+
+
+@pytest.mark.django_db
+def test_explore_autocomplete_endpoint_returns_presets(auth_client, player) -> None:
+    """Explore autocomplete returns schema tokens and presets."""
+
+    Preset.objects.create(player=player, name="Farm Run")
+
+    response = auth_client.get(reverse("core:explore_autocomplete"))
+
+    assert response.status_code == 200
+    payload = response.json()
+    assert payload["ok"] is True
+    presets = payload["autocomplete"]["presets"]
+    assert any(entry["label"] == "\"Farm Run\"" for entry in presets)
+
+
+@pytest.mark.django_db
+def test_explore_autocomplete_endpoint_validates_dsl(auth_client, player) -> None:
+    """Explore autocomplete returns validation errors for invalid DSL."""
+
+    dsl_text = (
+        'name "Invalid percent"\n'
+        "metric coins_earned avg percent_of_total\n"
+        "breakdown by tier\n"
+    )
+
+    response = auth_client.post(
+        reverse("core:explore_autocomplete"),
+        data={"dsl": dsl_text},
+    )
+
+    assert response.status_code == 200
+    payload = response.json()
+    errors = payload["validation"]["errors"]
+    assert any("Percent-of-total requires sum or count" in error for error in errors)
 
 
 @pytest.mark.django_db

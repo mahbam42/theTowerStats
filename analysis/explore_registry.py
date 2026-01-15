@@ -71,13 +71,26 @@ def _unit_type_for_unit(unit: str) -> UnitType:
     return UnitType.count
 
 
-def _allowed_aggregations_for_unit(*, aggregation: str) -> tuple[Aggregation, ...]:
-    """Return supported aggregations based on the chart registry default."""
+def _unit_allows_avg(unit_type: UnitType) -> bool:
+    """Return True when averages are allowed for the unit."""
 
+    if unit_type in {UnitType.coins, UnitType.cash, UnitType.count, UnitType.time}:
+        return True
+    return False
+
+
+def _allowed_aggregations_for_unit(
+    *,
+    aggregation: str,
+    unit_type: UnitType,
+) -> tuple[Aggregation, ...]:
+    """Return supported aggregations based on unit and registry defaults."""
+
+    allow_avg = _unit_allows_avg(unit_type)
     if aggregation == "sum":
-        return ("sum", "count", "avg")
+        return ("sum", "count", "avg") if allow_avg else ("sum", "count")
     if aggregation == "avg":
-        return ("avg", "count")
+        return ("avg", "count") if allow_avg else ("count",)
     return ("count",)
 
 
@@ -89,7 +102,10 @@ def build_explore_metric_registry() -> dict[str, ExploreMetricDefinition]:
         metric = METRICS.get(spec.key)
         unit = metric.unit if metric is not None else spec.unit
         unit_type = _unit_type_for_unit(unit)
-        allowed_aggregations = _allowed_aggregations_for_unit(aggregation=spec.aggregation)
+        allowed_aggregations = _allowed_aggregations_for_unit(
+            aggregation=spec.aggregation,
+            unit_type=unit_type,
+        )
         is_counter = unit_type == UnitType.count
         registry[spec.key] = ExploreMetricDefinition(
             key=spec.key,

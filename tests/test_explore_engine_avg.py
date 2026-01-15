@@ -34,7 +34,7 @@ def test_execute_explore_query_avg_aggregation() -> None:
     query = ExploreQuery(
         schema_version="1.0",
         player_id="player-1",
-        name="Avg coins/hour by tier",
+        name="Avg coins by tier",
         scope=ExploreScope(
             start_date=None,
             end_date=None,
@@ -45,7 +45,7 @@ def test_execute_explore_query_avg_aggregation() -> None:
         ),
         filters=(),
         breakdowns=(ExploreBreakdown(dimension="tier", order=1),),
-        metrics=(ExploreMetricSelection(key="coins_per_hour", aggregation="avg"),),
+        metrics=(ExploreMetricSelection(key="coins_earned", aggregation="avg"),),
         visualization_hint="table",
     )
     registry = build_explore_metric_registry()
@@ -64,4 +64,4 @@ def test_execute_explore_query_avg_aggregation() -> None:
     assert result.rows[0].value == pytest.approx(5400.0)
     assert result.rows[1].breakdown == ("Tier 8",)
     assert result.rows[1].sample_count == 1
-    assert result.rows[1].value == pytest.approx(7200.0)
+    assert result.rows[1].value == pytest.approx(3600.0)

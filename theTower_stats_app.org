@@ -2425,7 +2425,7 @@ CLOSED: [2025-12-22 Mon 15:31]
 - [X] fetch_wiki_data and rebuild_wiki_definitions should have a pretty summary of deltas at the end.
   Especially when using --target all.
 
-*** Bugs/Enhancements [91/94]
+*** Bugs/Enhancements [93/95]
 
 **** DONE [#B] Error Updating Guardian Upgrade Table                 :bug:
 CLOSED: [2025-12-22 Mon 18:51]
@@ -3819,34 +3819,69 @@ CLOSED: [2026-01-15 Thu 16:21]
   1. We can remove the v1 warning about single metric only since we now support multiple metrics. Using AND should be allowed. Also, if you uncomment another metric, the results only show the last metric in the query.
   2. "Secondary metrics are only present as commented DSL suggestions (not active by default)." That isn't the intention of the feature, we're showing a suggestion to the user so uncommenting the secondary metrics should include them in the Query. 
 - [X] Where is the 'best tier' and 'plateau' shown to the user?
-**** TODO [#A] Implement Work left over from Prompt53.md Future Work
+**** DONE [#A] Implement Work left over from Prompt53.md Future Work
+CLOSED: [2026-01-15 Thu 16:45]
+- State "DONE"       from "TODO"       [2026-01-15 Thu 16:45]
 Auto-migration of stored queries has already been moved to the backlog and two items have been canceled from the todo list. We won't be supporting sharing Queries any time soon or adding Advice or Simulations. 
 
 - Averages and rates
 
 - Percent-of-total metrics
 
-- Per hour / per wave metrics
+- Per hour / per wave metrics Backlogged
 
-- Query templates
+- Query templates Backlogged
 
 - Rich, context-aware autocomplete (server-backed suggestions and validation)
 
 - ~~Advice or simulation hooks~~
 
 - ~~Sharing queries between players~~
-
+**** DONE Update API.md 
+CLOSED: [2026-01-15 Thu 16:51]
+- State "DONE"       from              [2026-01-15 Thu 16:51]
+Document endpoints and populate based on the promises currently in the doc. 
 **** IN PROGRESS [#A] Update Readme and Changelog
 - State "IN PROGRESS" from "TODO"       [2026-01-14 Wed 16:04] \\
   little bit of scope creep adding a feature on a feature
 git log --oneline f13b0b9...HEAD
 
-** Backlog [3/7]
+** Backlog [3/9]
 “Out of Scope”:
 - Cloud sync
 - Real-time scraping
 
 *** TODO [#C] Auto-migration of stored queries
+
+*** TODO [#B] Per Hour / Per Wave Metrics
+Introduce rate outputs normalized by time or waves.
+
+Tasks:
+- Define rate aggregations: `per_hour`, `per_wave` (or equivalent).
+- Establish required base fields (e.g., real time, waves reached) and validation rules.
+- Extend metric registry to declare rate eligibility and required denominators.
+- Update formatting rules for rate units.
+- UI: provide clear metric labels (e.g., “Coins per Hour”).
+- Tests: rate calculations, denominator missing/zero handling, formatting.
+
+Acceptance notes:
+- Rates must be derived from the same run scope.
+- Missing denominators must produce a non-fatal warning and omit the row/value.
+
+*** TODO [#C] Query Templates
+Provide read-only templates to help players start queries without suggestions.
+
+Tasks:
+- Define template storage shape (name, description, DSL/JSON, tags).
+- Add template list view in Explorer with “Use this query” action.
+- Ensure templates are opt-in and editable after copy.
+- Add minimal documentation for templates (User Guide + Dev docs).
+- Tests: template list rendering, copy action, schema validation for templates.
+
+Acceptance notes:
+- Templates do not auto-run.
+- Templates must not embed advice or prescriptions.
+
 *** WAIT [#B] Add Card Slots to Goals                               :patch:
 
 - State "WAIT"       from "TODO"       [2026-01-12 Mon 10:37] \\

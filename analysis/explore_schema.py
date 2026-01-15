@@ -55,6 +55,7 @@ class ExploreMetricSelection:
 
     key: str
     aggregation: Literal["sum", "count", "avg"]
+    percent_of_total: bool = False
 
 
 @dataclass(frozen=True, slots=True)
@@ -131,9 +132,15 @@ def validate_explore_query(
             errors.append(
                 f"Aggregation {selection.aggregation} is not allowed for metric {metric.label}."
             )
+        if selection.percent_of_total and selection.aggregation not in ("sum", "count"):
+            errors.append("Percent-of-total requires sum or count aggregation.")
 
     if not query.breakdowns and query.visualization_hint != "kpi":
         errors.append("At least one breakdown is required for this visualization.")
+    if any(selection.percent_of_total for selection in query.metrics) and not query.breakdowns:
+        errors.append("Percent-of-total requires at least one breakdown.")
+    if any(selection.percent_of_total for selection in query.metrics) and query.visualization_hint == "kpi":
+        errors.append("Percent-of-total is not supported for KPI output.")
 
     breakdown_registry = breakdown_registry or DEFAULT_BREAKDOWNS
     metric_group_breakdowns = 0
@@ -217,13 +224,17 @@ def parse_breakdowns(breakdowns: Iterable[ExploreBreakdown]) -> list[dict[str, o
     ]
 
 
-def parse_metric(metric: ExploreMetricSelection) -> dict[str, str]:
+def parse_metric(metric: ExploreMetricSelection) -> dict[str, object]:
     """Return serialized metric selection."""
 
-    return {"key": metric.key, "aggregation": metric.aggregation}
+    return {
+        "key": metric.key,
+        "aggregation": metric.aggregation,
+        "percent_of_total": metric.percent_of_total,
+    }
 
 
-def parse_metrics(metrics: Iterable[ExploreMetricSelection]) -> list[dict[str, str]]:
+def parse_metrics(metrics: Iterable[ExploreMetricSelection]) -> list[dict[str, object]]:
     """Return serialized metric selections."""
 
     return [parse_metric(metric) for metric in metrics]

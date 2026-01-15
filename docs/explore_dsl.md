@@ -15,6 +15,7 @@ The DSL is line-based. Lines are parsed in any order.
 | `name` | Names the query (required). | `name "Weekly runs"` |
 | `metric` | Selects one or more metrics and aggregations (required). | `metric coins_earned sum` |
 | `metric` | Computes averages for multiple metrics. | `metric coins_per_hour avg and cells_earned avg` |
+| `metric` | Computes percent-of-total for a breakdown. | `metric coins_earned sum percent_of_total` |
 | `scope date` | Sets a date range. | `scope date 2025-01-01..2025-01-31` |
 | `scope date all` | Clears the date scope. | `scope date all` |
 | `scope tier` | Sets a tier value. | `scope tier 8` |
@@ -59,6 +60,7 @@ When placeholders are present or a scope line is omitted, parsing falls back to 
 - `not` can also exclude specific dates on the date scope line and preset names on the preset scope line.
 - `output` defaults to `table` when not supplied.
 - `metric` supports `sum`, `count`, and `avg`; when omitted, aggregation defaults to `sum`.
+- `percent_of_total` is an optional metric modifier and requires `sum` or `count`.
 - `and` joins multiple metrics on the same line; multiple metric lines are also accepted.
 - Multi-metric queries must use table output.
 - Placeholders do not override prefilled defaults.
@@ -68,4 +70,5 @@ When placeholders are present or a scope line is omitted, parsing falls back to 
 
 - Parsing produces an `ExploreQuery` that is validated against the Explore registry.
 - Invalid lines produce parse errors and block execution.
-- Autocomplete is client-side and sourced from the static registry; richer suggestions are deferred to Future Work.
+- Autocomplete is server-backed via the Explore autocomplete endpoint and cached client-side.
+- Validation responses are returned by the same endpoint and surface DSL errors.

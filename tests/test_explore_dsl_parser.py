@@ -197,3 +197,30 @@ def test_parse_explore_dsl_supports_multiple_metrics() -> None:
     assert result.query is not None
     assert [metric.key for metric in result.query.metrics] == ["coins_per_hour", "cells_earned"]
     assert [metric.aggregation for metric in result.query.metrics] == ["avg", "avg"]
+
+
+@pytest.mark.golden
+def test_parse_explore_dsl_supports_percent_of_total() -> None:
+    """Metric lines accept the percent-of-total modifier."""
+
+    default_scope = ExploreScope(
+        start_date=None,
+        end_date=None,
+        tier=None,
+        preset_id=None,
+        snapshot_id=None,
+        past_n_runs=None,
+    )
+    dsl_text = (
+        'name "Coin share"\n'
+        "metric coins_earned sum percent_of_total\n"
+        "breakdown by tier\n"
+    )
+
+    result = parse_explore_dsl(dsl_text, player_id="player-1", default_scope=default_scope)
+
+    assert result.errors == ()
+    assert result.query is not None
+    assert result.query.metrics[0].key == "coins_earned"
+    assert result.query.metrics[0].aggregation == "sum"
+    assert result.query.metrics[0].percent_of_total is True

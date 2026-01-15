@@ -37,6 +37,7 @@ Explore helps you build your own questions about past runs and see aggregated an
 - **Sum** adds the selected metric across runs in each group.
 - **Count** shows how many runs contributed a value to each group.
 - **Average** shows the per-run mean for the selected metric within each group.
+- **Percent of total** shows each group as a share of the total across the current breakdown.
 - The table always shows the grouped totals for your query.
 - Bar and donut charts repeat the same totals as the table, grouped by your breakdown.
 - Donut charts show percent contribution, not raw totals.
@@ -52,6 +53,12 @@ Explore helps you build your own questions about past runs and see aggregated an
 
 > ⚠️ Note
 > Queries are player-scoped. Results are based only on your own runs.
+
+> ⚠️ Note
+> Average is available only for currency, counter, and time metrics.
+
+> ⚠️ Note
+> Percent of total uses the current breakdown total and shows blank values when the total is zero.
 
 > ⚠️ Note
 > Multi-metric queries are displayed in tables only. Charts and KPI outputs require a single metric.

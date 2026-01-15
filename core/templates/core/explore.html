@@ -59,8 +59,22 @@
           {% csrf_token %}
           <input type="hidden" name="query_id" value="{{ loaded_query.id|default:'' }}">
           <input type="hidden" name="next" value="{{ request.get_full_path }}">
-          <div class="explore-query-editor" data-explore-dsl-editor>
+          <div
+            class="explore-query-editor"
+            data-explore-dsl-editor
+            data-explore-autocomplete-url="{% url 'core:explore_autocomplete' %}"
+          >
             <textarea id="explore-dsl-input" name="dsl_query">{{ explore_dsl_text }}</textarea>
+          </div>
+          <div class="explore-dsl-validation">
+            <div class="callout alert" id="explore-dsl-errors" hidden>
+              <p class="margin-0"><strong>Explore validation</strong></p>
+              <ul class="margin-0"></ul>
+            </div>
+            <div class="callout warning" id="explore-dsl-warnings" hidden>
+              <p class="margin-0"><strong>Explore notes</strong></p>
+              <ul class="margin-0"></ul>
+            </div>
           </div>
           <div class="explore-query-actions">
             <button class="button" type="submit" name="action" value="run_explore_query">Run query</button>
@@ -102,12 +116,12 @@
             <p class="muted margin-top-0">
               Metrics:
               {% for metric in explore_results.metrics %}
-                {{ metric.label }} ({{ metric.aggregation|title }}){% if not forloop.last %}, {% endif %}
+                {{ metric.label }} ({{ metric.aggregation_label }}){% if not forloop.last %}, {% endif %}
               {% endfor %}
             </p>
           {% else %}
             <p class="muted margin-top-0">
-              {{ explore_results.metric_label }} • {{ explore_results.aggregation|title }}
+              {{ explore_results.metric_label }} • {{ explore_results.aggregation_label }}
             </p>
           {% endif %}
           <p class="muted margin-top-0">Runs in scope: {{ explore_results.run_count }}</p>
@@ -115,7 +129,11 @@
             <div class="callout secondary">
               <p class="margin-0">Total</p>
               <h3 class="margin-0">
-                <span class="metric-value" data-format="unit-value" data-unit="{{ explore_results.metric_unit }}" data-value="{{ explore_results.total_value }}"></span>
+                {% if explore_results.total_value is not None %}
+                  <span class="metric-value" data-format="unit-value" data-unit="{{ explore_results.metric_unit }}" data-value="{{ explore_results.total_value }}"></span>
+                {% else %}
+                  —
+                {% endif %}
               </h3>
             </div>
           {% endif %}
@@ -211,7 +229,7 @@
                       {% endfor %}
                       {% if explore_results.metrics|length > 1 %}
                         {% for metric in explore_results.metrics %}
-                          <th scope="col">{{ metric.label }} ({{ metric.aggregation|title }})</th>
+                          <th scope="col">{{ metric.label }} ({{ metric.aggregation_label }})</th>
                           <th scope="col">Runs counted</th>
                         {% endfor %}
                       {% else %}
@@ -229,13 +247,21 @@
                         {% if explore_results.metrics|length > 1 %}
                           {% for cell in row.metric_cells %}
                             <td>
-                              <span class="metric-value" data-format="unit-value" data-unit="{{ cell.unit }}" data-value="{{ cell.value }}"></span>
+                              {% if cell.value is not None %}
+                                <span class="metric-value" data-format="unit-value" data-unit="{{ cell.unit }}" data-value="{{ cell.value }}"></span>
+                              {% else %}
+                                —
+                              {% endif %}
                             </td>
                             <td>{{ cell.sample_count }}</td>
                           {% endfor %}
                         {% else %}
                           <td>
-                            <span class="metric-value" data-format="unit-value" data-unit="{{ explore_results.metric_unit }}" data-value="{{ row.value }}"></span>
+                            {% if row.value is not None %}
+                              <span class="metric-value" data-format="unit-value" data-unit="{{ explore_results.metric_unit }}" data-value="{{ row.value }}"></span>
+                            {% else %}
+                              —
+                            {% endif %}
                           </td>
                           <td>{{ row.sample_count }}</td>
                         {% endif %}
@@ -252,13 +278,21 @@
                       {% if explore_results.metrics|length > 1 %}
                         {% for cell in explore_results.total_cells %}
                           <td>
-                            <span class="metric-value" data-format="unit-value" data-unit="{{ cell.unit }}" data-value="{{ cell.value }}"></span>
+                            {% if cell.value is not None %}
+                              <span class="metric-value" data-format="unit-value" data-unit="{{ cell.unit }}" data-value="{{ cell.value }}"></span>
+                            {% else %}
+                              —
+                            {% endif %}
                           </td>
                           <td>{{ cell.sample_count }}</td>
                         {% endfor %}
                       {% else %}
                         <td>
-                          <span class="metric-value" data-format="unit-value" data-unit="{{ explore_results.metric_unit }}" data-value="{{ explore_results.total_value }}"></span>
+                          {% if explore_results.total_value is not None %}
+                            <span class="metric-value" data-format="unit-value" data-unit="{{ explore_results.metric_unit }}" data-value="{{ explore_results.total_value }}"></span>
+                          {% else %}
+                            —
+                          {% endif %}
                         </td>
                         <td>{{ explore_results.total_sample_count }}</td>
                       {% endif %}
@@ -359,6 +393,9 @@
           </label>
           <label>{{ form.aggregation.label }}
             {{ form.aggregation }}
+          </label>
+          <label>{{ form.percent_of_total.label }}
+            {{ form.percent_of_total }}
           </label>
 
           <h5 class="margin-top-1">Output</h5>

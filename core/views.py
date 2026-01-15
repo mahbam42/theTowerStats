@@ -2018,7 +2018,10 @@ def explore_dashboard(request: HttpRequest) -> HttpResponse:
     dsl_text = ""
     executed_query: ExploreQuery | None = None
     farming_summary: dict[str, object] | None = None
-    autocomplete_payload = build_explore_autocomplete(explore_registry, DEFAULT_BREAKDOWNS)
+    autocomplete_payload = _explore_autocomplete_payload(
+        registry=explore_registry,
+        player=player,
+    )
 
     if not form.is_bound and loaded_payload:
         loaded_query_data = _explore_query_from_payload(loaded_payload)
@@ -2283,6 +2286,76 @@ def explore_dashboard(request: HttpRequest) -> HttpResponse:
         "explore_farming": farming_summary,
     }
     return render(request, "core/explore.html", context)
+
+
+def _explore_autocomplete_payload(
+    *,
+    registry: dict[str, ExploreMetricDefinition],
+    player: Player,
+) -> dict[str, list[dict[str, str]]]:
+    """Build server-backed autocomplete payloads for Explore."""
+
+    payload = build_explore_autocomplete(registry, DEFAULT_BREAKDOWNS)
+    presets = Preset.objects.filter(player=player).order_by("name")
+    payload["presets"] = [
+        {
+            "label": _explore_token_label(preset.name),
+            "detail": f"Preset #{preset.id}",
+            "type": "preset",
+        }
+        for preset in presets
+    ]
+    return payload
+
+
+def _explore_token_label(value: str) -> str:
+    """Return a DSL-safe label for a token."""
+
+    token = value.strip()
+    if not token:
+        return token
+    if " " in token or "," in token:
+        return f"\"{token}\""
+    return token
+
+
+@login_required
+def explore_autocomplete(request: HttpRequest) -> JsonResponse:
+    """Return Explore DSL autocomplete payloads and validation output."""
+
+    if request.method not in {"GET", "POST"}:
+        return JsonResponse({"ok": False, "error": "Method not allowed."}, status=405)
+
+    player = _request_player(request)
+    explore_registry = build_explore_metric_registry()
+    autocomplete = _explore_autocomplete_payload(registry=explore_registry, player=player)
+
+    if request.method == "POST":
+        dsl_text = str(request.POST.get("dsl") or "")
+    else:
+        dsl_text = str(request.GET.get("dsl") or "")
+
+    validation: dict[str, list[str]] = {"errors": [], "warnings": []}
+    if dsl_text.strip():
+        prefill_scope = _explore_prefill_scope_from_request(request.GET)
+        parse_result = parse_explore_dsl(
+            dsl_text,
+            player_id=str(player.id),
+            default_scope=prefill_scope,
+        )
+        if parse_result.errors:
+            validation["errors"] = list(parse_result.errors)
+            validation["warnings"] = list(parse_result.warnings)
+        elif parse_result.query is not None:
+            result = validate_explore_query(
+                parse_result.query,
+                metric_registry=explore_registry,
+                breakdown_registry=DEFAULT_BREAKDOWNS,
+            )
+            validation["errors"] = list(result.errors)
+            validation["warnings"] = list(result.warnings)
+
+    return JsonResponse({"ok": True, "autocomplete": autocomplete, "validation": validation})
 
 
 def _explore_modal_dsl_text(*, player_id: str, scope: ExploreScope) -> str:
@@ -5214,6 +5287,7 @@ def _explore_form_initial_from_payload(payload: dict[str, object]) -> dict[str, 
         "past_n_runs": scope.get("past_n_runs") or "",
         "metric_key": metric.get("key") or "",
         "aggregation": metric.get("aggregation") or "sum",
+        "percent_of_total": bool(metric.get("percent_of_total")) if isinstance(metric, dict) else False,
         "visualization": payload.get("visualization_hint") or "table",
     }
 
@@ -5339,6 +5413,7 @@ def _explore_query_from_payload(payload: dict[str, object]) -> ExploreQuery:
         ExploreMetricSelection(
             key=str(entry.get("key") or ""),
             aggregation=cast(Literal["sum", "count", "avg"], str(entry.get("aggregation") or "sum")),
+            percent_of_total=bool(entry.get("percent_of_total")),
         )
         for entry in metric_entries
         if entry
@@ -5438,6 +5513,7 @@ def _explore_query_from_form(form: ExploreQueryForm, *, player: Player) -> Explo
     metric = ExploreMetricSelection(
         key=str(cleaned.get("metric_key") or ""),
         aggregation=cast(Literal["sum", "count", "avg"], str(cleaned.get("aggregation") or "sum")),
+        percent_of_total=bool(cleaned.get("percent_of_total")),
     )
 
     return ExploreQuery(
@@ -5583,6 +5659,29 @@ def _apply_explore_filters(
     return runs
 
 
+def _explore_metric_unit(
+    metric: ExploreMetricDefinition | None,
+    selection: ExploreMetricSelection,
+) -> str:
+    """Return the display unit for an Explore metric selection."""
+
+    if selection.percent_of_total:
+        return "percent"
+    if metric is None:
+        return ""
+    return metric.unit
+
+
+def _explore_aggregation_label(selection: ExploreMetricSelection) -> str:
+    """Return a human-friendly aggregation label for Explore output."""
+
+    base_labels = {"sum": "Sum", "count": "Count", "avg": "Average"}
+    base_label = base_labels.get(selection.aggregation, selection.aggregation)
+    if selection.percent_of_total:
+        return f"Percent of total ({base_label.lower()})"
+    return base_label
+
+
 def _explore_execute_query(
     query: ExploreQuery,
     *,
@@ -5598,12 +5697,30 @@ def _explore_execute_query(
     run_order = [run.id for run in run_list if getattr(run, "id", None) is not None]
     metric_selections = query.metrics
     metric_defs = [registry.get(selection.key) for selection in metric_selections]
-    metric_labels = [metric.label if metric else selection.key for metric, selection in zip(metric_defs, metric_selections)]
-    metric_units = [metric.unit if metric else "" for metric in metric_defs]
+    metric_labels = [
+        metric.label if metric else selection.key for metric, selection in zip(metric_defs, metric_selections)
+    ]
+    metric_units = [
+        _explore_metric_unit(metric, selection)
+        for metric, selection in zip(metric_defs, metric_selections)
+    ]
     metric_aggregations = [selection.aggregation for selection in metric_selections]
+    metric_aggregation_labels = [
+        _explore_aggregation_label(selection) for selection in metric_selections
+    ]
     metric_entries = [
-        {"label": label, "unit": unit, "aggregation": aggregation}
-        for label, unit, aggregation in zip(metric_labels, metric_units, metric_aggregations)
+        {
+            "label": label,
+            "unit": unit,
+            "aggregation": aggregation,
+            "aggregation_label": aggregation_label,
+        }
+        for label, unit, aggregation, aggregation_label in zip(
+            metric_labels,
+            metric_units,
+            metric_aggregations,
+            metric_aggregation_labels,
+        )
     ]
     per_metric_results = [
         execute_explore_query(
@@ -5659,6 +5776,7 @@ def _explore_execute_query(
                 "unit": entry["unit"],
                 "label": entry["label"],
                 "aggregation": entry["aggregation"],
+                "aggregation_label": entry["aggregation_label"],
             }
             for idx, entry in enumerate(metric_entries)
         ]
@@ -5688,6 +5806,7 @@ def _explore_execute_query(
             "unit": entry["unit"],
             "label": entry["label"],
             "aggregation": entry["aggregation"],
+            "aggregation_label": entry["aggregation_label"],
         }
         for idx, entry in enumerate(metric_entries)
     ]
@@ -5697,7 +5816,9 @@ def _explore_execute_query(
     chart_unit = metric_units[0] if metric_units else ""
     chart_payload: dict[str, object] | None = None
     if len(metric_selections) == 1 and primary_result is not None:
-        if query.visualization_hint == "donut":
+        if metric_selections[0].percent_of_total:
+            chart_unit = "percent"
+        if query.visualization_hint == "donut" and not metric_selections[0].percent_of_total:
             total = sum(values)
             chart_unit = "percent"
             values = [(value / total * 100.0) if total else 0.0 for value in values]
@@ -5711,8 +5832,10 @@ def _explore_execute_query(
         "metric_labels": metric_labels,
         "metric_units": metric_units,
         "metric_aggregations": metric_aggregations,
+        "metric_aggregation_labels": metric_aggregation_labels,
         "metrics": metric_entries,
         "aggregation": metric_aggregations[0] if metric_aggregations else "",
+        "aggregation_label": metric_aggregation_labels[0] if metric_aggregation_labels else "",
         "visualization": query.visualization_hint,
         "run_count": primary_result.run_count if primary_result else 0,
         "missing_count": sum(missing_counts),
@@ -5729,7 +5852,7 @@ def _explore_execute_query(
             player=player,
             run_count=primary_result.run_count if primary_result else 0,
             metric_labels=metric_labels,
-            metric_aggregations=metric_aggregations,
+            metric_aggregations=metric_aggregation_labels,
         ),
     }
 

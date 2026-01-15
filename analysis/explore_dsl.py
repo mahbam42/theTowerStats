@@ -159,7 +159,10 @@ def format_explore_dsl(
 
         metric_tokens = []
         for metric in query.metrics:
-            metric_tokens.append(f"{metric.key} {metric.aggregation}")
+            token = f"{metric.key} {metric.aggregation}"
+            if metric.percent_of_total:
+                token = f"{token} percent_of_total"
+            metric_tokens.append(token)
         if metric_tokens:
             lines.append(f"metric {' and '.join(metric_tokens)}")
         if query.visualization_hint != "table":
@@ -296,6 +299,7 @@ def build_explore_autocomplete(
         "sum",
         "count",
         "avg",
+        "percent_of_total",
         "table",
         "bar",
         "donut",
@@ -366,13 +370,30 @@ def _parse_metric_line(value: str) -> tuple[list[ExploreMetricSelection], list[s
             continue
         metric_key = token
         aggregation = "sum"
-        if idx + 1 < len(tokens) and tokens[idx + 1].lower() not in {"and"}:
-            aggregation = tokens[idx + 1].lower()
+        percent_of_total = False
+        idx += 1
+        if idx < len(tokens) and tokens[idx].lower() not in {"and"}:
+            token_value = tokens[idx].lower()
+            if token_value == "percent_of_total":
+                percent_of_total = True
+                idx += 1
+            else:
+                aggregation = token_value
+                idx += 1
+        if idx < len(tokens) and tokens[idx].lower() == "percent_of_total":
+            percent_of_total = True
             idx += 1
         if aggregation not in ("sum", "count", "avg"):
             errors.append(f"Aggregation {aggregation} is not supported.")
-        selections.append(ExploreMetricSelection(key=metric_key, aggregation=aggregation))  # type: ignore[arg-type]
-        idx += 1
+        if percent_of_total and aggregation not in ("sum", "count"):
+            errors.append("Percent-of-total requires sum or count aggregation.")
+        selections.append(
+            ExploreMetricSelection(
+                key=metric_key,
+                aggregation=aggregation,  # type: ignore[arg-type]
+                percent_of_total=percent_of_total,
+            )
+        )
 
     return selections, errors
 

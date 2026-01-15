@@ -16,6 +16,7 @@ urlpatterns = [
     path("charts/export-derived.csv", views.export_derived_metrics_csv, name="export_derived_metrics_csv"),
     path("search/", views.search, name="search"),
     path("api/search/", views.search_api, name="search_api"),
+    path("api/explore/autocomplete/", views.explore_autocomplete, name="explore_autocomplete"),
     path("api/battle-report/<int:report_id>/", views.battle_report_modal, name="battle_report_modal"),
     path("demo/enable/", views.enable_demo_mode, name="enable_demo_mode"),
     path("demo/disable/", views.disable_demo_mode, name="disable_demo_mode"),
