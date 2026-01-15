@@ -60,6 +60,9 @@ Explore helps you build your own questions about past runs and see aggregated an
 > Farming efficiency summaries describe observed results only and do not provide recommendations.
 
 > ⚠️ Note
+> Farming efficiency summaries use the first metric in the query as the primary metric, even when secondary metrics are included.
+
+> ⚠️ Note
 > Placeholders are shown in brackets to indicate a required format, such as a date or tier. Replace them with real values when you want to narrow the scope.
 
 > ⚠️ Note

@@ -285,3 +285,47 @@ def test_explore_multi_metric_table_renders_all_metrics(auth_client, player) -> 
     assert results["rows"]
     first_row = results["rows"][0]
     assert len(first_row["metric_cells"]) == 2
+
+
+@pytest.mark.django_db
+def test_explore_farming_summary_persists_with_secondary_metrics(auth_client, player) -> None:
+    """Farming summary remains when adding secondary metrics."""
+
+    report = BattleReport.objects.create(
+        player=player,
+        raw_text="Battle Report\nCells Earned\t6\n",
+        checksum="farm-secondary".ljust(64, "s"),
+    )
+    BattleReportProgress.objects.create(
+        battle_report=report,
+        player=player,
+        battle_date=datetime(2025, 12, 10, tzinfo=timezone.utc),
+        tier=3,
+        wave=80,
+        coins_earned=3600,
+        real_time_seconds=3600,
+        cells_earned=6,
+    )
+
+    dsl_query = (
+        'name "Farming efficiency by tier"\n'
+        "scope date [date:YYYY-MM-DD]..[date:YYYY-MM-DD]\n"
+        "scope tier all not tournament\n"
+        "scope preset [preset:—]\n"
+        "scope snapshot [snapshot:—]\n"
+        "scope past_n_runs [runs:—]\n"
+        "breakdown by tier\n"
+        "metric coins_per_hour avg and cells_earned avg\n"
+        "output table\n"
+    )
+
+    response = auth_client.post(
+        reverse("core:explore"),
+        data={
+            "dsl_query": dsl_query,
+            "action": "run_explore_query",
+        },
+    )
+
+    assert response.status_code == 200
+    assert response.context["explore_farming"] is not None

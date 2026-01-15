@@ -1827,7 +1827,7 @@ def _is_farming_efficiency_query(query: ExploreQuery) -> bool:
 
     breakdowns = tuple(sorted(query.breakdowns, key=lambda entry: entry.order))
     return (
-        len(query.metrics) == 1
+        bool(query.metrics)
         and query.metrics[0].key == "coins_per_hour"
         and query.metrics[0].aggregation == "avg"
         and query.visualization_hint == "table"
