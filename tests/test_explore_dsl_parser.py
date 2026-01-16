@@ -224,3 +224,53 @@ def test_parse_explore_dsl_supports_percent_of_total() -> None:
     assert result.query.metrics[0].key == "coins_earned"
     assert result.query.metrics[0].aggregation == "sum"
     assert result.query.metrics[0].percent_of_total is True
+
+
+@pytest.mark.regression
+def test_parse_explore_dsl_rejects_multi_separator_date_ranges() -> None:
+    """Reject date ranges that include multiple separators."""
+
+    default_scope = ExploreScope(
+        start_date=None,
+        end_date=None,
+        tier=None,
+        preset_id=None,
+        snapshot_id=None,
+        past_n_runs=None,
+    )
+    dsl_text = (
+        'name "Bad date range"\n'
+        "scope date 2025-01-01..2025-01-05..2025-01-07\n"
+        "metric coins_earned sum\n"
+    )
+
+    result = parse_explore_dsl(dsl_text, player_id="player-1", default_scope=default_scope)
+
+    assert result.query is None
+    assert "Date scope must use start..end format." in result.errors
+
+
+@pytest.mark.regression
+def test_parse_explore_dsl_accepts_metric_aliases() -> None:
+    """Normalize known metric aliases in the DSL."""
+
+    default_scope = ExploreScope(
+        start_date=None,
+        end_date=None,
+        tier=None,
+        preset_id=None,
+        snapshot_id=None,
+        past_n_runs=None,
+    )
+    dsl_text = (
+        'name "Alias check"\n'
+        "metric enemies_destroyed_elites sum\n"
+        "breakdown by run\n"
+    )
+
+    result = parse_explore_dsl(dsl_text, player_id="player-1", default_scope=default_scope)
+
+    assert result.errors == ()
+    assert result.query is not None
+    assert result.query.metrics[0].key == "enemies_destroyed_elite"
+    assert any("enemies_destroyed_elites" in warning for warning in result.warnings)

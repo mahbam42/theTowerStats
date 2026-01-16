@@ -22,6 +22,11 @@ if (textarea && editorHost) {
   const CACHE_KEY = "ttsExploreAutocomplete";
   const CACHE_TTL_MS = 1000 * 60 * 60 * 24 * 2;
 
+  function isValidAutocompletePayload(payload) {
+    if (!payload || typeof payload !== "object") return false;
+    return Array.isArray(payload.metrics) && payload.metrics.length > 0;
+  }
+
   function readCache() {
     try {
       const raw = localStorage.getItem(CACHE_KEY);
@@ -30,6 +35,7 @@ if (textarea && editorHost) {
       if (!cached || typeof cached !== "object") return null;
       if (!cached.timestamp || !cached.payload) return null;
       if (Date.now() - cached.timestamp > CACHE_TTL_MS) return null;
+      if (!isValidAutocompletePayload(cached.payload)) return null;
       return cached.payload;
     } catch {
       return null;

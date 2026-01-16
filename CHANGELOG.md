@@ -2,6 +2,16 @@
 
 This project follows Semantic Versioning.
 
+## [0.8.2]
+
+### Fixed
+- Explore DSL parsing no longer uses backtracking-prone patterns for scope/filter parsing.
+- Explore DSL date ranges now reject malformed separators.
+- Explore DSL metric alias support for `enemies_destroyed_elites` in validation/autocomplete.
+- Explore DSL editor autocomplete now refreshes stale cache entries missing metrics.
+- CodeMirror style expansion now replaces all `&` placeholders.
+- CodeMirror special character ranges now use explicit hex escapes.
+
 ## [0.8.1]
 
 ### Added

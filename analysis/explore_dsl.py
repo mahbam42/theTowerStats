@@ -29,14 +29,138 @@ class ExploreDslParseResult:
 
 
 _PLACEHOLDER_RE = re.compile(r"^\[[^:\]]+:[^\]]*\]$")
-_NAME_RE = re.compile(r'^name\s+"(?P<name>.+)"\s*$', re.IGNORECASE)
-_SCOPE_RE = re.compile(r"^scope\s+(?P<field>[a-z_]+)\s+(?P<value>.+)$", re.IGNORECASE)
-_FILTER_RE = re.compile(r"^filter\s+(?P<field>[a-z_]+)\s+(?P<value>.+)$", re.IGNORECASE)
-_BREAKDOWN_RE = re.compile(r"^breakdown(?:\s+by)?\s+(?P<value>.+)$", re.IGNORECASE)
-_OUTPUT_RE = re.compile(r"^output\s+(?P<value>[a-z]+)$", re.IGNORECASE)
-_DATE_RANGE_RE = re.compile(r"^(?P<start>.+)\.\.(?P<end>.+)$")
 _ID_WITH_LABEL_RE = re.compile(r'^(?P<id>\d+)(?:\s+"[^"]+")?$')
 _QUOTED_RE = re.compile(r'^"(.*)"$')
+
+_METRIC_ALIASES = {
+    "enemies_destroyed_elites": "enemies_destroyed_elite",
+}
+
+
+def _unwrap_quoted(value: str) -> str | None:
+    """Return the unquoted value when wrapped in double quotes.
+
+    Args:
+        value: Raw string value from a DSL line.
+
+    Returns:
+        The unquoted string value or None when not wrapped or empty.
+    """
+
+    if len(value) < 2 or not (value.startswith('"') and value.endswith('"')):
+        return None
+    unquoted = value[1:-1]
+    return unquoted if unquoted else None
+
+
+def _split_field_value(value: str) -> tuple[str | None, str | None]:
+    """Split a line remainder into a field and value.
+
+    Args:
+        value: Raw string after a DSL keyword.
+
+    Returns:
+        The field and remaining value, or (None, None) when incomplete.
+    """
+
+    parts = value.split(maxsplit=1)
+    if len(parts) != 2:
+        return None, None
+    return parts[0].strip(), parts[1].strip()
+
+
+def _split_range_value(value: str) -> tuple[str | None, str | None]:
+    """Split a range expression into start and end values.
+
+    Args:
+        value: Raw range value with a `..` separator.
+
+    Returns:
+        The start and end values, or (None, None) when invalid.
+    """
+
+    if ".." not in value:
+        return None, None
+    start, _, end = value.partition("..")
+    if not start or not end or ".." in end:
+        return None, None
+    return start, end
+
+
+def _split_on_and_word(value: str) -> list[str]:
+    """Split a value on standalone 'and' tokens.
+
+    Args:
+        value: Raw string value that may contain `and` separators.
+
+    Returns:
+        List of segments split on standalone `and`.
+    """
+
+    items: list[str] = []
+    lower = value.casefold()
+    cursor = 0
+    search_from = 0
+    token = "and"
+    while True:
+        idx = lower.find(token, search_from)
+        if idx == -1:
+            items.append(value[cursor:])
+            break
+        before = lower[idx - 1] if idx > 0 else ""
+        after_idx = idx + len(token)
+        after = lower[after_idx] if after_idx < len(lower) else ""
+        if (idx == 0 or before.isspace()) and (after_idx == len(lower) or after.isspace()):
+            items.append(value[cursor:idx])
+            cursor = after_idx
+            search_from = after_idx
+        else:
+            search_from = after_idx
+    return items
+
+
+def _split_list_values(value: str) -> list[str]:
+    """Split comma/and-separated values into trimmed entries.
+
+    Args:
+        value: Raw string value containing comma or `and` separators.
+
+    Returns:
+        Trimmed list entries.
+    """
+
+    items: list[str] = []
+    for chunk in value.split(","):
+        for entry in _split_on_and_word(chunk):
+            cleaned = entry.strip()
+            if cleaned:
+                items.append(cleaned)
+    return items
+
+
+def _normalize_metric_selection(
+    selection: ExploreMetricSelection,
+    warnings: list[str],
+) -> ExploreMetricSelection:
+    """Return a canonical metric selection, recording alias warnings.
+
+    Args:
+        selection: Parsed metric selection to normalize.
+        warnings: Collector for warning strings about alias usage.
+
+    Returns:
+        Normalized selection with a canonical key when an alias is used.
+    """
+
+    alias = _METRIC_ALIASES.get(selection.key)
+    if not alias:
+        return selection
+    warnings.append(f"Metric alias {selection.key} resolved to {alias}.")
+    return ExploreMetricSelection(
+        key=alias,
+        aggregation=selection.aggregation,
+        percent_of_total=selection.percent_of_total,
+    )
 
 
 def format_explore_dsl(
@@ -195,34 +319,46 @@ def parse_explore_dsl(
         if not line or line.startswith("#"):
             continue
 
-        if match := _NAME_RE.match(line):
-            name = match.group("name").strip()
-            continue
+        lowered = line.casefold()
+        if lowered.startswith("name "):
+            name_value = line[len("name ") :].strip()
+            parsed_name = _unwrap_quoted(name_value)
+            if parsed_name is not None:
+                name = parsed_name
+                continue
 
-        if match := _SCOPE_RE.match(line):
-            scope, scope_filters, scope_errors = _parse_scope_line(
-                match.group("field").strip(),
-                match.group("value").strip(),
-                scope,
-                default_scope,
-            )
-            errors.extend(scope_errors)
-            filters.extend(scope_filters)
-            continue
+        if lowered.startswith("scope "):
+            field, value = _split_field_value(line[len("scope ") :].strip())
+            if field and value:
+                scope, scope_filters, scope_errors = _parse_scope_line(
+                    field.strip(),
+                    value.strip(),
+                    scope,
+                    default_scope,
+                )
+                errors.extend(scope_errors)
+                filters.extend(scope_filters)
+                continue
 
-        if match := _FILTER_RE.match(line):
-            filter_entries, filter_errors = _parse_filter_line(
-                match.group("field").strip(),
-                match.group("value").strip(),
-            )
-            filters.extend(filter_entries)
-            errors.extend(filter_errors)
-            continue
+        if lowered.startswith("filter "):
+            field, value = _split_field_value(line[len("filter ") :].strip())
+            if field and value:
+                filter_entries, filter_errors = _parse_filter_line(
+                    field.strip(),
+                    value.strip(),
+                )
+                filters.extend(filter_entries)
+                errors.extend(filter_errors)
+                continue
 
-        if match := _BREAKDOWN_RE.match(line):
-            breakdowns, breakdown_errors = _parse_breakdown_line(match.group("value").strip())
-            errors.extend(breakdown_errors)
-            continue
+        if lowered.startswith("breakdown"):
+            remainder = line[len("breakdown") :].strip()
+            if remainder.casefold().startswith("by "):
+                remainder = remainder[len("by ") :].strip()
+            if remainder:
+                breakdowns, breakdown_errors = _parse_breakdown_line(remainder)
+                errors.extend(breakdown_errors)
+                continue
 
         if line.lower().startswith("metric "):
             raw_metric = line[len("metric ") :].strip()
@@ -230,17 +366,21 @@ def parse_explore_dsl(
                 errors.append("Metric selection is required.")
                 continue
             metric_entries, metric_errors = _parse_metric_line(raw_metric)
-            metrics.extend(metric_entries)
+            normalized_metrics = [
+                _normalize_metric_selection(selection, warnings) for selection in metric_entries
+            ]
+            metrics.extend(normalized_metrics)
             errors.extend(metric_errors)
             continue
 
-        if match := _OUTPUT_RE.match(line):
-            output = match.group("value").strip().lower()
-            if output not in ("table", "bar", "donut", "kpi"):
-                errors.append(f"Output {output} is not supported.")
-            else:
-                visualization = output  # type: ignore[assignment]
-            continue
+        if lowered.startswith("output "):
+            output = line[len("output ") :].strip().lower()
+            if output and output.isalpha() and " " not in output:
+                if output not in ("table", "bar", "donut", "kpi"):
+                    errors.append(f"Output {output} is not supported.")
+                else:
+                    visualization = output  # type: ignore[assignment]
+                continue
 
         errors.append(f"Unrecognized DSL line: {line}")
 
@@ -318,6 +458,19 @@ def build_explore_autocomplete(
         {"label": key, "detail": metric.label, "type": "metric"}
         for key, metric in sorted(metric_registry.items())
     ]
+    alias_metrics = []
+    for alias, key in sorted(_METRIC_ALIASES.items()):
+        metric = metric_registry.get(key)
+        if metric is None:
+            continue
+        alias_metrics.append(
+            {
+                "label": alias,
+                "detail": f"Alias for {metric.label}",
+                "type": "metric",
+            }
+        )
+    metrics.extend(alias_metrics)
     breakdowns = [
         {"label": key, "detail": breakdown.label, "type": "breakdown"}
         for key, breakdown in sorted(breakdown_registry.items())
@@ -453,9 +606,13 @@ def _parse_scope_line(
                 past_n_runs=scope.past_n_runs,
             )
         else:
-            operator_match = re.match(r"^(>=|<=|>|<|=)?\s*(.+)?$", normalized)
-            operator = (operator_match.group(1) or "").strip() if operator_match else ""
-            raw_value = (operator_match.group(2) or "").strip() if operator_match else normalized
+            operator = ""
+            raw_value = normalized
+            for token in (">=", "<=", ">", "<", "="):
+                if normalized.startswith(token):
+                    operator = token
+                    raw_value = normalized[len(token) :].strip()
+                    break
             tier_value = _parse_int(raw_value)
             if operator in (">", "<") and tier_value is not None:
                 if operator == ">":
@@ -551,12 +708,10 @@ def _parse_filter_line(field: str, value: str) -> tuple[list[ExploreFilter], lis
     parsed_value: object | None = None
 
     if ".." in value and field in {"tier", "wave", "date_range"}:
-        range_match = _DATE_RANGE_RE.match(value)
-        if not range_match:
+        start_raw, end_raw = _split_range_value(value)
+        if start_raw is None or end_raw is None:
             errors.append(f"Invalid range filter: {value}.")
             return filters, errors
-        start_raw = range_match.group("start").strip()
-        end_raw = range_match.group("end").strip()
         if field == "date_range":
             operator = "range"
             parsed_value = {
@@ -598,8 +753,7 @@ def _parse_breakdown_line(value: str) -> tuple[list[ExploreBreakdown], list[str]
     errors: list[str] = []
     breakdowns: list[ExploreBreakdown] = []
     normalized = value.replace(" then ", ",")
-    normalized = re.sub(r"\s+and\s+", ",", normalized, flags=re.IGNORECASE)
-    raw_breakdowns = [entry.strip() for entry in normalized.split(",") if entry.strip()]
+    raw_breakdowns = _split_list_values(normalized)
     if not raw_breakdowns:
         errors.append("Breakdown line is empty.")
         return breakdowns, errors
@@ -612,24 +766,31 @@ def _parse_date_range(value: str) -> tuple[date | None, date | None, list[str]]:
     """Parse a date range string into dates."""
 
     errors: list[str] = []
-    match = _DATE_RANGE_RE.match(value)
-    if not match:
+    start_raw, end_raw = _split_range_value(value)
+    if start_raw is None or end_raw is None:
         errors.append("Date scope must use start..end format.")
         return None, None, errors
 
-    start = _parse_date_token(match.group("start").strip())
-    end = _parse_date_token(match.group("end").strip())
+    start = _parse_date_token(start_raw.strip())
+    end = _parse_date_token(end_raw.strip())
     return start, end, errors
 
 
 def _split_not_clause(value: str) -> tuple[str, str | None]:
     """Split a value into a main value and a not-clause."""
 
-    match = re.search(r"\bnot\b(.+)$", value, re.I)
-    if not match:
+    lowered = value.casefold()
+    if lowered.startswith("not "):
+        clause = value[4:].strip()
+        return value[:0].strip(), clause if clause else None
+    marker = " not "
+    idx = lowered.find(marker)
+    if idx == -1:
         return value.strip(), None
-    main = value[: match.start()].strip()
-    clause = match.group(1).strip()
+    clause = value[idx + len(marker) :].strip()
+    if not clause:
+        return value.strip(), None
+    main = value[:idx].strip()
     return main, clause
 
 
@@ -638,7 +799,7 @@ def _parse_date_list(value: str) -> tuple[list[str], list[str]]:
 
     errors: list[str] = []
     items: list[str] = []
-    for token in re.split(r"\s*(?:,|and)\s*", value):
+    for token in _split_list_values(value):
         cleaned = token.replace("not ", "").strip()
         if not cleaned:
             continue
@@ -655,7 +816,7 @@ def _parse_name_list(value: str) -> tuple[list[str], list[str]]:
 
     errors: list[str] = []
     items: list[str] = []
-    for token in re.split(r"\s*(?:,|and)\s*", value):
+    for token in _split_list_values(value):
         cleaned = token.replace("not ", "").strip()
         if not cleaned:
             continue

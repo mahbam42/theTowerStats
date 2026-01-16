@@ -58,11 +58,13 @@ When placeholders are present or a scope line is omitted, parsing falls back to 
 - `and` and `&` are accepted as scope modifiers.
 - `not tournament` can be appended to a scope line and is parsed as a tournament exclusion filter.
 - `not` can also exclude specific dates on the date scope line and preset names on the preset scope line.
+- Range values must include exactly one `..` separator.
 - `output` defaults to `table` when not supplied.
 - `metric` supports `sum`, `count`, and `avg`; when omitted, aggregation defaults to `sum`.
 - `percent_of_total` is an optional metric modifier and requires `sum` or `count`.
 - `and` joins multiple metrics on the same line; multiple metric lines are also accepted.
 - Multi-metric queries must use table output.
+- Metric aliases are accepted (for example, `enemies_destroyed_elites` maps to `enemies_destroyed_elite`).
 - Placeholders do not override prefilled defaults.
 - `all` or `*` clears a prefilled scope value and keeps the scope open.
 

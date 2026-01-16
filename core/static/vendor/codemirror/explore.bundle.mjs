@@ -1824,7 +1824,7 @@ var T2 = class {
       if (u2 && a2 == null) return h.push(t3[0] + ";");
       for (let o3 in a2) {
         let r2 = a2[o3];
-        if (/&/.test(o3)) s45(o3.split(/,\s*/).map((d) => t3.map((y4) => d.replace(/&/, y4))).reduce((d, y4) => d.concat(y4)), r2, h);
+        if (/&/.test(o3)) s45(o3.split(/,\s*/).map((d) => t3.map((y4) => d.replace(/&/g, y4))).reduce((d, y4) => d.concat(y4)), r2, h);
         else if (r2 && typeof r2 == "object") {
           if (!u2) throw new RangeError("The value of a property (" + o3 + ") should be a primitive value.");
           s45(n11(o3), r2, p2, g3);
@@ -6296,7 +6296,7 @@ var vr = P2.fromClass(class {
   }
 });
 var ni = /x/.unicode != null ? "gu" : "g";
-var Sr = new RegExp(`[\0-\b
+var Sr = new RegExp(`[\x00-\x08
 -\x7F-\x9F\xAD\u061C\u200B\u200E\u200F\u2028\u2029\u202D\u202E\uFEFF\uFFF9-\uFFFC]`, ni);
 var Ce2 = null;
 function Mr() {
