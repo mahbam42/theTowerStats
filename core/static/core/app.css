@@ -804,6 +804,7 @@ textarea:active {
   background: transparent;
   border: 0;
   cursor: pointer;
+  color: var(--tts-color-text);
 }
 
 .goals-candidate-row:hover,

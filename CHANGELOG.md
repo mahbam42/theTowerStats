@@ -15,6 +15,7 @@ This project follows Semantic Versioning.
 ### Fixed
 - Free Upgrades by Run tooltip totals now sum attack, defense, and utility upgrades.
 - Battle History sorting now includes Tournament and Recovery packages columns.
+- Goals modal candidate list text now uses readable contrast on dark backgrounds.
 
 ## [0.8.2]
 
