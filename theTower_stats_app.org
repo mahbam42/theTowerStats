@@ -2425,7 +2425,7 @@ CLOSED: [2025-12-22 Mon 15:31]
 - [X] fetch_wiki_data and rebuild_wiki_definitions should have a pretty summary of deltas at the end.
   Especially when using --target all.
 
-*** Bugs/Enhancements [95/98]
+*** Bugs/Enhancements [98/102]
 
 **** DONE [#B] Error Updating Guardian Upgrade Table                 :bug:
 CLOSED: [2025-12-22 Mon 18:51]
@@ -3849,7 +3849,9 @@ CLOSED: [2026-01-15 Thu 17:16]
 - State "IN PROGRESS" from "TODO"       [2026-01-14 Wed 16:04] \\
   little bit of scope creep adding a feature on a feature
 git log --oneline f13b0b9...HEAD
-**** TODO [#A] Polynomial regular expression used on uncontrolled data
+**** DONE [#A] Polynomial regular expression used on uncontrolled data
+CLOSED: [2026-01-15 Thu 20:35]
+- State "DONE"       from "TODO"       [2026-01-15 Thu 20:35]
 This regular expression that depends on a user-provided value may run slow on strings starting with 'scope _ ' and with many repetitions of ' '.
 
 Some regular expressions take a long time to match certain input strings to the point where the time it takes to match a string of length n is proportional to nk or even 2n. Such regular expressions can negatively affect performance, or even allow a malicious user to perform a Denial of Service ("DoS") attack by crafting an expensive input string for the regular expression to match.
@@ -3871,24 +3873,60 @@ Occurances:
 - analysis/explore_dsl.py :615
 - analysis/explore_dsl.py :641
 - analysis/explore_dsl.py :658
-**** TODO Useless regular-expression character escape
+**** DONE Useless regular-expression character escape
+CLOSED: [2026-01-15 Thu 20:35]
+- State "DONE"       from "TODO"       [2026-01-15 Thu 20:35]
 core/static/vendor/codemirror/explore.bundle.mjs:6299
 
 The escape sequence '\b' is a backspace, and not a word-boundary assertion when it is used in a regular expression.
 
 When a character in a string literal or regular expression literal is preceded by a backslash, it is interpreted as part of an escape sequence. For example, the escape sequence \n in a string literal corresponds to a single newline character, and not the \ and n characters. However, not all characters change meaning when used in an escape sequence. In this case, the backslash just makes the character appear to mean something else, and the backslash actually has no effect. For example, the escape sequence \k in a string literal just means k. Such superfluous escape sequences are usually benign, and do not change the behavior of the program.
-**** TODO Incomplete string escaping or encoding
+**** DONE Incomplete string escaping or encoding
+CLOSED: [2026-01-15 Thu 20:35]
+- State "DONE"       from "TODO"       [2026-01-15 Thu 20:35]
 core/static/vendor/codemirror/explore.bundle.mjs:1827
 
 This replaces only the first occurrence of /&/.
 
 Sanitizing untrusted input is a common technique for preventing injection attacks such as SQL injection or cross-site scripting. Usually, this is done by escaping meta-characters such as quotes in a domain-specific way so that they are treated as normal characters.
+**** TODO Move Metrics Reference off of Chart Builder and into Reference Section. :docs:
+Since the Chart Builder and Explore both use this table, it should be a standalone reference page linked to both. 
+**** TODO [#A] On the Free Upgrades by Run Chart the Total needs to show the combined total of all three metrics :bug:
+See screenshot
+**** TODO Fix text in Goals Modal                                    :bug:
+See screenshot
+**** TODO Fix Preset Label in 'Add Battle Report'                    :bug:
+Needs to be dropdown populated with player presets and an option to create a new one.
 ** Backlog [3/9]
 “Out of Scope”:
 - Cloud sync
 - Real-time scraping
 
 *** TODO [#C] Auto-migration of stored queries
+
+The Explore DSL is expected to evolve as metrics, aliases, and scopes change. When we introduce
+automatic migration for stored queries, it should focus on safe, deterministic transforms that
+preserve the user's intent without silently changing results.
+
+### Scope
+
+- Add a stored query schema version and preserve the original text alongside migrated output.
+- Migrate only well-defined changes (for example, metric renames, alias consolidation, scope key
+  renames, or output defaults) backed by registry metadata.
+- Keep migrations deterministic, reversible, and fully traceable for review and debugging.
+- Run migrations at load time and persist only after validation succeeds.
+- Avoid migrations that depend on user data, current run history, or dynamic context.
+
+### Notes
+
+- Fail closed: if a migration cannot be applied, keep the original text and return a validation
+  error with remediation guidance.
+- Record migration metadata (version, timestamp, rule ids) for audit trails.
+- Prefer additive behavior; removing unsupported tokens should be a last resort and must be
+  explicitly flagged.
+- Treat deprecated tokens as warnings with suggested replacements until a migration rule exists.
+- Ensure the Explore registry exposes migration hints (aliases, deprecations, replacements) in one
+  canonical location.
 
 *** TODO [#B] Per Hour / Per Wave Metrics
 Introduce rate outputs normalized by time or waves.
