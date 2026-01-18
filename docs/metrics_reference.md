@@ -19,6 +19,7 @@ Metrics Reference lists the values you can chart or summarize so you can confirm
 2. Review the metrics list below.
 3. Match the metric name to the one shown in the selection list.
 4. Use the Source column to confirm whether the value is observed, derived, or planned.
+5. Review [Explore Breakdowns](explore_breakdowns.md) when you want to group results by a category.
 
 ## How to Read the Results
 

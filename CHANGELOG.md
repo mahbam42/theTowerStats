@@ -6,6 +6,7 @@ This project follows Semantic Versioning.
 
 ### Added
 - Metrics Reference page linked from Chart Builder and Explore.
+- Explore breakdowns user guide reference page.
 - Developer documentation for the Explore registry.
 
 ### Changed
