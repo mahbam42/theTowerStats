@@ -91,11 +91,13 @@ nav:
       - Clone and Start Locally: clone_start_locally.md
       - Testing:
           - Testing: testing.md
-          - Manual Testing Guide: manual_testing.md
+      - Manual Testing Guide: manual_testing.md
       - Goals Dashboard: dev_goals.md
       - Development Notes: development.md
+      - Explore Registry: explore_registry.md
   - Reference:
       - Explore DSL: explore_dsl.md
+      - Metrics Reference: metrics_reference.md
       - Management Commands: management_commands.md
       - Analytics: reference/analytics.md
       - Core Charting: reference/core_charting.md

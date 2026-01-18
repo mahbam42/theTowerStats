@@ -49,6 +49,7 @@ class ChartData(TypedDict, total=False):
     labels: list[str]
     datasets: list[ChartDataset]
     run_ids: list[int | None]
+    totals: list[float | None]
     x_label: str
     x_unit: str
     y_label: str
@@ -301,6 +302,8 @@ def render_chart(
     panel_unit = datasets[0]["unit"] if datasets else ""
     run_ids = _run_ids_for_labels(all_points, labeler, labels) if granularity == "per_run" else None
     panel_data: ChartData = {"labels": labels, "datasets": datasets}
+    if config.id == "free_upgrades_by_run":
+        panel_data["totals"] = _stacked_totals(labels=labels, datasets=datasets)
     if run_ids is not None:
         panel_data["run_ids"] = run_ids
     return RenderedChart(
@@ -349,6 +352,28 @@ def _jsonable_config(config: ChartConfig) -> dict[str, object]:
         raw_filters["date_range"] = date_range
         raw["filters"] = raw_filters
     return raw
+
+
+def _stacked_totals(*, labels: Sequence[str], datasets: Sequence[ChartDataset]) -> list[float | None]:
+    """Return per-label totals for stacked bar datasets."""
+
+    totals: list[float | None] = []
+    for idx in range(len(labels)):
+        total = 0.0
+        has_value = False
+        for dataset in datasets:
+            data = dataset.get("data") or ()
+            if idx >= len(data):
+                continue
+            value = data[idx]
+            if isinstance(value, dict):
+                value = value.get("y")
+            if value is None:
+                continue
+            has_value = True
+            total += float(value)
+        totals.append(total if has_value else None)
+    return totals
 
 
 def _render_donut_chart(

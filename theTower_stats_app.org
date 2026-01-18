@@ -3890,7 +3890,7 @@ This replaces only the first occurrence of /&/.
 
 Sanitizing untrusted input is a common technique for preventing injection attacks such as SQL injection or cross-site scripting. Usually, this is done by escaping meta-characters such as quotes in a domain-specific way so that they are treated as normal characters.
 **** TODO Move Metrics Reference off of Chart Builder and into Reference Section. :docs:
-Since the Chart Builder and Explore both use this table, it should be a standalone reference page linked to both. 
+Since the Chart Builder and Explore both use this table, it should be a standalone reference page linked to both. We also need documentation for explore_registry.py. 
 **** TODO [#A] On the Free Upgrades by Run Chart the Total needs to show the combined total of all three metrics :bug:
 See screenshot
 **** TODO Fix text in Goals Modal                                    :bug:

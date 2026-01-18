@@ -2,6 +2,18 @@
 
 This project follows Semantic Versioning.
 
+## [0.8.3]
+
+### Added
+- Metrics Reference page linked from Chart Builder and Explore.
+- Developer documentation for the Explore registry.
+
+### Changed
+- Battle Report import preset selection now uses a dropdown with a create-new option.
+
+### Fixed
+- Free Upgrades by Run tooltip totals now sum attack, defense, and utility upgrades.
+
 ## [0.8.2]
 
 ### Fixed

@@ -1,5 +1,7 @@
 # Explore
 
+This page is **User Guide**. It explains how to run Explore queries and read the results.
+
 ## Overview
 
 Explore helps you build your own questions about past runs and see aggregated answers without changing Battle History.
@@ -16,19 +18,20 @@ Explore helps you build your own questions about past runs and see aggregated an
 1. Select **Explore** in the navigation.
 2. Review the Query Builder text area at the top of the page.
 3. Use the Saved query dropdown to load a built-in query such as Farming Efficiency by Tier.
-4. Review the [Explore DSL](explore_dsl.md) reference if you want the full syntax list.
-5. Enter a name on the first line so you can save or edit the query later.
-6. Review the Scope lines and replace any placeholders with real values when needed.
-7. Use all or * when you want a scope line to stay open.
-8. Add Filter lines to narrow the runs in scope.
-9. To exclude tournaments, add not tournament to the Tier scope line.
-10. To exclude specific dates, add not followed by one or more ISO dates on the date scope line.
-11. To include presets by name, list one or more preset names on the preset scope line.
-12. To exclude presets by name, add not followed by one or more preset names on the preset scope line.
-13. Add a Breakdown line to group results.
-14. Add a Metric line and an Aggregation.
-15. Add an Output line when you want a chart or KPI.
-16. Select **Run query**.
+4. Review the [Metrics Reference](metrics_reference.md) to see the full list of metrics shared with Chart Builder.
+5. Review the [Explore DSL](explore_dsl.md) reference if you want the full syntax list.
+6. Enter a name on the first line so you can save or edit the query later.
+7. Review the Scope lines and replace any placeholders with real values when needed.
+8. Use all or * when you want a scope line to stay open.
+9. Add Filter lines to narrow the runs in scope.
+10. To exclude tournaments, add not tournament to the Tier scope line.
+11. To exclude specific dates, add not followed by one or more ISO dates on the date scope line.
+12. To include presets by name, list one or more preset names on the preset scope line.
+13. To exclude presets by name, add not followed by one or more preset names on the preset scope line.
+14. Add a Breakdown line to group results.
+15. Add a Metric line and an Aggregation.
+16. Add an Output line when you want a chart or KPI.
+17. Select **Run query**.
 
 ## How to Read the Results
 

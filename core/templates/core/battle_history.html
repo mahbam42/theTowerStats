@@ -52,6 +52,13 @@
                     <span class="form-error is-visible">{{ import_form.preset_name.errors|striptags }}</span>
                   {% endif %}
                 </label>
+                <label>{{ import_form.new_preset_name.label }}
+                  {{ import_form.new_preset_name }}
+                  {% if import_form.new_preset_name.errors %}
+                    <span class="form-error is-visible">{{ import_form.new_preset_name.errors|striptags }}</span>
+                  {% endif %}
+                </label>
+                <p class="help-text muted">Select "Create new preset" to enter a new name.</p>
                 <label>
                   {{ import_form.is_tournament }}
                   {{ import_form.is_tournament.label }}

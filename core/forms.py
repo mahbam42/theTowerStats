@@ -41,10 +41,16 @@ class BattleReportImportForm(forms.Form):
         widget=forms.Textarea(attrs={"rows": 12, "cols": 80}),
         help_text="Paste exactly one Battle Report from The Tower.",
     )
-    preset_name = forms.CharField(
+    preset_name = forms.ChoiceField(
         required=False,
-        label="Preset label (optional)",
-        help_text="Optional context tag applied to this run (e.g. 'Farming build').",
+        label="Preset",
+        help_text="Optional label applied to this run.",
+        choices=(),
+    )
+    new_preset_name = forms.CharField(
+        required=False,
+        label="New preset name",
+        help_text='Use when "Create new preset" is selected.',
     )
     is_tournament = forms.BooleanField(
         required=False,
@@ -57,6 +63,22 @@ class BattleReportImportForm(forms.Form):
         label="Tournament rank",
         help_text="Required when Tournament run is enabled.",
     )
+
+    def __init__(self, *args: object, player: Player | None = None, **kwargs: object) -> None:
+        """Initialize preset choices with the player's saved presets."""
+
+        super().__init__(*args, **kwargs)
+        self.fields["preset_name"].choices = self._preset_choices(player)
+
+    def _preset_choices(self, player: Player | None) -> tuple[tuple[str, str], ...]:
+        """Return preset dropdown choices for the provided player."""
+
+        choices: list[tuple[str, str]] = [("", "No preset")]
+        if player is not None:
+            presets = Preset.objects.filter(player=player).order_by("name")
+            choices.extend((preset.name, preset.name) for preset in presets)
+        choices.append(("__new__", "Create new preset"))
+        return tuple(choices)
 
     def clean_raw_text(self) -> str:
         """Validate that the input contains exactly one Battle Report.
@@ -95,9 +117,19 @@ class BattleReportImportForm(forms.Form):
         return raw_text
 
     def clean(self) -> dict[str, object]:
-        """Validate tournament metadata requirements."""
+        """Validate tournament metadata requirements and preset selection."""
 
         cleaned = super().clean()
+        preset_choice = (cleaned.get("preset_name") or "").strip()
+        new_preset_name = (cleaned.get("new_preset_name") or "").strip()
+        if preset_choice == "__new__":
+            if not new_preset_name:
+                self.add_error("new_preset_name", "Enter a new preset name.")
+            else:
+                cleaned["preset_name"] = new_preset_name
+        elif new_preset_name:
+            cleaned["new_preset_name"] = ""
+
         is_tournament = bool(cleaned.get("is_tournament"))
         tournament_rank = (cleaned.get("tournament_rank") or "").strip()
         if is_tournament and not tournament_rank:

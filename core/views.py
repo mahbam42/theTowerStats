@@ -559,7 +559,7 @@ def dashboard(request: HttpRequest) -> HttpResponse:
             messages.success(request, "Snapshot saved.")
             return redirect("core:dashboard")
 
-        import_form = BattleReportImportForm(request.POST)
+        import_form = BattleReportImportForm(request.POST, player=player)
         if import_form.is_valid():
             raw_text = import_form.cleaned_data["raw_text"]
             preset_name = import_form.cleaned_data.get("preset_name") or None
@@ -585,7 +585,7 @@ def dashboard(request: HttpRequest) -> HttpResponse:
                     messages.warning(request, "Duplicate Battle Report ignored.")
                 return redirect("core:dashboard")
     else:
-        import_form = BattleReportImportForm()
+        import_form = BattleReportImportForm(player=player)
 
     defaulted_get = (
         effective_get.copy()
@@ -872,6 +872,7 @@ def dashboard(request: HttpRequest) -> HttpResponse:
                 "labels": entry.data["labels"],
                 "datasets": entry.data["datasets"],
                 "run_ids": entry.data.get("run_ids"),
+                "totals": entry.data.get("totals"),
                 "x_label": entry.data.get("x_label"),
                 "x_unit": entry.data.get("x_unit"),
                 "y_label": entry.data.get("y_label"),
@@ -2490,7 +2491,7 @@ def battle_history(request: HttpRequest) -> HttpResponse:
                 fallback=reverse("core:battle_history"),
             )
 
-        import_form = BattleReportImportForm(request.POST)
+        import_form = BattleReportImportForm(request.POST, player=player)
         if import_form.is_valid():
             raw_text = import_form.cleaned_data["raw_text"]
             preset_name = import_form.cleaned_data.get("preset_name") or None
@@ -2516,7 +2517,7 @@ def battle_history(request: HttpRequest) -> HttpResponse:
                     messages.warning(request, "Duplicate Battle Report ignored.")
                 return redirect("core:battle_history")
     else:
-        import_form = BattleReportImportForm()
+        import_form = BattleReportImportForm(player=player)
 
     filter_form = BattleHistoryFilterForm(request.GET, player=player)
     filter_form.is_valid()

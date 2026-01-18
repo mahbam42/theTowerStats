@@ -642,6 +642,13 @@
                     <span class="form-error is-visible">{{ import_form.preset_name.errors|striptags }}</span>
                   {% endif %}
                 </label>
+                <label>{{ import_form.new_preset_name.label }}
+                  {{ import_form.new_preset_name }}
+                  {% if import_form.new_preset_name.errors %}
+                    <span class="form-error is-visible">{{ import_form.new_preset_name.errors|striptags }}</span>
+                  {% endif %}
+                </label>
+                <p class="help-text muted">Select "Create new preset" to enter a new name.</p>
                 <label>
                   {{ import_form.is_tournament }}
                   {{ import_form.is_tournament.label }}
@@ -966,7 +973,7 @@
         return context.granularity === "per_run" ? "Run" : "Date";
       }
 
-      function renderBarChart(canvasId, labels, datasets, stacked, runIds, chartId) {
+      function renderBarChart(canvasId, labels, datasets, stacked, runIds, chartId, totals) {
         const canvas = document.getElementById(canvasId);
         const ctx = canvas ? canvas.getContext("2d") : null;
         if (!ctx || labels.length === 0 || datasets.length === 0) return;
@@ -1002,7 +1009,31 @@
                   title: (items) => (items && items[0] ? `${xAxisTitle()}: ${items[0].label}` : ""),
                   footer: (items) => {
                     if (!showTotal || !Array.isArray(items) || items.length === 0) return "";
-                    const total = items.reduce((sum, item) => sum + (Number(item.parsed?.y) || 0), 0);
+                    const totalIndex = items[0].dataIndex;
+                    const totalValues = Array.isArray(totals) ? totals : null;
+                    let total = null;
+                    if (totalValues && totalIndex < totalValues.length) {
+                      const value = totalValues[totalIndex];
+                      if (Number.isFinite(Number(value))) total = Number(value);
+                    }
+                    if (total === null) {
+                      total = 0;
+                      let hasValue = false;
+                      for (const dataset of mappedDatasets) {
+                        const value = dataset?.data?.[totalIndex];
+                        if (value === null || value === undefined) continue;
+                        if (typeof value === "object" && value !== null) {
+                          const yValue = value.y;
+                          if (yValue === null || yValue === undefined) continue;
+                          total += Number(yValue) || 0;
+                          hasValue = true;
+                          continue;
+                        }
+                        total += Number(value) || 0;
+                        hasValue = true;
+                      }
+                      if (!hasValue) return "";
+                    }
                     return `Total: ${formatChartNumber(total, "")}`;
                   },
                 },
@@ -1179,7 +1210,15 @@
           );
         }
         if (panel.chart_type === "bar") {
-          return renderBarChart(canvasId, panel.labels, panel.datasets, panel.stacked, panel.run_ids, panel.id);
+          return renderBarChart(
+            canvasId,
+            panel.labels,
+            panel.datasets,
+            panel.stacked,
+            panel.run_ids,
+            panel.id,
+            panel.totals
+          );
         }
         if (panel.chart_type === "area") {
           return renderLineChart(canvasId, panel.labels, panel.datasets, panel.run_ids, "area");
