@@ -4,7 +4,7 @@ A stats‑tracking and analysis app for **The Tower** mobile game.
 
 Battle history can be imported as raw text, then explored through charts and read-only progress dashboards — without guesswork or prescriptive advice.
 
-![GitHub Actions Workflow Status](https://img.shields.io/github/actions/workflow/status/mahbam42/TheTowerStats/.github%2Fworkflows%2Fdjango.yml) ![GitHub Release](https://img.shields.io/github/v/release/mahbam42/TheTowerStats) [![Documentation link badge https://mahbam42.github.io/theTowerStats/][docs-badge]][docs]
+![GitHub Actions Workflow Status](https://img.shields.io/github/actions/workflow/status/mahbam42/TheTowerStats/.github%2Fworkflows%2Fdjango.yml) ![GitHub Release](https://img.shields.io/github/v/release/mahbam42/TheTowerStats)
 
 ## Links
 
