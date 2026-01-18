@@ -2425,7 +2425,7 @@ CLOSED: [2025-12-22 Mon 15:31]
 - [X] fetch_wiki_data and rebuild_wiki_definitions should have a pretty summary of deltas at the end.
   Especially when using --target all.
 
-*** Bugs/Enhancements [98/102]
+*** Bugs/Enhancements [101/102]
 
 **** DONE [#B] Error Updating Guardian Upgrade Table                 :bug:
 CLOSED: [2025-12-22 Mon 18:51]
@@ -3889,13 +3889,19 @@ core/static/vendor/codemirror/explore.bundle.mjs:1827
 This replaces only the first occurrence of /&/.
 
 Sanitizing untrusted input is a common technique for preventing injection attacks such as SQL injection or cross-site scripting. Usually, this is done by escaping meta-characters such as quotes in a domain-specific way so that they are treated as normal characters.
-**** TODO Move Metrics Reference off of Chart Builder and into Reference Section. :docs:
+**** DONE Move Metrics Reference off of Chart Builder and into Reference Section. :docs:
+CLOSED: [2026-01-18 Sun 16:37]
+- State "DONE"       from "TODO"       [2026-01-18 Sun 16:37]
 Since the Chart Builder and Explore both use this table, it should be a standalone reference page linked to both. We also need documentation for explore_registry.py. 
-**** TODO [#A] On the Free Upgrades by Run Chart the Total needs to show the combined total of all three metrics :bug:
+**** DONE [#A] On the Free Upgrades by Run Chart the Total needs to show the combined total of all three metrics :bug:
+CLOSED: [2026-01-18 Sun 16:37]
+- State "DONE"       from "TODO"       [2026-01-18 Sun 16:37]
 See screenshot
 **** TODO Fix text in Goals Modal                                    :bug:
 See screenshot
-**** TODO Fix Preset Label in 'Add Battle Report'                    :bug:
+**** DONE Fix Preset Label in 'Add Battle Report'                    :bug:
+CLOSED: [2026-01-18 Sun 16:37]
+- State "DONE"       from "TODO"       [2026-01-18 Sun 16:37]
 Needs to be dropdown populated with player presets and an option to create a new one.
 ** Backlog [3/9]
 “Out of Scope”:

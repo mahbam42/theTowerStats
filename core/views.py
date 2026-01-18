@@ -1452,7 +1452,7 @@ def _battle_history_columns() -> tuple[BattleHistoryColumn, ...]:
         BattleHistoryColumn("run_number", "Run #", default_visible=True),
         BattleHistoryColumn("battle_date", "Battle date", sort_key="run_progress__battle_date", default_visible=True),
         BattleHistoryColumn("tier", "Tier", sort_key="run_progress__tier", default_visible=True),
-        BattleHistoryColumn("tournament", "Tournament"),
+        BattleHistoryColumn("tournament", "Tournament", sort_key="run_progress__is_tournament"),
         BattleHistoryColumn("wave", "Highest wave", sort_key="run_progress__wave", default_visible=True),
         BattleHistoryColumn("real_time", "Real time", sort_key="run_progress__real_time_seconds"),
         BattleHistoryColumn("killed_by", "Killed by", sort_key="run_progress__killed_by", default_visible=True),
@@ -1463,7 +1463,11 @@ def _battle_history_columns() -> tuple[BattleHistoryColumn, ...]:
         BattleHistoryColumn("gem_blocks", "Gem blocks", sort_key="run_progress__gem_blocks_tapped", default_visible=True),
         BattleHistoryColumn("cells_earned", "Cells earned", sort_key="run_progress__cells_earned", default_visible=True),
         BattleHistoryColumn("reroll_shards", "Reroll shards", sort_key="run_progress__reroll_shards_earned", default_visible=True),
-        BattleHistoryColumn("recovery_packages", "Recovery packages"),
+        BattleHistoryColumn(
+            "recovery_packages",
+            "Recovery packages",
+            sort_key="derived_metrics__values__recovery_packages",
+        ),
         BattleHistoryColumn("preset", "Preset", sort_key="run_progress__preset__name", default_visible=True),
     )
 
@@ -2650,6 +2654,7 @@ def battle_history(request: HttpRequest) -> HttpResponse:
         sortable_keys={
             "battle_date": "run_progress__battle_date",
             "tier": "run_progress__tier",
+            "tournament": "run_progress__is_tournament",
             "wave": "run_progress__wave",
             "killed_by": "run_progress__killed_by",
             "real_time": "run_progress__real_time_seconds",
@@ -2660,6 +2665,7 @@ def battle_history(request: HttpRequest) -> HttpResponse:
             "gem_blocks": "run_progress__gem_blocks_tapped",
             "cells_earned": "run_progress__cells_earned",
             "reroll_shards": "run_progress__reroll_shards_earned",
+            "recovery_packages": "derived_metrics__values__recovery_packages",
             "preset": "run_progress__preset__name",
             "imported": "parsed_at",
         },

@@ -42,6 +42,9 @@ def test_battle_history_renders_import_widget_and_sort_links(auth_client, player
     assert "sort=run_progress__battle_date" in content
     assert "sort=-run_progress__wave" in content
     assert "sort=-run_progress__coins_earned" in content
+    sort_querystrings = response.context["sort_querystrings"]
+    assert "sort=-run_progress__is_tournament" in sort_querystrings["tournament"]
+    assert "sort=-derived_metrics__values__recovery_packages" in sort_querystrings["recovery_packages"]
     assert "Run #" in content
     assert "Highest wave" in content
     assert "1234" in content
