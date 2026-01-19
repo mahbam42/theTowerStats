@@ -23,5 +23,10 @@ def test_mkdocs_user_guide_includes_explore_page() -> None:
     )
     user_guide_items = user_guide.get("User Guide", []) if isinstance(user_guide, dict) else []
     explore_entry = next((item for item in user_guide_items if "Explore" in item), None)
-    assert explore_entry == {"Explore": "explore.md"}
+    assert explore_entry == {
+        "Explore": [
+            {"Overview": "explore.md"},
+            {"Explore Breakdowns": "explore_breakdowns.md"},
+        ],
+    }
     assert (repo_root / "docs" / "explore.md").exists()
