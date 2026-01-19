@@ -34,6 +34,7 @@ _QUOTED_RE = re.compile(r'^"(.*)"$')
 
 _METRIC_ALIASES = {
     "enemies_destroyed_elites": "enemies_destroyed_elite",
+    "run_duration": "real_time_hours",
 }
 
 

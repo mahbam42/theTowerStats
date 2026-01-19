@@ -64,7 +64,7 @@ When placeholders are present or a scope line is omitted, parsing falls back to 
 - `percent_of_total` is an optional metric modifier and requires `sum` or `count`.
 - `and` joins multiple metrics on the same line; multiple metric lines are also accepted.
 - Multi-metric queries must use table output.
-- Metric aliases are accepted (for example, `enemies_destroyed_elites` maps to `enemies_destroyed_elite`).
+- Metric aliases are accepted (for example, `enemies_destroyed_elites` maps to `enemies_destroyed_elite`, and `run_duration` maps to `real_time_hours`).
 - Placeholders do not override prefilled defaults.
 - `all` or `*` clears a prefilled scope value and keeps the scope open.
 

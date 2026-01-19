@@ -250,6 +250,7 @@ def test_parse_explore_dsl_rejects_multi_separator_date_ranges() -> None:
     assert "Date scope must use start..end format." in result.errors
 
 
+@pytest.mark.unit
 @pytest.mark.regression
 def test_parse_explore_dsl_accepts_metric_aliases() -> None:
     """Normalize known metric aliases in the DSL."""
@@ -264,7 +265,7 @@ def test_parse_explore_dsl_accepts_metric_aliases() -> None:
     )
     dsl_text = (
         'name "Alias check"\n'
-        "metric enemies_destroyed_elites sum\n"
+        "metric enemies_destroyed_elites sum and run_duration avg\n"
         "breakdown by run\n"
     )
 
@@ -273,4 +274,6 @@ def test_parse_explore_dsl_accepts_metric_aliases() -> None:
     assert result.errors == ()
     assert result.query is not None
     assert result.query.metrics[0].key == "enemies_destroyed_elite"
+    assert result.query.metrics[1].key == "real_time_hours"
     assert any("enemies_destroyed_elites" in warning for warning in result.warnings)
+    assert any("run_duration" in warning for warning in result.warnings)
