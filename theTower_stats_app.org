@@ -2425,7 +2425,7 @@ CLOSED: [2025-12-22 Mon 15:31]
 - [X] fetch_wiki_data and rebuild_wiki_definitions should have a pretty summary of deltas at the end.
   Especially when using --target all.
 
-*** Bugs/Enhancements [102/103]mx
+*** Bugs/Enhancements [102/103]
 
 **** DONE [#B] Error Updating Guardian Upgrade Table                 :bug:
 CLOSED: [2025-12-22 Mon 18:51]
@@ -3905,7 +3905,7 @@ See screenshot
 CLOSED: [2026-01-18 Sun 16:37]
 - State "DONE"       from "TODO"       [2026-01-18 Sun 16:37]
 Needs to be dropdown populated with player presets and an option to create a new one.
-**** TODO [#A] Game Patch v27.4.0 [0/4]
+**** TODO [#A] Game Patch v27.4.0 [0/6]
 ***** TODO [#A] In Explore Dashboard Table 'Runs Counted' column needs to only show once with multiple metrics. :bug:
 It makes the tables harder to read. 
 ***** TODO [#A] Add 3rd Gaurdian Chip Slot                  :enhancement:
@@ -3913,7 +3913,10 @@ Allow up to 3 Guardian Chips to be equiped.
 Add unlock for the slots, 2nd slot is 200 bits, 3rd is 300 bits.
 ***** TODO [#B] On the Cards Dashboard, the Cards Table default sort needs to be by Rarity. :bug:
 ***** TODO [#B] Add Patch Boundary Support to Eplore DSL and Charts. :enhancement:
-Add as a filter. ***** WAIT [#C] New Stats                                   :enhancement:
+Add as a filter.
+***** TODO [#A] Improve Metrics Documentation                       :bug:
+metrics_reference.md needs to include the key values (used on explore dashboard) as a column. 
+***** WAIT [#C] New Stats                                   :enhancement:
 - State "WAIT"       from "TODO"       [2026-01-28 Wed 19:53] \\
   These have been added to the global stats screen that we currently do not capture.
 New stats are being added in an upcoming release:
