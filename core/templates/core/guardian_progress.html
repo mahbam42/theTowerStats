@@ -3,7 +3,53 @@
 {% block title %}Guardian Chips Progress • theTowerStats{% endblock %}
 
 {% block content %}
-{% include "core/components/upgradeable_entity_dashboard.html" with dashboard_kicker="Progress" dashboard_title="Guardian Chips" dashboard_note="Upgrades currently assume sufficient Bits. Costs are informational only." hero_enabled=True hero_entities=active_chip_hero hero_kicker="Active Chips" hero_title="Active Chips" hero_note="Only two chips can be active at a time." hero_empty="No active chips selected." filter_form=filter_form entities=guardian_chips entity_badge="Guardian" total_invested_label="Total Bits invested" unlock_cost_currency_label="Bits" unlock_action_value="unlock_guardian_chip" level_up_action_value="level_up_guardian_param" level_down_action_value="level_down_guardian_param" show_activation=True toggle_active_action_value="set_guardian_active" activation_limit_reached=activation_limit_reached goals_widget_rows=goals_widget_rows goals_widget_goal_type=goals_widget_goal_type %}
+  <div class="grid-x grid-margin-x">
+    <div class="cell">
+      <div class="card-shell">
+        <h4 class="margin-bottom-1">Active slots</h4>
+        <p class="lead margin-0">
+          Slots unlocked:
+          {{ guardian_slots.unlocked }}
+          /
+          {% if guardian_slots.max %}
+            {{ guardian_slots.max }}
+          {% else %}
+            Not tracked yet
+          {% endif %}
+        </p>
+        <p class="muted margin-0">
+          Next slot cost:
+          {% if guardian_slots.max and guardian_slots.unlocked >= guardian_slots.max %}
+            No additional slots available
+          {% elif guardian_slots.next_cost %}
+            {{ guardian_slots.next_cost }}
+          {% else %}
+            Not tracked yet
+          {% endif %}
+        </p>
+        {% if demo_mode %}
+          <p class="muted margin-top-1 margin-bottom-0">Slot unlocks are disabled in demo mode.</p>
+        {% else %}
+          <form method="post" class="margin-top-1">
+            {% csrf_token %}
+            <input type="hidden" name="action" value="unlock_guardian_slot">
+            <input type="hidden" name="next" value="{{ request.get_full_path }}">
+            <button
+              class="button"
+              type="submit"
+              {% if guardian_slots.max and guardian_slots.unlocked >= guardian_slots.max %}disabled{% endif %}
+            >
+              Unlock Next Slot{% if guardian_slots.next_cost %} ({{ guardian_slots.next_cost }}){% endif %}
+            </button>
+          </form>
+        {% endif %}
+      </div>
+    </div>
+  </div>
+
+  <div class="margin-top-1">
+    {% include "core/components/upgradeable_entity_dashboard.html" with dashboard_kicker="Progress" dashboard_title="Guardian Chips" dashboard_note="Upgrades currently assume sufficient Bits. Costs are informational only." hero_enabled=True hero_entities=active_chip_hero hero_kicker="Active Chips" hero_title="Active Chips" hero_note=guardian_hero_note hero_empty="No active chips selected." filter_form=filter_form entities=guardian_chips entity_badge="Guardian" total_invested_label="Total Bits invested" unlock_cost_currency_label="Bits" unlock_action_value="unlock_guardian_chip" level_up_action_value="level_up_guardian_param" level_down_action_value="level_down_guardian_param" show_activation=True toggle_active_action_value="set_guardian_active" activation_limit_reached=activation_limit_reached activation_limit_current=activation_limit_current activation_limit_total=activation_limit_total goals_widget_rows=goals_widget_rows goals_widget_goal_type=goals_widget_goal_type %}
+  </div>
 {% endblock %}
 
 {% block extra_scripts %}

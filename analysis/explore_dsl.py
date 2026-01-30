@@ -344,8 +344,11 @@ def parse_explore_dsl(
         if lowered.startswith("filter "):
             field, value = _split_field_value(line[len("filter ") :].strip())
             if field and value:
+                normalized_field = field.strip()
+                if normalized_field in {"patch", "patch_boundary"}:
+                    normalized_field = "patch_boundary"
                 filter_entries, filter_errors = _parse_filter_line(
-                    field.strip(),
+                    normalized_field,
                     value.strip(),
                 )
                 filters.extend(filter_entries)
@@ -453,6 +456,7 @@ def build_explore_autocomplete(
         "death_cause",
         "wave",
         "run",
+        "patch",
         "in",
     ]
     metrics = [
@@ -504,6 +508,9 @@ def _format_filter(entry: ExploreFilter) -> list[str]:
         start = entry.value.get("start") or "[date:YYYY-MM-DD]"
         end = entry.value.get("end") or "[date:YYYY-MM-DD]"
         return [f"filter date_range {start}..{end}"]
+    if entry.field == "patch_boundary" and entry.operator == "in" and isinstance(entry.value, list):
+        values = ", ".join(_format_name(str(value)) for value in entry.value if value)
+        return [f"filter patch in {values}"]
     return []
 
 
@@ -727,7 +734,10 @@ def _parse_filter_line(field: str, value: str) -> tuple[list[ExploreFilter], lis
     elif value.lower().startswith("in "):
         operator = "in"
         raw_list = value[3:].split(",")
-        parsed_value = [_parse_int(entry.strip()) for entry in raw_list if entry.strip()]
+        if field in {"tier"}:
+            parsed_value = [_parse_int(entry.strip()) for entry in raw_list if entry.strip()]
+        else:
+            parsed_value = [_parse_value(entry.strip()) for entry in raw_list if entry.strip()]
     else:
         parts = value.split(maxsplit=1)
         if len(parts) == 2 and parts[0] in {">=", "<=", "!=", "="}:

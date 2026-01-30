@@ -24,9 +24,10 @@ Charts help you review how your run results change over time using the same valu
   A. Choose a tournament rank when you want only that tournament bracket.
   B. Toggle **Include tournaments** to include tournament runs in the charts.
 6. In **Context**, select **Exclude presets** to remove runs with those preset labels from charts.
-7. (Optional) In **Context**, select a **Snapshot** or enter **Past N runs** to tighten the scope.
-8. Select **Apply** to refresh the dashboard.
-9. Select **Query Explorer** to open Explore with your current scope.
+7. In **Context**, select **Patch boundary** to filter to one or more patch windows.
+8. (Optional) In **Context**, select a **Snapshot** or enter **Past N runs** to tighten the scope.
+9. Select **Apply** to refresh the dashboard.
+10. Select **Query Explorer** to open Explore with your current scope.
 
 
 * Open **More options** to refine charts, windowing, and item filters. For details, see [More Options](charts/more_options.md).
@@ -75,6 +76,9 @@ Charts help you review how your run results change over time using the same valu
 
 > **Note**
 > If a Battle Report does not include a Battle Date, charts place the run using the time you imported the report.
+
+> **Note**
+> Patch boundary filters include runs from the selected patch date up to the next patch boundary.
 
 > **Note**
 > Exports are snapshots of what you are viewing. They do not update after download.

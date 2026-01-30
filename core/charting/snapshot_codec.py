@@ -26,6 +26,9 @@ def encode_chart_config_dto(config: ChartConfigDTO) -> dict[str, Any]:
         "preset_id": config.context.preset_id,
         "excluded_preset_ids": list(config.context.excluded_preset_ids),
         "include_tournaments": bool(config.context.include_tournaments),
+        "patch_boundaries": [
+            _encode_date(boundary) for boundary in config.context.patch_boundaries
+        ],
     }
     payload: dict[str, Any] = {
         "version": config.version,
@@ -65,6 +68,13 @@ def decode_chart_config_dto(payload: dict[str, Any]) -> ChartConfigDTO:
 
     metrics = tuple(str(x) for x in (payload.get("metrics") or ()))
     context_raw = cast(dict[str, Any], payload.get("context") or {})
+    raw_patch_boundaries = context_raw.get("patch_boundaries")
+    patch_boundaries = []
+    if isinstance(raw_patch_boundaries, list):
+        for value in raw_patch_boundaries:
+            parsed = _parse_date(value)
+            if parsed is not None:
+                patch_boundaries.append(parsed)
     context = ChartContextDTO(
         start_date=_parse_date(context_raw.get("start_date")),
         end_date=_parse_date(context_raw.get("end_date")),
@@ -73,6 +83,7 @@ def decode_chart_config_dto(payload: dict[str, Any]) -> ChartConfigDTO:
         preset_id=_parse_int(context_raw.get("preset_id")),
         excluded_preset_ids=_parse_int_list(context_raw.get("excluded_preset_ids")),
         include_tournaments=_parse_bool(context_raw.get("include_tournaments")),
+        patch_boundaries=tuple(patch_boundaries),
     )
     scopes_raw = payload.get("scopes")
     scopes = None

@@ -226,6 +226,37 @@ def test_parse_explore_dsl_supports_percent_of_total() -> None:
     assert result.query.metrics[0].percent_of_total is True
 
 
+@pytest.mark.golden
+def test_parse_explore_dsl_supports_patch_boundaries() -> None:
+    """Filter lines accept patch boundary tokens."""
+
+    default_scope = ExploreScope(
+        start_date=None,
+        end_date=None,
+        tier=None,
+        preset_id=None,
+        snapshot_id=None,
+        past_n_runs=None,
+    )
+    dsl_text = (
+        'name "Patch filter"\n'
+        "filter patch in 27.3, 2025-12-10\n"
+        "breakdown by tier\n"
+        "metric coins_earned sum\n"
+    )
+
+    result = parse_explore_dsl(dsl_text, player_id="player-1", default_scope=default_scope)
+
+    assert result.errors == ()
+    assert result.query is not None
+    assert any(
+        entry.field == "patch_boundary"
+        and entry.operator == "in"
+        and entry.value == ["27.3", "2025-12-10"]
+        for entry in result.query.filters
+    )
+
+
 @pytest.mark.regression
 def test_parse_explore_dsl_rejects_multi_separator_date_ranges() -> None:
     """Reject date ranges that include multiple separators."""

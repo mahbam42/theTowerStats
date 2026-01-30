@@ -25,18 +25,20 @@ Explore helps you build your own questions about past runs and see aggregated an
 8. Review the Scope lines and replace any placeholders with real values when needed.
 9. Use all or * when you want a scope line to stay open.
 10. Add Filter lines to narrow the runs in scope.
-11. To exclude tournaments, add not tournament to the Tier scope line.
-12. To exclude specific dates, add not followed by one or more ISO dates on the date scope line.
-13. To include presets by name, list one or more preset names on the preset scope line.
-14. To exclude presets by name, add not followed by one or more preset names on the preset scope line.
-15. Add a Breakdown line to group results.
-16. Add a Metric line and an Aggregation.
-17. Add an Output line when you want a chart or KPI.
-18. Select **Run query**.
+11. Add a Patch boundary filter when you want to limit results to one or more patch windows.
+12. To exclude tournaments, add not tournament to the Tier scope line.
+13. To exclude specific dates, add not followed by one or more ISO dates on the date scope line.
+14. To include presets by name, list one or more preset names on the preset scope line.
+15. To exclude presets by name, add not followed by one or more preset names on the preset scope line.
+16. Add a Breakdown line to group results.
+17. Add a Metric line and an Aggregation.
+18. Add an Output line when you want a chart or KPI.
+19. Select **Run query**.
 
 ## How to Read the Results
 
 - **Runs in scope** tells you how many runs were included before aggregation.
+- **Runs counted** shows how many runs contributed values within each row, with a marker when metrics use different counts.
 - **Breakdowns** define the groups you are comparing.
 - **Sum** adds the selected metric across runs in each group.
 - **Count** shows how many runs contributed a value to each group.
@@ -78,6 +80,9 @@ Explore helps you build your own questions about past runs and see aggregated an
 
 > ⚠️ Note
 > The app excludes tournament runs by default. Adding not tournament makes the exclusion explicit in the query.
+
+> ⚠️ Note
+> Patch boundary filters include runs between the selected patch date and the next boundary date.
 
 > ⚠️ Note
 > Date exclusions must use ISO format (YYYY-MM-DD).

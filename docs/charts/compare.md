@@ -18,7 +18,7 @@ Compare lets you review differences between two scopes of runs on the Charts das
 4. (Optional) Enable **Average each scope** to compare per-run averages instead of totals.
 5. Select multiple runs in **Scope A runs** and **Scope B runs**.
 6. Use **Last 3**, **Last 10**, or **Clear** to adjust the selection quickly.
-7. Use the **Tier or Tournament** dropdown to select runs by tier or tournament rank.
+7. Use the **Tier, Tournament, or Patch** dropdown to select runs by tier, tournament rank, or patch window.
 8. Enable **Include tournaments** when you want tournament runs to appear in the lists.
 9. Confirm each run entry by its tier, wave, date, and time.
 10. Select **Compare** to view the delta summary and any available Advice.

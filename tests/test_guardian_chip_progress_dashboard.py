@@ -228,13 +228,16 @@ def test_guardian_level_down_decrements_until_min(auth_client, player) -> None:
 
 
 @pytest.mark.django_db
-def test_guardian_active_enforces_max_two(auth_client, player, settings) -> None:
-    """Guardian chips enforce a maximum of 2 active at once."""
+def test_guardian_active_enforces_max_three(auth_client, player, settings) -> None:
+    """Guardian chips enforce a maximum of 3 active at once."""
 
     settings.DEBUG = False
+    player.guardian_chip_slots_unlocked = 3
+    player.save(update_fields=["guardian_chip_slots_unlocked"])
     g1 = _guardian_with_three_parameters(slug="g1", name="G1")
     g2 = _guardian_with_three_parameters(slug="g2", name="G2")
     g3 = _guardian_with_three_parameters(slug="g3", name="G3")
+    g4 = _guardian_with_three_parameters(slug="g4", name="G4")
     chip1 = PlayerGuardianChip.objects.create(
         player=player,
         guardian_chip_definition=g1,
@@ -254,22 +257,92 @@ def test_guardian_active_enforces_max_two(auth_client, player, settings) -> None
         guardian_chip_definition=g3,
         guardian_chip_slug=g3.slug,
         unlocked=True,
+        active=True,
+    )
+    chip4 = PlayerGuardianChip.objects.create(
+        player=player,
+        guardian_chip_definition=g4,
+        guardian_chip_slug=g4.slug,
+        unlocked=True,
         active=False,
     )
 
     url = reverse("core:guardian_progress")
     response = auth_client.post(
         url,
-        data={"action": "set_guardian_active", "entity_id": chip3.id, "active": "1"},
+        data={"action": "set_guardian_active", "entity_id": chip4.id, "active": "1"},
     )
     assert response.status_code == 302
 
     chip1.refresh_from_db()
     chip2.refresh_from_db()
     chip3.refresh_from_db()
+    chip4.refresh_from_db()
     assert chip1.active is True
     assert chip2.active is True
-    assert chip3.active is False
+    assert chip3.active is True
+    assert chip4.active is False
+
+
+@pytest.mark.django_db
+def test_guardian_active_respects_unlocked_slots(auth_client, player, settings) -> None:
+    """Active selections respect the unlocked slot count."""
+
+    settings.DEBUG = False
+    player.guardian_chip_slots_unlocked = 1
+    player.save(update_fields=["guardian_chip_slots_unlocked"])
+    g1 = _guardian_with_three_parameters(slug="g1-slot", name="G1 Slot")
+    g2 = _guardian_with_three_parameters(slug="g2-slot", name="G2 Slot")
+    chip1 = PlayerGuardianChip.objects.create(
+        player=player,
+        guardian_chip_definition=g1,
+        guardian_chip_slug=g1.slug,
+        unlocked=True,
+        active=True,
+    )
+    chip2 = PlayerGuardianChip.objects.create(
+        player=player,
+        guardian_chip_definition=g2,
+        guardian_chip_slug=g2.slug,
+        unlocked=True,
+        active=False,
+    )
+
+    url = reverse("core:guardian_progress")
+    response = auth_client.post(
+        url,
+        data={"action": "set_guardian_active", "entity_id": chip2.id, "active": "1"},
+    )
+    assert response.status_code == 302
+
+    chip1.refresh_from_db()
+    chip2.refresh_from_db()
+    assert chip1.active is True
+    assert chip2.active is False
+
+
+@pytest.mark.django_db
+def test_guardian_slot_unlock_increments_limit(auth_client, player) -> None:
+    """Slot unlock actions increment the guardian chip slot count."""
+
+    player.guardian_chip_slots_unlocked = 1
+    player.save(update_fields=["guardian_chip_slots_unlocked"])
+
+    url = reverse("core:guardian_progress")
+    response = auth_client.post(url, data={"action": "unlock_guardian_slot"})
+    assert response.status_code == 302
+    player.refresh_from_db()
+    assert player.guardian_chip_slots_unlocked == 2
+
+    response = auth_client.post(url, data={"action": "unlock_guardian_slot"})
+    assert response.status_code == 302
+    player.refresh_from_db()
+    assert player.guardian_chip_slots_unlocked == 3
+
+    response = auth_client.post(url, data={"action": "unlock_guardian_slot"})
+    assert response.status_code == 302
+    player.refresh_from_db()
+    assert player.guardian_chip_slots_unlocked == 3
 
 
 @pytest.mark.django_db

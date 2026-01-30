@@ -35,6 +35,7 @@ The DSL is line-based. Lines are parsed in any order.
 | `filter wave <=` | Filters wave upper bound. | `filter wave <= 1200` |
 | `filter death_cause =` | Filters by death cause. | `filter death_cause = "Fast"` |
 | `filter preset =` | Filters by preset id. | `filter preset = 5` |
+| `filter patch in` | Filters runs to one or more patch windows. | `filter patch in 27.3, 2025-12-10` |
 | `breakdown by` | Groups results by dimensions. | `breakdown by run, tier` |
 | `output` | Selects a chart or KPI output. | `output bar` |
 
@@ -67,6 +68,7 @@ When placeholders are present or a scope line is omitted, parsing falls back to 
 - Metric aliases are accepted (for example, `enemies_destroyed_elites` maps to `enemies_destroyed_elite`, and `run_duration` maps to `real_time_hours`).
 - Placeholders do not override prefilled defaults.
 - `all` or `*` clears a prefilled scope value and keeps the scope open.
+- `filter patch in` accepts patch labels or ISO dates; the resolver matches against `PatchBoundary`.
 
 ## Integration Notes
 

@@ -25,7 +25,7 @@ from core.charting.builder import (
     build_run_vs_run_scopes,
 )
 from core.tournament import parse_tier_or_tournament, tier_filter_value, tournament_filter_value
-from definitions.models import BotDefinition, GuardianChipDefinition, UltimateWeaponDefinition
+from definitions.models import BotDefinition, GuardianChipDefinition, PatchBoundary, UltimateWeaponDefinition
 from gamedata.models import BattleReport, BattleReportProgress, TOURNAMENT_RANK_CHOICES
 from player_state.models import ChartSnapshot, GoalType, Player, Preset
 
@@ -139,6 +139,19 @@ class BattleReportImportForm(forms.Form):
         return cleaned
 
 
+class PatchBoundaryMultipleChoiceField(forms.ModelMultipleChoiceField):
+    """A ModelMultipleChoiceField with patch label + date formatting."""
+
+    def label_from_instance(self, obj) -> str:  # type: ignore[override]
+        """Render the choice label using patch label and boundary date."""
+
+        label = (obj.label or "").strip()
+        date_label = obj.boundary_date.isoformat()
+        if label:
+            return f"{label} ({date_label})"
+        return date_label
+
+
 class ChartContextForm(forms.Form):
     """Validate contextual filters and chart overlay options."""
 
@@ -158,6 +171,13 @@ class ChartContextForm(forms.Form):
         required=False,
         widget=forms.DateInput(attrs={"type": "date"}),
         label="End date",
+    )
+    patch_boundaries = PatchBoundaryMultipleChoiceField(
+        required=False,
+        queryset=PatchBoundary.objects.none(),
+        label="Patch boundary",
+        widget=forms.SelectMultiple(attrs={"size": 4}),
+        help_text="Optional patch boundary window filter.",
     )
     granularity = forms.ChoiceField(
         required=False,
@@ -291,6 +311,7 @@ class ChartContextForm(forms.Form):
         self.fields["ultimate_weapon"].queryset = UltimateWeaponDefinition.objects.order_by("name")
         self.fields["guardian_chip"].queryset = GuardianChipDefinition.objects.order_by("name")
         self.fields["bot"].queryset = BotDefinition.objects.order_by("name")
+        self.fields["patch_boundaries"].queryset = PatchBoundary.objects.order_by("boundary_date")
         if player is None:
             self.fields["context_snapshot"].queryset = ChartSnapshot.objects.none()
         else:
@@ -1096,6 +1117,12 @@ class ExploreQueryForm(forms.Form):
         widget=forms.DateInput(attrs={"type": "date"}),
         label="End date",
     )
+    patch_boundaries = PatchBoundaryMultipleChoiceField(
+        required=False,
+        queryset=PatchBoundary.objects.none(),
+        label="Patch boundaries",
+        widget=forms.SelectMultiple(attrs={"size": 4}),
+    )
     tier_values = forms.MultipleChoiceField(
         required=False,
         choices=(),
@@ -1166,6 +1193,7 @@ class ExploreQueryForm(forms.Form):
                 player=player, target="charts"
             ).order_by("name")
             tier_queryset = BattleReportProgress.objects.filter(player=player, tier__isnull=False)
+        self.fields["patch_boundaries"].queryset = PatchBoundary.objects.order_by("boundary_date")
 
         recorded_tiers = (
             tier_queryset.order_by("tier").values_list("tier", flat=True).distinct()

@@ -135,6 +135,10 @@ from gamedata.models import (
 from player_state.card_slots import card_slot_max_slots, next_card_slot_unlock_cost_raw
 from player_state.cards import apply_inventory_rollover, derive_card_progress, derive_total_cards_progress
 from player_state.economy import enforce_and_deduct_gems_if_tracked
+from player_state.guardian_chip_slots import (
+    guardian_chip_max_slots,
+    next_guardian_chip_slot_unlock_cost_raw,
+)
 from player_state.models import (
     BattleHistoryColumnPreference,
     ChartBuilderSavedConfig,
@@ -629,7 +633,13 @@ def dashboard(request: HttpRequest) -> HttpResponse:
         base_analysis=base_analysis.runs,
         context_runs=context_runs,
     )
-    tier_options, preset_options, tournament_options, compare_run_map = _comparison_scope_options(context_runs)
+    (
+        tier_options,
+        preset_options,
+        tournament_options,
+        patch_options,
+        compare_run_map,
+    ) = _comparison_scope_options(context_runs)
     compare_run_map_json = json.dumps(compare_run_map)
     comparison_scope_warning = None
     scope_average = bool(comparison_form.cleaned_data.get("scope_average") or False)
@@ -978,6 +988,7 @@ def dashboard(request: HttpRequest) -> HttpResponse:
         "compare_scope_tier_options": tier_options,
         "compare_scope_preset_options": preset_options,
         "compare_scope_tournament_options": tournament_options,
+        "compare_scope_patch_options": patch_options,
         "compare_scope_run_map_json": compare_run_map_json,
         "advice_items": advice_items,
         "snapshot_id": snapshot_id,
@@ -1413,6 +1424,11 @@ def _runs_for_chart_context_dto(*, player: Player, context: ChartContextDTO) -> 
         runs = runs.filter(run_progress__preset_id=context.preset_id)
     if context.excluded_preset_ids:
         runs = runs.exclude(run_progress__preset_id__in=context.excluded_preset_ids)
+    if context.patch_boundaries:
+        runs = _apply_patch_boundary_filters(
+            runs,
+            boundary_dates=context.patch_boundaries,
+        )
     runs = _apply_tournament_filter(runs, tournament_filter=context.tournament_filter)
     return runs
 
@@ -1752,6 +1768,7 @@ class ExploreResultRowPayload(TypedDict):
     values: list[float | None]
     sample_count: int
     sample_counts: list[int]
+    sample_count_mismatch: bool
     metric_cells: list[dict[str, object]]
     run_id: int | None
 
@@ -3373,7 +3390,7 @@ def cards(request: HttpRequest) -> HttpResponse:
         rows = [row for row in rows if not row.get("is_maxed")]
 
     allowed_sort_keys = {"name", "rarity", "level", "progress", "maxed"}
-    current_sort = requested_sort if requested_sort.lstrip("-") in allowed_sort_keys else "name"
+    current_sort = requested_sort if requested_sort.lstrip("-") in allowed_sort_keys else "rarity"
     rows = _sort_card_rows(rows, sort_key=current_sort)
 
     max_slots = card_slot_max_slots()
@@ -4009,6 +4026,26 @@ def guardian_progress(request: HttpRequest) -> HttpResponse:
             fallback=request.path,
         )
 
+        if action == "unlock_guardian_slot":
+            max_slots = guardian_chip_max_slots()
+            unlocked_slots = max(1, int(player.guardian_chip_slots_unlocked or 1))
+            next_cost = next_guardian_chip_slot_unlock_cost_raw(unlocked=unlocked_slots)
+            if unlocked_slots < max_slots:
+                with transaction.atomic():
+                    player.guardian_chip_slots_unlocked = unlocked_slots + 1
+                    player.save(update_fields=["guardian_chip_slots_unlocked"])
+                slot_number = player.guardian_chip_slots_unlocked
+                if next_cost:
+                    messages.success(
+                        request,
+                        f"Unlocked guardian chip slot {slot_number} (cost: {next_cost}).",
+                    )
+                else:
+                    messages.success(request, f"Unlocked guardian chip slot {slot_number}.")
+            else:
+                messages.warning(request, "No additional guardian chip slots are available.")
+            return redirect_response
+
         if action == "unlock_guardian_chip":
             chip_id = int(request.POST.get("entity_id") or 0)
             chip = (
@@ -4337,8 +4374,15 @@ def guardian_progress(request: HttpRequest) -> HttpResponse:
 
     any_battles = BattleReport.objects.filter(player=player).exists()
     guardian_run_counts = _guardian_runs_used_counts(player=player)
+    unlocked_slots = max(1, int(player.guardian_chip_slots_unlocked or 1))
+    max_slots = guardian_chip_max_slots()
+    next_slot_cost = next_guardian_chip_slot_unlock_cost_raw(unlocked=unlocked_slots)
+    active_limit = min(MAX_ACTIVE_GUARDIAN_CHIPS, unlocked_slots)
+    guardian_hero_note = (
+        f"Only {active_limit} chip{'s' if active_limit != 1 else ''} can be active at a time."
+    )
     active_count = PlayerGuardianChip.objects.filter(player=player, active=True).count()
-    activation_limit_reached = active_count >= MAX_ACTIVE_GUARDIAN_CHIPS
+    activation_limit_reached = active_count >= active_limit
 
     active_chip_rows = (
         PlayerGuardianChip.objects.filter(player=player, active=True)
@@ -4352,7 +4396,7 @@ def guardian_progress(request: HttpRequest) -> HttpResponse:
             else row.guardian_chip_slug,
             "subtitle": "Active",
         }
-        for row in active_chip_rows[:MAX_ACTIVE_GUARDIAN_CHIPS]
+        for row in active_chip_rows[:active_limit]
     ]
 
     tiles: list[dict[str, object]] = []
@@ -4454,7 +4498,15 @@ def guardian_progress(request: HttpRequest) -> HttpResponse:
             "filter_form": filter_form,
             "guardian_chips": tiles,
             "activation_limit_reached": activation_limit_reached,
+            "activation_limit_current": active_count,
+            "activation_limit_total": active_limit,
             "active_chip_hero": active_chip_hero,
+            "guardian_slots": {
+                "unlocked": unlocked_slots,
+                "max": max_slots,
+                "next_cost": next_slot_cost,
+            },
+            "guardian_hero_note": guardian_hero_note,
             "goals_widget_rows": goals_widget_rows(player=player, goal_type=str(GoalType.GUARDIAN_CHIP)),
             "goals_widget_goal_type": str(GoalType.GUARDIAN_CHIP),
         },
@@ -5067,6 +5119,7 @@ def _filtered_runs(filter_form: ChartContextForm, *, player: Player) -> QuerySet
     tier = filter_form.cleaned_data.get("tier")
     preset = filter_form.cleaned_data.get("preset")
     exclude_presets = tuple(filter_form.cleaned_data.get("exclude_presets") or ())
+    patch_boundaries = tuple(filter_form.cleaned_data.get("patch_boundaries") or ())
     window_kind = filter_form.cleaned_data.get("window_kind")
     window_n = filter_form.cleaned_data.get("window_n")
     if start_date:
@@ -5081,6 +5134,9 @@ def _filtered_runs(filter_form: ChartContextForm, *, player: Player) -> QuerySet
         runs = runs.exclude(run_progress__preset__in=exclude_presets)
     runs = _apply_tournament_filter(runs, tournament_filter=tournament_filter)
     runs = _apply_snapshot_context_filters(runs, snapshot_context=snapshot_context)
+    if patch_boundaries:
+        boundary_dates = [boundary.boundary_date for boundary in patch_boundaries]
+        runs = _apply_patch_boundary_filters(runs, boundary_dates=boundary_dates)
     if window_kind and window_n:
         runs = _apply_rolling_window(runs, kind=str(window_kind), n=int(window_n), end_date=end_date)
     return runs
@@ -5131,6 +5187,95 @@ def _apply_rolling_window(
     return runs
 
 
+def _patch_boundary_window_map() -> dict[date, date | None]:
+    """Return a mapping of patch boundary dates to their next boundary date."""
+
+    boundary_dates = list(
+        PatchBoundary.objects.values_list("boundary_date", flat=True).order_by("boundary_date")
+    )
+    window_map: dict[date, date | None] = {}
+    for idx, boundary_date in enumerate(boundary_dates):
+        next_date = boundary_dates[idx + 1] if idx + 1 < len(boundary_dates) else None
+        window_map[boundary_date] = next_date
+    return window_map
+
+
+def _apply_patch_boundary_filters(
+    runs: QuerySet[BattleReport],
+    *,
+    boundary_dates: Sequence[date],
+) -> QuerySet[BattleReport]:
+    """Apply patch boundary windows to a run queryset.
+
+    Args:
+        runs: BattleReport queryset with effective_battle_date annotations.
+        boundary_dates: Selected patch boundary dates.
+
+    Returns:
+        QuerySet filtered to any of the selected patch windows.
+    """
+
+    if not boundary_dates:
+        return runs
+    window_map = _patch_boundary_window_map()
+    selected = [value for value in boundary_dates if value in window_map]
+    if not selected:
+        return runs.none()
+    query = Q()
+    for boundary_date in selected:
+        window_query = Q(effective_battle_date__date__gte=boundary_date)
+        window_end = window_map.get(boundary_date)
+        if window_end is not None:
+            window_query &= Q(effective_battle_date__date__lt=window_end)
+        query |= window_query
+    return runs.filter(query)
+
+
+def _resolve_patch_boundary_tokens(tokens: Iterable[object]) -> list[PatchBoundary]:
+    """Resolve patch boundary tokens by label or ISO date string.
+
+    Args:
+        tokens: Iterable of raw token values from DSL or form filters.
+
+    Returns:
+        List of matching PatchBoundary rows.
+    """
+
+    boundaries: list[PatchBoundary] = []
+    for token in tokens:
+        raw = str(token or "").strip()
+        if not raw:
+            continue
+        boundary = PatchBoundary.objects.filter(label__iexact=raw).first()
+        if boundary is None:
+            try:
+                boundary_date = date.fromisoformat(raw)
+            except ValueError:
+                boundary_date = None
+            if boundary_date is not None:
+                boundary = PatchBoundary.objects.filter(boundary_date=boundary_date).first()
+        if boundary is not None:
+            boundaries.append(boundary)
+    seen: set[date] = set()
+    unique: list[PatchBoundary] = []
+    for boundary in boundaries:
+        if boundary.boundary_date in seen:
+            continue
+        seen.add(boundary.boundary_date)
+        unique.append(boundary)
+    return unique
+
+
+def _format_patch_boundary_label(boundary: PatchBoundary) -> str:
+    """Return a display label for a patch boundary selection."""
+
+    label = (boundary.label or "").strip()
+    date_label = boundary.boundary_date.isoformat()
+    if label:
+        return f"{label} ({date_label})"
+    return date_label
+
+
 def _apply_tournament_filter(
     runs: QuerySet[BattleReport], *, tournament_filter: str | None
 ) -> QuerySet[BattleReport]:
@@ -5165,6 +5310,13 @@ def _snapshot_context_from_filter(snapshot: ChartSnapshot | None) -> ChartContex
     raw_context = dict(snapshot.chart_context or {})
     if not raw_context:
         return None
+    raw_patch_boundaries = raw_context.get("patch_boundaries")
+    patch_boundaries = []
+    if isinstance(raw_patch_boundaries, list):
+        for value in raw_patch_boundaries:
+            parsed = _parse_context_date(value)
+            if parsed is not None:
+                patch_boundaries.append(parsed)
     return ChartContextDTO(
         start_date=_parse_context_date(raw_context.get("start_date")),
         end_date=_parse_context_date(raw_context.get("end_date")),
@@ -5175,6 +5327,7 @@ def _snapshot_context_from_filter(snapshot: ChartSnapshot | None) -> ChartContex
             raw_context.get("excluded_preset_ids") or raw_context.get("exclude_presets")
         ),
         include_tournaments=_parse_context_bool(raw_context.get("include_tournaments")),
+        patch_boundaries=tuple(patch_boundaries),
     )
 
 
@@ -5195,6 +5348,11 @@ def _apply_snapshot_context_filters(
         runs = runs.filter(run_progress__preset_id=snapshot_context.preset_id)
     if snapshot_context.excluded_preset_ids:
         runs = runs.exclude(run_progress__preset_id__in=snapshot_context.excluded_preset_ids)
+    if snapshot_context.patch_boundaries:
+        runs = _apply_patch_boundary_filters(
+            runs,
+            boundary_dates=snapshot_context.patch_boundaries,
+        )
     return _apply_tournament_filter(runs, tournament_filter=snapshot_context.tournament_filter)
 
 
@@ -5329,6 +5487,10 @@ def _explore_form_initial_from_payload(payload: dict[str, object]) -> dict[str, 
             initial["wave_max"] = value.get("max")
         if field == "death_cause":
             initial["death_cause"] = value or "__missing__"
+        if field == "patch_boundary" and operator == "in" and isinstance(value, list):
+            boundaries = _resolve_patch_boundary_tokens(value)
+            if boundaries:
+                initial["patch_boundaries"] = [boundary.id for boundary in boundaries]
         if field == "date_range" and operator == "range" and isinstance(value, dict):
             initial["start_date"] = value.get("start") or initial.get("start_date") or ""
             initial["end_date"] = value.get("end") or initial.get("end_date") or ""
@@ -5350,6 +5512,11 @@ def _explore_form_initial_from_request(params: QueryDict) -> dict[str, object]:
     for field in ("start_date", "end_date", "preset", "snapshot", "past_n_runs", "death_cause"):
         if params.get(field):
             initial[field] = params.get(field)
+    patch_boundaries = [value for value in params.getlist("patch_boundaries") if value]
+    if patch_boundaries:
+        boundaries = _resolve_patch_boundary_tokens(patch_boundaries)
+        if boundaries:
+            initial["patch_boundaries"] = [boundary.id for boundary in boundaries]
     return initial
 
 
@@ -5504,6 +5671,13 @@ def _explore_query_from_form(form: ExploreQueryForm, *, player: Player) -> Explo
             filters.append(ExploreFilter(field="death_cause", operator="=", value=None))
         else:
             filters.append(ExploreFilter(field="death_cause", operator="=", value=str(death_cause)))
+
+    patch_boundaries = tuple(cleaned.get("patch_boundaries") or ())
+    if patch_boundaries:
+        boundary_tokens = [
+            (boundary.label or boundary.boundary_date.isoformat()) for boundary in patch_boundaries
+        ]
+        filters.append(ExploreFilter(field="patch_boundary", operator="in", value=boundary_tokens))
 
     preset = cleaned.get("preset")
     if preset is not None:
@@ -5663,6 +5837,11 @@ def _apply_explore_filters(
             if names:
                 for name in names:
                     runs = runs.exclude(run_progress__preset__name__iexact=name)
+        if entry.field == "patch_boundary" and entry.operator == "in" and isinstance(entry.value, list):
+            boundaries = _resolve_patch_boundary_tokens(entry.value)
+            boundary_dates = [boundary.boundary_date for boundary in boundaries]
+            if boundary_dates:
+                runs = _apply_patch_boundary_filters(runs, boundary_dates=boundary_dates)
     return runs
 
 
@@ -5776,10 +5955,14 @@ def _explore_execute_query(
         breakdown_labels = breakdown_value if isinstance(breakdown_value, tuple) else ()
         run_id_value = bucket.get("run_id")
         run_id = run_id_value if isinstance(run_id_value, int) else None
+        count_list = counts if isinstance(counts, list) else []
+        sample_count_mismatch = False
+        if count_list:
+            sample_count_mismatch = any(count != count_list[0] for count in count_list[1:])
         metric_cells = [
             {
                 "value": values[idx] if isinstance(values, list) and idx < len(values) else None,
-                "sample_count": counts[idx] if isinstance(counts, list) and idx < len(counts) else 0,
+                "sample_count": count_list[idx] if idx < len(count_list) else 0,
                 "unit": entry["unit"],
                 "label": entry["label"],
                 "aggregation": entry["aggregation"],
@@ -5792,8 +5975,9 @@ def _explore_execute_query(
                 "breakdown": breakdown_labels,
                 "value": values[0] if isinstance(values, list) and values else None,
                 "values": values if isinstance(values, list) else [],
-                "sample_count": counts[0] if isinstance(counts, list) and counts else 0,
-                "sample_counts": counts if isinstance(counts, list) else [],
+                "sample_count": count_list[0] if count_list else 0,
+                "sample_counts": count_list,
+                "sample_count_mismatch": sample_count_mismatch,
                 "metric_cells": metric_cells,
                 "run_id": run_id,
             }
@@ -5804,6 +5988,11 @@ def _explore_execute_query(
     total_sample_counts = [
         sum(row.sample_count for row in result.rows) for result in per_metric_results
     ]
+    total_sample_count_mismatch = False
+    if total_sample_counts:
+        total_sample_count_mismatch = any(
+            count != total_sample_counts[0] for count in total_sample_counts[1:]
+        )
     missing_counts = [result.missing_count for result in per_metric_results]
     total_values = [result.total_value for result in per_metric_results]
     total_cells = [
@@ -5851,6 +6040,7 @@ def _explore_execute_query(
         "total_values": total_values,
         "total_sample_count": total_sample_counts[0] if total_sample_counts else 0,
         "total_sample_counts": total_sample_counts,
+        "total_sample_count_mismatch": total_sample_count_mismatch,
         "total_cells": total_cells,
         "run_order": run_order,
         "chart": chart_payload,
@@ -6006,6 +6196,15 @@ def _describe_explore_filters(
                     if preset is not None:
                         preset_label = preset.name
             lines.append(f"Preset filter: {preset_label}.")
+        if entry.field == "patch_boundary" and entry.operator == "in" and isinstance(entry.value, list):
+            resolved = _resolve_patch_boundary_tokens(entry.value)
+            if resolved:
+                labels = ", ".join(_format_patch_boundary_label(boundary) for boundary in resolved)
+                lines.append(f"Patch boundary filter: {labels}.")
+            else:
+                raw_labels = ", ".join(str(value) for value in entry.value if value)
+                if raw_labels:
+                    lines.append(f"Patch boundary filter: {raw_labels}.")
         if entry.field == "date_range" and isinstance(entry.value, dict):
             start = entry.value.get("start") or "Any"
             end = entry.value.get("end") or "Any"
@@ -6042,6 +6241,7 @@ def _context_filtered_runs(filter_form: ChartContextForm, *, player: Player) -> 
     tier = filter_form.cleaned_data.get("tier")
     preset = filter_form.cleaned_data.get("preset")
     exclude_presets = tuple(filter_form.cleaned_data.get("exclude_presets") or ())
+    patch_boundaries = tuple(filter_form.cleaned_data.get("patch_boundaries") or ())
     if tier:
         runs = runs.filter(run_progress__tier=tier)
     if preset:
@@ -6050,6 +6250,9 @@ def _context_filtered_runs(filter_form: ChartContextForm, *, player: Player) -> 
         runs = runs.exclude(run_progress__preset__in=exclude_presets)
     runs = _apply_tournament_filter(runs, tournament_filter=tournament_filter)
     runs = _apply_snapshot_context_filters(runs, snapshot_context=snapshot_context)
+    if patch_boundaries:
+        boundary_dates = [boundary.boundary_date for boundary in patch_boundaries]
+        runs = _apply_patch_boundary_filters(runs, boundary_dates=boundary_dates)
     return runs
 
 
@@ -6059,15 +6262,16 @@ def _comparison_scope_options(
     list[dict[str, str]],
     list[dict[str, str]],
     list[dict[str, str]],
+    list[dict[str, str]],
     dict[str, list[int]],
 ]:
-    """Build tier, tournament, and preset options for the comparison dropdowns.
+    """Build tier, tournament, preset, and patch options for comparison dropdowns.
 
     Args:
         runs: Iterable of BattleReport records already scoped to the active context.
 
     Returns:
-        Tuple of (tier_options, preset_options, tournament_options, run_id_map)
+        Tuple of (tier_options, preset_options, tournament_options, patch_options, run_id_map)
         where the options are simple dicts with `value`/`label` keys and the map
         stores run ids keyed by option value.
     """
@@ -6077,6 +6281,9 @@ def _comparison_scope_options(
     tournament_ranks: dict[str, list[int]] = {}
     presets: dict[int, list[int]] = {}
     preset_labels: dict[int, str] = {}
+    patches: dict[date, list[int]] = {}
+    patch_boundaries = list(PatchBoundary.objects.order_by("boundary_date"))
+    patch_window_map = _patch_boundary_window_map() if patch_boundaries else {}
 
     for run in runs:
         progress = getattr(run, "run_progress", None)
@@ -6097,6 +6304,13 @@ def _comparison_scope_options(
             name = getattr(preset, "name", None)
             if name:
                 preset_labels[int(preset_id)] = name
+        effective_date = getattr(run, "effective_battle_date", None)
+        run_date = getattr(effective_date, "date", lambda: None)()
+        if run_date and patch_window_map:
+            for boundary_date, next_date in patch_window_map.items():
+                if run_date >= boundary_date and (next_date is None or run_date < next_date):
+                    patches.setdefault(boundary_date, []).append(run.id)
+                    break
 
     tier_options = [
         {"value": tier_filter_value(tier), "label": f"Tier {tier}"}
@@ -6119,6 +6333,14 @@ def _comparison_scope_options(
         {"value": f"preset:{preset_id}", "label": preset_labels.get(preset_id, f"Preset {preset_id}")}
         for preset_id in sorted(presets, key=lambda pid: preset_labels.get(pid, str(pid)).casefold())
     ]
+    patch_options = [
+        {
+            "value": f"patch:{boundary.boundary_date.isoformat()}",
+            "label": _format_patch_boundary_label(boundary),
+        }
+        for boundary in patch_boundaries
+        if boundary.boundary_date in patches
+    ]
 
     run_id_map: dict[str, list[int]] = {}
     for tier, run_ids in tiers.items():
@@ -6129,8 +6351,10 @@ def _comparison_scope_options(
         run_id_map[tournament_filter_value(None)] = tournaments
         for rank, run_ids in tournament_ranks.items():
             run_id_map[tournament_filter_value(rank)] = run_ids
+    for boundary_date, run_ids in patches.items():
+        run_id_map[f"patch:{boundary_date.isoformat()}"] = run_ids
 
-    return tier_options, preset_options, tournament_options, run_id_map
+    return tier_options, preset_options, tournament_options, patch_options, run_id_map
 
 
 def _with_effective_battle_date(runs: QuerySet[BattleReport]) -> QuerySet[BattleReport]:
@@ -6520,6 +6744,7 @@ def _form_has_filters(form: ChartContextForm) -> bool:
         or form.cleaned_data.get("exclude_presets")
         or form.cleaned_data.get("context_snapshot")
         or form.cleaned_data.get("past_runs")
+        or form.cleaned_data.get("patch_boundaries")
     ):
         return True
     charts = tuple(form.cleaned_data.get("charts") or ())
@@ -6546,6 +6771,7 @@ def _chart_context_summary(
             "tier": None,
             "preset": None,
             "excluded_presets": None,
+            "patch_boundaries": None,
             "moving_average_window": None,
             "ev_trials": None,
             "ev_seed": None,
@@ -6563,6 +6789,9 @@ def _chart_context_summary(
     excluded_presets = tuple(form.cleaned_data.get("exclude_presets") or ())
     excluded_labels = [preset.name for preset in excluded_presets if getattr(preset, "name", None)]
     excluded_display = ", ".join(excluded_labels)
+    patch_boundaries = tuple(form.cleaned_data.get("patch_boundaries") or ())
+    patch_labels = [_format_patch_boundary_label(boundary) for boundary in patch_boundaries]
+    patch_display = ", ".join(patch_labels)
     snapshot = form.cleaned_data.get("context_snapshot")
     moving_average_window = form.cleaned_data.get("moving_average_window")
     ev_trials = form.cleaned_data.get("ev_trials")
@@ -6576,6 +6805,7 @@ def _chart_context_summary(
         "tier": str(tier) if tier else None,
         "preset": preset.name if preset else None,
         "excluded_presets": excluded_display or None,
+        "patch_boundaries": patch_display or None,
         "snapshot": snapshot.name if snapshot else None,
         "moving_average_window": str(moving_average_window) if moving_average_window else None,
         "ev_trials": str(ev_trials) if ev_trials else None,
@@ -6673,6 +6903,9 @@ def _why_am_i_seeing_this_payload(
         excluded.append("Runs with other presets (or no preset).")
     if chart_context.get("excluded_presets"):
         excluded.append(f"Excluded presets: {chart_context['excluded_presets']}.")
+    if chart_context.get("patch_boundaries"):
+        included.append(f"Patch boundary: {chart_context['patch_boundaries']}.")
+        excluded.append("Runs outside the selected patch windows.")
 
     if not included:
         included.append("All imported runs in the default date window.")

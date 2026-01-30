@@ -7,7 +7,7 @@ The Guardian Chips page helps you track which chips are unlocked, which chips ar
 ## When to Use This
 
 - You want to confirm which Guardian Chips are unlocked in your tracker.
-- You want to keep only two Guardian Chips active at a time.
+- You want to manage which Guardian Chips are active within your unlocked slot limit.
 - You want to record upgrade progress for a chip’s parameters.
 - You want to compare total Bits invested across different Guardian Chips.
 - You want to review whether a chip appears in your imported runs.
@@ -16,17 +16,20 @@ The Guardian Chips page helps you track which chips are unlocked, which chips ar
 
 1. Select **Guardians** in the navigation.
 2. Select **Show** to filter to **Unlocked only** or **Locked only**.
-3. Review a chip’s **Status** to confirm whether it is unlocked.
-4. (Optional) Select **Wiki** next to a chip name to open its external wiki page.
-5. Select **Unlock** on a locked chip to mark it as unlocked in the app.
-6. Select the **Active** toggle to activate or deactivate a chip.
-7. Select **Details** on an unlocked chip to view its upgrade parameters.
-8. Select **Level Up** on a parameter to increase its level by 1.
-9. Select **Level Down** on a parameter to reduce its level by 1.
+3. Review **Active slots** to confirm how many Guardian Chip slots are unlocked.
+4. Select **Unlock Next Slot** when you want to unlock slot 2 (200 Bits) or slot 3 (300 Bits).
+5. Review a chip’s **Status** to confirm whether it is unlocked.
+6. (Optional) Select **Wiki** next to a chip name to open its external wiki page.
+7. Select **Unlock** on a locked chip to mark it as unlocked in the app.
+8. Select the **Active** toggle to activate or deactivate a chip.
+9. Select **Details** on an unlocked chip to view its upgrade parameters.
+10. Select **Level Up** on a parameter to increase its level by 1.
+11. Select **Level Down** on a parameter to reduce its level by 1.
 
 ## How to Read the Results
 
 - **Active** shows whether a chip is currently selected as active.
+- **Active slots** shows how many Guardian Chip slots are unlocked and the next unlock cost.
 - **Total Bits invested** is the sum of the upgrade costs for the levels you have increased in the app.
 - **Runs used** counts how many of your imported Battle Reports include Guardian metrics linked to that chip.
 - **Level** is your saved upgrade level for that parameter.
@@ -41,7 +44,10 @@ The Guardian Chips page helps you track which chips are unlocked, which chips ar
 > Upgrades currently assume sufficient Bits. Costs are informational only, and the app does not check affordability.
 
 > **Warning**
-> You can have at most two Guardian Chips active at once. When the limit is reached, inactive chips cannot be activated until you deactivate one.
+> You can have at most three Guardian Chips active at once, and you must unlock slot 2 and slot 3 to reach that limit.
+
+> **Note**
+> Slot unlocks show the Bit costs (200 for slot 2, 300 for slot 3), but the app does not check affordability.
 
 > **Note**
 > Locked chips cannot be activated and do not display parameter rows until they are unlocked in the app.

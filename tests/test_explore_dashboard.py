@@ -324,6 +324,52 @@ def test_explore_multi_metric_table_renders_all_metrics(auth_client, player) -> 
 
 
 @pytest.mark.django_db
+@pytest.mark.regression
+def test_explore_multi_metric_runs_counted_renders_once(auth_client, player) -> None:
+    """Multi-metric tables render a single Runs counted column."""
+
+    report = BattleReport.objects.create(
+        player=player,
+        raw_text="Battle Report\nCells Earned\t12\n",
+        checksum="multi-metric-counts".ljust(64, "r"),
+    )
+    BattleReportProgress.objects.create(
+        battle_report=report,
+        player=player,
+        battle_date=datetime(2025, 12, 11, tzinfo=timezone.utc),
+        tier=4,
+        wave=90,
+        coins_earned=2400,
+        real_time_seconds=1200,
+        cells_earned=12,
+    )
+
+    dsl_query = (
+        'name "Multi metric counts"\n'
+        "scope date [date:YYYY-MM-DD]..[date:YYYY-MM-DD]\n"
+        "scope tier all not tournament\n"
+        "scope preset [preset:—]\n"
+        "scope snapshot [snapshot:—]\n"
+        "scope past_n_runs [runs:—]\n"
+        "breakdown by tier\n"
+        "metric coins_earned sum and cells_earned avg\n"
+        "output table\n"
+    )
+
+    response = auth_client.post(
+        reverse("core:explore"),
+        data={
+            "dsl_query": dsl_query,
+            "action": "run_explore_query",
+        },
+    )
+
+    assert response.status_code == 200
+    content = response.content.decode("utf-8")
+    assert content.count('<th scope="col">Runs counted</th>') == 1
+
+
+@pytest.mark.django_db
 def test_explore_farming_summary_persists_with_secondary_metrics(auth_client, player) -> None:
     """Farming summary remains when adding secondary metrics."""
 
@@ -365,3 +411,74 @@ def test_explore_farming_summary_persists_with_secondary_metrics(auth_client, pl
 
     assert response.status_code == 200
     assert response.context["explore_farming"] is not None
+
+
+@pytest.mark.django_db
+def test_explore_patch_boundary_filter_limits_scope(auth_client, player) -> None:
+    """Patch boundary filters restrict Explore results to the selected window."""
+
+    from definitions.models import PatchBoundary
+
+    PatchBoundary.objects.create(
+        boundary_date=datetime(2025, 12, 1, tzinfo=timezone.utc).date(),
+        label="27.3",
+    )
+    PatchBoundary.objects.create(
+        boundary_date=datetime(2025, 12, 10, tzinfo=timezone.utc).date(),
+        label="27.4",
+    )
+
+    early_report = BattleReport.objects.create(
+        player=player,
+        raw_text="Battle Report\nCoins earned\t1,200\n",
+        checksum="patch-early".ljust(64, "p"),
+    )
+    BattleReportProgress.objects.create(
+        battle_report=early_report,
+        player=player,
+        battle_date=datetime(2025, 12, 5, tzinfo=timezone.utc),
+        tier=2,
+        wave=80,
+        coins_earned=1200,
+        real_time_seconds=600,
+    )
+
+    late_report = BattleReport.objects.create(
+        player=player,
+        raw_text="Battle Report\nCoins earned\t2,400\n",
+        checksum="patch-late".ljust(64, "q"),
+    )
+    BattleReportProgress.objects.create(
+        battle_report=late_report,
+        player=player,
+        battle_date=datetime(2025, 12, 12, tzinfo=timezone.utc),
+        tier=2,
+        wave=80,
+        coins_earned=2400,
+        real_time_seconds=600,
+    )
+
+    dsl_query = (
+        'name "Coins by tier (patch)"\n'
+        "scope date [date:YYYY-MM-DD]..[date:YYYY-MM-DD]\n"
+        "scope tier all not tournament\n"
+        "scope preset [preset:—]\n"
+        "scope snapshot [snapshot:—]\n"
+        "scope past_n_runs [runs:—]\n"
+        "filter patch in 27.3\n"
+        "breakdown by tier\n"
+        "metric coins_earned sum\n"
+        "output table\n"
+    )
+
+    response = auth_client.post(
+        reverse("core:explore"),
+        data={
+            "dsl_query": dsl_query,
+            "action": "run_explore_query",
+        },
+    )
+
+    assert response.status_code == 200
+    results = response.context["explore_results"]
+    assert results["run_count"] == 1

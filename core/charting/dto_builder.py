@@ -25,6 +25,7 @@ def build_chart_config_dto(*, context_form: ChartContextForm, builder_form: Char
 
     preset = context_form.cleaned_data.get("preset")
     excluded_presets = tuple(context_form.cleaned_data.get("exclude_presets") or ())
+    patch_boundaries = tuple(context_form.cleaned_data.get("patch_boundaries") or ())
     context = ChartContextDTO(
         start_date=context_form.cleaned_data.get("start_date"),
         end_date=context_form.cleaned_data.get("end_date"),
@@ -35,6 +36,7 @@ def build_chart_config_dto(*, context_form: ChartContextForm, builder_form: Char
             preset_row.id for preset_row in excluded_presets if getattr(preset_row, "id", None)
         ),
         include_tournaments=bool(context_form.cleaned_data.get("include_tournaments") or False),
+        patch_boundaries=tuple(boundary.boundary_date for boundary in patch_boundaries),
     )
     selection = builder_form.selection()
     return ChartConfigDTO(

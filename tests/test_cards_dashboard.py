@@ -212,6 +212,21 @@ def test_cards_dashboard_supports_sorting_and_maxed_filter(auth_client, player) 
 
 @pytest.mark.django_db
 @pytest.mark.regression
+def test_cards_dashboard_defaults_to_rarity_sort(auth_client, player) -> None:
+    """Cards dashboard defaults to sorting by rarity."""
+
+    CardDefinition.objects.create(name="Alpha", slug="alpha", rarity="Common")
+    CardDefinition.objects.create(name="Beta", slug="beta", rarity="Epic")
+    CardDefinition.objects.create(name="Gamma", slug="gamma", rarity="Rare")
+
+    url = reverse("core:cards")
+    response = auth_client.get(url)
+
+    assert _card_names_in_table(response.content.decode("utf-8")) == ["Alpha", "Gamma", "Beta"]
+
+
+@pytest.mark.django_db
+@pytest.mark.regression
 def test_cards_dashboard_shows_level_zero_for_unowned_cards(auth_client, player) -> None:
     """Cards dashboard shows level 0 and labels the column as current level."""
 

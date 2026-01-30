@@ -79,7 +79,7 @@
     {% if entities %}
       {% if show_activation and activation_limit_reached %}
         <div class="callout warning margin-bottom-1" role="status">
-          Active limit reached (2 of 2). Inactive guardian chips cannot be activated until you deactivate one.
+          Active limit reached ({{ activation_limit_current }} of {{ activation_limit_total }}). Inactive guardian chips cannot be activated until you deactivate one.
         </div>
       {% endif %}
       <div class="grid-x grid-margin-x">

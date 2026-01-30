@@ -28,7 +28,7 @@ PRESET_COLOR_CHOICES: tuple[tuple[str, str], ...] = tuple(
     (key, key.title()) for key in PRESET_COLOR_KEYS
 )
 
-MAX_ACTIVE_GUARDIAN_CHIPS = 2
+MAX_ACTIVE_GUARDIAN_CHIPS = 3
 
 
 def preset_color_for_id(*, preset_id: int) -> str:
@@ -53,6 +53,7 @@ class Player(models.Model):
     user = models.OneToOneField(settings.AUTH_USER_MODEL, on_delete=models.CASCADE, related_name="player")
     display_name = models.CharField(max_length=64)
     card_slots_unlocked = models.PositiveSmallIntegerField(default=0)
+    guardian_chip_slots_unlocked = models.PositiveSmallIntegerField(default=1)
     created_at = models.DateTimeField(auto_now_add=True)
 
     def __str__(self) -> str:
@@ -464,13 +465,17 @@ class PlayerGuardianChip(models.Model):
         if self.active and not self.unlocked:
             raise ValidationError("Cannot activate a locked guardian chip.")
         if self.active and self.player_id:
+            unlocked_slots = 1
+            if getattr(self, "player", None) is not None:
+                unlocked_slots = max(1, int(self.player.guardian_chip_slots_unlocked or 1))
+            max_active = min(MAX_ACTIVE_GUARDIAN_CHIPS, unlocked_slots)
             other_active = (
                 PlayerGuardianChip.objects.filter(player_id=self.player_id, active=True)
                 .exclude(pk=self.pk)
                 .count()
             )
-            if other_active >= MAX_ACTIVE_GUARDIAN_CHIPS:
-                raise ValidationError(f"At most {MAX_ACTIVE_GUARDIAN_CHIPS} guardian chips may be active at once.")
+            if other_active >= max_active:
+                raise ValidationError(f"At most {max_active} guardian chips may be active at once.")
 
     def save(self, *args, **kwargs) -> None:
         """Save while enforcing invariants."""

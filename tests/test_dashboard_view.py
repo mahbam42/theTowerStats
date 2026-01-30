@@ -548,6 +548,67 @@ def test_dashboard_view_filters_by_preset(auth_client, player) -> None:
 
 
 @pytest.mark.django_db
+def test_dashboard_view_filters_by_patch_boundary(auth_client, player) -> None:
+    """Patch boundary filters limit charts to the selected window."""
+
+    from definitions.models import PatchBoundary
+
+    early_boundary = PatchBoundary.objects.create(
+        boundary_date=date(2025, 12, 1),
+        label="27.3",
+    )
+    PatchBoundary.objects.create(
+        boundary_date=date(2025, 12, 10),
+        label="27.4",
+    )
+
+    early_report = BattleReport.objects.create(
+        player=player,
+        raw_text="Battle Report\nCoins earned    1,200\n",
+        checksum="patch-filter-early".ljust(64, "p"),
+    )
+    BattleReportProgress.objects.create(
+        battle_report=early_report,
+        player=player,
+        battle_date=datetime(2025, 12, 5, tzinfo=timezone.utc),
+        tier=1,
+        wave=100,
+        real_time_seconds=600,
+        coins_earned=1200,
+    )
+
+    late_report = BattleReport.objects.create(
+        player=player,
+        raw_text="Battle Report\nCoins earned    2,400\n",
+        checksum="patch-filter-late".ljust(64, "q"),
+    )
+    BattleReportProgress.objects.create(
+        battle_report=late_report,
+        player=player,
+        battle_date=datetime(2025, 12, 12, tzinfo=timezone.utc),
+        tier=1,
+        wave=100,
+        real_time_seconds=600,
+        coins_earned=2400,
+    )
+
+    response = auth_client.get(
+        reverse("core:dashboard"),
+        {
+            "charts": ["coins_earned"],
+            "start_date": FILTER_START,
+            "end_date": "2025-12-31",
+            "patch_boundaries": [early_boundary.id],
+        },
+    )
+    assert response.status_code == 200
+
+    panels = {p["id"]: p for p in json.loads(response.context["chart_panels_json"])}
+    panel = panels["coins_earned"]
+    assert panel["labels"] == ["2025-12-05"]
+
+
+@pytest.mark.django_db
 def test_dashboard_view_comparison_chart_by_tier(auth_client, player) -> None:
     """Render a tier comparison chart with multiple datasets."""
 
@@ -842,6 +903,62 @@ def test_dashboard_view_compare_scope_options_include_tiers_and_presets(auth_cli
     assert preset_options[0]["label"] == "Farming"
     assert set(run_map["tier:1"]) == {reports[0].id, reports[2].id}
     assert set(run_map[f"preset:{preset.id}"]) == {reports[0].id, reports[2].id}
+
+
+@pytest.mark.django_db
+def test_dashboard_view_compare_scope_options_include_patch_boundaries(auth_client, player) -> None:
+    """Expose patch boundary scope options for compare selections."""
+
+    from definitions.models import PatchBoundary
+
+    boundary_a = PatchBoundary.objects.create(boundary_date=date(2025, 12, 1), label="27.3")
+    boundary_b = PatchBoundary.objects.create(boundary_date=date(2025, 12, 10), label="27.4")
+
+    early_report = BattleReport.objects.create(
+        player=player,
+        raw_text="Battle Report\nCoins earned    1,200\n",
+        checksum="compare-patch-early".ljust(64, "a"),
+    )
+    BattleReportProgress.objects.create(
+        battle_report=early_report,
+        player=player,
+        battle_date=datetime(2025, 12, 5, tzinfo=timezone.utc),
+        tier=1,
+        wave=100,
+        real_time_seconds=600,
+        coins_earned=1200,
+    )
+    late_report = BattleReport.objects.create(
+        player=player,
+        raw_text="Battle Report\nCoins earned    2,400\n",
+        checksum="compare-patch-late".ljust(64, "b"),
+    )
+    BattleReportProgress.objects.create(
+        battle_report=late_report,
+        player=player,
+        battle_date=datetime(2025, 12, 12, tzinfo=timezone.utc),
+        tier=1,
+        wave=100,
+        real_time_seconds=600,
+        coins_earned=2400,
+    )
+
+    response = auth_client.get(
+        reverse("core:dashboard"),
+        {"start_date": "2025-12-01", "end_date": "2025-12-31"},
+    )
+    assert response.status_code == 200
+
+    patch_options = response.context["compare_scope_patch_options"]
+    patch_values = {opt["value"] for opt in patch_options}
+    run_map = json.loads(response.context["compare_scope_run_map_json"])
+
+    assert patch_values == {
+        f"patch:{boundary_a.boundary_date.isoformat()}",
+        f"patch:{boundary_b.boundary_date.isoformat()}",
+    }
+    assert set(run_map[f"patch:{boundary_a.boundary_date.isoformat()}"]) == {early_report.id}
+    assert set(run_map[f"patch:{boundary_b.boundary_date.isoformat()}"]) == {late_report.id}
 
 
 @pytest.mark.integration

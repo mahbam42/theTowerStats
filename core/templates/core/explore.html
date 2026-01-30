@@ -230,8 +230,8 @@
                       {% if explore_results.metrics|length > 1 %}
                         {% for metric in explore_results.metrics %}
                           <th scope="col">{{ metric.label }} ({{ metric.aggregation_label }})</th>
-                          <th scope="col">Runs counted</th>
                         {% endfor %}
+                        <th scope="col">Runs counted</th>
                       {% else %}
                         <th scope="col">Value</th>
                         <th scope="col">Runs counted</th>
@@ -253,8 +253,13 @@
                                 —
                               {% endif %}
                             </td>
-                            <td>{{ cell.sample_count }}</td>
                           {% endfor %}
+                          <td>
+                            {{ row.sample_count }}
+                            {% if row.sample_count_mismatch %}
+                              <span class="muted" title="Run counts differ across metrics.">*</span>
+                            {% endif %}
+                          </td>
                         {% else %}
                           <td>
                             {% if row.value is not None %}
@@ -284,8 +289,13 @@
                               —
                             {% endif %}
                           </td>
-                          <td>{{ cell.sample_count }}</td>
                         {% endfor %}
+                        <td>
+                          {{ explore_results.total_sample_count }}
+                          {% if explore_results.total_sample_count_mismatch %}
+                            <span class="muted" title="Run counts differ across metrics.">*</span>
+                          {% endif %}
+                        </td>
                       {% else %}
                         <td>
                           {% if explore_results.total_value is not None %}
@@ -354,6 +364,9 @@
           </label>
 
           <h5 class="margin-top-1">Filters</h5>
+          <label>{{ form.patch_boundaries.label }}
+            {{ form.patch_boundaries }}
+          </label>
           <label>{{ form.tier_values.label }}
             {{ form.tier_values }}
           </label>
