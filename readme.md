@@ -48,7 +48,7 @@ Guiding principles:
 ### 📊 Track Progress Over Time
 
 - Coins per hour and other precomputed series (no client-side math)
-- Filter charts by **date range**, **tier**, **preset**, and overlays
+- Filter charts by **date range**, **tier**, **preset**, **patch boundary windows**, and overlays
 - Exclude one or more presets to remove runs from the chart scope
 - Save ordered favorite charts and reusable Chart Builder entries per player
 - Apply snapshot filters and past-N-run scopes alongside date ranges
@@ -58,12 +58,12 @@ Guiding principles:
 - Export derived metrics to CSV and download chart images as PNG snapshots
 - Full-screen chart modal and tooltip links to open Battle Report details
 - Guided walkthrough available in demo mode or on first login
-- Compare scopes by tier, preset, tournament rank, or custom run selections
+- Compare scopes by tier, preset, patch boundary windows, tournament rank, or custom run selections
 
 ### 🔎 Explore Dashboard
 
 - Build player-authored queries to aggregate run metrics without changing Battle History
-- Use the Explore DSL to filter, group, and summarize your imported runs
+- Use the Explore DSL to filter, group, and summarize your imported runs (including patch boundary windows)
 - Preview Explore output in the Query Explorer modal from Battle History or Charts
 
 ### 🎯 Goals Dashboard
@@ -81,6 +81,7 @@ Guiding principles:
 
 - Read-only dashboards for cards, ultimate weapons, guardian chips, and bots
 - See unlocks, parameter levels, and last-updated timestamps
+- Guardian chips track active slot limits and unlock costs
 - Wiki‑derived data is versioned and attributed, never overwritten
 
 ### 🗂 Presets (Player Intent, Not Strategy)
@@ -123,8 +124,8 @@ This app is about:
 
 ## Current Progress
 
-- Current development: **v0.8.3**
-- Latest release: **v0.8.3**
+- Current development: **v0.9.0**
+- Latest release: **v0.9.0**
 - Changelog: `CHANGELOG.md`
 - Stable: Battle Report import, Battle History, Charts (including snapshots and compare scopes), and collection progress dashboards
 - Multi-user: Each signed-in account has its own isolated dataset

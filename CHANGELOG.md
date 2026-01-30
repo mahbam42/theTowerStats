@@ -2,6 +2,22 @@
 
 This project follows Semantic Versioning.
 
+## [0.9.0]
+
+### Added
+- Patch boundary filters for Charts and Explore scopes, including Compare shortcuts for patch windows.
+- Guardian Chip slot unlock tracking for slots 2 (200 Bits) and 3 (300 Bits), with support for up to three active chips.
+- Explore DSL support for patch boundary filters.
+
+### Changed
+- Metrics Reference now lists the Explore DSL key for each metric.
+- Guardian Chips dashboard surfaces active slot counts and unlock costs.
+
+### Fixed
+- Explore multi-metric tables now show a single Runs counted column with mismatch markers.
+- Cards dashboard default sort now orders by rarity.
+- dd Explore DSL alias for run duration. 
+
 ## [0.8.3]
 
 ### Added
