@@ -2425,7 +2425,7 @@ CLOSED: [2025-12-22 Mon 15:31]
 - [X] fetch_wiki_data and rebuild_wiki_definitions should have a pretty summary of deltas at the end.
   Especially when using --target all.
 
-*** Bugs/Enhancements [103/104]
+*** Bugs/Enhancements [103/103]
 
 **** DONE [#B] Error Updating Guardian Upgrade Table                 :bug:
 CLOSED: [2025-12-22 Mon 18:51]
@@ -3928,20 +3928,56 @@ Add as a filter.
 CLOSED: [2026-01-31 Sat 15:04]
 - State "DONE"       from "TODO"       [2026-01-31 Sat 15:04]
 metrics_reference.md needs to include the key values (used on explore dashboard) as a column. 
-**** WAIT [#C] New Stats                                     :enhancement:
-- State "WAIT"       from "TODO"       [2026-01-28 Wed 19:53] \\
-  These have been added to the global stats screen that we currently do not capture.
-New stats are being added in an upcoming release:
+*** v0.9.0 [0/6]
+Includes Game Patch 27.4
+**** TODO [#A] Verify wiki fetch support for Scout Guardian Chip (Blocking)
+New Guardian Chip added 2026-02-02. Will need to set initial zero level values and ensure wiki scraping works 
+**** TODO [#B] Lifetime Stats Modal                                 :feat:
+Calculate Lifetime stats for a player. These metrics could use DSL and KPIs as to not reinvent the wheel. Default view shows all time stats, and can be filtered by Event Window (like on Charts) or custom range (just start and end date pickers). This modal will be accesible from the user dropdown (above Sign Out).
 
-- Added a Cells column to the Tier rows.
-- Added “Cells Earned” total.
-- Added “Reroll Shards Earned”.
-- Added “Recent Coins per Hour”.
+Metrics:
+- Economy:
+  - Coins Earned 
+  - Cash Earned
+  - Cells Earned
+  - Reroll Shards Earned
+  - Stones Spent (Calculated from UW Player Data) 
+  - Bits Spent (Calculated from Guardian Chip Player Data)
+- Combat:
+  - Damage Dealt
+  - Thorn Damage
+  - Enemies Destroyed
+  - Orb Kills
+  - Death Ray Kills
+- Utility:
+  - Waves Completed
+  - Free Upgrades
+  - Interest Earned
+  - Waves Skipped
 
 
-We need to add (hidden) columns to Battle History, and make sure the new metrics are revealed to Chart Builder Metrics and Explore DSL. 
+There are a few metrics in game that are outside of the current scope of this app. These omissions should be noted in the users docs.
+- Stones Earned
+- Keys Earned
+- Upgrades Bought
+- Workshop Upgrades
+- Workshop Coins Spent
+- Research Completed
+- Lab Coins Spent
+***** TODO Docs Relations
+- User docs for this modal should point to Explore Dashboard for additional stats and Metrics Reference for a complete list of available metrics.
+- Metrics Reference should mention the Global Stats and which metrics are shown. 
 
-** Backlog [3/9]
+**** TODO [#B] Explore Dashboard should compare based on Runs in Set and not skip missing tiers. :bug:
+If there are no tier 3 runs, tier 4 should compare with 2, for example. 
+**** TODO [#B] Saved Queries need to store comments               :ux:bug:
+Clicking 'Save Query' Explore Dashboard strips commented lines from the query. Saving needs to persist comments.
+Also, saving a query should load that query on refresh. 
+**** TODO [#C] metric guardian_damage and guardian_enemies_summoned need to allow average and sum :bug:
+Currently only allows Count which then only shows runs used and not the aggregated performance of the metric. 
+**** TODO [#C] On Charts Dashboard, Compare and Advice should open in a modal and not on the dashboard. :feat:
+Since the charts don't change to reflect the compare windows, the compare and advice for the comparisions need better visual separation from the Charts. 
+** Backlog [3/8]
 “Out of Scope”:
 - Cloud sync
 - Real-time scraping
@@ -3972,20 +4008,8 @@ preserve the user's intent without silently changing results.
 - Ensure the Explore registry exposes migration hints (aliases, deprecations, replacements) in one
   canonical location.
 
-*** TODO [#B] Per Hour / Per Wave Metrics
-Introduce rate outputs normalized by time or waves.
-
-Tasks:
-- Define rate aggregations: `per_hour`, `per_wave` (or equivalent).
-- Establish required base fields (e.g., real time, waves reached) and validation rules.
-- Extend metric registry to declare rate eligibility and required denominators.
-- Update formatting rules for rate units.
-- UI: provide clear metric labels (e.g., “Coins per Hour”).
-- Tests: rate calculations, denominator missing/zero handling, formatting.
-
-Acceptance notes:
-- Rates must be derived from the same run scope.
-- Missing denominators must produce a non-fatal warning and omit the row/value.
+*** Labs Tracking
+Track Labs progress and unlocks
 
 *** TODO [#C] Query Templates
 Provide read-only templates to help players start queries without suggestions.
@@ -4380,6 +4404,40 @@ This keeps it defensible.
 
 
 *** Complete
+**** DELEGATED [#C] New Stats v27.4                          :enhancement:
+CLOSED: [2026-02-01 Sun 14:12]
+- State "DELEGATED"  from "WAIT"       [2026-02-01 Sun 14:12] \\
+  Adding a Lifetime Stats Modal to derive and show these metrics and some others.
+- State "WAIT"       from              [2026-02-01 Sun 13:58]
+- State "WAIT"       from "TODO"       [2026-01-28 Wed 19:53] \\
+  These have been added to the global stats screen that we currently do not capture.
+New stats are being added in an upcoming release:
+
+- Added a Cells column to the Tier rows.
+- Added “Cells Earned” total.
+- Added “Reroll Shards Earned”.
+- Added “Recent Coins per Hour”.
+
+
+We need to add (hidden) columns to Battle History, and make sure the new metrics are revealed to Chart Builder Metrics and Explore DSL. 
+
+**** DONE [#B] Per Hour / Per Wave Metrics
+CLOSED: [2026-02-01 Sun 13:51]
+- State "DONE"       from "TODO"       [2026-02-01 Sun 13:51]
+Introduce rate outputs normalized by time or waves.
+
+Tasks:
+- Define rate aggregations: `per_hour`, `per_wave` (or equivalent).
+- Establish required base fields (e.g., real time, waves reached) and validation rules.
+- Extend metric registry to declare rate eligibility and required denominators.
+- Update formatting rules for rate units.
+- UI: provide clear metric labels (e.g., “Coins per Hour”).
+- Tests: rate calculations, denominator missing/zero handling, formatting.
+
+Acceptance notes:
+- Rates must be derived from the same run scope.
+- Missing denominators must produce a non-fatal warning and omit the row/value.
+
 **** DONE [#A] Expand Future Work section from prompt53.md into Backlog Tasks
 CLOSED: [2026-01-14 Wed 16:19]
 
