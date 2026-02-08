@@ -52,7 +52,7 @@ class PlayerScopedAdmin(admin.ModelAdmin):
 class PlayerAdmin(admin.ModelAdmin):
     """Admin configuration for Player."""
 
-    list_display = ("display_name", "user", "created_at")
+    list_display = ("display_name", "user", "created_at", "last_login")
     search_fields = ("display_name", "user__username")
 
     def get_queryset(self, request) -> QuerySet:
