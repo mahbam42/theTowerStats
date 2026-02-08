@@ -1,75 +1,76 @@
 
 # Table of Contents
 
-1.  [Stats Tracking App for The Tower Mobile Game](#orgd7efde3)
-    1.  [Goals/Intent](#org1913fcf)
-    2.  [Requirements](#org7f5f8d1)
-    3.  [Overall Architecture](#org154cdff)
-    4.  [Features](#org64689ad)
-    5.  [Core Responsibilities](#org3f89cfe)
-        1.  [Rate Calculations](#org673116c)
-        2.  [Delta Calculations](#orgb08a525)
-        3.  [Parameterized Effects](#orge840820)
-        4.  [Aggregations by Intent (Presets)](#org4a08f73)
-        5.  [Analysis Engine Invocation](#org2d8d9cb)
-        6.  [Output Shape](#orgbfd8e08)
-        7.  [Module Structure (Suggested)](#org5f71161)
-    6.  [UX Design](#orgf23ff8a)
-    7.  [Example Stat Data](#org30a6892)
-    8.  [Models](#orgc6fcb01)
-        1.  [Game Data](#org64ba030)
-        2.  [BotsParameters](#org7faabfd)
-        3.  [CardDefinition](#orgbfc8c9e)
-        4.  [CardLevel / Star](#orgf5d503f)
-        5.  [CardParameters](#org9af4ec0)
-        6.  [CardSlots](#org6084ef9)
-        7.  [GuardianChipParemeters](#org6c3b1e0)
-        8.  [PlayerBot](#org77d181f)
-        9.  [PlayerCard](#org55d3fd3)
-        10. [PlayerGuardianChip](#orgc5d8874)
-        11. [PlayerUltimateWeapon](#orgbfd4455)
-        12. [PresetTags](#org430f0c9)
-        13. [UltimateWeaponParameters](#org924c25b)
-        14. [Unit Model](#org36f028c)
-        15. [WikiData](#org64ae817)
-    9.  [Views](#orgacc64ff)
-        1.  [Battle History](#org7fe9593)
-        2.  [Cards](#org4a432bb)
-        3.  [Charts](#org46e2428)
-        4.  [UW Progress](#org6af4227)
-        5.  [Guardian Progress](#orgd172869)
-        6.  [Bots Progress](#org7836135)
-    10. [Management Commands](#org2eabb65)
-        1.  [fetch<sub>wiki</sub><sub>data</sub>](#orge1a0108)
-        2.  [add<sub>battle</sub><sub>report</sub>](#orgd89d9e5)
-    11. [Repo Structure](#orgaa0b548)
-    12. [Testing Standards](#orgf26d12f)
-    13. [Sprint Roadmap](#org17cd663)
-        1.  [Phase 1 Foundations](#orga05965a)
-        2.  [Phase 2 Context](#org70cd138)
-        3.  [Phase 3 — App Structure & UX](#orgdaa648c)
-        4.  [Phase 4 Effects](#org06e42b1)
-        5.  [Phase 5 Dashboard UX <code>[100%]</code>](#org88aeaf5)
-        6.  [Phase 6 Expansion of Foundation and Context <code>[100%]</code>](#orgc4f5c47)
-        7.  [Phase 7 Power Tools <code>[100%]</code>](#orga7a8ce6)
-        8.  [Phase 8 Multiple Player Support <code>[100%]</code>](#org845e963)
-        9.  [Phase 9 Deploy and Clean out Backlog <code>[100%]</code>](#org78906e7)
-        10. [Phase 10 v0.2.0](#orgd8e3413)
-        11. [Phase 10B Additional UX](#orge9385d4)
-        12. [Phase 11 Bug Fixes <code>[6/6]</code>](#orgc799124)
-        13. [Bugs/Enhancements <code>[102/103]</code>](#org3e4bafb)
-    14. [Backlog <code>[3/9]</code>](#orgdbb5c85)
-        1.  [Auto-migration of stored queries](#orgf7514d1)
-        2.  [Per Hour / Per Wave Metrics](#org801e1f7)
-        3.  [Query Templates](#org81fd7b2)
-        4.  [Add Card Slots to Goals](#org348f877):patch:
-        5.  [Exploratory Pattern Analysis (v0.X.0)](#org3ef8822):kMeans:enhancement:
-        6.  [Draft a “This app is done” release note](#org1e13d79)
-        7.  [Required Doc Type Header (Must Prepend to All Docs)](#org279435f)
-        8.  [What-If Scenarios](#org1ea21f4)
-        9.  [Ranked Recommendations](#orgff4a7d0)
-        10. [Complete](#org0f147d5)
-    15. [Codex Tasks](#org0361f55)
+1.  [Stats Tracking App for The Tower Mobile Game](#org0c22c8f)
+    1.  [Goals/Intent](#orgf59ff06)
+    2.  [Requirements](#org0c5d258)
+    3.  [Overall Architecture](#org75ba530)
+    4.  [Features](#org93f7b85)
+    5.  [Core Responsibilities](#orgfaa53c7)
+        1.  [Rate Calculations](#org200c291)
+        2.  [Delta Calculations](#orged73df3)
+        3.  [Parameterized Effects](#orgb89f931)
+        4.  [Aggregations by Intent (Presets)](#org07e74b6)
+        5.  [Analysis Engine Invocation](#org90c5f51)
+        6.  [Output Shape](#org71c56be)
+        7.  [Module Structure (Suggested)](#orgcd597e1)
+    6.  [UX Design](#org29b6c96)
+    7.  [Example Stat Data](#org37d24ae)
+    8.  [Models](#org5d721ba)
+        1.  [Game Data](#orgf71def6)
+        2.  [BotsParameters](#org7f25250)
+        3.  [CardDefinition](#org61829a1)
+        4.  [CardLevel / Star](#orgfc2d20d)
+        5.  [CardParameters](#orga34f98e)
+        6.  [CardSlots](#org40e245f)
+        7.  [GuardianChipParemeters](#orge913bce)
+        8.  [PlayerBot](#org59f387c)
+        9.  [PlayerCard](#org35ab561)
+        10. [PlayerGuardianChip](#orgb19563a)
+        11. [PlayerUltimateWeapon](#org561f9c9)
+        12. [PresetTags](#org36c3bb7)
+        13. [UltimateWeaponParameters](#orge7c1fcb)
+        14. [Unit Model](#org8c7891d)
+        15. [WikiData](#org7326a62)
+    9.  [Views](#org660cfa5)
+        1.  [Battle History](#org7e3e04d)
+        2.  [Cards](#org7ea2797)
+        3.  [Charts](#org0d53ac3)
+        4.  [UW Progress](#org0aa1c68)
+        5.  [Guardian Progress](#org60c020f)
+        6.  [Bots Progress](#org60d0b42)
+    10. [Management Commands](#org5d2bbbb)
+        1.  [fetch<sub>wiki</sub><sub>data</sub>](#orge60cf92)
+        2.  [add<sub>battle</sub><sub>report</sub>](#org5b0a22b)
+    11. [Repo Structure](#org1456c89)
+    12. [Testing Standards](#org220c71c)
+    13. [Sprint Roadmap](#org7855e3c)
+        1.  [Phase 1 Foundations](#orgd5467bb)
+        2.  [Phase 2 Context](#orgc249d88)
+        3.  [Phase 3 — App Structure & UX](#org3a6b333)
+        4.  [Phase 4 Effects](#org8000b69)
+        5.  [Phase 5 Dashboard UX <code>[100%]</code>](#org8dc000d)
+        6.  [Phase 6 Expansion of Foundation and Context <code>[100%]</code>](#orga6c1d2b)
+        7.  [Phase 7 Power Tools <code>[100%]</code>](#orgb0d8ece)
+        8.  [Phase 8 Multiple Player Support <code>[100%]</code>](#org6ee640a)
+        9.  [Phase 9 Deploy and Clean out Backlog <code>[100%]</code>](#orgda20b38)
+        10. [Phase 10 v0.2.0](#orgc928ce0)
+        11. [Phase 10B Additional UX](#org2ab5fa8)
+        12. [Phase 11 Bug Fixes <code>[6/6]</code>](#org7d659e3)
+        13. [Bugs/Enhancements <code>[103/103]</code>](#org83eeaff)
+        14. [v0.10.0 <code>[0/9]</code>](#org96fc35f)
+    14. [Backlog <code>[3/8]</code>](#org3c932ae)
+        1.  [Auto-migration of stored queries](#org4b55ac4)
+        2.  [Labs Tracking](#orgdb94bfb)
+        3.  [Query Templates](#org03ebb28)
+        4.  [Add Card Slots to Goals](#orgaed828d):patch:
+        5.  [Exploratory Pattern Analysis (v0.X.0)](#org842c0f8):kMeans:enhancement:
+        6.  [Draft a “This app is done” release note](#org2a8fd49)
+        7.  [Required Doc Type Header (Must Prepend to All Docs)](#org613b856)
+        8.  [What-If Scenarios](#org4a47ac5)
+        9.  [Ranked Recommendations](#orgfdad2b8)
+        10. [Complete](#org048e6fe)
+    15. [Codex Tasks](#org2b590e8)
 
 ****Codex:**** So help me I will end you if I ever see you checkout or touch this file. Refer to agents.md if you stumble upon this file again.
 
@@ -81,12 +82,12 @@ If discrepancies are found, refer to git history where available.
 &#x2013;>
 
 
-<a id="orgd7efde3"></a>
+<a id="org0c22c8f"></a>
 
 # Stats Tracking App for The Tower Mobile Game
 
 
-<a id="org1913fcf"></a>
+<a id="orgf59ff06"></a>
 
 ## Goals/Intent
 
@@ -101,7 +102,7 @@ If discrepancies are found, refer to git history where available.
     -   Battle Results form is designed for mobile
 
 
-<a id="org7f5f8d1"></a>
+<a id="org0c5d258"></a>
 
 ## Requirements
 
@@ -117,7 +118,7 @@ ruff
 mypy
 
 
-<a id="org154cdff"></a>
+<a id="org75ba530"></a>
 
 ## Overall Architecture
 
@@ -132,7 +133,7 @@ Derived Metrics
 Charts / Views
 
 
-<a id="org64689ad"></a>
+<a id="org93f7b85"></a>
 
 ## Features
 
@@ -159,12 +160,12 @@ Targets:
 -   UW Upgrade Table
 
 
-<a id="org3f89cfe"></a>
+<a id="orgfaa53c7"></a>
 
 ## Core Responsibilities
 
 
-<a id="org673116c"></a>
+<a id="org200c291"></a>
 
 ### Rate Calculations
 
@@ -178,7 +179,7 @@ Targets:
 These back Phase 1 charts directly.
 
 
-<a id="orgb08a525"></a>
+<a id="orged73df3"></a>
 
 ### Delta Calculations
 
@@ -196,7 +197,7 @@ Examples:
 No interpretation — just math.
 
 
-<a id="orge840820"></a>
+<a id="orgb89f931"></a>
 
 ### Parameterized Effects
 
@@ -213,7 +214,7 @@ These are:
 -   Fully testable with golden tests
 
 
-<a id="org4a08f73"></a>
+<a id="org07e74b6"></a>
 
 ### Aggregations by Intent (Presets)
 
@@ -226,7 +227,7 @@ These are:
 It does not decide which preset is better.
 
 
-<a id="org2d8d9cb"></a>
+<a id="org90c5f51"></a>
 
 ### Analysis Engine Invocation
 
@@ -237,7 +238,7 @@ It does not decide which preset is better.
     -   No DB writes
 
 
-<a id="orgbfd8e08"></a>
+<a id="org71c56be"></a>
 
 ### Output Shape
 
@@ -260,7 +261,7 @@ All outputs should conform to a small set of DTO-style objects:
 This maps cleanly to Chart.js datasets.
 
 
-<a id="org5f71161"></a>
+<a id="orgcd597e1"></a>
 
 ### Module Structure (Suggested)
 
@@ -277,7 +278,7 @@ analysis/
 │   └── fixtures/
 
 
-<a id="orgf23ff8a"></a>
+<a id="org29b6c96"></a>
 
 ## UX Design
 
@@ -288,7 +289,7 @@ analysis/
 -   Maxed Out/Completed Upgrades are highlighted with a Gold Box outline
 
 
-<a id="org30a6892"></a>
+<a id="org37d24ae"></a>
 
 ## Example Stat Data
 
@@ -391,12 +392,12 @@ Rare Modules	0
 \#+END<sub>SR</sub>
 
 
-<a id="orgc6fcb01"></a>
+<a id="org5d721ba"></a>
 
 ## Models
 
 
-<a id="org64ba030"></a>
+<a id="orgf71def6"></a>
 
 ### Game Data
 
@@ -547,7 +548,7 @@ Properties:
     Rare Modules	0
 
 
-<a id="org7faabfd"></a>
+<a id="org7f25250"></a>
 
 ### BotsParameters
 
@@ -555,7 +556,7 @@ Wiki-derived, FK to PlayerBots
 Immutable per revision. When the wiki changes, insert a new row — don’t overwrite.
 
 
-<a id="orgbfc8c9e"></a>
+<a id="org61829a1"></a>
 
 ### CardDefinition
 
@@ -568,7 +569,7 @@ Properties:
 -   preset<sub>tags</sub> (FK)
 
 
-<a id="orgf5d503f"></a>
+<a id="orgfc2d20d"></a>
 
 ### CardLevel / Star
 
@@ -577,7 +578,7 @@ Properties:
 -   **value:** value of current effect (between base and max)
 
 
-<a id="org9af4ec0"></a>
+<a id="orga34f98e"></a>
 
 ### CardParameters
 
@@ -585,7 +586,7 @@ Wiki-derived, FK to PlayerCard
 Immutable per revision. When the wiki changes, insert a new row — don’t overwrite.
 
 
-<a id="org6084ef9"></a>
+<a id="org40e245f"></a>
 
 ### CardSlots
 
@@ -598,7 +599,7 @@ Properties:
 -   Cost integer (Gems)
 
 
-<a id="org6c3b1e0"></a>
+<a id="orge913bce"></a>
 
 ### GuardianChipParemeters
 
@@ -606,7 +607,7 @@ Wiki-derived, FK to PlayerGuardianChip
 Immutable per revision. When the wiki changes, insert a new row — don’t overwrite.
 
 
-<a id="org77d181f"></a>
+<a id="org59f387c"></a>
 
 ### PlayerBot
 
@@ -616,7 +617,7 @@ Properties:
 -   **unlocked:** checkbox
 
 
-<a id="org55d3fd3"></a>
+<a id="org35ab561"></a>
 
 ### PlayerCard
 
@@ -628,7 +629,7 @@ Properties:
 -   **Cards:** integer progress toward next level. 0, 3, 5, 8, 12, 20, 32
 
 
-<a id="orgc5d8874"></a>
+<a id="orgb19563a"></a>
 
 ### PlayerGuardianChip
 
@@ -638,7 +639,7 @@ Properties:
 -   **unlocked:** checkbox
 
 
-<a id="orgbfd4455"></a>
+<a id="org561f9c9"></a>
 
 ### PlayerUltimateWeapon
 
@@ -648,7 +649,7 @@ Properties:
 -   **unlocked:** checkbox
 
 
-<a id="org430f0c9"></a>
+<a id="org36c3bb7"></a>
 
 ### PresetTags
 
@@ -657,7 +658,7 @@ Properties:
 -   **limit:** FK with Card Slots
 
 
-<a id="org924c25b"></a>
+<a id="orge7c1fcb"></a>
 
 ### UltimateWeaponParameters
 
@@ -676,7 +677,7 @@ Properties:
 -   **Spent:** integer (stones)
 
 
-<a id="org36f028c"></a>
+<a id="org8c7891d"></a>
 
 ### Unit Model
 
@@ -690,7 +691,7 @@ Properties:
 -   **unit<sub>type</sub>:** coins, damage, count, time
 
 
-<a id="org64ae817"></a>
+<a id="org7326a62"></a>
 
 ### WikiData
 
@@ -706,26 +707,26 @@ Stores the anchor names and retrived data caches for Card, Ultimate Weapons, and
 -   parse<sub>version</sub>
 
 
-<a id="orgacc64ff"></a>
+<a id="org660cfa5"></a>
 
 ## Views
 
 
-<a id="org7fe9593"></a>
+<a id="org7e3e04d"></a>
 
 ### Battle History
 
 View previously entered stats 
 
 
-<a id="org4a432bb"></a>
+<a id="org7ea2797"></a>
 
 ### Cards
 
 Combine 'Cards,' 'CardLevel' and 'CardSlots'
 
 
-<a id="org46e2428"></a>
+<a id="org0d53ac3"></a>
 
 ### Charts
 
@@ -769,14 +770,14 @@ Sub Charts:
     -   Coins per wave vs wave number
 
 
-<a id="org6af4227"></a>
+<a id="org0aa1c68"></a>
 
 ### UW Progress
 
 -   Button to add new UW
 
 
-<a id="orgd172869"></a>
+<a id="org60c020f"></a>
 
 ### Guardian Progress
 
@@ -784,19 +785,19 @@ Sub Charts:
 -   checkbox to flag equiped
 
 
-<a id="org7836135"></a>
+<a id="org60d0b42"></a>
 
 ### Bots Progress
 
 -   button to add new bot
 
 
-<a id="org2eabb65"></a>
+<a id="org5d2bbbb"></a>
 
 ## Management Commands
 
 
-<a id="orge1a0108"></a>
+<a id="orge60cf92"></a>
 
 ### fetch<sub>wiki</sub><sub>data</sub>
 
@@ -817,7 +818,7 @@ Example:
 -   “Logs entity added / changed / unchanged counts”
 
 
-<a id="orgd89d9e5"></a>
+<a id="org5b0a22b"></a>
 
 ### add<sub>battle</sub><sub>report</sub>
 
@@ -826,7 +827,7 @@ Ingest and parse battle report data from the player. This is a large blob of dat
 Parser should gracefully alert the player to new labels that may appear after a game update.
 
 
-<a id="orgaa0b548"></a>
+<a id="org1456c89"></a>
 
 ## Repo Structure
 
@@ -864,7 +865,7 @@ theTower<sub>stats</sub><sub>app</sub>
 └── &#x2026;
 
 
-<a id="orgf26d12f"></a>
+<a id="org220c71c"></a>
 
 ## Testing Standards
 
@@ -875,14 +876,14 @@ theTower<sub>stats</sub><sub>app</sub>
 -   When completing code, start building/executing tests as specific as possible to the code you changed so that you can catch issues efficiently, then make your way to broader tests as you build confidence.
 
 
-<a id="org17cd663"></a>
+<a id="org7855e3c"></a>
 
 ## Sprint Roadmap
 
 Each phase must be demoable without admin intervention.
 
 
-<a id="orga05965a"></a>
+<a id="orgd5467bb"></a>
 
 ### DONE Phase 1 Foundations
 
@@ -926,7 +927,7 @@ Each phase must be demoable without admin intervention.
     -   [X] Test suite passes with no skipped tests
 
 
-<a id="org70cd138"></a>
+<a id="orgc249d88"></a>
 
 ### DONE Phase 2 Context
 
@@ -972,7 +973,7 @@ Each phase must be demoable without admin intervention.
     -   [X] 1 aggregation test using presets
 
 
-<a id="orgdaa648c"></a>
+<a id="org3a6b333"></a>
 
 ### DONE Phase 3 — App Structure & UX
 
@@ -986,7 +987,7 @@ Each phase must be demoable without admin intervention.
     -   [X] Model completeness (structure, not logic)
 
 
-<a id="org06e42b1"></a>
+<a id="org8000b69"></a>
 
 ### DONE Phase 4 Effects
 
@@ -1110,7 +1111,7 @@ Each phase must be demoable without admin intervention.
         -   [X] 1 test validating revision behavior
 
 
-<a id="org88aeaf5"></a>
+<a id="org8dc000d"></a>
 
 ### DONE Phase 5 Dashboard UX <code>[100%]</code>
 
@@ -1518,7 +1519,7 @@ General conventions across all Dashboards:
     4.  Understand trends …without explanation.
 
 
-<a id="orgc4f5c47"></a>
+<a id="orga6c1d2b"></a>
 
 ### DONE Phase 6 Expansion of Foundation and Context <code>[100%]</code>
 
@@ -1729,7 +1730,7 @@ This prevents balance arguments from stalling Phase 6.
 -   No efficiency or recommendation logic depends on undocumented assumptions
 
 
-<a id="orga7a8ce6"></a>
+<a id="orgb0d8ece"></a>
 
 ### DONE Phase 7 Power Tools <code>[100%]</code>
 
@@ -1863,7 +1864,7 @@ This prevents balance arguments from stalling Phase 6.
         Implement explicit insufficiency detection (e.g., <N runs per scope, missing values, empty windows) and return a structured advice item that says “Insufficient data” + why; add tests for empty and thin scopes.
 
 
-<a id="org845e963"></a>
+<a id="org6ee640a"></a>
 
 ### DONE Phase 8 Multiple Player Support <code>[100%]</code>
 
@@ -2234,7 +2235,7 @@ Thirty guild members can use this daily without seeing, affecting, or confusing 
     Run checks or Ruff Check, mypy ., pytest -q
 
 
-<a id="org78906e7"></a>
+<a id="orgda20b38"></a>
 
 ### DONE Phase 9 Deploy and Clean out Backlog <code>[100%]</code>
 
@@ -2398,7 +2399,7 @@ You can confidently deploy when all Blocking items are complete, even if none of
     I dont see a UI element for it, nor is it covered in the documentation
 
 
-<a id="orgd8e3413"></a>
+<a id="orgc928ce0"></a>
 
 ### DONE Phase 10 v0.2.0
 
@@ -2703,7 +2704,7 @@ Non-Goals:
         Search should have global scope within the app. 
 
 
-<a id="orge9385d4"></a>
+<a id="org2ab5fa8"></a>
 
 ### DONE Phase 10B Additional UX
 
@@ -2823,9 +2824,11 @@ Non-Goals for Phase 10:
     Desktop: keep visible but secondary-styled
 
 
-<a id="orgc799124"></a>
+<a id="org7d659e3"></a>
 
-### Phase 11 Bug Fixes <code>[6/6]</code>
+### DONE Phase 11 Bug Fixes <code>[6/6]</code>
+
+-   State "DONE"       from              <span class="timestamp-wrapper"><span class="timestamp">[2026-02-08 Sun 15:15]</span></span>
 
 1.  DONE UW/Guardian Chip/Bots Dashboards (Blocking)     :bug:
 
@@ -2913,9 +2916,11 @@ Non-Goals for Phase 10:
         Especially when using &#x2013;target all.
 
 
-<a id="org3e4bafb"></a>
+<a id="org83eeaff"></a>
 
-### Bugs/Enhancements <code>[102/103]</code>
+### DONE Bugs/Enhancements <code>[103/103]</code>
+
+-   State "DONE"       from              <span class="timestamp-wrapper"><span class="timestamp">[2026-02-08 Sun 15:15]</span></span>
 
 1.  DONE Error Updating Guardian Upgrade Table     :bug:
 
@@ -4569,45 +4574,507 @@ Non-Goals for Phase 10:
     
     Needs to be dropdown populated with player presets and an option to create a new one.
 
-103.TODO Game Patch v27.4.0 <code>[0/6]</code>
+103.DONE Game Patch v27.4.0 <code>[5/5]</code>
 
-    1.  TODO In Explore Dashboard Table 'Runs Counted' column needs to only show once with multiple metrics.     :bug:
+    -   State "DONE"       from "TODO"       <span class="timestamp-wrapper"><span class="timestamp">[2026-01-31 Sat 15:04]</span></span>
     
+    1.  DONE In Explore Dashboard Table 'Runs Counted' column needs to only show once with multiple metrics.     :bug:
+    
+        -   State "DONE"       from "TODO"       <span class="timestamp-wrapper"><span class="timestamp">[2026-01-31 Sat 15:04]</span></span>
+        
         It makes the tables harder to read. 
     
-    2.  TODO Add 3rd Gaurdian Chip Slot     :enhancement:
+    2.  DONE Add 3rd Gaurdian Chip Slot     :enhancement:
     
+        -   State "DONE"       from "TODO"       <span class="timestamp-wrapper"><span class="timestamp">[2026-01-31 Sat 15:04]</span></span>
+        
         Allow up to 3 Guardian Chips to be equiped.
         Add unlock for the slots, 2nd slot is 200 bits, 3rd is 300 bits.
     
-    3.  TODO On the Cards Dashboard, the Cards Table default sort needs to be by Rarity.     :bug:
+    3.  DONE On the Cards Dashboard, the Cards Table default sort needs to be by Rarity.     :bug:
     
-    4.  TODO Add Patch Boundary Support to Eplore DSL and Charts.     :enhancement:
+        -   State "DONE"       from "TODO"       <span class="timestamp-wrapper"><span class="timestamp">[2026-01-31 Sat 15:04]</span></span>
     
+    4.  DONE Add Patch Boundary Support to Eplore DSL and Charts.     :enhancement:
+    
+        -   State "DONE"       from "TODO"       <span class="timestamp-wrapper"><span class="timestamp">[2026-01-31 Sat 15:04]</span></span>
+        
         Add as a filter.
     
-    5.  TODO Improve Metrics Documentation     :bug:
+    5.  DONE Improve Metrics Documentation     :bug:
     
+        -   State "DONE"       from "TODO"       <span class="timestamp-wrapper"><span class="timestamp">[2026-01-31 Sat 15:04]</span></span>
+        
         metrics<sub>reference.md</sub> needs to include the key values (used on explore dashboard) as a column. 
+
+
+<a id="org96fc35f"></a>
+
+### v0.10.0 <code>[0/9]</code>
+
+Includes Game Patch 27.4
+
+1.  TODO Verify wiki fetch support for Scout Guardian Chip (Blocking)
+
+    New Guardian Chip added 2026-02-02. Will need to set initial zero level values and ensure wiki scraping works 
+
+2.  TODO Lifetime Stats Modal     :feat:
+
+    Calculate Lifetime stats for a player. These metrics could use DSL and KPIs as to not reinvent the wheel. Default view shows all time stats, and can be filtered by Event Window (like on Charts) or custom range (just start and end date pickers). This modal will be accesible from the user dropdown (above Sign Out).
     
-    6.  WAIT New Stats     :enhancement:
+    Metrics:
     
-        -   State "WAIT"       from "TODO"       <span class="timestamp-wrapper"><span class="timestamp">[2026-01-28 Wed 19:53] </span></span>   
-            These have been added to the global stats screen that we currently do not capture.
+    -   Economy:
+        -   Coins Earned
+        -   Cash Earned
+        -   Cells Earned
+        -   Reroll Shards Earned
+        -   Stones Spent (Calculated from UW Player Data)
+        -   Bits Spent (Calculated from Guardian Chip Player Data)
+    -   Combat:
+        -   Damage Dealt
+        -   Thorn Damage
+        -   Enemies Destroyed
+        -   Orb Kills
+        -   Death Ray Kills
+    -   Utility:
+        -   Waves Completed
+        -   Free Upgrades
+        -   Interest Earned
+        -   Waves Skipped
+    
+    There are a few metrics in game that are outside of the current scope of this app. These omissions should be noted in the users docs.
+    
+    -   Stones Earned
+    -   Keys Earned
+    -   Upgrades Bought
+    -   Workshop Upgrades
+    -   Workshop Coins Spent
+    -   Research Completed
+    -   Lab Coins Spent
+    
+    1.  TODO Docs Relations
+    
+        -   User docs for this modal should point to Explore Dashboard for additional stats and Metrics Reference for a complete list of available metrics.
+        -   Metrics Reference should mention the Global Stats and which metrics are shown.
+
+3.  TODO Calculator Tools Dashboard     :feat:
+
+    This will be a set of little calculator widgets for players to check progress on Event Missions, Game Stats and performance
+    
+    1.  Game Speed Calculator
+    
+        We know the in Game Speed isn't accurate. 5x in Game Speed is closer to ~4.26x, and the Maximum speed of 6.25x is performatively less than accurate. What makes this better than the raw metrics is it accounts for extra overhead that isn’t in the per‑wave cooldown (start/stop delays, animations, menus, pauses, etc.)
         
-        New stats are being added in an upcoming release:
+        Here's an example calculation:
         
-        -   Added a Cells column to the Tier rows.
-        -   Added “Cells Earned” total.
-        -   Added “Reroll Shards Earned”.
-        -   Added “Recent Coins per Hour”.
+            def calcWaveHour(time): # real_time_hours
+                perMinute = 35 / time # Wave duration is 26s with a cooldown of 9s
+                perHour = 60 / perMinute
+                return perHour * 60
         
-        We need to add (hidden) columns to Battle History, and make sure the new metrics are revealed to Chart Builder Metrics and Explore DSL. 
+        And the reverse:
+        
+            waves_per_hour = (time * 3600) / 35
+            time = (waves_per_hour * 35) / 3600
+            
+            def time_from_waves_per_hour(wph):
+                return (wph * 35) / 3600
+        
+        The calculator widget should let a player select from their last 5 runs, and include a dropdown to select their game speed (1x, 2x, 2.5x, 3x, 3.5x, 4x, 4.5x, 5x, 6.3). The last one is only available via Perks. Wave Cooldown can be modified by the 'Wave Accelator' Card and should have a toggle for the player to indicate if the card was active during the run. 
+        
+        Open Questions:
+        
+        -   Should we plot performance on a Graph of Derived Game Speed (and make that metric available to Chart Builder and Explore DSL).
+        
+        1.  Some Context on the Wave Accerator Card
+        
+            <table border="2" cellspacing="0" cellpadding="6" rules="groups" frame="hsides">
+            
+            
+            <colgroup>
+            <col  class="org-left" />
+            
+            <col  class="org-right" />
+            
+            <col  class="org-right" />
+            
+            <col  class="org-right" />
+            </colgroup>
+            <thead>
+            <tr>
+            <th scope="col" class="org-left">Wave Accelertor</th>
+            <th scope="col" class="org-right">% Reduced</th>
+            <th scope="col" class="org-right">New Cooldown</th>
+            <th scope="col" class="org-right">Cooldown at Current Base</th>
+            </tr>
+            </thead>
+            
+            <tbody>
+            <tr>
+            <td class="org-left">1 star</td>
+            <td class="org-right">30</td>
+            <td class="org-right">0:06.300</td>
+            <td class="org-right">0:01.260</td>
+            </tr>
+            
+            
+            <tr>
+            <td class="org-left">2 star</td>
+            <td class="org-right">34</td>
+            <td class="org-right">0:05.940</td>
+            <td class="org-right">0:01.188</td>
+            </tr>
+            
+            
+            <tr>
+            <td class="org-left">3 star</td>
+            <td class="org-right">38</td>
+            <td class="org-right">0:05.580</td>
+            <td class="org-right">0:01.116</td>
+            </tr>
+            
+            
+            <tr>
+            <td class="org-left">4 star</td>
+            <td class="org-right">42</td>
+            <td class="org-right">0:05.220</td>
+            <td class="org-right">0:01.044</td>
+            </tr>
+            
+            
+            <tr>
+            <td class="org-left">5 star</td>
+            <td class="org-right">46</td>
+            <td class="org-right">0:04.860</td>
+            <td class="org-right">0:00.972</td>
+            </tr>
+            
+            
+            <tr>
+            <td class="org-left">6 star</td>
+            <td class="org-right">50</td>
+            <td class="org-right">0:04.500</td>
+            <td class="org-right">0:00.900</td>
+            </tr>
+            
+            
+            <tr>
+            <td class="org-left">*7 star</td>
+            <td class="org-right">54</td>
+            <td class="org-right">0:04.140</td>
+            <td class="org-right">0:00.828</td>
+            </tr>
+            </tbody>
+            </table>
+            
+            fwiw Wave Accelerator isn't significantly helpful&#x2026; at 1x Game Speed, cooldown is 9s. At 5x Game Speed wave cooldown drops to 1.8s. So the 1 start card is 30% (not nothing), but even at 7 stars shaves 1s off of 1.8s.
+            
+            Combined Wave Time + Cooldown (at 5x) is 7s, so using the card you get 1 extra wave for every 7 completed.
+            Came here looking for tips on farming cells and figured I'd add some answers for others still searching
+    
+    2.  Labs Speed Up Calculator
+    
+        There is an Event Mission to complete 89d 19h 33m 20s total time researching Labratory Upgrades. There are two earlier tiers at 12 days and 30 days of research. 
+        Players can unlock up to 5 labs (costing gems), and boost lab speed with Cells, or players can also  Rush a Lab for Gems (The math on that is outside of scope for now, pending adding Labs Tracking).
+        
+        Labs Unlock Costs (Gems):
+        
+        <table border="2" cellspacing="0" cellpadding="6" rules="groups" frame="hsides">
+        
+        
+        <colgroup>
+        <col  class="org-left" />
+        
+        <col  class="org-right" />
+        
+        <col  class="org-right" />
+        
+        <col  class="org-right" />
+        
+        <col  class="org-right" />
+        
+        <col  class="org-right" />
+        </colgroup>
+        <thead>
+        <tr>
+        <th scope="col" class="org-left">Lab Number</th>
+        <th scope="col" class="org-right">1</th>
+        <th scope="col" class="org-right">2</th>
+        <th scope="col" class="org-right">3</th>
+        <th scope="col" class="org-right">4</th>
+        <th scope="col" class="org-right">5</th>
+        </tr>
+        </thead>
+        
+        <tbody>
+        <tr>
+        <td class="org-left">Cost</td>
+        <td class="org-right">Free</td>
+        <td class="org-right">100</td>
+        <td class="org-right">400</td>
+        <td class="org-right">1,400</td>
+        <td class="org-right">3,000</td>
+        </tr>
+        </tbody>
+        </table>
+        
+        Labs Speedups (Cells):
+        
+        <table border="2" cellspacing="0" cellpadding="6" rules="groups" frame="hsides">
+        
+        
+        <colgroup>
+        <col  class="org-right" />
+        
+        <col  class="org-left" />
+        
+        <col  class="org-right" />
+        
+        <col  class="org-right" />
+        </colgroup>
+        <thead>
+        <tr>
+        <th scope="col" class="org-right">Boost</th>
+        <th scope="col" class="org-left">Duration</th>
+        <th scope="col" class="org-right">Cost (One lab)</th>
+        <th scope="col" class="org-right">Cost (All labs)</th>
+        </tr>
+        </thead>
+        
+        <tbody>
+        <tr>
+        <td class="org-right">1.5x</td>
+        <td class="org-left">1 hr</td>
+        <td class="org-right">15</td>
+        <td class="org-right">75</td>
+        </tr>
+        
+        
+        <tr>
+        <td class="org-right">1.5x</td>
+        <td class="org-left">8 hrs</td>
+        <td class="org-right">120</td>
+        <td class="org-right">600</td>
+        </tr>
+        
+        
+        <tr>
+        <td class="org-right">1.5x</td>
+        <td class="org-left">24 hrs</td>
+        <td class="org-right">360</td>
+        <td class="org-right">1800</td>
+        </tr>
+        
+        
+        <tr>
+        <td class="org-right">2x</td>
+        <td class="org-left">1 hr</td>
+        <td class="org-right">100</td>
+        <td class="org-right">500</td>
+        </tr>
+        
+        
+        <tr>
+        <td class="org-right">2x</td>
+        <td class="org-left">8 hrs</td>
+        <td class="org-right">800</td>
+        <td class="org-right">4000</td>
+        </tr>
+        
+        
+        <tr>
+        <td class="org-right">2x</td>
+        <td class="org-left">24 hrs</td>
+        <td class="org-right">2400</td>
+        <td class="org-right">12000</td>
+        </tr>
+        
+        
+        <tr>
+        <td class="org-right">3x</td>
+        <td class="org-left">1 hr</td>
+        <td class="org-right">840</td>
+        <td class="org-right">4200</td>
+        </tr>
+        
+        
+        <tr>
+        <td class="org-right">3x</td>
+        <td class="org-left">8 hrs</td>
+        <td class="org-right">6720</td>
+        <td class="org-right">33600</td>
+        </tr>
+        
+        
+        <tr>
+        <td class="org-right">3x</td>
+        <td class="org-left">24 hrs</td>
+        <td class="org-right">20160</td>
+        <td class="org-right">100800</td>
+        </tr>
+        
+        
+        <tr>
+        <td class="org-right">4x</td>
+        <td class="org-left">1 hr</td>
+        <td class="org-right">3360</td>
+        <td class="org-right">16800</td>
+        </tr>
+        
+        
+        <tr>
+        <td class="org-right">4x</td>
+        <td class="org-left">8 hrs</td>
+        <td class="org-right">26880</td>
+        <td class="org-right">134400</td>
+        </tr>
+        
+        
+        <tr>
+        <td class="org-right">4x</td>
+        <td class="org-left">24 hrs</td>
+        <td class="org-right">80640</td>
+        <td class="org-right">403200</td>
+        </tr>
+        
+        
+        <tr>
+        <td class="org-right">5x</td>
+        <td class="org-left">1 hr</td>
+        <td class="org-right">11900</td>
+        <td class="org-right">59500</td>
+        </tr>
+        
+        
+        <tr>
+        <td class="org-right">5x</td>
+        <td class="org-left">8 hrs</td>
+        <td class="org-right">95200</td>
+        <td class="org-right">476000</td>
+        </tr>
+        
+        
+        <tr>
+        <td class="org-right">5x</td>
+        <td class="org-left">24 hrs</td>
+        <td class="org-right">285600</td>
+        <td class="org-right">1428000</td>
+        </tr>
+        
+        
+        <tr>
+        <td class="org-right">6x</td>
+        <td class="org-left">1 hr</td>
+        <td class="org-right">60000</td>
+        <td class="org-right">300000</td>
+        </tr>
+        
+        
+        <tr>
+        <td class="org-right">6x</td>
+        <td class="org-left">8 hrs</td>
+        <td class="org-right">480000</td>
+        <td class="org-right">2400000</td>
+        </tr>
+        
+        
+        <tr>
+        <td class="org-right">6x</td>
+        <td class="org-left">24 hrs</td>
+        <td class="org-right">1440000</td>
+        <td class="org-right">7200000</td>
+        </tr>
+        
+        
+        <tr>
+        <td class="org-right">7x</td>
+        <td class="org-left">1 hr</td>
+        <td class="org-right">250000</td>
+        <td class="org-right">1250000</td>
+        </tr>
+        
+        
+        <tr>
+        <td class="org-right">7x</td>
+        <td class="org-left">8 hr</td>
+        <td class="org-right">2000000</td>
+        <td class="org-right">10000000</td>
+        </tr>
+        
+        
+        <tr>
+        <td class="org-right">7x</td>
+        <td class="org-left">24 hr</td>
+        <td class="org-right">6000000</td>
+        <td class="org-right">30000000</td>
+        </tr>
+        
+        
+        <tr>
+        <td class="org-right">8x</td>
+        <td class="org-left">1 hr</td>
+        <td class="org-right">1000000</td>
+        <td class="org-right">5000000</td>
+        </tr>
+        
+        
+        <tr>
+        <td class="org-right">8x</td>
+        <td class="org-left">8 hr</td>
+        <td class="org-right">8000000</td>
+        <td class="org-right">40000000</td>
+        </tr>
+        
+        
+        <tr>
+        <td class="org-right">8x</td>
+        <td class="org-left">24 hr</td>
+        <td class="org-right">24000000</td>
+        <td class="org-right">120000000</td>
+        </tr>
+        </tbody>
+        </table>
+        
+        Calculator needs to prompt for current research progress, then solve for the Speedups Durations and Cells cost to clear the goal. Results should show the minimum speedups required and an optimum rate based on cells<sub>earned</sub> DSL from the current and previous event windows. Can also show a KPI of what tier to farm for cells.
+        
+        Open Questions:
+        
+        -   Ensure alignment with Philosophy and Design Philosophy.
+        -   Include any new metrics in Chart Builder and Explore DSL
+
+4.  TODO Explore Dashboard should compare based on Runs in Set and not skip missing tiers.     :bug:
+
+    If there are no tier 3 runs, tier 4 should compare with 2, for example. 
+
+5.  TODO Saved Queries need to store comments     :ux:bug:
+
+    Clicking 'Save Query' Explore Dashboard strips commented lines from the query. Saving needs to persist comments.
+    Also, saving a query should load that query on refresh. 
+
+6.  TODO Reddit Request Cells and Reroll Shards per Hour Metrics     :feat:
+
+    Add 'by hour' to the breakdown DSL, and the metrics to Chart Builder and Explore DSL.
+    
+    Cite the request to u/BoxersOrCaseBriefs <https://www.reddit.com/user/BoxersOrCaseBriefs/>
+
+7.  TODO Cells Earned not showing for values over 1000 on Battle History     :bug:
+
+    Cells Earned	1.09K
+    Shows as "-" on Dashboard
+
+8.  TODO metric guardian<sub>damage</sub> and guardian<sub>enemies</sub><sub>summoned</sub> need to allow average and sum     :bug:
+
+    Currently only allows Count which then only shows runs used and not the aggregated performance of the metric. 
+
+9.  TODO On Charts Dashboard, Compare and Advice should open in a modal and not on the dashboard.     :feat:
+
+    Since the charts don't change to reflect the compare windows, the compare and advice for the comparisions need better visual separation from the Charts. 
 
 
-<a id="orgdbb5c85"></a>
+<a id="org3c932ae"></a>
 
-## Backlog <code>[3/9]</code>
+## Backlog <code>[3/8]</code>
 
 “Out of Scope”:
 
@@ -4615,7 +5082,7 @@ Non-Goals for Phase 10:
 -   Real-time scraping
 
 
-<a id="orgf7514d1"></a>
+<a id="org4b55ac4"></a>
 
 ### TODO Auto-migration of stored queries
 
@@ -4644,28 +5111,14 @@ preserve the user's intent without silently changing results.
     canonical location.
 
 
-<a id="org801e1f7"></a>
+<a id="orgdb94bfb"></a>
 
-### TODO Per Hour / Per Wave Metrics
+### Labs Tracking
 
-Introduce rate outputs normalized by time or waves.
-
-Tasks:
-
--   Define rate aggregations: \`per<sub>hour</sub>\`, \`per<sub>wave</sub>\` (or equivalent).
--   Establish required base fields (e.g., real time, waves reached) and validation rules.
--   Extend metric registry to declare rate eligibility and required denominators.
--   Update formatting rules for rate units.
--   UI: provide clear metric labels (e.g., “Coins per Hour”).
--   Tests: rate calculations, denominator missing/zero handling, formatting.
-
-Acceptance notes:
-
--   Rates must be derived from the same run scope.
--   Missing denominators must produce a non-fatal warning and omit the row/value.
+Track Labs progress and unlocks
 
 
-<a id="org81fd7b2"></a>
+<a id="org03ebb28"></a>
 
 ### TODO Query Templates
 
@@ -4685,7 +5138,7 @@ Acceptance notes:
 -   Templates must not embed advice or prescriptions.
 
 
-<a id="org348f877"></a>
+<a id="orgaed828d"></a>
 
 ### WAIT Add Card Slots to Goals     :patch:
 
@@ -4739,7 +5192,7 @@ What not to do (still true):
 That would violate our own Explainability over Optimization rule.
 
 
-<a id="org3ef8822"></a>
+<a id="org842c0f8"></a>
 
 ### TODO Exploratory Pattern Analysis (v0.X.0)     :kMeans:enhancement:
 
@@ -4922,7 +5375,7 @@ K-means belongs entirely inside of analysis
 -   It never implies success
 
 
-<a id="org1e13d79"></a>
+<a id="org2a8fd49"></a>
 
 ### TODO Draft a “This app is done” release note
 
@@ -4948,7 +5401,7 @@ K-means belongs entirely inside of analysis
 -   Mention k-means as a future big feature if we collect enough users
 
 
-<a id="org279435f"></a>
+<a id="org613b856"></a>
 
 ### CANCELED Required Doc Type Header (Must Prepend to All Docs)
 
@@ -5039,7 +5492,7 @@ If Codex is unsure which header to use:
     Validate the final document against the Documentation Self-Check Checklist before completing the task.
 
 
-<a id="org1ea21f4"></a>
+<a id="org4a47ac5"></a>
 
 ### CANCELED What-If Scenarios
 
@@ -5063,7 +5516,7 @@ No RNG modeling
 No balance speculation
 
 
-<a id="orgff4a7d0"></a>
+<a id="orgfdad2b8"></a>
 
 ### CANCELED Ranked Recommendations
 
@@ -5097,25 +5550,62 @@ What would change the recommendation
 This keeps it defensible.
 
 
-<a id="org0f147d5"></a>
+<a id="org048e6fe"></a>
 
 ### Complete
 
-1.  DONE Expand Future Work section from prompt53.md into Backlog Tasks
+1.  DELEGATED New Stats v27.4     :enhancement:
+
+    -   State "DELEGATED"  from "WAIT"       <span class="timestamp-wrapper"><span class="timestamp">[2026-02-01 Sun 14:12] </span></span>   
+        Adding a Lifetime Stats Modal to derive and show these metrics and some others.
+    -   State "WAIT"       from              <span class="timestamp-wrapper"><span class="timestamp">[2026-02-01 Sun 13:58]</span></span>
+    -   State "WAIT"       from "TODO"       <span class="timestamp-wrapper"><span class="timestamp">[2026-01-28 Wed 19:53] </span></span>   
+        These have been added to the global stats screen that we currently do not capture.
+    
+    New stats are being added in an upcoming release:
+    
+    -   Added a Cells column to the Tier rows.
+    -   Added “Cells Earned” total.
+    -   Added “Reroll Shards Earned”.
+    -   Added “Recent Coins per Hour”.
+    
+    We need to add (hidden) columns to Battle History, and make sure the new metrics are revealed to Chart Builder Metrics and Explore DSL. 
+
+2.  DONE Per Hour / Per Wave Metrics
+
+    -   State "DONE"       from "TODO"       <span class="timestamp-wrapper"><span class="timestamp">[2026-02-01 Sun 13:51]</span></span>
+    
+    Introduce rate outputs normalized by time or waves.
+    
+    Tasks:
+    
+    -   Define rate aggregations: \`per<sub>hour</sub>\`, \`per<sub>wave</sub>\` (or equivalent).
+    -   Establish required base fields (e.g., real time, waves reached) and validation rules.
+    -   Extend metric registry to declare rate eligibility and required denominators.
+    -   Update formatting rules for rate units.
+    -   UI: provide clear metric labels (e.g., “Coins per Hour”).
+    -   Tests: rate calculations, denominator missing/zero handling, formatting.
+    
+    Acceptance notes:
+    
+    -   Rates must be derived from the same run scope.
+    -   Missing denominators must produce a non-fatal warning and omit the row/value.
+
+3.  DONE Expand Future Work section from prompt53.md into Backlog Tasks
 
     -   State "DONE"       from "TODO"       <span class="timestamp-wrapper"><span class="timestamp">[2026-01-14 Wed 16:19]</span></span>
 
-2.  DONE Review Docs and Note Revisions     :Max:
+4.  DONE Review Docs and Note Revisions     :Max:
 
     -   State "DONE"       from "TODO"       <span class="timestamp-wrapper"><span class="timestamp">[2025-12-19 Fri 17:24]</span></span>
 
-3.  DONE Phase 5 Summary was written as a user facing doc     :docs:
+5.  DONE Phase 5 Summary was written as a user facing doc     :docs:
 
     -   State "DONE"       from "TODO"       <span class="timestamp-wrapper"><span class="timestamp">[2025-12-18 Thu 19:33]</span></span>
     
     Should be written as Developer / Progress Documentation. And appropriately filed under 'Development
 
-4.  DONE Fix pytest warnings
+6.  DONE Fix pytest warnings
 
     CLOSED: <span class="timestamp-wrapper"><span class="timestamp">[2025-12-16 Tue 11:01]</span></span>
     
@@ -5135,14 +5625,14 @@ This keeps it defensible.
     
     &#x2013; Docs: <https://docs.pytest.org/en/stable/how-to/capture-warnings.html>
 
-5.  DONE Linking Presets/UW/Guardian Chips/Bots to battle history
+7.  DONE Linking Presets/UW/Guardian Chips/Bots to battle history
 
     -   State "DONE"       from "TODO"       <span class="timestamp-wrapper"><span class="timestamp">[2025-12-17 Wed 14:31]</span></span>
     
     Mostly a visual tweak, but adds context and history for the player to interpert their performance history. 
 
 
-<a id="org0361f55"></a>
+<a id="org2b590e8"></a>
 
 ## Codex Tasks
 

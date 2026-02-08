@@ -2342,8 +2342,10 @@ CLOSED: [2025-12-22 Mon 08:25]
 Mobile: move to overflow menu or settings
 
 Desktop: keep visible but secondary-styled
-*** Phase 11 Bug Fixes [6/6]
+*** DONE Phase 11 Bug Fixes [6/6]
+CLOSED: [2026-02-08 Sun 15:15]
 
+- State "DONE"       from              [2026-02-08 Sun 15:15]
 **** DONE [#A] UW/Guardian Chip/Bots Dashboards (Blocking)           :bug:
 CLOSED: [2025-12-22 Mon 14:19]
 - State "DONE"       from "TODO"       [2025-12-22 Mon 14:19]
@@ -2425,8 +2427,10 @@ CLOSED: [2025-12-22 Mon 15:31]
 - [X] fetch_wiki_data and rebuild_wiki_definitions should have a pretty summary of deltas at the end.
   Especially when using --target all.
 
-*** Bugs/Enhancements [103/103]
+*** DONE Bugs/Enhancements [103/103]
+CLOSED: [2026-02-08 Sun 15:15]
 
+- State "DONE"       from              [2026-02-08 Sun 15:15]
 **** DONE [#B] Error Updating Guardian Upgrade Table                 :bug:
 CLOSED: [2025-12-22 Mon 18:51]
 - State "DONE"       from "TODO"       [2025-12-22 Mon 18:51]
@@ -3928,7 +3932,7 @@ Add as a filter.
 CLOSED: [2026-01-31 Sat 15:04]
 - State "DONE"       from "TODO"       [2026-01-31 Sat 15:04]
 metrics_reference.md needs to include the key values (used on explore dashboard) as a column. 
-*** v0.9.0 [0/6]
+*** v0.10.0 [0/9]
 Includes Game Patch 27.4
 **** TODO [#A] Verify wiki fetch support for Scout Guardian Chip (Blocking)
 New Guardian Chip added 2026-02-02. Will need to set initial zero level values and ensure wiki scraping works 
@@ -3967,12 +3971,102 @@ There are a few metrics in game that are outside of the current scope of this ap
 ***** TODO Docs Relations
 - User docs for this modal should point to Explore Dashboard for additional stats and Metrics Reference for a complete list of available metrics.
 - Metrics Reference should mention the Global Stats and which metrics are shown. 
+**** TODO [#B] Calculator Tools Dashboard                           :feat:
+This will be a set of little calculator widgets for players to check progress on Event Missions, Game Stats and performance
+***** Game Speed Calculator
+We know the in Game Speed isn't accurate. 5x in Game Speed is closer to ~4.26x, and the Maximum speed of 6.25x is performatively less than accurate. What makes this better than the raw metrics is it accounts for extra overhead that isn’t in the per‑wave cooldown (start/stop delays, animations, menus, pauses, etc.)
 
+Here's an example calculation:
+#+BEGIN_SRC python
+ def calcWaveHour(time): # real_time_hours
+     perMinute = 35 / time # Wave duration is 26s with a cooldown of 9s
+     perHour = 60 / perMinute
+     return perHour * 60
+#+END_SRC
+
+And the reverse:
+#+BEGIN_SRC python
+waves_per_hour = (time * 3600) / 35
+time = (waves_per_hour * 35) / 3600
+
+def time_from_waves_per_hour(wph):
+    return (wph * 35) / 3600
+#+END_SRC
+
+The calculator widget should let a player select from their last 5 runs, and include a dropdown to select their game speed (1x, 2x, 2.5x, 3x, 3.5x, 4x, 4.5x, 5x, 6.3). The last one is only available via Perks. Wave Cooldown can be modified by the 'Wave Accelator' Card and should have a toggle for the player to indicate if the card was active during the run. 
+
+Open Questions:
+- Should we plot performance on a Graph of Derived Game Speed (and make that metric available to Chart Builder and Explore DSL).
+****** Some Context on the Wave Accerator Card
+| Wave Accelertor | % Reduced | New Cooldown | Cooldown at Current Base |
+|-----------------+-----------+--------------+--------------------------|
+| 1 star          |        30 |     0:06.300 |                 0:01.260 |
+| 2 star          |        34 |     0:05.940 |                 0:01.188 |
+| 3 star          |        38 |     0:05.580 |                 0:01.116 |
+| 4 star          |        42 |     0:05.220 |                 0:01.044 |
+| 5 star          |        46 |     0:04.860 |                 0:00.972 |
+| 6 star          |        50 |     0:04.500 |                 0:00.900 |
+| *7 star         |        54 |     0:04.140 |                 0:00.828 |
+
+fwiw Wave Accelerator isn't significantly helpful... at 1x Game Speed, cooldown is 9s. At 5x Game Speed wave cooldown drops to 1.8s. So the 1 start card is 30% (not nothing), but even at 7 stars shaves 1s off of 1.8s.
+
+Combined Wave Time + Cooldown (at 5x) is 7s, so using the card you get 1 extra wave for every 7 completed.
+Came here looking for tips on farming cells and figured I'd add some answers for others still searching
+***** Labs Speed Up Calculator
+There is an Event Mission to complete 89d 19h 33m 20s total time researching Labratory Upgrades. There are two earlier tiers at 12 days and 30 days of research. 
+Players can unlock up to 5 labs (costing gems), and boost lab speed with Cells, or players can also  Rush a Lab for Gems (The math on that is outside of scope for now, pending adding Labs Tracking).
+
+
+Labs Unlock Costs (Gems):
+| Lab Number |    1 |   2 |   3 |     4 |     5 |
+|------------+------+-----+-----+-------+-------|
+| Cost       | Free | 100 | 400 | 1,400 | 3,000 |
+
+Labs Speedups (Cells):
+| Boost | Duration | Cost (One lab) | Cost (All labs) |
+|-------+----------+----------------+-----------------|
+|  1.5x | 1 hr     | 15             | 75              |
+|  1.5x | 8 hrs    | 120            | 600             |
+|  1.5x | 24 hrs   | 360            | 1800            |
+|    2x | 1 hr     | 100            | 500             |
+|    2x | 8 hrs    | 800            | 4000            |
+|    2x | 24 hrs   | 2400           | 12000           |
+|    3x | 1 hr     | 840            | 4200            |
+|    3x | 8 hrs    | 6720           | 33600           |
+|    3x | 24 hrs   | 20160          | 100800          |
+|    4x | 1 hr     | 3360           | 16800           |
+|    4x | 8 hrs    | 26880          | 134400          |
+|    4x | 24 hrs   | 80640          | 403200          |
+|    5x | 1 hr     | 11900          | 59500           |
+|    5x | 8 hrs    | 95200          | 476000          |
+|    5x | 24 hrs   | 285600         | 1428000         |
+|    6x | 1 hr     | 60000          | 300000          |
+|    6x | 8 hrs    | 480000         | 2400000         |
+|    6x | 24 hrs   | 1440000        | 7200000         |
+|    7x | 1 hr     | 250000         | 1250000         |
+|    7x | 8 hr     | 2000000        | 10000000        |
+|    7x | 24 hr    | 6000000        | 30000000        |
+|    8x | 1 hr     | 1000000        | 5000000         |
+|    8x | 8 hr     | 8000000        | 40000000        |
+|    8x | 24 hr    | 24000000       | 120000000       |
+
+Calculator needs to prompt for current research progress, then solve for the Speedups Durations and Cells cost to clear the goal. Results should show the minimum speedups required and an optimum rate based on cells_earned DSL from the current and previous event windows. Can also show a KPI of what tier to farm for cells.
+
+Open Questions:
+- Ensure alignment with Philosophy and Design Philosophy.
+- Include any new metrics in Chart Builder and Explore DSL
 **** TODO [#B] Explore Dashboard should compare based on Runs in Set and not skip missing tiers. :bug:
 If there are no tier 3 runs, tier 4 should compare with 2, for example. 
 **** TODO [#B] Saved Queries need to store comments               :ux:bug:
 Clicking 'Save Query' Explore Dashboard strips commented lines from the query. Saving needs to persist comments.
 Also, saving a query should load that query on refresh. 
+**** TODO [#B] Reddit Request Cells and Reroll Shards per Hour Metrics :feat:
+Add 'by hour' to the breakdown DSL, and the metrics to Chart Builder and Explore DSL.
+
+Cite the request to u/BoxersOrCaseBriefs https://www.reddit.com/user/BoxersOrCaseBriefs/
+**** TODO [#B] Cells Earned not showing for values over 1000 on Battle History :bug:
+Cells Earned	1.09K
+Shows as "-" on Dashboard
 **** TODO [#C] metric guardian_damage and guardian_enemies_summoned need to allow average and sum :bug:
 Currently only allows Count which then only shows runs used and not the aggregated performance of the metric. 
 **** TODO [#C] On Charts Dashboard, Compare and Advice should open in a modal and not on the dashboard. :feat:
