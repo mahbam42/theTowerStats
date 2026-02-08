@@ -2,6 +2,8 @@
 
 from __future__ import annotations
 
+from datetime import datetime
+
 from django.contrib import admin
 from django.db.models import QuerySet
 
@@ -52,7 +54,7 @@ class PlayerScopedAdmin(admin.ModelAdmin):
 class PlayerAdmin(admin.ModelAdmin):
     """Admin configuration for Player."""
 
-    list_display = ("display_name", "user", "created_at", "last_login")
+    list_display = ("display_name", "user", "created_at", "user_last_login")
     search_fields = ("display_name", "user__username")
 
     def get_queryset(self, request) -> QuerySet:
@@ -79,6 +81,12 @@ class PlayerAdmin(admin.ModelAdmin):
             if not obj.display_name:
                 obj.display_name = request.user.username
         super().save_model(request, obj, form, change)
+
+    @admin.display(ordering="user__last_login", description="Last login")
+    def user_last_login(self, obj: Player) -> datetime | None:
+        """Return the related user's last login timestamp."""
+
+        return obj.user.last_login
 
 
 @admin.register(Preset)

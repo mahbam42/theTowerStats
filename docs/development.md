@@ -36,6 +36,16 @@ Testing conventions, markers, and running instructions are documented on the ded
 
 See: [Testing](testing.md)
 
+## Production Snapshot (Local)
+
+Use the refresh script to pull a read-only production snapshot into your local database and prune to a single player:
+
+```bash
+.venv/bin/python scripts/refresh_staging_db.py --player-display-name mahbam42
+```
+
+The script reads `.env` by default and expects `PROD_READONLY_DATABASE_URL` and `LOCAL_DATABASE_URL` to be set. For the manual workflow and grant setup, see `archive/stagingDB.md`.
+
 ## Repository docs in MkDocs
 
 MkDocs includes repo-root GitHub Markdown files (for example, `CHANGELOG.md` and
