@@ -4,14 +4,18 @@ from __future__ import annotations
 
 from dataclasses import dataclass
 from math import ceil
-from typing import Iterable
+import re
+from typing import Iterable, TYPE_CHECKING
 
 SECONDS_PER_HOUR = 3600
 SECONDS_PER_DAY = 86400
 
 WAVE_DURATION_SECONDS = 26.0
 BASE_WAVE_COOLDOWN_SECONDS = 9.0
-WAVE_ACCELERATOR_REDUCTION = 0.30
+WAVE_ACCELERATOR_SLUGS = ("wave-accelerator", "wave_accelerator", "waveaccelerator")
+
+if TYPE_CHECKING:
+    from player_state.models import Player
 
 
 @dataclass(frozen=True, slots=True)
@@ -102,82 +106,112 @@ LAB_SPEEDUP_OPTIONS: tuple[LabSpeedupOption, ...] = (
 )
 
 
-def cooldown_seconds(*, wave_accelerator_active: bool) -> float:
-    """Return the wave cooldown seconds given Wave Accelerator state."""
+def cooldown_seconds(*, wave_accelerator_active: bool, reduction_pct: float) -> float:
+    """Return wave cooldown seconds with the specified reduction percent applied."""
 
     if not wave_accelerator_active:
         return BASE_WAVE_COOLDOWN_SECONDS
-    return BASE_WAVE_COOLDOWN_SECONDS * (1.0 - WAVE_ACCELERATOR_REDUCTION)
+    reduction = max(0.0, min(reduction_pct, 100.0)) / 100.0
+    return BASE_WAVE_COOLDOWN_SECONDS * (1.0 - reduction)
 
 
-def seconds_per_wave(*, wave_accelerator_active: bool) -> float:
+def seconds_per_wave(*, wave_accelerator_active: bool, reduction_pct: float) -> float:
     """Return total seconds per wave using the baseline wave + cooldown."""
 
-    return WAVE_DURATION_SECONDS + cooldown_seconds(wave_accelerator_active=wave_accelerator_active)
+    return WAVE_DURATION_SECONDS + cooldown_seconds(
+        wave_accelerator_active=wave_accelerator_active, reduction_pct=reduction_pct
+    )
 
 
-def expected_waves_per_hour(*, game_speed: float, wave_accelerator_active: bool) -> float:
+def expected_waves_per_hour(*, game_speed: float, wave_accelerator_active: bool, reduction_pct: float) -> float:
     """Return expected waves/hour for the selected game speed."""
 
-    base_seconds = seconds_per_wave(wave_accelerator_active=wave_accelerator_active)
+    base_seconds = seconds_per_wave(
+        wave_accelerator_active=wave_accelerator_active, reduction_pct=reduction_pct
+    )
     return (game_speed * SECONDS_PER_HOUR) / base_seconds
 
 
-def derive_game_speed(*, waves: int | None, real_time_seconds: int | None, wave_accelerator_active: bool) -> float | None:
+def derive_game_speed(
+    *, waves: int | None, real_time_seconds: int | None, wave_accelerator_active: bool, reduction_pct: float
+) -> float | None:
     """Derive game speed from observed real time and waves reached."""
 
     if not waves or not real_time_seconds:
         return None
     if real_time_seconds <= 0:
         return None
-    base_seconds = seconds_per_wave(wave_accelerator_active=wave_accelerator_active)
+    base_seconds = seconds_per_wave(
+        wave_accelerator_active=wave_accelerator_active, reduction_pct=reduction_pct
+    )
     waves_per_hour = (float(waves) * SECONDS_PER_HOUR) / float(real_time_seconds)
     return (waves_per_hour * base_seconds) / SECONDS_PER_HOUR
 
 
 def expected_real_time_seconds(
-    *, waves: int | None, game_speed: float, wave_accelerator_active: bool
+    *, waves: int | None, game_speed: float, wave_accelerator_active: bool, reduction_pct: float
 ) -> float | None:
     """Return expected real-time seconds for a wave count and game speed."""
 
     if not waves:
         return None
-    base_seconds = seconds_per_wave(wave_accelerator_active=wave_accelerator_active)
+    base_seconds = seconds_per_wave(
+        wave_accelerator_active=wave_accelerator_active, reduction_pct=reduction_pct
+    )
     return float(waves) * base_seconds / float(game_speed)
 
 
 def build_game_speed_result(
-    *, waves: int | None, real_time_seconds: int | None, game_speed: float, wave_accelerator_active: bool
+    *,
+    waves: int | None,
+    real_time_seconds: int | None,
+    game_speed: float,
+    wave_accelerator_active: bool,
+    reduction_pct: float,
 ) -> GameSpeedResult:
     """Build a GameSpeedResult from run data and calculator inputs."""
 
-    base_seconds = seconds_per_wave(wave_accelerator_active=wave_accelerator_active)
+    base_seconds = seconds_per_wave(wave_accelerator_active=wave_accelerator_active, reduction_pct=reduction_pct)
     if not waves or not real_time_seconds or real_time_seconds <= 0:
         return GameSpeedResult(
             waves_per_hour=None,
             expected_waves_per_hour=expected_waves_per_hour(
-                game_speed=game_speed, wave_accelerator_active=wave_accelerator_active
+                game_speed=game_speed,
+                wave_accelerator_active=wave_accelerator_active,
+                reduction_pct=reduction_pct,
             ),
             expected_real_time_seconds=expected_real_time_seconds(
-                waves=waves, game_speed=game_speed, wave_accelerator_active=wave_accelerator_active
+                waves=waves,
+                game_speed=game_speed,
+                wave_accelerator_active=wave_accelerator_active,
+                reduction_pct=reduction_pct,
             ),
             derived_speed=None,
             seconds_per_wave=base_seconds,
-            cooldown_seconds=cooldown_seconds(wave_accelerator_active=wave_accelerator_active),
+            cooldown_seconds=cooldown_seconds(
+                wave_accelerator_active=wave_accelerator_active, reduction_pct=reduction_pct
+            ),
         )
     waves_per_hour = (float(waves) * SECONDS_PER_HOUR) / float(real_time_seconds)
     derived_speed = (waves_per_hour * base_seconds) / SECONDS_PER_HOUR
     return GameSpeedResult(
         waves_per_hour=waves_per_hour,
         expected_waves_per_hour=expected_waves_per_hour(
-            game_speed=game_speed, wave_accelerator_active=wave_accelerator_active
+            game_speed=game_speed,
+            wave_accelerator_active=wave_accelerator_active,
+            reduction_pct=reduction_pct,
         ),
         expected_real_time_seconds=expected_real_time_seconds(
-            waves=waves, game_speed=game_speed, wave_accelerator_active=wave_accelerator_active
+            waves=waves,
+            game_speed=game_speed,
+            wave_accelerator_active=wave_accelerator_active,
+            reduction_pct=reduction_pct,
         ),
         derived_speed=derived_speed,
         seconds_per_wave=base_seconds,
-        cooldown_seconds=cooldown_seconds(wave_accelerator_active=wave_accelerator_active),
+        cooldown_seconds=cooldown_seconds(
+            wave_accelerator_active=wave_accelerator_active, reduction_pct=reduction_pct
+        ),
     )
 
 
@@ -232,3 +266,70 @@ def format_duration(*, total_seconds: int) -> str:
         parts.append(f"{minutes}m")
     parts.append(f"{seconds}s")
     return " ".join(parts)
+
+
+def wave_accelerator_reduction_percent(*, player: "Player") -> float:
+    """Return Wave Accelerator cooldown reduction percent based on player card level."""
+
+    from django.db.models import Q
+
+    from definitions.models import CardDefinition
+    from player_state.models import PlayerCard
+
+    card = (
+        PlayerCard.objects.filter(player=player)
+        .select_related("card_definition")
+        .filter(
+            Q(card_definition__name__iexact="Wave Accelerator")
+            | Q(card_definition__slug__in=WAVE_ACCELERATOR_SLUGS)
+            | Q(card_slug__in=WAVE_ACCELERATOR_SLUGS)
+            | Q(card_slug__iexact="Wave Accelerator")
+        )
+        .first()
+    )
+    if card is None:
+        return 0.0
+
+    card_def: CardDefinition | None = card.card_definition
+    effect_raw = (card_def.effect_raw if card_def else "") or ""
+    level = int(card.stars_unlocked or 0)
+    if level <= 0:
+        return 0.0
+    percent = _parse_reduction_percent(effect_raw=effect_raw, level=level)
+    if percent is None:
+        return 0.0
+    return max(0.0, min(percent, 100.0))
+
+
+def _parse_reduction_percent(*, effect_raw: str, level: int) -> float | None:
+    """Parse a percent reduction from a card effect string for a given level."""
+
+    effect_value = _effect_value_for_level(effect_raw, level=level)
+    cleaned = (effect_value or "").strip()
+    if not cleaned:
+        return None
+    match = re.search(r"([+-]?[0-9]+(?:\.[0-9]+)?)", cleaned.replace(",", ""))
+    if not match:
+        return None
+    value = float(match.group(1))
+    lowered = cleaned.casefold()
+    if "%" in lowered or "percent" in lowered:
+        return value
+    if value <= 1:
+        return value * 100
+    return value
+
+
+def _effect_value_for_level(effect_raw: str, *, level: int) -> str:
+    """Pick a best-effort effect value for a card level from raw wiki text."""
+
+    cleaned = (effect_raw or "").strip()
+    if not cleaned or level <= 0:
+        return cleaned
+    if "/" not in cleaned:
+        return cleaned
+    parts = [part.strip() for part in cleaned.split("/") if part.strip()]
+    if len(parts) <= 1:
+        return cleaned
+    idx = min(max(level, 1), len(parts)) - 1
+    return parts[idx]

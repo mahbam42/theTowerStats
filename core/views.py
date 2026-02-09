@@ -89,7 +89,7 @@ from core.calculators import (
     format_duration,
     lab_speedup_rows,
     progress_seconds_from_parts,
-    WAVE_ACCELERATOR_REDUCTION,
+    wave_accelerator_reduction_percent,
 )
 from core.forms import (
     BattleHistoryColumnPreferenceForm,
@@ -5070,6 +5070,8 @@ def calculator_tools(request: HttpRequest) -> HttpResponse:
         run = game_form.cleaned_data["run"]
         speed_value = float(game_form.cleaned_data["game_speed"])
         wave_accelerator_active = bool(game_form.cleaned_data.get("wave_accelerator_active"))
+        card_reduction_pct = wave_accelerator_reduction_percent(player=player)
+        applied_reduction_pct = card_reduction_pct if wave_accelerator_active else 0.0
         progress = getattr(run, "run_progress", None)
         waves = getattr(progress, "wave", None) if progress else None
         real_time_seconds = getattr(progress, "real_time_seconds", None) if progress else None
@@ -5079,6 +5081,7 @@ def calculator_tools(request: HttpRequest) -> HttpResponse:
             real_time_seconds=real_time_seconds,
             game_speed=speed_value,
             wave_accelerator_active=wave_accelerator_active,
+            reduction_pct=applied_reduction_pct,
         )
         expected_seconds = result.expected_real_time_seconds
         game_result = {
@@ -5097,9 +5100,7 @@ def calculator_tools(request: HttpRequest) -> HttpResponse:
             "derived_speed": result.derived_speed,
             "seconds_per_wave": result.seconds_per_wave,
             "cooldown_seconds": result.cooldown_seconds,
-            "cooldown_reduction_pct": int(WAVE_ACCELERATOR_REDUCTION * 100)
-            if wave_accelerator_active
-            else 0,
+            "cooldown_reduction_pct": round(card_reduction_pct, 2),
             "wave_accelerator_active": wave_accelerator_active,
         }
 

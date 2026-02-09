@@ -53,7 +53,7 @@ Calculator Tools provides quick, descriptive calculators for game speed timing a
 > The Run list includes your five most recent Battle Reports.
 
 > **Note**
-> Wave Accelerator calculations use a single cooldown reduction value and may not match every card level.
+> Wave Accelerator calculations use your Wave Accelerator card level and the card Effect value.
 
 > **Note**
 > Labs Speed Up results assume all unlocked labs are running and that speedups apply to all active labs.

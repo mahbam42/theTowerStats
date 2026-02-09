@@ -24,6 +24,7 @@ def test_build_game_speed_result_baseline() -> None:
         real_time_seconds=real_time_seconds,
         game_speed=1.0,
         wave_accelerator_active=False,
+        reduction_pct=0.0,
     )
 
     assert result.waves_per_hour == pytest.approx(3600 / 35, rel=1e-6)
