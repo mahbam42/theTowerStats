@@ -1542,6 +1542,28 @@ def _format_real_time(seconds: int | None) -> str:
     return f"{secs}s"
 
 
+_COMPACT_COUNT_SUFFIXES: tuple[tuple[int, str], ...] = (
+    (1_000_000_000_000_000_000, "Q"),
+    (1_000_000_000_000_000, "q"),
+    (1_000_000_000_000, "T"),
+    (1_000_000_000, "B"),
+    (1_000_000, "M"),
+    (1_000, "k"),
+)
+
+
+def _format_compact_count(value: int | None) -> str | None:
+    """Format a count value using compact lowercase suffixes."""
+
+    if value is None:
+        return None
+    abs_value = abs(int(value))
+    for threshold, suffix in _COMPACT_COUNT_SUFFIXES:
+        if abs_value >= threshold:
+            return f"{value / threshold:.2f}{suffix}"
+    return f"{value}"
+
+
 def _order_battle_history_runs(
     *, runs: QuerySet[BattleReport], sort_key: str
 ) -> QuerySet[BattleReport] | list[BattleReport]:
@@ -1680,7 +1702,7 @@ def _battle_report_modal_metrics(progress: BattleReportProgress | None) -> list[
         {
             "key": "cells_earned",
             "label": "Cells earned",
-            "value": _display(_format_int(progress.cells_earned)),
+            "value": _display(_format_compact_count(progress.cells_earned)),
             "numeric_value": progress.cells_earned,
             "unit": "cells",
             "chart_id": chart_links.get("cells_earned"),
@@ -1947,8 +1969,6 @@ def _farming_efficiency_analysis(
     plateau_tier = None
     for idx, current in enumerate(eligible[:-1]):
         next_stat = eligible[idx + 1]
-        if next_stat.tier != current.tier + 1:
-            continue
         current_avg = current.avg
         next_avg = next_stat.avg
         plateau_delta_value = next_avg - current_avg
@@ -1960,7 +1980,6 @@ def _farming_efficiency_analysis(
             break
 
     previous_avg: float | None = None
-    previous_tier: int | None = None
     for stat in tier_stats:
         tier = stat.tier
         avg_value = stat.avg
@@ -1968,7 +1987,7 @@ def _farming_efficiency_analysis(
         delta_percent: float | None = None
         delta_prefix = ""
         delta_percent_display: str | None = None
-        if previous_avg is not None and previous_tier is not None and tier == previous_tier + 1:
+        if previous_avg is not None:
             delta_value = avg_value - previous_avg
             delta_prefix = "+" if delta_value > 0 else ""
             if previous_avg:
@@ -1990,8 +2009,6 @@ def _farming_efficiency_analysis(
         )
 
         previous_avg = avg_value
-        previous_tier = tier
-
     return {
         "rows": tuple(rows),
         "warnings": tuple(warnings),
@@ -2030,6 +2047,12 @@ def explore_dashboard(request: HttpRequest) -> HttpResponse:
                 loaded_query = saved_queries.filter(id=query_id).first()
                 if loaded_query is not None:
                     loaded_payload = dict(loaded_query.query or {})
+    if request.method == "GET" and not request.GET.get("query_id"):
+        just_saved_id = _consume_explore_just_saved_query_id(request)
+        if just_saved_id:
+            loaded_query = saved_queries.filter(id=just_saved_id).first()
+            if loaded_query is not None:
+                loaded_payload = dict(loaded_query.query or {})
 
     form_data: QueryDict | None = None
     initial: dict[str, object] = {}
@@ -2079,7 +2102,8 @@ def explore_dashboard(request: HttpRequest) -> HttpResponse:
                 validation_warnings.append("Missing data: no matching metric values were found.")
             _append_explore_missing_warnings(results, validation_warnings)
 
-        dsl_text = format_explore_dsl(loaded_query_data, default_scope=prefill_scope)
+        payload_dsl_text = _explore_payload_dsl_text(loaded_payload)
+        dsl_text = payload_dsl_text or format_explore_dsl(loaded_query_data, default_scope=prefill_scope)
 
     if stored_query is not None and not form.is_bound:
         dsl_text = stored_query.dsl_text
@@ -2657,9 +2681,11 @@ def battle_history(request: HttpRequest) -> HttpResponse:
         battle_date_fallback = False
         battle_date_display = None
         recovery_packages_raw = None
+        cells_earned_display = None
         if progress is not None:
             battle_date_display = getattr(progress, "battle_date", None)
             battle_date_fallback = battle_date_is_fallback(run.raw_text or "")
+            cells_earned_display = _format_compact_count(getattr(progress, "cells_earned", None))
         derived = getattr(run, "derived_metrics", None)
         if derived is not None and isinstance(derived.raw_values, dict):
             recovery_packages_raw = derived.raw_values.get("recovery_packages")
@@ -2677,6 +2703,7 @@ def battle_history(request: HttpRequest) -> HttpResponse:
                 "tournament_bracket": tournament_bracket(run),
                 "tournament_rank": tournament_rank,
                 "recovery_packages_raw": recovery_packages_raw,
+                "cells_earned_display": cells_earned_display,
             }
         )
 
@@ -5767,6 +5794,44 @@ def _explore_prefill_scope_from_request(params: QueryDict) -> ExploreScope:
         snapshot_id=snapshot_id,
         past_n_runs=past_n_runs,
     )
+
+
+_EXPLORE_JUST_SAVED_SESSION_KEY = "explore_just_saved_query_id"
+
+
+def _consume_explore_just_saved_query_id(request: HttpRequest) -> int | None:
+    """Return and clear the just-saved Explore query id from the session."""
+
+    raw_value = request.session.pop(_EXPLORE_JUST_SAVED_SESSION_KEY, None)
+    if raw_value is None:
+        return None
+    try:
+        return int(raw_value)
+    except (TypeError, ValueError):
+        return None
+
+
+def _explore_payload_dsl_text(payload: dict[str, object] | None) -> str | None:
+    """Return stored DSL text from an Explore payload when present."""
+
+    if not payload:
+        return None
+    raw_value = payload.get("dsl_text")
+    if isinstance(raw_value, str) and raw_value.strip():
+        return raw_value
+    return None
+
+
+def _explore_payload_with_dsl(
+    payload: dict[str, object] | None,
+    dsl_text: str | None,
+) -> dict[str, object]:
+    """Return an Explore payload enriched with raw DSL text."""
+
+    enriched = dict(payload or {})
+    if dsl_text is not None and dsl_text.strip():
+        enriched["dsl_text"] = dsl_text
+    return enriched
 
 
 def _explore_query_from_payload(payload: dict[str, object]) -> ExploreQuery:

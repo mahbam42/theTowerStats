@@ -160,8 +160,8 @@ def parse_battle_report(raw_text: str) -> ParsedBattleReport:
     interest_earned_raw = _parse_text(raw_fields.interest_earned)
     interest_earned = _parse_compact_int(interest_earned_raw, unit_type=UnitType.cash)
     gem_blocks_tapped = _parse_int(raw_fields.gem_blocks_tapped)
-    cells_earned = _parse_int(raw_fields.cells_earned)
-    reroll_shards_earned = _parse_int(raw_fields.reroll_shards_earned)
+    cells_earned = _parse_compact_int(raw_fields.cells_earned, unit_type=UnitType.count)
+    reroll_shards_earned = _parse_compact_int(raw_fields.reroll_shards_earned, unit_type=UnitType.count)
 
     return ParsedBattleReport(
         checksum=checksum,

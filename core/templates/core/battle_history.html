@@ -279,7 +279,7 @@
                         {% elif column.key == "gem_blocks" %}
                           {{ row.run.run_progress.gem_blocks_tapped|default:"—" }}
                         {% elif column.key == "cells_earned" %}
-                          {{ row.run.run_progress.cells_earned|default:"—" }}
+                          {{ row.cells_earned_display|default:"—" }}
                         {% elif column.key == "reroll_shards" %}
                           {{ row.run.run_progress.reroll_shards_earned|default:"—" }}
                         {% elif column.key == "recovery_packages" %}
