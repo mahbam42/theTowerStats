@@ -65,6 +65,7 @@ Utility metrics:
 | Cash From Golden Tower | cash_from_golden_tower | Battle Report (observed) | Battle Report utility breakdown: cash earned from Golden Tower. |
 | Other cash | cash_from_other_sources | Battle Report (derived) | Residual cash not covered by named sources. |
 | Cells earned | cells_earned | Battle Report (observed) |  |
+| Cells/hour | cells_per_hour | Battle Report (derived) | Observed cells earned divided by real time (hours). |
 | Chain Lightning Damage | chain_lightning_damage | Battle Report (observed) |  |
 | Coins earned | coins_earned | Battle Report (observed) |  |
 | Coins From Black Hole | coins_from_black_hole | Battle Report (observed) | Battle Report utility breakdown: coins earned from Black Hole. |
@@ -135,6 +136,7 @@ Utility metrics:
 | Rend Armor Damage | rend_armor_damage | Battle Report (observed) |  |
 | Reroll dice earned | reroll_dice_earned | Battle Report (observed) | Alias for reroll shards earned (legacy naming). |
 | Reroll shards earned | reroll_shards_earned | Battle Report (observed) |  |
+| Reroll shards/hour | reroll_shards_per_hour | Battle Report (derived) | Observed reroll shards earned divided by real time (hours). |
 | Smart Missile Damage | smart_missile_damage | Battle Report (observed) |  |
 | Swamp Damage | swamp_damage | Battle Report (observed) |  |
 | Thorn Damage | thorn_damage | Battle Report (observed) |  |

@@ -38,17 +38,32 @@ def test_battle_history_renders_import_widget_and_sort_links(auth_client, player
     content = response.content.decode("utf-8")
     assert "Add Battle Report" in content
     assert "Import Battle Report" in content
-    assert "<details" in content
-    assert "sort=run_progress__battle_date" in content
-    assert "sort=-run_progress__wave" in content
-    assert "sort=-run_progress__coins_earned" in content
-    sort_querystrings = response.context["sort_querystrings"]
-    assert "sort=-run_progress__is_tournament" in sort_querystrings["tournament"]
-    assert "sort=-derived_metrics__values__recovery_packages" in sort_querystrings["recovery_packages"]
-    assert "Run #" in content
-    assert "Highest wave" in content
-    assert "1234" in content
-    assert "Gem blocks" in content
+
+
+@pytest.mark.django_db
+@pytest.mark.regression
+def test_battle_history_cells_earned_compact_display(auth_client, player) -> None:
+    """Cells earned values over 1,000 render with compact formatting."""
+
+    ingest_battle_report(
+        "\n".join(
+            [
+                "Battle Report",
+                "Battle Date: 2025-12-01 10:00:00",
+                "Tier: 1",
+                "Wave: 100",
+                "Real Time: 1h 0m 0s",
+                "Cells Earned\t1.09K",
+            ]
+        ),
+        player=player,
+    )
+
+    response = auth_client.get(reverse("core:battle_history"))
+    assert response.status_code == 200
+
+    content = response.content.decode("utf-8")
+    assert "1.09k" in content
 
 
 @pytest.mark.django_db

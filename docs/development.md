@@ -87,12 +87,20 @@ The Charts dashboard is driven by declarative `ChartConfig` entries and a centra
 - `by_tier` and `by_preset` require every metric series to support that dimension.
 - `by_entity` requires `comparison.entities` and exactly one entity filter enabled (`uw`, `guardian`, or `bot`).
 
+## Explore summaries
+
+- Farming efficiency by tier compares each tier to the nearest available tier when building deltas and plateau checks, while still warning about missing tiers.
+
 ## Time semantics
 
 - **Real time** comes from the Battle Report’s “Real Time” field and is used for per-hour rates such as coins/real hour.
 - **In-game timing** (cooldowns and durations) is shown in seconds and is sourced from the external wiki tables.
 - **Accelerated time** can make real-world time diverge from in-game seconds (for example, due to speed effects); dashboards must label units explicitly.
 - Wiki-derived timing values are treated as reference data and may be inaccurate or drift over time.
+
+## Attributions
+
+- Per-hour resource metrics (cells/hour, reroll shards/hour) requested by u/BoxersOrCaseBriefs.
 
 ## Multi-player scoping
 

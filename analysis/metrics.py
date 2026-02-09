@@ -77,6 +77,20 @@ METRICS: Final[dict[str, MetricDefinition]] = {
         category=MetricCategory.economy,
         kind="observed",
     ),
+    "cells_per_hour": MetricDefinition(
+        key="cells_per_hour",
+        label="Cells/hour",
+        unit="cells/hour",
+        category=MetricCategory.efficiency,
+        kind="derived",
+    ),
+    "reroll_shards_per_hour": MetricDefinition(
+        key="reroll_shards_per_hour",
+        label="Reroll shards/hour",
+        unit="shards/hour",
+        category=MetricCategory.efficiency,
+        kind="derived",
+    ),
     "waves_reached": MetricDefinition(
         key="waves_reached",
         label="Waves reached",
@@ -795,6 +809,24 @@ def compute_metric_value(
             compute_observed_coins_per_hour(coins=coins, real_time_seconds=real_time_seconds),
             (),
             (),
+        )
+
+    if metric_key == "cells_per_hour":
+        if cells is None or real_time_seconds is None or real_time_seconds <= 0:
+            return None, (), ()
+        return (
+            float(cells) * 3600.0 / float(real_time_seconds),
+            (),
+            ("cells/hour = cells_earned / real_time_hours.",),
+        )
+
+    if metric_key == "reroll_shards_per_hour":
+        if reroll_shards is None or real_time_seconds is None or real_time_seconds <= 0:
+            return None, (), ()
+        return (
+            float(reroll_shards) * 3600.0 / float(real_time_seconds),
+            (),
+            ("reroll_shards/hour = reroll_shards_earned / real_time_hours.",),
         )
 
     if metric_key == "real_time_hours":

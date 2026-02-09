@@ -120,6 +120,76 @@ def test_explore_query_runs_and_saves(auth_client, player) -> None:
 
 
 @pytest.mark.django_db
+@pytest.mark.regression
+def test_explore_saved_query_preserves_comments_and_autoloads(auth_client, player) -> None:
+    """Saved Explore queries keep comment lines and reload after saving."""
+
+    dsl_query = (
+        'name "Commented query"\n'
+        "# keep this line\n"
+        "scope date [date:YYYY-MM-DD]..[date:YYYY-MM-DD]\n"
+        "scope tier [tier:—]\n"
+        "scope preset [preset:—]\n"
+        "scope snapshot [snapshot:—]\n"
+        "scope past_n_runs [runs:—]\n"
+        "breakdown by tier\n"
+        "metric coins_earned sum\n"
+        "output table\n"
+    )
+
+    response = auth_client.post(
+        reverse("core:explore"),
+        data={
+            "dsl_query": dsl_query,
+            "action": "save_explore_query",
+        },
+        follow=True,
+    )
+
+    assert response.status_code == 200
+    saved = ExploreQuery.objects.get(player=player, name="Commented query")
+    assert saved.query.get("dsl_text") == dsl_query
+    assert "# keep this line" in response.context["explore_dsl_text"]
+
+    reload_response = auth_client.get(reverse("core:explore"), {"query_id": saved.id})
+    assert reload_response.status_code == 200
+    assert "# keep this line" in reload_response.context["explore_dsl_text"]
+
+
+@pytest.mark.django_db
+@pytest.mark.regression
+def test_explore_saved_query_autoloads_only_once(auth_client, player) -> None:
+    """Just-saved queries do not auto-load on later visits."""
+
+    dsl_query = (
+        'name "Auto-load once"\n'
+        "# remember me\n"
+        "scope date [date:YYYY-MM-DD]..[date:YYYY-MM-DD]\n"
+        "scope tier [tier:—]\n"
+        "scope preset [preset:—]\n"
+        "scope snapshot [snapshot:—]\n"
+        "scope past_n_runs [runs:—]\n"
+        "breakdown by tier\n"
+        "metric cash_earned sum\n"
+        "output table\n"
+    )
+
+    save_response = auth_client.post(
+        reverse("core:explore"),
+        data={
+            "dsl_query": dsl_query,
+            "action": "save_explore_query",
+        },
+        follow=True,
+    )
+    assert save_response.status_code == 200
+
+    follow_up = auth_client.get(reverse("core:explore"))
+    assert follow_up.status_code == 200
+    assert "Auto-load once" not in follow_up.context["explore_dsl_text"]
+
+
+@pytest.mark.django_db
 def test_explore_preview_returns_json(auth_client, player) -> None:
     """Explore previews return JSON payloads for modal rendering."""
 
@@ -223,6 +293,59 @@ def test_explore_farming_efficiency_summary(auth_client, player) -> None:
     assert summary["best_tier"] == 8
     assert summary["plateau_tier"] == 8
     assert any("Low sample size" in warning for warning in summary["warnings"])
+
+
+@pytest.mark.django_db
+@pytest.mark.golden
+@pytest.mark.regression
+def test_explore_farming_efficiency_uses_nearest_tier_delta(auth_client, player) -> None:
+    """Tier deltas compare against the nearest available lower tier."""
+
+    def add_run(*, checksum: str, tier: int, coins: int, seconds: int) -> None:
+        report = BattleReport.objects.create(
+            player=player,
+            raw_text="Battle Report\nCoins Earned\t0\n",
+            checksum=checksum.ljust(64, "n"),
+        )
+        BattleReportProgress.objects.create(
+            battle_report=report,
+            player=player,
+            battle_date=datetime(2025, 12, 7, tzinfo=timezone.utc),
+            tier=tier,
+            wave=100,
+            coins_earned=coins,
+            real_time_seconds=seconds,
+        )
+
+    for idx in range(3):
+        add_run(checksum=f"tier2-{idx}", tier=2, coins=1000, seconds=3600)
+        add_run(checksum=f"tier4-{idx}", tier=4, coins=1400, seconds=3600)
+
+    dsl_query = (
+        'name "Farming efficiency by tier"\n'
+        "scope date [date:YYYY-MM-DD]..[date:YYYY-MM-DD]\n"
+        "scope tier all not tournament\n"
+        "scope preset [preset:—]\n"
+        "scope snapshot [snapshot:—]\n"
+        "scope past_n_runs [runs:—]\n"
+        "breakdown by tier\n"
+        "metric coins_per_hour avg\n"
+        "output table\n"
+    )
+
+    response = auth_client.post(
+        reverse("core:explore"),
+        data={
+            "dsl_query": dsl_query,
+            "action": "run_explore_query",
+        },
+    )
+
+    assert response.status_code == 200
+    summary = response.context["explore_farming"]
+    assert summary is not None
+    rows = {row["tier"]: row for row in summary["rows"]}
+    assert rows[4]["delta_value"] == pytest.approx(400.0)
 
 
 @pytest.mark.django_db

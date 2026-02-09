@@ -66,8 +66,8 @@ def test_dashboard_and_battle_history_are_player_scoped(client) -> None:
     history = client.get(reverse("core:battle_history"))
     assert history.status_code == 200
     content = history.content.decode("utf-8")
-    assert "111" in content
-    assert "222" not in content
+    assert ">111<" in content
+    assert ">222<" not in content
 
 
 @pytest.mark.django_db

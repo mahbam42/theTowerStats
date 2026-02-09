@@ -83,6 +83,22 @@ def test_parse_battle_report_handles_tab_separated_labels() -> None:
     assert parsed.reroll_shards_earned == 373
 
 
+@pytest.mark.regression
+def test_parse_battle_report_handles_compact_cells_and_reroll_shards() -> None:
+    """Parse compact cells and reroll shard values with magnitude suffixes."""
+
+    raw_text = (
+        "Battle Report\n"
+        "Cells Earned\t1.09K\n"
+        "Reroll Shards Earned\t2.50K\n"
+    )
+
+    parsed = parse_battle_report(raw_text)
+
+    assert parsed.cells_earned == 1090
+    assert parsed.reroll_shards_earned == 2500
+
+
 def test_parse_battle_report_handles_real_game_sample() -> None:
     """Parse a real-game Battle Report sample with tabbed labels."""
 

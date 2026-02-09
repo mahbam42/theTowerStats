@@ -2047,12 +2047,13 @@ def explore_dashboard(request: HttpRequest) -> HttpResponse:
                 loaded_query = saved_queries.filter(id=query_id).first()
                 if loaded_query is not None:
                     loaded_payload = dict(loaded_query.query or {})
-    if request.method == "GET" and not request.GET.get("query_id"):
+    just_saved_id = None
+    if request.method == "GET":
         just_saved_id = _consume_explore_just_saved_query_id(request)
-        if just_saved_id:
-            loaded_query = saved_queries.filter(id=just_saved_id).first()
-            if loaded_query is not None:
-                loaded_payload = dict(loaded_query.query or {})
+    if request.method == "GET" and not request.GET.get("query_id") and just_saved_id:
+        loaded_query = saved_queries.filter(id=just_saved_id).first()
+        if loaded_query is not None:
+            loaded_payload = dict(loaded_query.query or {})
 
     form_data: QueryDict | None = None
     initial: dict[str, object] = {}
@@ -2122,7 +2123,10 @@ def explore_dashboard(request: HttpRequest) -> HttpResponse:
             )
             validation_errors.extend(validation.errors)
             validation_warnings.extend(validation.warnings)
-            query_payload = build_query_payload(parse_result.query)
+            query_payload = _explore_payload_with_dsl(
+                build_query_payload(parse_result.query),
+                dsl_input,
+            )
             if not validation.errors:
                 execution_query = parse_result.query
                 if parse_result.query.visualization_hint == "kpi":
@@ -2169,7 +2173,10 @@ def explore_dashboard(request: HttpRequest) -> HttpResponse:
             )
             validation_errors.extend(validation.errors)
             validation_warnings.extend(validation.warnings)
-            query_payload = build_query_payload(parse_result.query)
+            query_payload = _explore_payload_with_dsl(
+                build_query_payload(parse_result.query),
+                dsl_input,
+            )
 
             if not validation.errors:
                 execution_query = parse_result.query
@@ -2224,6 +2231,7 @@ def explore_dashboard(request: HttpRequest) -> HttpResponse:
                         existing.query = query_payload or {}
                         existing.save()
                         messages.success(request, "Explore query saved.")
+                        request.session[_EXPLORE_JUST_SAVED_SESSION_KEY] = existing.id
                         target = f"{reverse('core:explore')}?query_id={existing.id}"
                         return safe_redirect(
                             request,
@@ -2240,7 +2248,11 @@ def explore_dashboard(request: HttpRequest) -> HttpResponse:
         )
         validation_errors.extend(validation.errors)
         validation_warnings.extend(validation.warnings)
-        query_payload = build_query_payload(query)
+        formatted_dsl = format_explore_dsl(query, default_scope=prefill_scope)
+        query_payload = _explore_payload_with_dsl(
+            build_query_payload(query),
+            formatted_dsl,
+        )
 
         if not validation.errors:
             execution_query = query
@@ -2287,11 +2299,12 @@ def explore_dashboard(request: HttpRequest) -> HttpResponse:
                     existing.query = query_payload or {}
                     existing.save()
                     messages.success(request, "Explore query saved.")
+                    request.session[_EXPLORE_JUST_SAVED_SESSION_KEY] = existing.id
                     target = f"{reverse('core:explore')}?query_id={existing.id}"
                     return safe_redirect(request, candidates=[request.POST.get("next")], fallback=target)
 
         if not dsl_text:
-            dsl_text = format_explore_dsl(query, default_scope=prefill_scope)
+            dsl_text = formatted_dsl
 
     if not dsl_text:
         default_metric = sorted(explore_registry.keys())[0]

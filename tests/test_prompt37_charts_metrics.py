@@ -24,6 +24,8 @@ class Progress:
     wave: int | None
     real_time_seconds: int | None
     cash_earned: int | None = None
+    cells_earned: int | None = None
+    reroll_shards_earned: int | None = None
 
 
 @dataclass(frozen=True)
@@ -48,6 +50,29 @@ def _derived_metrics(raw_text: str) -> object:
             "raw_values": {key: parsed.raw_value for key, parsed in extracted.items()},
         },
     )()
+
+
+def test_resource_per_hour_metrics_use_real_time() -> None:
+    """Derive cells/hour and reroll shards/hour from real time."""
+
+    record = Record(
+        raw_text="Battle Report\nReal Time\t30m 0s\n",
+        parsed_at=datetime(2025, 12, 21, 13, 20, tzinfo=timezone.utc),
+        run_progress=Progress(
+            battle_date=datetime(2025, 12, 21, 13, 18, tzinfo=timezone.utc),
+            wave=100,
+            real_time_seconds=1800,
+            cells_earned=600,
+            reroll_shards_earned=1200,
+        ),
+        derived_metrics=None,
+    )
+
+    cells = analyze_metric_series([record], metric_key="cells_per_hour")
+    shards = analyze_metric_series([record], metric_key="reroll_shards_per_hour")
+
+    assert cells.points[0].value == 1200.0
+    assert shards.points[0].value == 2400.0
 
 
 @pytest.mark.golden

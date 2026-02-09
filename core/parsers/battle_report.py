@@ -160,8 +160,10 @@ def parse_battle_report(raw_text: str) -> ParsedBattleReport:
     interest_earned_raw = _parse_text(raw_fields.interest_earned)
     interest_earned = _parse_compact_int(interest_earned_raw, unit_type=UnitType.cash)
     gem_blocks_tapped = _parse_int(raw_fields.gem_blocks_tapped)
-    cells_earned = _parse_compact_int(raw_fields.cells_earned, unit_type=UnitType.count)
-    reroll_shards_earned = _parse_compact_int(raw_fields.reroll_shards_earned, unit_type=UnitType.count)
+    cells_earned = _parse_compact_int(raw_fields.cells_earned, unit_type=UnitType.count, allow_zero=True)
+    reroll_shards_earned = _parse_compact_int(
+        raw_fields.reroll_shards_earned, unit_type=UnitType.count, allow_zero=True
+    )
 
     return ParsedBattleReport(
         checksum=checksum,
@@ -366,8 +368,19 @@ def _parse_text(value: str | None) -> str | None:
     return cleaned
 
 
-def _parse_compact_int(value: str | None, *, unit_type: UnitType) -> int | None:
-    """Parse compact Battle Report numbers (e.g. `7.67M`, `$55.90M`) into an int."""
+def _parse_compact_int(
+    value: str | None,
+    *,
+    unit_type: UnitType,
+    allow_zero: bool = False,
+) -> int | None:
+    """Parse compact Battle Report numbers (e.g. `7.67M`, `$55.90M`) into an int.
+
+    Args:
+        value: Raw value string.
+        unit_type: Unit category for parsing.
+        allow_zero: Whether to accept zero as a valid value.
+    """
 
     if value is None:
         return None
@@ -375,7 +388,9 @@ def _parse_compact_int(value: str | None, *, unit_type: UnitType) -> int | None:
         validated = parse_validated_quantity(value, contract=UnitContract(unit_type=unit_type))
     except (UnitValidationError, ValueError):
         return None
-    if validated.normalized_value <= 0:
+    if validated.normalized_value < 0:
+        return None
+    if validated.normalized_value == 0 and not allow_zero:
         return None
     try:
         return int(validated.normalized_value)
