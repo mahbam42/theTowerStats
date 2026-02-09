@@ -182,12 +182,27 @@ def _field_label(record: object, *, field: str) -> str:
         if isinstance(battle_date, datetime):
             return battle_date.date().isoformat()
         return "Unknown date"
+    if field == "real_time_hour":
+        seconds = getattr(progress, "real_time_seconds", None)
+        return _duration_hour_bucket_label(seconds, prefix="Real Time")
+    if field == "game_time_hour":
+        seconds = getattr(progress, "game_time_seconds", None)
+        return _duration_hour_bucket_label(seconds, prefix="Game Time")
     if field == "death_cause":
         killed_by = getattr(progress, "killed_by", None)
         if killed_by:
             return str(killed_by)
         return "Not recorded"
     return "Unknown"
+
+
+def _duration_hour_bucket_label(seconds: int | None, *, prefix: str) -> str:
+    """Return a run-length hour bucket label from a duration in seconds."""
+
+    if seconds is None or seconds <= 0:
+        return f"Unknown {prefix} hour"
+    hour = int(seconds // 3600) + 1
+    return f"{prefix} Hour {hour}"
 
 
 def _run_label(record: object) -> str:

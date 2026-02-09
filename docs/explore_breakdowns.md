@@ -36,6 +36,8 @@ Explore breakdowns let you group results by a specific category so you can compa
 - **Tier**: Groups totals by tier.
 - **Preset**: Groups totals by preset label.
 - **Tournament Rank**: Groups totals by tournament rank when recorded.
+- **Real Time Hour**: Groups totals by run-length hour buckets using the Battle Report Real Time duration.
+- **Game Time Hour**: Groups totals by run-length hour buckets using the Battle Report Game Time duration.
 
 ## Notes & Limitations
 
@@ -44,3 +46,9 @@ Explore breakdowns let you group results by a specific category so you can compa
 
 > Note
 > Breakdown availability depends on what you have imported. Runs without the underlying values will not contribute to the grouped totals.
+
+> Note
+> Real Time Hour buckets are based on the run’s Real Time duration, where Hour 1 is 0–59 minutes, Hour 2 is 60–119 minutes, and so on.
+
+> Note
+> Game Time Hour buckets only appear when the Battle Report includes a Game Time line; missing values are grouped as Unknown.

@@ -244,6 +244,18 @@ DEFAULT_BREAKDOWNS: Final[dict[str, ExploreBreakdownDefinition]] = {
         kind="field",
         field="date",
     ),
+    "real_time_hour": ExploreBreakdownDefinition(
+        key="real_time_hour",
+        label="Real Time Hour (run length)",
+        kind="field",
+        field="real_time_hour",
+    ),
+    "game_time_hour": ExploreBreakdownDefinition(
+        key="game_time_hour",
+        label="Game Time Hour (run length)",
+        kind="field",
+        field="game_time_hour",
+    ),
     "death_cause": ExploreBreakdownDefinition(
         key="death_cause",
         label="Death cause",

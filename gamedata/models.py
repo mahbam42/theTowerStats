@@ -111,6 +111,11 @@ class BattleReportProgress(models.Model):
         help_text="Preset color key captured at assignment time for historical badge rendering.",
     )
     wave = models.PositiveIntegerField(null=True, blank=True)
+    game_time_seconds = models.PositiveIntegerField(
+        null=True,
+        blank=True,
+        help_text="Parsed Game Time duration in seconds from the Battle Report.",
+    )
     real_time_seconds = models.PositiveIntegerField(null=True, blank=True)
     killed_by = models.CharField(max_length=255, null=True, blank=True)
     coins_earned = models.BigIntegerField(null=True, blank=True)

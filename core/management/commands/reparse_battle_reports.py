@@ -100,6 +100,7 @@ class Command(BaseCommand):
                 "battle_date": battle_date,
                 "tier": parsed.tier,
                 "wave": parsed.wave,
+                "game_time_seconds": parsed.game_time_seconds,
                 "real_time_seconds": parsed.real_time_seconds,
                 "killed_by": parsed.killed_by,
                 "coins_earned": parsed.coins_earned,

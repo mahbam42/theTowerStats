@@ -41,6 +41,7 @@ def test_parse_battle_report_extracts_phase1_fields() -> None:
     assert parsed.reroll_shards_earned is None
 
 
+@pytest.mark.regression
 def test_parse_battle_report_handles_tab_separated_labels() -> None:
     """Parse tab-separated Battle Reports with month-name dates."""
 
@@ -70,6 +71,7 @@ def test_parse_battle_report_handles_tab_separated_labels() -> None:
     assert parsed.battle_date == datetime(2025, 12, 7, 21, 59, tzinfo=timezone.utc)
     assert parsed.tier == 7
     assert parsed.wave == 1301
+    assert parsed.game_time_seconds == 37492
     assert parsed.real_time_seconds == 8243
     assert parsed.killed_by == "Boss"
     assert parsed.coins_earned_raw == "17.55M"
@@ -210,6 +212,7 @@ def test_parse_battle_report_handles_real_game_sample() -> None:
     assert parsed.battle_date == datetime(2025, 12, 14, 1, 39, tzinfo=timezone.utc)
     assert parsed.tier == 11
     assert parsed.wave == 121
+    assert parsed.game_time_seconds == 4222
     assert parsed.real_time_seconds == 1055
     assert parsed.killed_by == "Boss"
     assert parsed.coins_earned_raw == "1.24M"

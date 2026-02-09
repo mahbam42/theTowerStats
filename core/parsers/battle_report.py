@@ -31,6 +31,7 @@ class RawBattleReportFields:
         battle_date: Raw battle date string if present.
         tier: Raw tier string if present.
         wave: Raw wave string if present.
+        game_time: Raw game time string if present.
         real_time: Raw real time string if present.
         killed_by: Raw "Killed By" string if present.
         coins_earned: Raw coins earned string if present.
@@ -44,6 +45,7 @@ class RawBattleReportFields:
     battle_date: str | None
     tier: str | None
     wave: str | None
+    game_time: str | None
     real_time: str | None
     killed_by: str | None
     coins_earned: str | None
@@ -63,6 +65,7 @@ class ParsedBattleReport:
         battle_date: Parsed battle datetime (UTC) if present.
         tier: Parsed tier value if present.
         wave: Parsed wave value if present.
+        game_time_seconds: Parsed game time duration in seconds if present.
         real_time_seconds: Parsed real time duration in seconds if present.
         killed_by: Parsed killed-by label if present.
         coins_earned: Parsed coins earned as an integer if present.
@@ -80,6 +83,7 @@ class ParsedBattleReport:
     battle_date: datetime | None
     tier: int | None
     wave: int | None
+    game_time_seconds: int | None
     real_time_seconds: int | None
     killed_by: str | None
     coins_earned: int | None
@@ -97,6 +101,7 @@ _LABELS = {
     "battle date": "battle_date",
     "tier": "tier",
     "wave": "wave",
+    "game time": "game_time",
     "real time": "real_time",
     "killed by": "killed_by",
     "coins": "coins_earned",
@@ -151,6 +156,7 @@ def parse_battle_report(raw_text: str) -> ParsedBattleReport:
     battle_date = _parse_battle_date(raw_fields.battle_date)
     tier = _parse_int(raw_fields.tier)
     wave = _parse_int(raw_fields.wave)
+    game_time_seconds = _parse_real_time_seconds(raw_fields.game_time)
     real_time_seconds = _parse_real_time_seconds(raw_fields.real_time)
     killed_by = _parse_text(raw_fields.killed_by)
     coins_earned_raw = _parse_text(raw_fields.coins_earned)
@@ -170,6 +176,7 @@ def parse_battle_report(raw_text: str) -> ParsedBattleReport:
         battle_date=battle_date,
         tier=tier,
         wave=wave,
+        game_time_seconds=game_time_seconds,
         real_time_seconds=real_time_seconds,
         killed_by=killed_by,
         coins_earned=coins_earned,
@@ -262,6 +269,7 @@ def _extract_raw_fields(raw_text: str) -> RawBattleReportFields:
         battle_date=extracted.get("battle_date"),
         tier=extracted.get("tier"),
         wave=extracted.get("wave"),
+        game_time=extracted.get("game_time"),
         real_time=extracted.get("real_time"),
         killed_by=extracted.get("killed_by"),
         coins_earned=extracted.get("coins_earned"),

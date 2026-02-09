@@ -69,6 +69,7 @@ def ingest_battle_report(
                 battle_date=battle_date,
                 tier=parsed.tier,
                 wave=parsed.wave,
+                game_time_seconds=parsed.game_time_seconds,
                 real_time_seconds=parsed.real_time_seconds,
                 preset=preset,
                 preset_name_snapshot=preset_snapshot["name"],

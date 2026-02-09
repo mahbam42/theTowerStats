@@ -23,6 +23,8 @@ Explore relies on a registry that describes which metrics are available, how the
 - `DEFAULT_BREAKDOWNS` defines semantic groupings like damage source, enemy type, and coin source.
 - Each breakdown is tagged as either `field` (direct value on a run) or `metric_group` (a fixed list of metric keys).
 - `compatible_metric_keys` limits which metrics can be paired with a breakdown to avoid invalid groupings.
+- Field breakdowns include date (daily), real-time hour buckets, and game-time hour buckets for run-length grouping.
+- Game-time hour buckets read `BattleReportProgress.game_time_seconds`, sourced from the Battle Report `Game Time` line (older runs require a reparse/backfill to populate this field).
 
 ## Extension Guidelines
 
