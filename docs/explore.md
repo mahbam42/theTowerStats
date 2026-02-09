@@ -34,6 +34,8 @@ Explore helps you build your own questions about past runs and see aggregated an
 17. Add a Metric line and an Aggregation.
 18. Add an Output line when you want a chart or KPI.
 19. Select **Run query**.
+20. Select **Save query** to store changes; a saved query with the same name is overwritten.
+21. Select **Delete query** to remove a saved query you previously loaded.
 
 ## How to Read the Results
 
@@ -86,6 +88,12 @@ Explore helps you build your own questions about past runs and see aggregated an
 
 > ⚠️ Note
 > Date exclusions must use ISO format (YYYY-MM-DD).
+
+> ⚠️ Note
+> Saving a query with the same name replaces the existing saved entry for that name.
+
+> ⚠️ Note
+> Deleted queries cannot be recovered.
 
 > ℹ️ Note
 > A full syntax reference is available in the [Explore DSL](explore_dsl.md) developer documentation.

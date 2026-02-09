@@ -2029,6 +2029,22 @@ def explore_dashboard(request: HttpRequest) -> HttpResponse:
     player = _request_player(request)
     if request.method == "POST" and demo_mode_enabled(request):
         return _reject_demo_write(request)
+    if request.method == "POST" and request.POST.get("action") == "delete_explore_query":
+        saved_id = request.POST.get("query_id")
+        existing = (
+            ExploreQueryModel.objects.filter(player=player, id=saved_id).first()
+            if saved_id
+            else None
+        )
+        if existing is None:
+            messages.error(request, "Select a saved query to delete.")
+        else:
+            existing.delete()
+            just_saved = request.session.get(_EXPLORE_JUST_SAVED_SESSION_KEY)
+            if just_saved == existing.id:
+                request.session.pop(_EXPLORE_JUST_SAVED_SESSION_KEY, None)
+            messages.success(request, "Explore query deleted.")
+        return safe_redirect(request, candidates=(), fallback=reverse("core:explore"))
 
     explore_registry = build_explore_metric_registry()
     saved_queries = ExploreQueryModel.objects.filter(player=player).order_by("name", "id")
@@ -2225,9 +2241,12 @@ def explore_dashboard(request: HttpRequest) -> HttpResponse:
                     conflict = ExploreQueryModel.objects.filter(player=player, name=name)
                     if existing is not None:
                         conflict = conflict.exclude(id=existing.id)
-                    if conflict.exists():
+                    conflict_existing = conflict.order_by("id").first()
+                    if conflict_existing is not None and existing is not None:
                         messages.error(request, "A query with this name already exists.")
                     else:
+                        if existing is None and conflict_existing is not None:
+                            existing = conflict_existing
                         if existing is None:
                             existing = ExploreQueryModel(player=player, name=name)
                         existing.schema_version = SCHEMA_VERSION
@@ -2293,9 +2312,12 @@ def explore_dashboard(request: HttpRequest) -> HttpResponse:
                 conflict = ExploreQueryModel.objects.filter(player=player, name=name)
                 if existing is not None:
                     conflict = conflict.exclude(id=existing.id)
-                if conflict.exists():
+                conflict_existing = conflict.order_by("id").first()
+                if conflict_existing is not None and existing is not None:
                     messages.error(request, "A query with this name already exists.")
                 else:
+                    if existing is None and conflict_existing is not None:
+                        existing = conflict_existing
                     if existing is None:
                         existing = ExploreQueryModel(player=player, name=name)
                     existing.schema_version = SCHEMA_VERSION
@@ -6446,11 +6468,22 @@ def _explore_breakdown_sort_key(
     key_parts: list[tuple[object, ...]] = []
     for idx, label in enumerate(breakdown):
         definition = definitions[idx] if idx < len(definitions) else None
-        if definition is not None and definition.key == "tier":
-            tier_value = _parse_tier_label(label)
-            key_parts.append((0, tier_value if tier_value is not None else 0, label))
-        else:
-            key_parts.append((1, label))
+        if definition is not None:
+            if definition.key == "tier":
+                tier_value = _parse_tier_label(label)
+                key_parts.append((0, tier_value if tier_value is not None else 0, label))
+                continue
+            if definition.key == "real_time_hour":
+                hour_value = _parse_hour_bucket_label(label, prefix="Real Time Hour")
+                if hour_value is not None:
+                    key_parts.append((0, hour_value, label))
+                    continue
+            if definition.key == "game_time_hour":
+                hour_value = _parse_hour_bucket_label(label, prefix="Game Time Hour")
+                if hour_value is not None:
+                    key_parts.append((0, hour_value, label))
+                    continue
+        key_parts.append((1, label))
     return tuple(key_parts)
 
 
@@ -6465,6 +6498,18 @@ def _parse_tier_label(label: str) -> int | None:
         return None
     if parts[1].isdigit():
         return int(parts[1])
+    return None
+
+
+def _parse_hour_bucket_label(label: str, *, prefix: str) -> int | None:
+    """Return an hour number parsed from labels like 'Game Time Hour 3'."""
+
+    token = label.strip()
+    if not token.lower().startswith(prefix.lower()):
+        return None
+    suffix = token[len(prefix):].strip()
+    if suffix.isdigit():
+        return int(suffix)
     return None
 
 
@@ -6798,6 +6843,7 @@ def _build_comparison_result(
         records_b: tuple[BattleReport, ...],
         metric_keys: tuple[str, ...],
         mode: str,
+        allow_single_run: bool,
     ) -> tuple[list[dict[str, object]], tuple[str, ...]]:
         """Build metric summary rows for the selected focus.
 
@@ -6805,16 +6851,17 @@ def _build_comparison_result(
             records_a: Scope A BattleReport records.
             records_b: Scope B BattleReport records.
             metric_keys: Ordered metric keys to summarize.
+            allow_single_run: Whether to allow single-run scopes without minimum sample checks.
 
         Returns:
             A `(rows, limitations)` tuple. Rows include only metrics with at
             least `MIN_RUNS_FOR_ADVICE` contributing samples in both scopes
-            unless averaging is enabled.
+            unless averaging or single-run scopes are allowed.
         """
 
         rows: list[dict[str, object]] = []
         limitations: list[str] = []
-        min_samples = 1 if mode == "average" else MIN_RUNS_FOR_ADVICE
+        min_samples = 1 if mode == "average" or allow_single_run else MIN_RUNS_FOR_ADVICE
 
         for metric_key in metric_keys:
             n_a, value_a = _aggregate_metric_value(records_a, metric_key=metric_key, mode=mode)
@@ -6933,6 +6980,7 @@ def _build_comparison_result(
             records_b=scope_b_runs,
             metric_keys=focus_metric_keys,
             mode=mode,
+            allow_single_run=len(scope_a_runs) == 1 and len(scope_b_runs) == 1,
         )
 
         goal_baseline = _goal_scope_sample_from_records("Scope A", scope_a_runs) if goal_aware_supported else None
@@ -7014,6 +7062,7 @@ def _build_comparison_result(
             records_b=records_b,
             metric_keys=focus_metric_keys,
             mode=mode,
+            allow_single_run=len(records_a) == 1 and len(records_b) == 1,
         )
         goal_baseline = _goal_scope_sample_from_records("Window A", records_a) if goal_aware_supported else None
         goal_comparison = _goal_scope_sample_from_records("Window B", records_b) if goal_aware_supported else None

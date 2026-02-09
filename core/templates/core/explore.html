@@ -79,6 +79,17 @@
           <div class="explore-query-actions">
             <button class="button" type="submit" name="action" value="run_explore_query">Run query</button>
             <button class="button secondary" type="submit" name="action" value="save_explore_query">Save query</button>
+            {% if loaded_query %}
+              <button
+                class="button secondary"
+                type="submit"
+                name="action"
+                value="delete_explore_query"
+                onclick="return confirm('Delete this saved query?');"
+              >
+                Delete query
+              </button>
+            {% endif %}
           </div>
         </form>
       </div>

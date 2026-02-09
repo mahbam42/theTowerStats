@@ -52,3 +52,6 @@ Explore breakdowns let you group results by a specific category so you can compa
 
 > Note
 > Game Time Hour buckets only appear when the Battle Report includes a Game Time line; missing values are grouped as Unknown.
+
+> Note
+> Hour buckets are ordered numerically (Hour 1, Hour 2, Hour 3) rather than alphabetically.

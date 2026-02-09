@@ -158,6 +158,82 @@ def test_explore_saved_query_preserves_comments_and_autoloads(auth_client, playe
 
 @pytest.mark.django_db
 @pytest.mark.regression
+def test_explore_saved_query_overwrites_by_name(auth_client, player) -> None:
+    """Saving the same query name replaces the existing saved entry."""
+
+    original_query = (
+        'name "Overwrite Me"\n'
+        "metric coins_earned sum\n"
+        "breakdown by tier\n"
+        "output table\n"
+    )
+    updated_query = (
+        'name "Overwrite Me"\n'
+        "metric cash_earned sum\n"
+        "breakdown by tier\n"
+        "output table\n"
+    )
+
+    first_save = auth_client.post(
+        reverse("core:explore"),
+        data={
+            "dsl_query": original_query,
+            "action": "save_explore_query",
+        },
+        follow=True,
+    )
+    assert first_save.status_code == 200
+    assert ExploreQuery.objects.filter(player=player, name="Overwrite Me").count() == 1
+
+    second_save = auth_client.post(
+        reverse("core:explore"),
+        data={
+            "dsl_query": updated_query,
+            "action": "save_explore_query",
+        },
+        follow=True,
+    )
+    assert second_save.status_code == 200
+    assert ExploreQuery.objects.filter(player=player, name="Overwrite Me").count() == 1
+    saved = ExploreQuery.objects.get(player=player, name="Overwrite Me")
+    assert saved.query.get("dsl_text") == updated_query
+
+
+@pytest.mark.django_db
+def test_explore_saved_query_can_be_deleted(auth_client, player) -> None:
+    """Saved Explore queries can be deleted from the dashboard."""
+
+    dsl_query = (
+        'name "Delete Me"\n'
+        "metric coins_earned sum\n"
+        "breakdown by tier\n"
+        "output table\n"
+    )
+    save_response = auth_client.post(
+        reverse("core:explore"),
+        data={
+            "dsl_query": dsl_query,
+            "action": "save_explore_query",
+        },
+        follow=True,
+    )
+    assert save_response.status_code == 200
+
+    saved = ExploreQuery.objects.get(player=player, name="Delete Me")
+    delete_response = auth_client.post(
+        reverse("core:explore"),
+        data={
+            "query_id": saved.id,
+            "action": "delete_explore_query",
+        },
+        follow=True,
+    )
+    assert delete_response.status_code == 200
+    assert not ExploreQuery.objects.filter(player=player, name="Delete Me").exists()
+
+
+@pytest.mark.django_db
+@pytest.mark.regression
 def test_explore_saved_query_autoloads_only_once(auth_client, player) -> None:
     """Just-saved queries do not auto-load on later visits."""
 
@@ -605,3 +681,46 @@ def test_explore_patch_boundary_filter_limits_scope(auth_client, player) -> None
     assert response.status_code == 200
     results = response.context["explore_results"]
     assert results["run_count"] == 1
+
+
+@pytest.mark.django_db
+@pytest.mark.regression
+def test_explore_game_time_hour_breakdown_sorts_numerically(auth_client, player) -> None:
+    """Sort game-time hour buckets numerically instead of alphabetically."""
+
+    hours = (1800, 3600, 9 * 3600)
+    for idx, seconds in enumerate(hours, start=1):
+        report = BattleReport.objects.create(
+            player=player,
+            raw_text="Battle Report\nCoins earned\t1,000\n",
+            checksum=(f"explore-game-time-{idx}".ljust(64, "g")),
+        )
+        BattleReportProgress.objects.create(
+            battle_report=report,
+            player=player,
+            battle_date=datetime(2025, 12, idx, tzinfo=timezone.utc),
+            tier=1,
+            wave=100,
+            real_time_seconds=600,
+            game_time_seconds=seconds,
+            coins_earned=1000,
+        )
+
+    dsl_query = (
+        'name "Game time hours"\n'
+        "metric coins_earned sum\n"
+        "breakdown by game_time_hour\n"
+        "output table\n"
+    )
+    response = auth_client.post(
+        reverse("core:explore"),
+        data={
+            "dsl_query": dsl_query,
+            "action": "run_explore_query",
+        },
+    )
+
+    assert response.status_code == 200
+    rows = response.context["explore_results"]["rows"]
+    breakdowns = [row["breakdown"][0] for row in rows]
+    assert breakdowns == ["Game Time Hour 1", "Game Time Hour 2", "Game Time Hour 10"]

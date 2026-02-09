@@ -30,13 +30,13 @@ Compare lets you review differences between two scopes of runs in a modal on the
 - Each metric row shows baseline and comparison values along with the delta.
 - Values use the same abbreviated unit formatting as the Charts dashboard.
 - When **Average each scope** is enabled, values are per-run averages; otherwise they are totals for the scope.
-- When a scope has too few runs, the panel reports insufficient data.
+- When a scope has too few runs, advice summaries report insufficient data even if the comparison table renders.
 - A warning appears when the two scopes are very different in size.
 
 ## Notes & Limitations
 
 > **Caution**
-> Advice summaries require at least 3 runs in each scope unless **Average each scope** is enabled. When averaging, single-run scopes are allowed but can be noisy.
+> Advice summaries require at least 3 runs in each scope unless **Average each scope** is enabled. Single-run scopes can still show summary metrics, but advice remains limited.
 
 > **Note**
 > Goal-aware summaries in Compare are available only when Summary focus is set to **Economy**.

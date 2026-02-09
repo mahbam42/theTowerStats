@@ -1352,7 +1352,7 @@
       </div>
     </div>
 
-    <div class="modal-backdrop" id="compare-modal" aria-hidden="true">
+    <div class="modal-backdrop" id="compare-modal" aria-hidden="true" data-auto-open="{% if comparison_result %}true{% else %}false{% endif %}">
       <div class="modal-shell" role="dialog" aria-modal="true" aria-label="Compare">
         <div class="grid-x grid-margin-x align-middle">
           <div class="cell auto">
@@ -1486,7 +1486,7 @@
           {% endif %}
 
           <form method="get" class="margin-top-1" id="compare-form">
-            <p class="help-text">Advice requires at least 3 runs in each scope unless Average each scope is enabled.</p>
+            <p class="help-text">Advice requires at least 3 runs in each scope unless Average each scope is enabled. Single-run scopes can still show summary metrics.</p>
             <div class="grid-x grid-margin-x">
               <div class="cell medium-6">
                 <label>{{ comparison_form.summary_focus.label }}
@@ -2356,6 +2356,7 @@
           modal.addEventListener("keydown", (ev) => {
             if (ev.key === "Escape") closeModal();
           });
+          if (modal.dataset.autoOpen === "true") openModal();
         }
 
         bindModal("compare-modal", "open-compare-modal", "close-compare-modal");

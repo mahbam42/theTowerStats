@@ -1109,6 +1109,86 @@ def test_dashboard_view_average_scope_compare_allows_single_run(auth_client, pla
     assert advice_items[0].title.startswith("Observed change in coins/hour:")
 
 
+@pytest.mark.django_db
+@pytest.mark.regression
+def test_dashboard_view_single_run_scope_compare_includes_summary_metrics(auth_client, player) -> None:
+    """Show summary metrics for single-run scope comparisons without averaging."""
+
+    runs: list[BattleReport] = []
+    for idx, coins in enumerate((1200, 2400), start=1):
+        raw_text = "\n".join(
+            [
+                "Battle Report",
+                "Real Time\t10m 0s",
+                f"Coins earned\t{coins:,}",
+                "",
+            ]
+        )
+        report = BattleReport.objects.create(
+            player=player,
+            raw_text=raw_text,
+            checksum=(f"multirun-single-{idx}".ljust(64, "c")),
+        )
+        BattleReportProgress.objects.create(
+            battle_report=report,
+            player=player,
+            battle_date=datetime(2025, 12, idx, tzinfo=timezone.utc),
+            tier=1,
+            wave=100,
+            real_time_seconds=600,
+        )
+        runs.append(report)
+
+    response = auth_client.get(
+        reverse("core:dashboard"),
+        {
+            "scope_a_runs": [runs[0].pk],
+            "scope_b_runs": [runs[1].pk],
+        },
+    )
+    assert response.status_code == 200
+
+    result = response.context["comparison_result"]
+    assert result["kind"] == "run_sets"
+    assert result["scope_summary_mode"] == "total"
+    assert result["metric_summaries"]
+
+
+@pytest.mark.django_db
+@pytest.mark.regression
+def test_dashboard_view_compare_modal_auto_opens_with_results(auth_client, player) -> None:
+    """Auto-open the Compare modal when comparison results are present."""
+
+    runs: list[BattleReport] = []
+    for idx, coins in enumerate((1200, 2400), start=1):
+        report = BattleReport.objects.create(
+            player=player,
+            raw_text=f"Battle Report\nCoins earned\t{coins:,}\n",
+            checksum=(f"compare-auto-open-{idx}".ljust(64, "m")),
+        )
+        BattleReportProgress.objects.create(
+            battle_report=report,
+            player=player,
+            battle_date=datetime(2025, 12, idx, tzinfo=timezone.utc),
+            tier=1,
+            wave=100,
+            real_time_seconds=600,
+            coins_earned=coins,
+        )
+        runs.append(report)
+
+    response = auth_client.get(
+        reverse("core:dashboard"),
+        {
+            "scope_a_runs": [runs[0].pk],
+            "scope_b_runs": [runs[1].pk],
+        },
+    )
+    assert response.status_code == 200
+    content = response.content.decode("utf-8")
+    assert 'data-auto-open="true"' in content
+
+
 @pytest.mark.integration
 @pytest.mark.django_db
 def test_dashboard_view_multi_run_scope_compare_requires_focus_metrics(auth_client, player) -> None:
