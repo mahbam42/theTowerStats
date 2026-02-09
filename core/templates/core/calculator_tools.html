@@ -1,0 +1,211 @@
+{% extends "core/base.html" %}
+
+{% block title %}Calculator Tools • theTowerStats{% endblock %}
+
+{% block content %}
+  <div class="grid-x grid-margin-x">
+    <div class="cell">
+      <h3 class="margin-bottom-0">Calculator Tools</h3>
+      <p class="muted margin-top-0">Use these calculators to review timing and research requirements from your own data.</p>
+    </div>
+  </div>
+
+  <div class="calculator-grid margin-top-1">
+    <div class="card-shell">
+      <h4 class="margin-bottom-1">Game Speed Calculator</h4>
+      <form method="get" class="stacked">
+        <label>
+          Run
+          {{ game_form.run }}
+        </label>
+        <label>
+          Game speed
+          {{ game_form.game_speed }}
+        </label>
+        <label>
+          {{ game_form.wave_accelerator_active }} Wave Accelerator active
+        </label>
+        <button class="button" type="submit">Calculate</button>
+      </form>
+
+      {% if not has_runs %}
+        <p class="muted margin-top-1">Import Battle Reports to enable this calculator.</p>
+      {% endif %}
+
+      {% if game_result %}
+        <div class="calculator-results">
+          <p class="lead margin-bottom-0">
+            Derived game speed:
+            {% if game_result.derived_speed is not None %}
+              <span data-format="unit-value" data-value="{{ game_result.derived_speed }}" data-unit="multiplier" data-suffix="x"></span>
+            {% else %}
+              —
+            {% endif %}
+          </p>
+          <p class="muted margin-top-0">Derived speed is calculated from your real-time run duration and waves reached.</p>
+
+          <table class="stack">
+            <tbody>
+              <tr>
+                <th>Run</th>
+                <td>{{ game_result.run_label }}</td>
+              </tr>
+              <tr>
+                <th>Waves completed</th>
+                <td>
+                  {% if game_result.waves %}
+                    {{ game_result.waves }}
+                  {% else %}
+                    —
+                  {% endif %}
+                </td>
+              </tr>
+              <tr>
+                <th>Observed real time</th>
+                <td>{{ game_result.real_time_label }}</td>
+              </tr>
+              <tr>
+                <th>Observed waves per hour</th>
+                <td>
+                  {% if game_result.waves_per_hour is not None %}
+                    <span data-format="unit-value" data-value="{{ game_result.waves_per_hour }}" data-unit="waves/hour"></span>
+                  {% else %}
+                    —
+                  {% endif %}
+                </td>
+              </tr>
+              <tr>
+                <th>Expected waves per hour</th>
+                <td>
+                  {% if game_result.expected_waves_per_hour is not None %}
+                    <span data-format="unit-value" data-value="{{ game_result.expected_waves_per_hour }}" data-unit="waves/hour"></span>
+                  {% else %}
+                    —
+                  {% endif %}
+                </td>
+              </tr>
+              <tr>
+                <th>Estimated real time at selected speed</th>
+                <td>{{ game_result.expected_real_time_label }}</td>
+              </tr>
+              <tr>
+                <th>Seconds per wave (baseline)</th>
+                <td>{{ game_result.seconds_per_wave|floatformat:3 }}s</td>
+              </tr>
+              <tr>
+                <th>Cooldown used</th>
+                <td>
+                  {{ game_result.cooldown_seconds|floatformat:3 }}s
+                  {% if game_result.wave_accelerator_active %}
+                    ({{ game_result.cooldown_reduction_pct }}% reduction)
+                  {% endif %}
+                </td>
+              </tr>
+            </tbody>
+          </table>
+
+          <div class="callout secondary margin-top-1">
+            <p class="margin-0">
+              Wave Accelerator calculations assume a {{ game_result.cooldown_reduction_pct }}% cooldown reduction when enabled.
+            </p>
+          </div>
+        </div>
+      {% endif %}
+    </div>
+
+    <div class="card-shell">
+      <h4 class="margin-bottom-1">Labs Speed Up Calculator</h4>
+      <form method="get" class="stacked">
+        <label>
+          Labs unlocked
+          {{ labs_form.labs_unlocked }}
+        </label>
+        <div class="grid-x grid-margin-x">
+          <div class="cell small-6">
+            <label>
+              Current days
+              {{ labs_form.progress_days }}
+            </label>
+          </div>
+          <div class="cell small-6">
+            <label>
+              Current hours
+              {{ labs_form.progress_hours }}
+            </label>
+          </div>
+          <div class="cell small-6">
+            <label>
+              Current minutes
+              {{ labs_form.progress_minutes }}
+            </label>
+          </div>
+          <div class="cell small-6">
+            <label>
+              Current seconds
+              {{ labs_form.progress_seconds }}
+            </label>
+          </div>
+        </div>
+        <label>
+          Goal
+          {{ labs_form.goal }}
+        </label>
+        <button class="button" type="submit">Calculate</button>
+      </form>
+
+      {% if labs_result %}
+        <div class="calculator-results">
+          <p class="lead margin-bottom-0">Remaining research time: {{ labs_result.remaining_duration }}</p>
+          <p class="muted margin-top-0">
+            Goal: {{ labs_result.goal_label }} ({{ labs_result.goal_duration }}) • Current progress: {{ labs_result.current_duration }}
+          </p>
+
+          <table class="stack">
+            <thead>
+              <tr>
+                <th>Boost</th>
+                <th>Duration</th>
+                <th>Boosts needed</th>
+                <th>Total cells</th>
+                <th>Research time covered</th>
+              </tr>
+            </thead>
+            <tbody>
+              {% for row in labs_result.rows %}
+                <tr>
+                  <td>{{ row.boost }}x</td>
+                  <td>{{ row.duration_hours }}h</td>
+                  <td>{{ row.boosts_needed }}</td>
+                  <td>
+                    <span data-format="unit-value" data-value="{{ row.total_cells }}" data-unit="cells"></span>
+                  </td>
+                  <td>{{ row.research_hours|floatformat:1 }}h</td>
+                </tr>
+              {% endfor %}
+            </tbody>
+          </table>
+
+          <div class="callout secondary margin-top-1">
+            <p class="margin-bottom-0"><strong>Labs unlock costs (gems)</strong></p>
+            <table class="stack">
+              <thead>
+                <tr>
+                  <th>Lab</th>
+                  <th>Cost</th>
+                </tr>
+              </thead>
+              <tbody>
+                {% for lab_num, cost in labs_unlock_costs %}
+                  <tr>
+                    <td>{{ lab_num }}</td>
+                    <td>{{ cost }}</td>
+                  </tr>
+                {% endfor %}
+              </tbody>
+            </table>
+          </div>
+        </div>
+      {% endif %}
+    </div>
+  </div>
+{% endblock %}

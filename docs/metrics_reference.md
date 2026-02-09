@@ -28,6 +28,31 @@ Metrics Reference lists the values you can chart or summarize so you can confirm
 - **Source** tells you where the value comes from.
 - **Notes** clarifies how a metric is grouped or labeled in the Battle Report.
 
+### Lifetime Stats (Global Stats)
+
+Lifetime Stats (sometimes labeled Global Stats) summarizes a fixed subset of metrics for quick totals.
+
+Economy metrics:
+- Coins Earned
+- Cash Earned
+- Cells Earned
+- Reroll Shards Earned
+- Stones Spent
+- Bits Spent
+
+Combat metrics:
+- Damage Dealt
+- Thorn Damage
+- Enemies Destroyed
+- Orb Kills
+- Death Ray Kills
+
+Utility metrics:
+- Waves Completed
+- Free Upgrades
+- Interest Earned
+- Waves Skipped
+
 ### Metrics List
 
 | Metric | Key | Source | Notes |

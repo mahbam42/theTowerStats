@@ -3932,7 +3932,7 @@ Add as a filter.
 CLOSED: [2026-01-31 Sat 15:04]
 - State "DONE"       from "TODO"       [2026-01-31 Sat 15:04]
 metrics_reference.md needs to include the key values (used on explore dashboard) as a column. 
-*** v0.10.0 [0/9]
+*** v0.10.0 [1/11]
 Includes Game Patch 27.4
 **** WAIT [#A] Verify wiki fetch support for Scout Guardian Chip (Blocking)
 - State "WAIT"       from "TODO"       [2026-02-08 Sun 15:45] \\
@@ -4073,6 +4073,11 @@ Shows as "-" on Dashboard
 Currently only allows Count which then only shows runs used and not the aggregated performance of the metric. 
 **** TODO [#C] On Charts Dashboard, Compare and Advice should open in a modal and not on the dashboard. :feat:
 Since the charts don't change to reflect the compare windows, the compare and advice for the comparisions need better visual separation from the Charts. 
+**** DONE wire up local postgres
+CLOSED: [2026-02-08 Sun 18:31]
+- State "DONE"       from              [2026-02-08 Sun 18:31]
+**** TODO Update Changelog, readme, etc
+everything since commit fcb23e3
 ** Backlog [3/8]
 “Out of Scope”:
 - Cloud sync

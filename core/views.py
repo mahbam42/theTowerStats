@@ -81,6 +81,16 @@ from core.charting.dto_builder import build_chart_config_dto
 from core.charting.flagging import flag_reasons, incomplete_run_labels
 from core.charting.render import render_charts
 from core.charting.snapshot_codec import decode_chart_config_dto, encode_chart_config_dto
+from core.calculators import (
+    LAB_GOALS,
+    LAB_SPEEDUP_OPTIONS,
+    LAB_UNLOCK_COSTS,
+    build_game_speed_result,
+    format_duration,
+    lab_speedup_rows,
+    progress_seconds_from_parts,
+    WAVE_ACCELERATOR_REDUCTION,
+)
 from core.forms import (
     BattleHistoryColumnPreferenceForm,
     BattleHistoryFilterForm,
@@ -96,8 +106,11 @@ from core.forms import (
     CardsFilterForm,
     ComparisonForm,
     ExploreQueryForm,
+    GameSpeedCalculatorForm,
     GoalTargetUpdateForm,
     GoalsFilterForm,
+    LabsSpeedupCalculatorForm,
+    LifetimeStatsFilterForm,
     UpgradeableEntityProgressFilterForm,
     UltimateWeaponProgressFilterForm,
 )
@@ -119,6 +132,7 @@ from core.upgradeables import (
     validate_parameter_definitions,
     validate_uw_parameter_definitions,
 )
+from core.lifetime_stats import build_lifetime_stat_groups
 from definitions.models import (
     BotDefinition,
     CardDefinition,
@@ -2776,6 +2790,63 @@ def battle_report_modal(request: HttpRequest, report_id: int) -> JsonResponse:
     return JsonResponse(payload)
 
 
+@login_required
+def lifetime_stats_modal(request: HttpRequest) -> JsonResponse:
+    """Return Lifetime Stats modal payload for the requesting player."""
+
+    if request.method != "GET":
+        return JsonResponse({"ok": False, "error": "Method not allowed."}, status=405)
+
+    player = _request_player(request)
+    filter_form = LifetimeStatsFilterForm(request.GET, today=date.today())
+    if not filter_form.is_valid():
+        return JsonResponse(
+            {"ok": False, "errors": filter_form.errors.get_json_data()},
+            status=400,
+        )
+
+    mode = str(filter_form.cleaned_data.get("range_mode") or "all")
+    start_date = filter_form.cleaned_data.get("start_date")
+    end_date = filter_form.cleaned_data.get("end_date")
+
+    runs = BattleReport.objects.filter(player=player).select_related(
+        "run_progress",
+        "run_progress__preset",
+        "derived_metrics",
+    )
+    runs = _with_effective_battle_date(runs).order_by("effective_battle_date", "id")
+    if start_date:
+        runs = runs.filter(effective_battle_date__date__gte=start_date)
+    if end_date:
+        runs = runs.filter(effective_battle_date__date__lte=end_date)
+
+    records = tuple(runs)
+    groups = build_lifetime_stat_groups(records=records, player=player)
+
+    start_label = start_date.isoformat() if start_date else None
+    end_label = end_date.isoformat() if end_date else None
+    if mode == "event" and start_label and end_label:
+        range_label = f"Event window • {start_label} to {end_label}"
+    elif mode == "custom" and start_label and end_label:
+        range_label = f"{start_label} to {end_label}"
+    else:
+        range_label = "All time"
+
+    return JsonResponse(
+        {
+            "ok": True,
+            "groups": groups,
+            "run_count": len(records),
+            "range": {
+                "mode": mode,
+                "start_date": start_label,
+                "end_date": end_label,
+                "label": range_label,
+            },
+        }
+    )
+
+
 def _build_sort_querystrings(
     query_params: QueryDict, *, current_sort: str, sortable_keys: dict[str, str]
 ) -> dict[str, str]:
@@ -4945,6 +5016,130 @@ def bots_progress(request: HttpRequest) -> HttpResponse:
             "bots": tiles,
             "goals_widget_rows": goals_widget_rows(player=player, goal_type=str(GoalType.BOT)),
             "goals_widget_goal_type": str(GoalType.BOT),
+        },
+    )
+
+
+def _calculator_run_label(run: BattleReport) -> str:
+    """Return a concise run label for calculator dropdowns."""
+
+    progress = getattr(run, "run_progress", None)
+    battle_date = getattr(progress, "battle_date", None)
+    tier = getattr(progress, "tier", None)
+    wave = getattr(progress, "wave", None)
+    date_label = getattr(battle_date, "date", lambda: None)()
+    time_label = getattr(battle_date, "strftime", lambda _fmt: None)("%H:%M:%S")
+    tier_label = f"T{tier}" if tier is not None else "T?"
+    wave_label = f"W{wave}" if wave is not None else "W?"
+    if date_label is None:
+        date_label = run.parsed_at.date()
+    if time_label is None:
+        time_label = run.parsed_at.strftime("%H:%M:%S")
+    return f"{tier_label} • {wave_label} • {date_label.isoformat()} {time_label}"
+
+
+@login_required
+def calculator_tools(request: HttpRequest) -> HttpResponse:
+    """Render the Calculator Tools dashboard."""
+
+    player = _request_player(request)
+    runs_qs = (
+        BattleReport.objects.filter(player=player)
+        .select_related("run_progress")
+    )
+    runs_qs = _with_effective_battle_date(runs_qs).order_by("-effective_battle_date", "-id")
+    last_runs = runs_qs[:5]
+
+    game_prefix = "game_speed"
+    labs_prefix = "labs_speed"
+    has_game = any(key.startswith(f"{game_prefix}-") for key in request.GET.keys())
+    has_labs = any(key.startswith(f"{labs_prefix}-") for key in request.GET.keys())
+
+    game_form = GameSpeedCalculatorForm(
+        request.GET if has_game else None,
+        runs=last_runs,
+        prefix=game_prefix,
+    )
+    labs_form = LabsSpeedupCalculatorForm(
+        request.GET if has_labs else None,
+        prefix=labs_prefix,
+    )
+
+    game_result: dict[str, object] | None = None
+    if has_game and game_form.is_valid():
+        run = game_form.cleaned_data["run"]
+        speed_value = float(game_form.cleaned_data["game_speed"])
+        wave_accelerator_active = bool(game_form.cleaned_data.get("wave_accelerator_active"))
+        progress = getattr(run, "run_progress", None)
+        waves = getattr(progress, "wave", None) if progress else None
+        real_time_seconds = getattr(progress, "real_time_seconds", None) if progress else None
+
+        result = build_game_speed_result(
+            waves=waves,
+            real_time_seconds=real_time_seconds,
+            game_speed=speed_value,
+            wave_accelerator_active=wave_accelerator_active,
+        )
+        expected_seconds = result.expected_real_time_seconds
+        game_result = {
+            "run_label": _calculator_run_label(run),
+            "waves": waves,
+            "real_time_seconds": real_time_seconds,
+            "real_time_label": format_duration(total_seconds=int(real_time_seconds or 0))
+            if real_time_seconds
+            else "—",
+            "expected_real_time_seconds": expected_seconds,
+            "expected_real_time_label": format_duration(total_seconds=int(expected_seconds or 0))
+            if expected_seconds
+            else "—",
+            "waves_per_hour": result.waves_per_hour,
+            "expected_waves_per_hour": result.expected_waves_per_hour,
+            "derived_speed": result.derived_speed,
+            "seconds_per_wave": result.seconds_per_wave,
+            "cooldown_seconds": result.cooldown_seconds,
+            "cooldown_reduction_pct": int(WAVE_ACCELERATOR_REDUCTION * 100)
+            if wave_accelerator_active
+            else 0,
+            "wave_accelerator_active": wave_accelerator_active,
+        }
+
+    labs_result: dict[str, object] | None = None
+    if has_labs and labs_form.is_valid():
+        labs_unlocked = int(labs_form.cleaned_data["labs_unlocked"])
+        current_seconds = progress_seconds_from_parts(
+            days=int(labs_form.cleaned_data.get("progress_days") or 0),
+            hours=int(labs_form.cleaned_data.get("progress_hours") or 0),
+            minutes=int(labs_form.cleaned_data.get("progress_minutes") or 0),
+            seconds=int(labs_form.cleaned_data.get("progress_seconds") or 0),
+        )
+        goal_key = str(labs_form.cleaned_data.get("goal") or "")
+        goal_lookup = {goal.key: goal for goal in LAB_GOALS}
+        goal = goal_lookup.get(goal_key, LAB_GOALS[0])
+        remaining_seconds = max(goal.total_seconds - current_seconds, 0)
+        rows = lab_speedup_rows(remaining_seconds=remaining_seconds, labs_unlocked=labs_unlocked)
+        labs_result = {
+            "goal_label": goal.label,
+            "goal_seconds": goal.total_seconds,
+            "goal_duration": format_duration(total_seconds=goal.total_seconds),
+            "current_seconds": current_seconds,
+            "current_duration": format_duration(total_seconds=current_seconds),
+            "remaining_seconds": remaining_seconds,
+            "remaining_duration": format_duration(total_seconds=remaining_seconds),
+            "labs_unlocked": labs_unlocked,
+            "rows": rows,
+        }
+
+    return render(
+        request,
+        "core/calculator_tools.html",
+        {
+            "game_form": game_form,
+            "labs_form": labs_form,
+            "game_result": game_result,
+            "labs_result": labs_result,
+            "labs_unlock_costs": LAB_UNLOCK_COSTS,
+            "labs_speedup_options": LAB_SPEEDUP_OPTIONS,
+            "has_runs": last_runs.exists(),
         },
     )
 

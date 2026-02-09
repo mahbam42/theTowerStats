@@ -1,0 +1,47 @@
+# Lifetime Stats
+
+This page is **User Guide**. It explains how to review Lifetime Stats for your account.
+
+## Overview
+
+Lifetime Stats summarizes key economy, combat, and utility totals across all of your imported Battle Reports or a selected date window.
+
+## When to Use This
+
+- You want a quick snapshot of your total gains and combat output.
+- You want to compare totals across a specific event window or custom date range.
+- You want to confirm which metrics are tracked without building a chart.
+- You want to locate a metric in Explore for deeper analysis.
+
+## How to Use
+
+1. Select your username in the top-right menu.
+2. Select **Lifetime Stats**.
+3. Select a range option, including **All time**, **Current event window**, or **Custom date range**.
+4. Select **Apply** to refresh the totals.
+5. Select **Explore** to review additional metrics on the [Explore dashboard](explore.md).
+6. Review [Metrics Reference](metrics_reference.md) to see the full list of chartable metrics.
+
+## How to Read the Results
+
+- Metrics are grouped by **Economy**, **Combat**, and **Utility**.
+- Totals reflect the runs included in the selected date range.
+- Units are shown next to each value so you can distinguish coins, cash, cells, and other counts.
+
+## Notes & Limitations
+
+> **Note**
+> Lifetime Stats only includes values present in your imported Battle Reports.
+
+> **Note**
+> Some in-game metrics are not tracked yet, including:
+> - Stones Earned
+> - Keys Earned
+> - Upgrades Bought
+> - Workshop Upgrades
+> - Workshop Coins Spent
+> - Research Completed
+> - Lab Coins Spent
+
+> **Note**
+> For additional metrics and breakdowns, use the Explore dashboard and the Metrics Reference page.

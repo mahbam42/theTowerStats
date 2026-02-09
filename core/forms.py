@@ -9,8 +9,8 @@ from __future__ import annotations
 
 from datetime import date
 import json
-
 import re
+from typing import Iterable
 
 from django import forms
 
@@ -539,6 +539,60 @@ class BattleHistoryFilterForm(forms.Form):
             )
 
 
+class LifetimeStatsFilterForm(forms.Form):
+    """Validate date-range selections for Lifetime Stats."""
+
+    RANGE_CHOICES = (
+        ("all", "All time"),
+        ("event", "Current event window"),
+        ("custom", "Custom date range"),
+    )
+
+    range_mode = forms.ChoiceField(
+        required=False,
+        choices=RANGE_CHOICES,
+        label="Range",
+    )
+    start_date = forms.DateField(
+        required=False,
+        widget=forms.DateInput(attrs={"type": "date"}),
+        label="Start date",
+    )
+    end_date = forms.DateField(
+        required=False,
+        widget=forms.DateInput(attrs={"type": "date"}),
+        label="End date",
+    )
+
+    def __init__(self, *args: object, today: date | None = None, **kwargs: object) -> None:
+        """Store the current date for Event window defaults."""
+
+        super().__init__(*args, **kwargs)
+        self._today = today or date.today()
+
+    def clean(self) -> dict[str, object]:
+        """Apply Event window defaults and custom range validation."""
+
+        cleaned = super().clean()
+        mode = (cleaned.get("range_mode") or "all").strip().casefold()
+        cleaned["range_mode"] = mode
+        if mode == "event":
+            window = event_window_for_date(target=self._today, anchor=date(2025, 12, 9))
+            cleaned["start_date"] = window.start
+            cleaned["end_date"] = window.end
+            return cleaned
+        if mode == "custom":
+            start = cleaned.get("start_date")
+            end = cleaned.get("end_date")
+            if not start or not end:
+                self.add_error("start_date", "Provide both start and end dates.")
+                self.add_error("end_date", "Provide both start and end dates.")
+            return cleaned
+        cleaned["start_date"] = None
+        cleaned["end_date"] = None
+        return cleaned
+
+
 class BattleHistoryPresetUpdateForm(forms.Form):
     """Validate preset updates for a single Battle Report row."""
 
@@ -717,6 +771,80 @@ class GameDataMultipleChoiceField(forms.ModelMultipleChoiceField):
         if time_label is None:
             time_label = obj.parsed_at.strftime("%H:%M:%S")
         return f"{tier_label} • {wave_label} • {date_label.isoformat()} {time_label}"
+
+
+class GameSpeedCalculatorForm(forms.Form):
+    """Validate inputs for the Game Speed calculator."""
+
+    GAME_SPEED_CHOICES = (
+        ("1", "1x"),
+        ("2", "2x"),
+        ("2.5", "2.5x"),
+        ("3", "3x"),
+        ("3.5", "3.5x"),
+        ("4", "4x"),
+        ("4.5", "4.5x"),
+        ("5", "5x"),
+        ("6.3", "6.3x"),
+    )
+
+    run = GameDataChoiceField(
+        required=True,
+        queryset=BattleReport.objects.none(),
+        label="Run",
+    )
+    game_speed = forms.ChoiceField(
+        required=True,
+        choices=GAME_SPEED_CHOICES,
+        label="Game speed",
+    )
+    wave_accelerator_active = forms.BooleanField(
+        required=False,
+        label="Wave Accelerator active",
+    )
+
+    def __init__(self, *args: object, runs: Iterable[BattleReport] | None = None, **kwargs: object) -> None:
+        """Initialize run choices with the supplied queryset."""
+
+        super().__init__(*args, **kwargs)
+        if runs is not None:
+            self.fields["run"].queryset = runs
+
+
+class LabsSpeedupCalculatorForm(forms.Form):
+    """Validate inputs for the Labs Speed Up calculator."""
+
+    LAB_GOAL_CHOICES = (
+        ("goal_12d", "12 days"),
+        ("goal_30d", "30 days"),
+        ("goal_89d", "89d 19h 33m 20s"),
+    )
+
+    labs_unlocked = forms.IntegerField(
+        required=True,
+        min_value=1,
+        max_value=5,
+        label="Labs unlocked",
+    )
+    progress_days = forms.IntegerField(required=False, min_value=0, label="Current days")
+    progress_hours = forms.IntegerField(required=False, min_value=0, max_value=23, label="Current hours")
+    progress_minutes = forms.IntegerField(required=False, min_value=0, max_value=59, label="Current minutes")
+    progress_seconds = forms.IntegerField(required=False, min_value=0, max_value=59, label="Current seconds")
+    goal = forms.ChoiceField(
+        required=True,
+        choices=LAB_GOAL_CHOICES,
+        label="Goal",
+    )
+
+    def clean(self) -> dict[str, object]:
+        """Normalize missing progress parts to zero."""
+
+        cleaned = super().clean()
+        cleaned["progress_days"] = int(cleaned.get("progress_days") or 0)
+        cleaned["progress_hours"] = int(cleaned.get("progress_hours") or 0)
+        cleaned["progress_minutes"] = int(cleaned.get("progress_minutes") or 0)
+        cleaned["progress_seconds"] = int(cleaned.get("progress_seconds") or 0)
+        return cleaned
 
 
 class ComparisonForm(forms.Form):

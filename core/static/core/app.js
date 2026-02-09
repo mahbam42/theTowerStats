@@ -748,6 +748,168 @@
     });
   }
 
+  function initializeLifetimeStatsModal() {
+    const modal = document.getElementById("lifetime-stats-modal");
+    if (!modal) return;
+
+    const endpoint = modal.dataset.endpoint;
+    if (!endpoint) return;
+
+    const openBtn = document.getElementById("open-lifetime-stats");
+    const closeBtn = modal.querySelector("[data-close-modal]");
+    const form = modal.querySelector("[data-lifetime-stats-form]");
+    const rangeEl = modal.querySelector("[data-lifetime-stats-range]");
+    const runCountEl = modal.querySelector("[data-lifetime-stats-run-count]");
+    const groupsEl = modal.querySelector("[data-lifetime-stats-groups]");
+    const statusEl = modal.querySelector("[data-lifetime-stats-status]");
+    if (!form || !groupsEl) return;
+
+    const rangeSelect = form.querySelector("[name='range_mode']");
+    const startInput = form.querySelector("[name='start_date']");
+    const endInput = form.querySelector("[name='end_date']");
+
+    const formatter = window.ttsFormatChartNumber || formatChartNumber;
+
+    function openModal() {
+      modal.classList.add("is-open");
+      modal.setAttribute("aria-hidden", "false");
+      document.body.style.overflow = "hidden";
+    }
+
+    function closeModal() {
+      modal.classList.remove("is-open");
+      modal.setAttribute("aria-hidden", "true");
+      document.body.style.overflow = "";
+    }
+
+    function setStatus(message) {
+      if (!statusEl) return;
+      statusEl.hidden = false;
+      statusEl.textContent = message;
+    }
+
+    function clearStatus() {
+      if (!statusEl) return;
+      statusEl.hidden = true;
+      statusEl.textContent = "";
+    }
+
+    function setLoading() {
+      clearStatus();
+      if (groupsEl) groupsEl.innerHTML = "";
+      if (runCountEl) runCountEl.textContent = "Loading…";
+    }
+
+    function setRangeInputs(mode) {
+      const isCustom = mode === "custom";
+      if (startInput) startInput.disabled = !isCustom;
+      if (endInput) endInput.disabled = !isCustom;
+    }
+
+    function renderGroups(groups) {
+      groupsEl.innerHTML = "";
+      for (const group of groups || []) {
+        const card = document.createElement("div");
+        card.className = "card-shell lifetime-stats-group";
+
+        const header = document.createElement("h5");
+        header.textContent = group.label || "";
+        card.appendChild(header);
+
+        const grid = document.createElement("div");
+        grid.className = "lifetime-stats-metrics";
+        for (const metric of group.metrics || []) {
+          const row = document.createElement("div");
+          row.className = "lifetime-stats-row";
+
+          const label = document.createElement("span");
+          label.textContent = metric.label || "";
+
+          const value = document.createElement("span");
+          value.className = "lifetime-stats-value";
+          const numeric = metric.numeric_value;
+          const unit = metric.unit || "";
+          if (Number.isFinite(Number(numeric))) {
+            const formatted = formatter(numeric, unit);
+            value.textContent = unit ? `${formatted} ${unit}` : formatted;
+          } else {
+            value.textContent = "—";
+          }
+
+          row.appendChild(label);
+          row.appendChild(value);
+          grid.appendChild(row);
+        }
+
+        card.appendChild(grid);
+        groupsEl.appendChild(card);
+      }
+    }
+
+    async function loadStats() {
+      if (!endpoint) return;
+      setLoading();
+      const params = new URLSearchParams();
+      const mode = rangeSelect ? rangeSelect.value : "";
+      if (mode) params.set("range_mode", mode);
+      if (startInput && startInput.value) params.set("start_date", startInput.value);
+      if (endInput && endInput.value) params.set("end_date", endInput.value);
+      const url = params.toString() ? `${endpoint}?${params.toString()}` : endpoint;
+
+      try {
+        const resp = await fetch(url, {
+          method: "GET",
+          credentials: "same-origin",
+          headers: { "X-Requested-With": "XMLHttpRequest" },
+        });
+        const payload = await resp.json();
+        if (!resp.ok || !payload.ok) {
+          setStatus("Unable to load Lifetime Stats.");
+          if (runCountEl) runCountEl.textContent = "";
+          return;
+        }
+        clearStatus();
+        const range = payload.range || {};
+        if (rangeSelect && range.mode) rangeSelect.value = range.mode;
+        setRangeInputs(range.mode || "");
+        if (startInput && range.start_date) startInput.value = range.start_date;
+        if (endInput && range.end_date) endInput.value = range.end_date;
+        if (rangeEl) rangeEl.textContent = range.label || "";
+        if (runCountEl) runCountEl.textContent = `Runs included: ${payload.run_count || 0}`;
+        renderGroups(payload.groups || []);
+      } catch (_err) {
+        setStatus("Unable to load Lifetime Stats.");
+        if (runCountEl) runCountEl.textContent = "";
+      }
+    }
+
+    if (openBtn) {
+      openBtn.addEventListener("click", () => {
+        openModal();
+        setRangeInputs(rangeSelect ? rangeSelect.value : "");
+        loadStats();
+      });
+    }
+    if (closeBtn) closeBtn.addEventListener("click", closeModal);
+    modal.addEventListener("click", (event) => {
+      if (event.target === modal) closeModal();
+    });
+    window.addEventListener("keydown", (event) => {
+      if (event.key === "Escape" && modal.getAttribute("aria-hidden") === "false") {
+        closeModal();
+      }
+    });
+    if (rangeSelect) {
+      rangeSelect.addEventListener("change", () => {
+        setRangeInputs(rangeSelect.value);
+      });
+    }
+    form.addEventListener("submit", (event) => {
+      event.preventDefault();
+      loadStats();
+    });
+  }
+
   function initializeGuidedWalkthrough() {
     const container = document.getElementById("guided-walkthrough");
     if (!container) return;
@@ -1030,6 +1192,7 @@
         initializeGlobalSearch();
         initializeBattleReportModal();
         initializeExploreModal();
+        initializeLifetimeStatsModal();
         initializeUnitFormatting();
         initializeGuidedWalkthrough();
       },
@@ -1042,6 +1205,7 @@
   initializeGlobalSearch();
   initializeBattleReportModal();
   initializeExploreModal();
+  initializeLifetimeStatsModal();
   initializeUnitFormatting();
   initializeGuidedWalkthrough();
 })();

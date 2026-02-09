@@ -74,6 +74,8 @@ nav:
       - Explore: 
           - Overview: explore.md
           - Explore Breakdowns: explore_breakdowns.md
+      - Lifetime Stats: lifetime_stats.md
+      - Calculator Tools: calculator_tools.md
       - Goals: goals.md
       - Cards: cards.md
       - Ultimate Weapons: ultimate_weapons.md

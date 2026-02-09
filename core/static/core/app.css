@@ -907,6 +907,54 @@ textarea:active {
   color: var(--tts-color-text-muted);
 }
 
+.lifetime-stats-shell {
+  width: min(1000px, 100%);
+}
+
+.lifetime-stats-groups {
+  display: grid;
+  gap: var(--tts-space-3);
+  margin-top: var(--tts-space-2);
+}
+
+@media (min-width: 720px) {
+  .lifetime-stats-groups {
+    grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
+  }
+}
+
+.lifetime-stats-metrics {
+  display: grid;
+  gap: var(--tts-space-2);
+}
+
+.lifetime-stats-row {
+  display: flex;
+  justify-content: space-between;
+  gap: var(--tts-space-2);
+  border-bottom: 1px solid var(--tts-color-border);
+  padding-bottom: var(--tts-space-1);
+}
+
+.lifetime-stats-value {
+  color: var(--tts-color-text-muted);
+}
+
+.calculator-grid {
+  display: grid;
+  gap: var(--tts-space-4);
+}
+
+@media (min-width: 900px) {
+  .calculator-grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+}
+
+.calculator-results {
+  margin-top: var(--tts-space-3);
+}
+
 .battle-report-raw {
   white-space: pre;
   overflow-x: auto;

@@ -132,6 +132,7 @@ def _nav_items() -> list[tuple[str, str, str | None, str]]:
         ("Ultimate Weapons", reverse("core:ultimate_weapon_progress"), "Progress dashboard", "nav"),
         ("Guardian Chips", reverse("core:guardian_progress"), "Progress dashboard", "nav"),
         ("Bots", reverse("core:bots_progress"), "Progress dashboard", "nav"),
+        ("Calculator Tools", reverse("core:calculator_tools"), "Speed and research calculators", "nav"),
     ]
 
 

@@ -61,6 +61,9 @@
               <li class="{% if request.resolver_match.url_name == 'bots_progress' %}is-active{% endif %}">
                 <a href="{% url 'core:bots_progress' %}">Bots</a>
               </li>
+              <li class="{% if request.resolver_match.url_name == 'calculator_tools' %}is-active{% endif %}">
+                <a href="{% url 'core:calculator_tools' %}">Calculator Tools</a>
+              </li>
             </ul>
           </li>
         </ul>
@@ -114,6 +117,9 @@
                       <button type="submit" class="button secondary tiny expanded margin-0">View demo data</button>
                     </form>
                   {% endif %}
+                </li>
+                <li>
+                  <button type="button" class="link-button" id="open-lifetime-stats">Lifetime Stats</button>
                 </li>
                 <li>
                   <form action="{% url 'logout' %}" method="post">
@@ -189,6 +195,63 @@
 
       {% block content %}{% endblock %}
     </div>
+
+    {% if user.is_authenticated %}
+      <div
+        class="modal-backdrop"
+        id="lifetime-stats-modal"
+        aria-hidden="true"
+        data-endpoint="{% url 'core:lifetime_stats_modal' %}"
+      >
+        <div class="modal-shell lifetime-stats-shell" role="dialog" aria-modal="true" aria-label="Lifetime Stats">
+          <div class="grid-x grid-margin-x align-middle">
+            <div class="cell auto">
+              <h4 class="margin-0">Lifetime Stats</h4>
+              <p class="muted margin-0" data-lifetime-stats-range>All time</p>
+            </div>
+            <div class="cell shrink">
+              <button class="button secondary" type="button" data-close-modal>Close</button>
+            </div>
+          </div>
+
+          <div class="margin-top-1">
+            <form class="stacked" data-lifetime-stats-form>
+              <div class="grid-x grid-margin-x align-middle">
+                <div class="cell medium-4">
+                  <label>
+                    Range
+                    <select name="range_mode">
+                      <option value="all" selected>All time</option>
+                      <option value="event">Current event window</option>
+                      <option value="custom">Custom date range</option>
+                    </select>
+                  </label>
+                </div>
+                <div class="cell medium-3">
+                  <label>
+                    Start date
+                    <input type="date" name="start_date" />
+                  </label>
+                </div>
+                <div class="cell medium-3">
+                  <label>
+                    End date
+                    <input type="date" name="end_date" />
+                  </label>
+                </div>
+                <div class="cell medium-2">
+                  <button class="button" type="submit">Apply</button>
+                </div>
+              </div>
+            </form>
+
+            <p class="muted margin-top-1" data-lifetime-stats-run-count></p>
+            <div class="lifetime-stats-groups" data-lifetime-stats-groups></div>
+            <div class="callout secondary margin-top-1" data-lifetime-stats-status hidden></div>
+          </div>
+        </div>
+      </div>
+    {% endif %}
 
     <script 
       src="https://cdn.jsdelivr.net/npm/jquery@3.6.4/dist/jquery.min.js" 
