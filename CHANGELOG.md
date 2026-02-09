@@ -2,6 +2,34 @@
 
 This project follows Semantic Versioning.
 
+## [Unreleased]
+
+## [0.10.0]
+
+### Added
+- Lifetime Stats modal with economy, combat, and utility totals plus date range filters.
+- Calculator Tools dashboard with Game Speed and Labs Speed Up calculators.
+- Explore per-hour metrics for cells, reroll shards, enemies destroyed, waves, and run duration hours.
+- Explore sum and average aggregations for Guardian Damage metrics.
+- Staging database refresh script for pruning production snapshots to a single player.
+
+### Changed
+- Compare and Advice now open in modals on the Charts dashboard.
+- Game Speed calculator now uses the Wave Accelerator card level for timing adjustments.
+- Labs Speed Up calculator deadlines use UTC midnight at the end of the current Event window.
+- Local tests default to SQLite; test database override options are documented.
+- Postgres version aligned with production; local DB URL updated.
+- Battle Report progress now stores parsed Game Time seconds for hour-based metrics.
+- Docs: update roadmap and docs theme toggle notes.
+
+### Fixed
+- Explore Game Time parsing for hour-bucket queries.
+- Explore Farming Efficiency deltas and cells display.
+- Explore saved queries now preserve comments and load reliably.
+- Charts context highlighting and Compare modal behavior.
+- Player admin display and last_login timestamps.
+- Game Speed calculator form binding.
+
 ## [0.9.0]
 
 ### Added

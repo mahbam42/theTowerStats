@@ -48,6 +48,7 @@ Guiding principles:
 ### 📊 Track Progress Over Time
 
 - Coins per hour and other precomputed series (no client-side math)
+- Per-hour metrics for cells, reroll shards, and enemies destroyed
 - Filter charts by **date range**, **tier**, **preset**, **patch boundary windows**, and overlays
 - Exclude one or more presets to remove runs from the chart scope
 - Save ordered favorite charts and reusable Chart Builder entries per player
@@ -65,6 +66,18 @@ Guiding principles:
 - Build player-authored queries to aggregate run metrics without changing Battle History
 - Use the Explore DSL to filter, group, and summarize your imported runs (including patch boundary windows)
 - Preview Explore output in the Query Explorer modal from Battle History or Charts
+- Save named Explore queries for reuse
+- Aggregate supported metrics with sum, count, average, and percent-of-total outputs
+
+### 📈 Lifetime Stats
+
+- Review economy, combat, and utility totals across all runs or a selected date window
+- Use Lifetime Stats as a quick metric reference before deeper Explore analysis
+
+### 🧮 Calculator Tools
+
+- Game Speed calculator based on a selected run and Wave Accelerator card level
+- Labs Speed Up calculator with Event window deadlines and cell cost estimates
 
 ### 🎯 Goals Dashboard
 
@@ -124,10 +137,10 @@ This app is about:
 
 ## Current Progress
 
-- Current development: **v0.9.0**
-- Latest release: **v0.9.0**
+- Current development: **v0.10.0**
+- Latest release: **v0.10.0**
 - Changelog: `CHANGELOG.md`
-- Stable: Battle Report import, Battle History, Charts (including snapshots and compare scopes), and collection progress dashboards
+- Stable: Battle Report import, Battle History, Charts (including snapshots and compare scopes), Explore, Lifetime Stats, Calculator Tools, and collection progress dashboards
 - Multi-user: Each signed-in account has its own isolated dataset
 - Adoption features: A read-only demo dataset and lightweight export tools (CSV and PNG)
 

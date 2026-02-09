@@ -3932,12 +3932,8 @@ Add as a filter.
 CLOSED: [2026-01-31 Sat 15:04]
 - State "DONE"       from "TODO"       [2026-01-31 Sat 15:04]
 metrics_reference.md needs to include the key values (used on explore dashboard) as a column. 
-*** v0.10.0 [6/11]
+*** v0.10.0 [10/11]
 Includes Game Patch 27.4
-**** WAIT [#A] Verify wiki fetch support for Scout Guardian Chip (Blocking)
-- State "WAIT"       from "TODO"       [2026-02-08 Sun 15:45] \\
-  Not published to the Wiki yet. Will complete prompt59.md when data is available
-New Guardian Chip added 2026-02-02. Will need to set initial zero level values and ensure wiki scraping works 
 **** DONE [#B] Lifetime Stats Modal                                 :feat:
 CLOSED: [2026-02-09 Mon 11:26]
 - State "DONE"       from "TODO"       [2026-02-09 Mon 11:26]
@@ -4061,9 +4057,13 @@ Calculator needs to prompt for current research progress, then solve for the Spe
 Open Questions:
 - Ensure alignment with Philosophy and Design Philosophy.
 - Include any new metrics in Chart Builder and Explore DSL
-**** TODO [#B] Explore Dashboard should compare based on Runs in Set and not skip missing tiers. :bug:
+**** DONE [#B] Explore Dashboard should compare based on Runs in Set and not skip missing tiers. :bug:
+CLOSED: [2026-02-09 Mon 11:46]
+- State "DONE"       from "TODO"       [2026-02-09 Mon 11:46]
 If there are no tier 3 runs, tier 4 should compare with 2, for example. 
-**** TODO [#B] Saved Queries need to store comments               :ux:bug:
+**** DONE [#B] Saved Queries need to store comments               :ux:bug:
+CLOSED: [2026-02-09 Mon 11:46]
+- State "DONE"       from "TODO"       [2026-02-09 Mon 11:46]
 Clicking 'Save Query' Explore Dashboard strips commented lines from the query. Saving needs to persist comments.
 Also, saving a query should load that query on refresh. 
 **** DONE [#B] Reddit Request Cells and Reroll Shards per Hour Metrics :feat:
@@ -4081,13 +4081,21 @@ Shows as "-" on Dashboard
 CLOSED: [2026-02-09 Mon 11:27]
 - State "DONE"       from "TODO"       [2026-02-09 Mon 11:27]
 Currently only allows Count which then only shows runs used and not the aggregated performance of the metric. 
-**** TODO [#C] On Charts Dashboard, Compare and Advice should open in a modal and not on the dashboard. :feat:
+**** DONE [#C] On Charts Dashboard, Compare and Advice should open in a modal and not on the dashboard. :feat:
+CLOSED: [2026-02-09 Mon 11:46]
+- State "DONE"       from "TODO"       [2026-02-09 Mon 11:46]
 Since the charts don't change to reflect the compare windows, the compare and advice for the comparisions need better visual separation from the Charts. 
 **** DONE wire up local postgres
 CLOSED: [2026-02-08 Sun 18:31]
 - State "DONE"       from              [2026-02-08 Sun 18:31]
-**** TODO Update Changelog, readme, etc
+**** DONE Update Changelog, readme, etc
+CLOSED: [2026-02-09 Mon 12:10]
+- State "DONE"       from "TODO"       [2026-02-09 Mon 12:10]
 everything since commit fcb23e3
+**** WAIT [#A] Verify wiki fetch support for Scout Guardian Chip (Blocking)
+- State "WAIT"       from "TODO"       [2026-02-08 Sun 15:45] \\
+  Not published to the Wiki yet. Will complete prompt59.md when data is available
+New Guardian Chip added 2026-02-02. Will need to set initial zero level values and ensure wiki scraping works 
 ** Backlog [3/8]
 “Out of Scope”:
 - Cloud sync
