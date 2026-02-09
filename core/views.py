@@ -5044,21 +5044,20 @@ def calculator_tools(request: HttpRequest) -> HttpResponse:
     """Render the Calculator Tools dashboard."""
 
     player = _request_player(request)
-    runs_qs = (
-        BattleReport.objects.filter(player=player)
-        .select_related("run_progress")
-    )
+    runs_qs = BattleReport.objects.filter(player=player).select_related("run_progress")
     runs_qs = _with_effective_battle_date(runs_qs).order_by("-effective_battle_date", "-id")
-    last_runs = runs_qs[:5]
+    last_run_ids = list(runs_qs.values_list("id", flat=True)[:5])
+    runs_for_form = runs_qs.filter(id__in=last_run_ids) if last_run_ids else runs_qs.none()
 
     game_prefix = "game_speed"
     labs_prefix = "labs_speed"
-    has_game = any(key.startswith(f"{game_prefix}-") for key in request.GET.keys())
-    has_labs = any(key.startswith(f"{labs_prefix}-") for key in request.GET.keys())
+    calculator = str(request.GET.get("calculator") or "")
+    has_game = calculator == game_prefix or any(key.startswith(f"{game_prefix}-") for key in request.GET.keys())
+    has_labs = calculator == labs_prefix or any(key.startswith(f"{labs_prefix}-") for key in request.GET.keys())
 
     game_form = GameSpeedCalculatorForm(
         request.GET if has_game else None,
-        runs=last_runs,
+        runs=runs_for_form,
         prefix=game_prefix,
     )
     labs_form = LabsSpeedupCalculatorForm(
@@ -5175,7 +5174,7 @@ def calculator_tools(request: HttpRequest) -> HttpResponse:
             "labs_form": labs_form,
             "game_result": game_result,
             "labs_result": labs_result,
-            "has_runs": last_runs.exists(),
+            "has_runs": bool(last_run_ids),
         },
     )
 

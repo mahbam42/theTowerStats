@@ -13,7 +13,7 @@
   <div class="calculator-grid margin-top-1">
     <div class="card-shell">
       <h4 class="margin-bottom-1">Game Speed Calculator</h4>
-      <form method="get" class="stacked">
+      <form method="get" action="{% url 'core:calculator_tools' %}" class="stacked">
         <label>
           Run
           {{ game_form.run }}
@@ -25,7 +25,7 @@
         <label>
           {{ game_form.wave_accelerator_active }} Wave Accelerator active
         </label>
-        <button class="button" type="submit">Calculate</button>
+        <button class="button" type="submit" name="calculator" value="game_speed">Calculate</button>
       </form>
 
       {% if game_form.errors %}
@@ -121,7 +121,7 @@
 
     <div class="card-shell">
       <h4 class="margin-bottom-1">Labs Speed Up Calculator</h4>
-      <form method="get" class="stacked">
+      <form method="get" action="{% url 'core:calculator_tools' %}" class="stacked">
         <label>
           Labs unlocked
           {{ labs_form.labs_unlocked }}
@@ -156,7 +156,7 @@
           Goal
           {{ labs_form.goal }}
         </label>
-        <button class="button" type="submit">Calculate</button>
+        <button class="button" type="submit" name="calculator" value="labs_speed">Calculate</button>
       </form>
 
       {% if labs_form.errors %}
