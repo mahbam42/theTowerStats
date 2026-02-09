@@ -3932,13 +3932,15 @@ Add as a filter.
 CLOSED: [2026-01-31 Sat 15:04]
 - State "DONE"       from "TODO"       [2026-01-31 Sat 15:04]
 metrics_reference.md needs to include the key values (used on explore dashboard) as a column. 
-*** v0.10.0 [1/11]
+*** v0.10.0 [6/11]
 Includes Game Patch 27.4
 **** WAIT [#A] Verify wiki fetch support for Scout Guardian Chip (Blocking)
 - State "WAIT"       from "TODO"       [2026-02-08 Sun 15:45] \\
   Not published to the Wiki yet. Will complete prompt59.md when data is available
 New Guardian Chip added 2026-02-02. Will need to set initial zero level values and ensure wiki scraping works 
-**** TODO [#B] Lifetime Stats Modal                                 :feat:
+**** DONE [#B] Lifetime Stats Modal                                 :feat:
+CLOSED: [2026-02-09 Mon 11:26]
+- State "DONE"       from "TODO"       [2026-02-09 Mon 11:26]
 Calculate Lifetime stats for a player. These metrics could use DSL and KPIs as to not reinvent the wheel. Default view shows all time stats, and can be filtered by Event Window (like on Charts) or custom range (just start and end date pickers). This modal will be accesible from the user dropdown (above Sign Out).
 
 Metrics:
@@ -3973,7 +3975,9 @@ There are a few metrics in game that are outside of the current scope of this ap
 ***** TODO Docs Relations
 - User docs for this modal should point to Explore Dashboard for additional stats and Metrics Reference for a complete list of available metrics.
 - Metrics Reference should mention the Global Stats and which metrics are shown. 
-**** TODO [#B] Calculator Tools Dashboard                           :feat:
+**** DONE [#B] Calculator Tools Dashboard                           :feat:
+CLOSED: [2026-02-09 Mon 11:26]
+- State "DONE"       from "TODO"       [2026-02-09 Mon 11:26]
 This will be a set of little calculator widgets for players to check progress on Event Missions, Game Stats and performance
 ***** Game Speed Calculator
 We know the in Game Speed isn't accurate. 5x in Game Speed is closer to ~4.26x, and the Maximum speed of 6.25x is performatively less than accurate. What makes this better than the raw metrics is it accounts for extra overhead that isn’t in the per‑wave cooldown (start/stop delays, animations, menus, pauses, etc.)
@@ -4062,14 +4066,20 @@ If there are no tier 3 runs, tier 4 should compare with 2, for example.
 **** TODO [#B] Saved Queries need to store comments               :ux:bug:
 Clicking 'Save Query' Explore Dashboard strips commented lines from the query. Saving needs to persist comments.
 Also, saving a query should load that query on refresh. 
-**** TODO [#B] Reddit Request Cells and Reroll Shards per Hour Metrics :feat:
+**** DONE [#B] Reddit Request Cells and Reroll Shards per Hour Metrics :feat:
+CLOSED: [2026-02-09 Mon 11:26]
+- State "DONE"       from "TODO"       [2026-02-09 Mon 11:26]
 Add 'by hour' to the breakdown DSL, and the metrics to Chart Builder and Explore DSL.
 
 Cite the request to u/BoxersOrCaseBriefs https://www.reddit.com/user/BoxersOrCaseBriefs/
-**** TODO [#B] Cells Earned not showing for values over 1000 on Battle History :bug:
+**** DONE [#B] Cells Earned not showing for values over 1000 on Battle History :bug:
+CLOSED: [2026-02-09 Mon 11:26]
+- State "DONE"       from "TODO"       [2026-02-09 Mon 11:26]
 Cells Earned	1.09K
 Shows as "-" on Dashboard
-**** TODO [#C] metric guardian_damage and guardian_enemies_summoned need to allow average and sum :bug:
+**** DONE [#C] metric guardian_damage and guardian_enemies_summoned need to allow average and sum :bug:
+CLOSED: [2026-02-09 Mon 11:27]
+- State "DONE"       from "TODO"       [2026-02-09 Mon 11:27]
 Currently only allows Count which then only shows runs used and not the aggregated performance of the metric. 
 **** TODO [#C] On Charts Dashboard, Compare and Advice should open in a modal and not on the dashboard. :feat:
 Since the charts don't change to reflect the compare windows, the compare and advice for the comparisions need better visual separation from the Charts. 
