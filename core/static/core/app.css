@@ -956,11 +956,20 @@ textarea:active {
 }
 
 .labs-boost-possible {
-  background: rgba(67, 160, 71, 0.12);
+  background: #1f3a2a;
+  color: #f2f4f8;
 }
 
 .labs-boost-impossible {
-  background: rgba(229, 57, 53, 0.08);
+  background: #3a1f1f;
+  color: #f2f4f8;
+}
+
+.labs-boost-possible td,
+.labs-boost-possible th,
+.labs-boost-impossible td,
+.labs-boost-impossible th {
+  color: inherit;
 }
 
 .battle-report-raw {
