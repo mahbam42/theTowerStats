@@ -39,12 +39,31 @@ def test_lab_speedup_rows_compute_boosts_and_costs() -> None:
 
     assert len(rows) == 1
     row = rows[0]
-    assert row.boosts_needed == 3
-    assert row.total_cells == 600
-    assert row.research_hours == pytest.approx(12.0)
+    assert row.boosts_needed == 5
+    assert row.total_cells == 1000
+    assert row.research_hours == pytest.approx(10.0)
+    assert row.research_seconds == 36000
+    assert row.max_boosts is None
+    assert row.possible_by_deadline is None
 
 
 def test_progress_seconds_from_parts() -> None:
     """Progress parts sum into total seconds."""
 
     assert progress_seconds_from_parts(days=1, hours=2, minutes=3, seconds=4) == 93784
+
+
+def test_lab_speedup_rows_deadline_flags() -> None:
+    """Deadline flags reflect remaining time constraints."""
+
+    option = LabSpeedupOption(boost=2.0, duration_hours=1, cost_per_lab=10, cost_all_labs=10)
+    rows = lab_speedup_rows(
+        remaining_seconds=10 * 3600,
+        labs_unlocked=1,
+        options=[option],
+        available_seconds=4 * 3600,
+    )
+
+    row = rows[0]
+    assert row.max_boosts == 4
+    assert row.possible_by_deadline is False

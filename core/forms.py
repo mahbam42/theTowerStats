@@ -792,6 +792,7 @@ class GameSpeedCalculatorForm(forms.Form):
         required=True,
         queryset=BattleReport.objects.none(),
         label="Run",
+        empty_label=None,
     )
     game_speed = forms.ChoiceField(
         required=True,

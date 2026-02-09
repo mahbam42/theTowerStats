@@ -28,6 +28,12 @@
         <button class="button" type="submit">Calculate</button>
       </form>
 
+      {% if game_form.errors %}
+        <div class="callout warning margin-top-1">
+          <p class="margin-0">Select a run and game speed to calculate results.</p>
+        </div>
+      {% endif %}
+
       {% if not has_runs %}
         <p class="muted margin-top-1">Import Battle Reports to enable this calculator.</p>
       {% endif %}
@@ -153,12 +159,20 @@
         <button class="button" type="submit">Calculate</button>
       </form>
 
+      {% if labs_form.errors %}
+        <div class="callout warning margin-top-1">
+          <p class="margin-0">Provide labs unlocked and a goal to calculate results.</p>
+        </div>
+      {% endif %}
+
       {% if labs_result %}
         <div class="calculator-results">
           <p class="lead margin-bottom-0">Remaining research time: {{ labs_result.remaining_duration }}</p>
+          <p class="muted margin-top-0">Goal: {{ labs_result.goal_label }} ({{ labs_result.goal_duration }}) • Current progress: {{ labs_result.current_duration }}</p>
           <p class="muted margin-top-0">
-            Goal: {{ labs_result.goal_label }} ({{ labs_result.goal_duration }}) • Current progress: {{ labs_result.current_duration }}
+            Deadline: Event window ends {{ labs_result.deadline_label }} • Time remaining: {{ labs_result.deadline_duration }}
           </p>
+          <p class="muted margin-top-0">Shortfall to deadline: {{ labs_result.shortfall_duration }}</p>
 
           <table class="stack">
             <thead>
@@ -166,44 +180,62 @@
                 <th>Boost</th>
                 <th>Duration</th>
                 <th>Boosts needed</th>
+                <th>Max boosts before deadline</th>
                 <th>Total cells</th>
                 <th>Research time covered</th>
+                <th>Possible by deadline</th>
               </tr>
             </thead>
             <tbody>
               {% for row in labs_result.rows %}
-                <tr>
+                <tr class="{% if row.possible_by_deadline %}labs-boost-possible{% else %}labs-boost-impossible{% endif %}">
                   <td>{{ row.boost }}x</td>
                   <td>{{ row.duration_hours }}h</td>
                   <td>{{ row.boosts_needed }}</td>
+                  <td>{{ row.max_boosts|default_if_none:"—" }}</td>
                   <td>
                     <span data-format="unit-value" data-value="{{ row.total_cells }}" data-unit="cells"></span>
                   </td>
-                  <td>{{ row.research_hours|floatformat:1 }}h</td>
+                  <td>{{ row.research_duration }}</td>
+                  <td>
+                    {% if row.possible_by_deadline %}
+                      Yes
+                    {% elif row.possible_by_deadline is None %}
+                      —
+                    {% else %}
+                      No
+                    {% endif %}
+                  </td>
                 </tr>
               {% endfor %}
             </tbody>
           </table>
 
-          <div class="callout secondary margin-top-1">
-            <p class="margin-bottom-0"><strong>Labs unlock costs (gems)</strong></p>
-            <table class="stack">
-              <thead>
-                <tr>
-                  <th>Lab</th>
-                  <th>Cost</th>
-                </tr>
-              </thead>
-              <tbody>
-                {% for lab_num, cost in labs_unlock_costs %}
+          <p class="muted margin-top-1">
+            Boosts needed assumes your labs run at normal speed for the remaining Event window time.
+          </p>
+
+          {% if labs_result.pending_lab_costs %}
+            <div class="callout secondary margin-top-1">
+              <p class="margin-bottom-0"><strong>Labs unlock costs (gems)</strong></p>
+              <table class="stack">
+                <thead>
                   <tr>
-                    <td>{{ lab_num }}</td>
-                    <td>{{ cost }}</td>
+                    <th>Lab</th>
+                    <th>Cost</th>
                   </tr>
-                {% endfor %}
-              </tbody>
-            </table>
-          </div>
+                </thead>
+                <tbody>
+                  {% for lab_num, cost in labs_result.pending_lab_costs %}
+                    <tr>
+                      <td>{{ lab_num }}</td>
+                      <td>{{ cost }}</td>
+                    </tr>
+                  {% endfor %}
+                </tbody>
+              </table>
+            </div>
+          {% endif %}
         </div>
       {% endif %}
     </div>

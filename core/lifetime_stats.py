@@ -30,7 +30,8 @@ class LifetimeStatSpec:
     key: str
     label: str
     group: str
-    source: Literal["analysis", "raw_text", "player_state"]
+    source: Literal["analysis", "raw_text", "player_state", "recent_analysis"]
+    metric_key: str | None = None
     unit: str | None = None
     raw_label: str | None = None
     raw_unit: UnitType | None = None
@@ -50,6 +51,8 @@ def build_lifetime_stat_groups(
     Returns:
         List of group dictionaries containing ordered metric rows.
     """
+
+    records = tuple(records)
 
     specs = (
         LifetimeStatSpec(
@@ -75,6 +78,14 @@ def build_lifetime_stat_groups(
             label="Reroll Shards Earned",
             group="Economy",
             source="analysis",
+        ),
+        LifetimeStatSpec(
+            key="recent_coins_per_hour",
+            metric_key="coins_per_hour",
+            label="Recent Coins per Hour",
+            group="Economy",
+            source="recent_analysis",
+            unit="coins/hour",
         ),
         LifetimeStatSpec(
             key="stones_spent",
@@ -155,7 +166,10 @@ def build_lifetime_stat_groups(
     }
 
     groups: dict[str, list[dict[str, object]]] = {"Economy": [], "Combat": [], "Utility": []}
+    recent_record = records[-1] if records else None
+
     for spec in specs:
+        metric_key = spec.metric_key or spec.key
         if spec.source == "player_state":
             value = float(totals.get(spec.key, 0))
             groups[spec.group].append(
@@ -168,10 +182,23 @@ def build_lifetime_stat_groups(
             )
             continue
 
+        if spec.source == "recent_analysis":
+            recent_value = _metric_value(recent_record, metric_key=metric_key) if recent_record else None
+            metric_unit = spec.unit or get_metric_definition(metric_key).unit
+            groups[spec.group].append(
+                {
+                    "key": spec.key,
+                    "label": spec.label,
+                    "unit": metric_unit,
+                    "numeric_value": float(recent_value) if recent_value is not None else None,
+                }
+            )
+            continue
+
         if spec.source == "raw_text":
             count, total = _sum_raw_text_metric(
                 records,
-                metric_key=spec.key,
+                metric_key=metric_key,
                 raw_label=spec.raw_label,
                 raw_unit=spec.raw_unit,
             )
@@ -186,8 +213,8 @@ def build_lifetime_stat_groups(
             )
             continue
 
-        count, total = _sum_analysis_metric(records, metric_key=spec.key)
-        metric_unit = spec.unit or get_metric_definition(spec.key).unit
+        count, total = _sum_analysis_metric(records, metric_key=metric_key)
+        metric_unit = spec.unit or get_metric_definition(metric_key).unit
         groups[spec.group].append(
             {
                 "key": spec.key,

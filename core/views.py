@@ -7,7 +7,7 @@ import csv
 import io
 import math
 from dataclasses import dataclass
-from datetime import date, timedelta
+from datetime import date, datetime, time, timedelta, timezone as dt_timezone
 from typing import Any, Literal, TypedDict, cast
 from collections.abc import Iterable, Sequence
 
@@ -25,6 +25,7 @@ from django.http import HttpRequest, HttpResponse, JsonResponse, QueryDict
 from django.shortcuts import redirect, render
 from django.core.paginator import Paginator
 from django.urls import reverse
+from django.utils import timezone
 
 from analysis.aggregations import summarize_window
 from analysis.battle_report_extract import extract_numeric_value
@@ -83,9 +84,9 @@ from core.charting.render import render_charts
 from core.charting.snapshot_codec import decode_chart_config_dto, encode_chart_config_dto
 from core.calculators import (
     LAB_GOALS,
-    LAB_SPEEDUP_OPTIONS,
     LAB_UNLOCK_COSTS,
     build_game_speed_result,
+    format_duration_dhms,
     format_duration,
     lab_speedup_rows,
     progress_seconds_from_parts,
@@ -5117,7 +5118,37 @@ def calculator_tools(request: HttpRequest) -> HttpResponse:
         goal_lookup = {goal.key: goal for goal in LAB_GOALS}
         goal = goal_lookup.get(goal_key, LAB_GOALS[0])
         remaining_seconds = max(goal.total_seconds - current_seconds, 0)
-        rows = lab_speedup_rows(remaining_seconds=remaining_seconds, labs_unlocked=labs_unlocked)
+        utc_now = timezone.now().astimezone(dt_timezone.utc)
+        event_window = event_window_for_date(target=utc_now.date(), anchor=date(2025, 12, 9))
+        deadline = datetime.combine(
+            event_window.end + timedelta(days=1),
+            time(0, 0),
+            tzinfo=dt_timezone.utc,
+        )
+        remaining_window_seconds = max(int((deadline - utc_now).total_seconds()), 0)
+        labs_for_calc = max(1, labs_unlocked)
+        baseline_research_seconds = remaining_window_seconds * labs_for_calc
+        shortfall_seconds = max(remaining_seconds - baseline_research_seconds, 0)
+        rows = lab_speedup_rows(
+            remaining_seconds=shortfall_seconds,
+            labs_unlocked=labs_for_calc,
+            available_seconds=remaining_window_seconds,
+        )
+        rows_payload = [
+            {
+                "boost": row.boost,
+                "duration_hours": row.duration_hours,
+                "boosts_needed": row.boosts_needed,
+                "total_cells": row.total_cells,
+                "research_duration": format_duration_dhms(total_seconds=row.research_seconds),
+                "max_boosts": row.max_boosts,
+                "possible_by_deadline": row.possible_by_deadline,
+            }
+            for row in rows
+        ]
+        pending_lab_costs = [
+            (lab_num, cost) for lab_num, cost in LAB_UNLOCK_COSTS if lab_num > labs_unlocked
+        ]
         labs_result = {
             "goal_label": goal.label,
             "goal_seconds": goal.total_seconds,
@@ -5126,8 +5157,14 @@ def calculator_tools(request: HttpRequest) -> HttpResponse:
             "current_duration": format_duration(total_seconds=current_seconds),
             "remaining_seconds": remaining_seconds,
             "remaining_duration": format_duration(total_seconds=remaining_seconds),
+            "shortfall_seconds": shortfall_seconds,
+            "shortfall_duration": format_duration_dhms(total_seconds=shortfall_seconds),
+            "deadline_date": event_window.end.isoformat(),
+            "deadline_label": deadline.strftime("%Y-%m-%d %H:%M UTC"),
+            "deadline_duration": format_duration_dhms(total_seconds=remaining_window_seconds),
             "labs_unlocked": labs_unlocked,
-            "rows": rows,
+            "rows": rows_payload,
+            "pending_lab_costs": pending_lab_costs,
         }
 
     return render(
@@ -5138,8 +5175,6 @@ def calculator_tools(request: HttpRequest) -> HttpResponse:
             "labs_form": labs_form,
             "game_result": game_result,
             "labs_result": labs_result,
-            "labs_unlock_costs": LAB_UNLOCK_COSTS,
-            "labs_speedup_options": LAB_SPEEDUP_OPTIONS,
             "has_runs": last_runs.exists(),
         },
     )

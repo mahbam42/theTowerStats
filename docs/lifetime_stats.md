@@ -27,6 +27,7 @@ Lifetime Stats summarizes key economy, combat, and utility totals across all of 
 - Metrics are grouped by **Economy**, **Combat**, and **Utility**.
 - Totals reflect the runs included in the selected date range.
 - Units are shown next to each value so you can distinguish coins, cash, cells, and other counts.
+- **Recent Coins per Hour** reflects the most recent run included in the selected range.
 
 ## Notes & Limitations
 

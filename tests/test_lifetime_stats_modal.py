@@ -140,13 +140,13 @@ def test_lifetime_stats_modal_returns_totals(auth_client, player) -> None:
         player=player,
         raw_text=raw_text_b,
         battle_date=datetime(2026, 2, 1, 12, 0, tzinfo=timezone.utc),
-        coins=2000,
+        coins=2400,
         cash=700,
         interest=70,
         cells=20,
         reroll_shards=15,
         wave=200,
-        real_time_seconds=7200,
+        real_time_seconds=3600,
     )
 
     response = auth_client.get(reverse("core:lifetime_stats_modal"))
@@ -154,7 +154,7 @@ def test_lifetime_stats_modal_returns_totals(auth_client, player) -> None:
     payload = response.json()
     assert payload["ok"] is True
 
-    assert _metric_value(payload, "coins_earned") == 3000.0
+    assert _metric_value(payload, "coins_earned") == 3400.0
     assert _metric_value(payload, "cash_earned") == 1200.0
     assert _metric_value(payload, "cells_earned") == 30.0
     assert _metric_value(payload, "reroll_shards_earned") == 20.0
@@ -167,6 +167,7 @@ def test_lifetime_stats_modal_returns_totals(auth_client, player) -> None:
     assert _metric_value(payload, "free_upgrades_total") == 65.0
     assert _metric_value(payload, "interest_earned") == 120.0
     assert _metric_value(payload, "waves_skipped") == 7.0
+    assert _metric_value(payload, "recent_coins_per_hour") == 2400.0
 
 
 @pytest.mark.django_db
@@ -189,13 +190,13 @@ def test_lifetime_stats_modal_applies_custom_date_range(auth_client, player) -> 
         player=player,
         raw_text="Battle Report\nDamage dealt\t200\n",
         battle_date=datetime(2026, 2, 1, 12, 0, tzinfo=timezone.utc),
-        coins=2000,
+        coins=2400,
         cash=700,
         interest=70,
         cells=20,
         reroll_shards=15,
         wave=200,
-        real_time_seconds=7200,
+        real_time_seconds=3600,
     )
 
     response = auth_client.get(
@@ -210,4 +211,5 @@ def test_lifetime_stats_modal_applies_custom_date_range(auth_client, player) -> 
     payload = response.json()
     assert payload["ok"] is True
     assert payload["run_count"] == 1
-    assert _metric_value(payload, "coins_earned") == 2000.0
+    assert _metric_value(payload, "coins_earned") == 2400.0
+    assert _metric_value(payload, "recent_coins_per_hour") == 2400.0

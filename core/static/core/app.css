@@ -955,6 +955,14 @@ textarea:active {
   margin-top: var(--tts-space-3);
 }
 
+.labs-boost-possible {
+  background: rgba(67, 160, 71, 0.12);
+}
+
+.labs-boost-impossible {
+  background: rgba(229, 57, 53, 0.08);
+}
+
 .battle-report-raw {
   white-space: pre;
   overflow-x: auto;

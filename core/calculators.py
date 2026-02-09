@@ -49,6 +49,9 @@ class LabSpeedupRow:
     boosts_needed: int
     total_cells: int
     research_hours: float
+    research_seconds: int
+    max_boosts: int | None
+    possible_by_deadline: bool | None
 
 
 @dataclass(frozen=True, slots=True)
@@ -224,24 +227,50 @@ def progress_seconds_from_parts(
 
 
 def lab_speedup_rows(
-    *, remaining_seconds: int, labs_unlocked: int, options: Iterable[LabSpeedupOption] = LAB_SPEEDUP_OPTIONS
+    *,
+    remaining_seconds: int,
+    labs_unlocked: int,
+    options: Iterable[LabSpeedupOption] = LAB_SPEEDUP_OPTIONS,
+    available_seconds: int | None = None,
 ) -> list[LabSpeedupRow]:
-    """Compute speedup requirements and totals for lab boosts."""
+    """Compute speedup requirements and totals for lab boosts.
+
+    Args:
+        remaining_seconds: Research time shortfall that must be covered by boosts.
+        labs_unlocked: Number of labs running.
+        options: Iterable of boost options to evaluate.
+        available_seconds: Optional real-time window for deadline feasibility checks.
+    """
 
     rows: list[LabSpeedupRow] = []
     remaining_hours = max(remaining_seconds, 0) / float(SECONDS_PER_HOUR)
+    available_hours = max(available_seconds, 0) / float(SECONDS_PER_HOUR) if available_seconds is not None else None
     labs = max(1, labs_unlocked)
     for option in options:
-        research_hours = float(labs) * option.boost * float(option.duration_hours)
-        boosts_needed = 0 if remaining_hours <= 0 else int(ceil(remaining_hours / research_hours))
+        extra_research_hours = float(labs) * max(option.boost - 1.0, 0.0) * float(option.duration_hours)
+        if remaining_hours <= 0:
+            boosts_needed = 0
+        elif extra_research_hours <= 0:
+            boosts_needed = 0
+        else:
+            boosts_needed = int(ceil(remaining_hours / extra_research_hours))
         total_cells = boosts_needed * option.cost_per_lab * labs
+        research_seconds = int(extra_research_hours * boosts_needed * SECONDS_PER_HOUR)
+        max_boosts = None
+        possible_by_deadline = None
+        if available_hours is not None:
+            max_boosts = int(available_hours // float(option.duration_hours))
+            possible_by_deadline = boosts_needed <= max_boosts
         rows.append(
             LabSpeedupRow(
                 boost=option.boost,
                 duration_hours=option.duration_hours,
                 boosts_needed=boosts_needed,
                 total_cells=total_cells,
-                research_hours=research_hours * boosts_needed,
+                research_hours=extra_research_hours * boosts_needed,
+                research_seconds=research_seconds,
+                max_boosts=max_boosts,
+                possible_by_deadline=possible_by_deadline,
             )
         )
     return rows
@@ -266,6 +295,19 @@ def format_duration(*, total_seconds: int) -> str:
         parts.append(f"{minutes}m")
     parts.append(f"{seconds}s")
     return " ".join(parts)
+
+
+def format_duration_dhms(*, total_seconds: int) -> str:
+    """Format seconds into a fixed DD HH MM SS duration label."""
+
+    seconds = max(total_seconds, 0)
+    days = seconds // SECONDS_PER_DAY
+    seconds -= days * SECONDS_PER_DAY
+    hours = seconds // SECONDS_PER_HOUR
+    seconds -= hours * SECONDS_PER_HOUR
+    minutes = seconds // 60
+    seconds -= minutes * 60
+    return f"{days:02d}d {hours:02d}h {minutes:02d}m {seconds:02d}s"
 
 
 def wave_accelerator_reduction_percent(*, player: "Player") -> float:

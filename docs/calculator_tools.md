@@ -41,8 +41,12 @@ Calculator Tools provides quick, descriptive calculators for game speed timing a
 ### Labs Speed Up Calculator
 
 - **Remaining research time** shows the gap between your current progress and the selected goal.
+- **Deadline** shows the end of the current Event window and the remaining real time available.
+- **Shortfall to deadline** shows the research time that is not covered by the remaining Event window.
 - The results table lists each boost option with the minimum number of boosts needed and the total cells required.
-- **Research time covered** shows the total research time produced by the listed boosts across your unlocked labs.
+- **Research time covered** shows the additional research time supplied by boosts in DD HH MM SS format.
+- **Possible by deadline** highlights which boosts can fit in the remaining Event window time.
+- **Labs unlock costs** only list labs you have not unlocked yet.
 
 ## Notes & Limitations
 
@@ -54,6 +58,9 @@ Calculator Tools provides quick, descriptive calculators for game speed timing a
 
 > **Note**
 > Wave Accelerator calculations use your Wave Accelerator card level and the card Effect value.
+
+> **Note**
+> Labs Speed Up uses midnight UTC at the end of the current Event window as the deadline for completing the goal.
 
 > **Note**
 > Labs Speed Up results assume all unlocked labs are running and that speedups apply to all active labs.

@@ -37,6 +37,7 @@ Economy metrics:
 - Cash Earned
 - Cells Earned
 - Reroll Shards Earned
+- Recent Coins per Hour
 - Stones Spent
 - Bits Spent
 
