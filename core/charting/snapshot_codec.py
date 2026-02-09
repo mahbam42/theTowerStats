@@ -37,6 +37,7 @@ def encode_chart_config_dto(config: ChartConfigDTO) -> dict[str, Any]:
         "group_by": config.group_by,
         "comparison": config.comparison,
         "smoothing": config.smoothing,
+        "aggregation": config.aggregation,
         "x_axis": config.x_axis,
         "context": context,
     }
@@ -110,6 +111,7 @@ def decode_chart_config_dto(payload: dict[str, Any]) -> ChartConfigDTO:
         group_by=str(payload.get("group_by") or "time"),  # type: ignore[arg-type]
         comparison=str(payload.get("comparison") or "none"),  # type: ignore[arg-type]
         smoothing=str(payload.get("smoothing") or "none"),  # type: ignore[arg-type]
+        aggregation=_parse_str(payload.get("aggregation")),  # type: ignore[arg-type]
         context=context,
         scopes=scopes,
         x_axis=str(payload.get("x_axis") or "time"),  # type: ignore[arg-type]

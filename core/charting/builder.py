@@ -47,6 +47,7 @@ class ChartBuilderSelection:
         comparison: Optional two-scope comparison mode.
         smoothing: Optional smoothing control (rolling average).
         x_axis: X-axis mode ("time" or "metric").
+        aggregation: Optional aggregation override ("sum" or "avg").
         scope_a: Scope A when `comparison` is enabled.
         scope_b: Scope B when `comparison` is enabled.
     """
@@ -57,6 +58,7 @@ class ChartBuilderSelection:
     comparison: ChartBuilderComparison
     smoothing: ChartBuilderSmoothing
     x_axis: ChartBuilderXAxis
+    aggregation: Literal["sum", "avg"] | None = None
     scope_a: ComparisonScope | None = None
     scope_b: ComparisonScope | None = None
 

@@ -37,7 +37,7 @@ Charts help you review how your run results change over time using the same valu
 * Select **Full screen** to view a single chart in a larger, focused modal.
 * Select **Download PNG** on a chart to save an image of the chart as currently displayed.
 * Select a chart tooltip to open the Battle Report Modal for that run. The linked chart opens with the full date range and preserves your current filters so you can see data immediately. For details, see [Battle Report Modal](battle_report_modal.md).
-* Open **Compare** to compare two scopes of runs. For details, see [Compare](charts/compare.md).
+* Select **Compare** to open the comparison modal. For details, see [Compare](charts/compare.md).
 * Open **Quick import** to paste a Battle Report without leaving the Charts page.
   * In **Quick import**, enable **Tournament run** when the run was a tournament round. The app cannot detect tournament runs automatically from pasted text.
 
@@ -65,7 +65,7 @@ Charts help you review how your run results change over time using the same valu
 - For **Free Upgrades by Run**, the **Total** badge confirms that hovering a bar shows the total of Attack, Defense, and Utility upgrades.
 - **Free Upgrades vs Coins Earned** compares total free upgrades to coins earned for each run.
 - If a point is flagged, the tooltip includes a short reason that explains the signal.
-- Advanced analysis sections summarize observed differences using the snapshots you selected and the current filters you applied. They describe the basis and limitations and do not recommend actions.
+- The Advice modal summarizes observed differences using the snapshots you selected and the current filters you applied. It describes the basis and limitations and does not recommend actions.
 - Goal-aware comparisons report a weighted percent-change index across multiple metrics. A positive value means the selected metrics increased, after applying your selected weights.
 - Compare results summarize two scopes. When you select multiple runs per scope, the Compare output includes a summary table for the selected **Summary focus** and omits metrics that do not have enough samples.
 

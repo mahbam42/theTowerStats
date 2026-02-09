@@ -110,3 +110,30 @@ def test_validate_explore_query_accepts_resource_rate_metrics() -> None:
     result = validate_explore_query(query, metric_registry=registry)
 
     assert result.errors == ()
+
+
+def test_validate_explore_query_allows_guardian_sum_and_avg() -> None:
+    """Guardian damage and summon metrics allow sum and avg aggregations."""
+
+    registry = build_explore_metric_registry()
+    for key in ("guardian_damage", "guardian_summoned_enemies"):
+        for aggregation in ("sum", "avg"):
+            query = ExploreQuery(
+                schema_version="1.0",
+                player_id="player-1",
+                name="Guardian aggregation check",
+                scope=ExploreScope(
+                    start_date=None,
+                    end_date=None,
+                    tier=None,
+                    preset_id=None,
+                    snapshot_id=None,
+                    past_n_runs=None,
+                ),
+                filters=(),
+                breakdowns=(ExploreBreakdown(dimension="tier", order=1),),
+                metrics=(ExploreMetricSelection(key=key, aggregation=aggregation),),
+                visualization_hint="table",
+            )
+            result = validate_explore_query(query, metric_registry=registry)
+            assert result.errors == ()

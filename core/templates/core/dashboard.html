@@ -39,6 +39,7 @@
         <input type="hidden" name="group_by" id="builder-group-by-hidden" value="{{ chart_builder_form.group_by.value|default_if_none:'' }}">
         <input type="hidden" name="comparison" id="builder-comparison-hidden" value="{{ chart_builder_form.comparison.value|default_if_none:'' }}">
         <input type="hidden" name="smoothing" id="builder-smoothing-hidden" value="{{ chart_builder_form.smoothing.value|default_if_none:'' }}">
+        <input type="hidden" name="aggregation" id="builder-aggregation-hidden" value="{{ chart_builder_form.aggregation.value|default_if_none:'' }}">
         <input type="hidden" name="run_a" id="builder-run-a-hidden" value="{{ chart_builder_form.run_a.value|default_if_none:'' }}">
         <input type="hidden" name="run_b" id="builder-run-b-hidden" value="{{ chart_builder_form.run_b.value|default_if_none:'' }}">
         <input type="hidden" name="window_a_start" id="builder-window-a-start-hidden" value="{{ chart_builder_form.window_a_start.value|default_if_none:'' }}">
@@ -219,11 +220,25 @@
             </div>
           </div>
 
-          <details class="margin-top-1">
-            <summary class="muted">Advanced analysis</summary>
+          <div class="margin-top-1">
+            <button class="button secondary" type="button" id="open-advice-modal">Advice</button>
+            <p class="help-text muted">Compare snapshots and review goal-aware summaries.</p>
+          </div>
+        </details>
+
+        <div class="modal-backdrop" id="advice-modal" aria-hidden="true">
+          <div class="modal-shell" role="dialog" aria-modal="true" aria-label="Advice">
+            <div class="grid-x grid-margin-x align-middle">
+              <div class="cell auto">
+                <h4 class="margin-0">Advice</h4>
+                <p class="muted margin-0">Advice is descriptive and based on the selected snapshots and current filters.</p>
+              </div>
+              <div class="cell shrink">
+                <button class="button secondary" type="button" id="close-advice-modal" data-modal-close>Close</button>
+              </div>
+            </div>
+
             <div class="margin-top-1">
-              <h5 class="margin-bottom-0">Advice</h5>
-              <p class="muted">Advice is descriptive and based on the selected snapshots and current filters.</p>
               <label>Snapshot A
                 <select name="advice_snapshot_a" id="advice-snapshot-a">
                   <option value="">(select)</option>
@@ -277,9 +292,23 @@
               <div class="button-group expanded stack-for-small margin-top-1">
                 <a class="button secondary" href="{% url 'core:export_derived_metrics_csv' %}?{{ request.GET.urlencode }}">Export derived metrics (CSV)</a>
               </div>
+
+              {% if advice_items %}
+                <div class="callout margin-top-1">
+                  <p class="margin-0"><strong>Advice (read-only)</strong></p>
+                  <ul class="margin-bottom-0">
+                    {% for item in advice_items %}
+                      <li>{{ item.title }}</li>
+                      <li>{{ item.basis }}</li>
+                      <li>{{ item.context }}</li>
+                      <li>{{ item.limitations }}</li>
+                    {% endfor %}
+                  </ul>
+                </div>
+              {% endif %}
             </div>
-          </details>
-        </details>
+          </div>
+        </div>
       </form>
     </div>
 
@@ -291,141 +320,6 @@
 
       {% include "core/partials/scope_summary.html" %}
       {% include "core/partials/why_panel.html" %}
-
-      {% if comparison_result %}
-        {% if comparison_scope_warning %}
-          <div class="callout warning" role="status">{{ comparison_scope_warning }}</div>
-        {% endif %}
-        <div class="callout success">
-	          <p class="margin-0"><strong>Deltas ({{ comparison_result.metric }})</strong></p>
-	          {% if comparison_result.kind == "runs" %}
-	            <p class="margin-0">
-	              Baseline: Run A ({{ comparison_result.label_a }}) • Comparison: Run B ({{ comparison_result.label_b }})
-	            </p>
-          {% elif comparison_result.kind == "run_sets" %}
-            <p class="margin-0">
-              Baseline: Scope A (runs={{ comparison_result.scope_a_run_count }}) • Comparison: Scope B (runs={{ comparison_result.scope_b_run_count }})
-            </p>
-            <p class="margin-0 muted">Summary focus: {{ comparison_result.summary_focus }}</p>
-            {% if comparison_result.scope_summary_mode %}
-              <p class="margin-0 muted">Scope summary: {{ comparison_result.scope_summary_mode }}</p>
-            {% endif %}
-            {% if not comparison_result.goal_aware_supported %}
-              <p class="margin-0 muted">Goal-aware summary is available only for Economy focus.</p>
-            {% endif %}
-          {% else %}
-            <p class="margin-0">
-              Baseline: Window A ({{ comparison_result.window_a.start_date }} to {{ comparison_result.window_a.end_date }})
-              • Comparison: Window B ({{ comparison_result.window_b.start_date }} to {{ comparison_result.window_b.end_date }})
-            </p>
-            <p class="margin-0 muted">Summary focus: {{ comparison_result.summary_focus }}</p>
-            {% if comparison_result.scope_summary_mode %}
-              <p class="margin-0 muted">Scope summary: {{ comparison_result.scope_summary_mode }}</p>
-            {% endif %}
-          {% endif %}
-	          <ul class="margin-bottom-0">
-	            {% if comparison_result.baseline_value is not None %}
-	              <li>Baseline: {{ comparison_result.baseline_value|floatformat:2 }} {{ comparison_result.metric }}</li>
-	            {% else %}
-	              <li>Baseline: n/a</li>
-	            {% endif %}
-	            {% if comparison_result.comparison_value is not None %}
-	              <li>Comparison: {{ comparison_result.comparison_value|floatformat:2 }} {{ comparison_result.metric }}</li>
-	            {% else %}
-	              <li>Comparison: n/a</li>
-	            {% endif %}
-	            {% if comparison_result.delta %}
-	              <li>Absolute: {{ comparison_result.delta.absolute|floatformat:2 }}</li>
-	              {% if comparison_result.percent_display is not None %}
-	                <li>Percent: {{ comparison_result.percent_display|floatformat:2 }}%</li>
-	              {% else %}
-	                <li>Percent: n/a (baseline is 0)</li>
-	              {% endif %}
-	            {% else %}
-	              <li>Absolute: n/a</li>
-	              <li>Percent: n/a</li>
-	            {% endif %}
-	          </ul>
-
-	          {% if comparison_result.metric_summaries %}
-	            <hr class="margin-top-1 margin-bottom-1">
-	            <p class="margin-0"><strong>Summary metrics</strong></p>
-	            <table class="stack">
-	              <thead>
-	                <tr>
-	                  <th>Metric</th>
-	                  <th>Scope A</th>
-	                  <th>Scope B</th>
-	                  <th>Δ</th>
-	                  <th>%</th>
-	                  <th>N(A)</th>
-	                  <th>N(B)</th>
-	                </tr>
-	              </thead>
-	              <tbody>
-	                {% for row in comparison_result.metric_summaries %}
-	                  <tr>
-	                    <td>{{ row.label }} <span class="muted">({{ row.unit }})</span></td>
-	                    <td>
-                        {% if row.baseline_value is not None %}
-                          <span class="metric-value" data-format="unit-value" data-unit="{{ row.unit }}" data-value="{{ row.baseline_value }}"></span>
-                        {% else %}
-                          n/a
-                        {% endif %}
-                      </td>
-	                    <td>
-                        {% if row.comparison_value is not None %}
-                          <span class="metric-value" data-format="unit-value" data-unit="{{ row.unit }}" data-value="{{ row.comparison_value }}"></span>
-                        {% else %}
-                          n/a
-                        {% endif %}
-                      </td>
-	                    <td>
-                        {% if row.delta %}
-                          <span class="metric-value" data-format="unit-value" data-unit="{{ row.unit }}" data-value="{{ row.delta.absolute }}"></span>
-                        {% else %}
-                          n/a
-                        {% endif %}
-                      </td>
-	                    <td>
-	                      {% if row.percent_display is not None %}
-                          <span class="metric-value" data-format="unit-value" data-unit="%" data-value="{{ row.percent_display }}" data-suffix="%"></span>
-	                      {% else %}
-	                        n/a
-	                      {% endif %}
-	                    </td>
-	                    <td>{{ row.baseline_n }}</td>
-	                    <td>{{ row.comparison_n }}</td>
-	                  </tr>
-	                {% endfor %}
-	              </tbody>
-	            </table>
-	          {% endif %}
-
-	          {% if comparison_result.metric_limitations %}
-	            <p class="margin-bottom-0"><strong>Limitations</strong></p>
-	            <ul class="margin-bottom-0">
-	              {% for limitation in comparison_result.metric_limitations %}
-	                <li>{{ limitation }}</li>
-	              {% endfor %}
-	            </ul>
-	          {% endif %}
-	        </div>
-	      {% endif %}
-
-      {% if advice_items %}
-        <div class="callout">
-          <p class="margin-0"><strong>Advice (read-only)</strong></p>
-          <ul class="margin-bottom-0">
-            {% for item in advice_items %}
-              <li>{{ item.title }}</li>
-              <li>{{ item.basis }}</li>
-              <li>{{ item.context }}</li>
-              <li>{{ item.limitations }}</li>
-            {% endfor %}
-          </ul>
-        </div>
-      {% endif %}
 
       {% if chart_empty_state %}
         <div class="empty-state" role="status">
@@ -485,157 +379,9 @@
 
     <div class="charts-controls">
       <div class="card-shell">
-        <details>
-          <summary class="muted">Compare</summary>
-          <form method="get" class="margin-top-1" id="compare-form">
-            <p class="help-text">Advice requires at least 3 runs in each scope unless Average each scope is enabled.</p>
-            <div class="grid-x grid-margin-x">
-              <div class="cell medium-6">
-                <label>{{ comparison_form.summary_focus.label }}
-                  {{ comparison_form.summary_focus }}
-                </label>
-              </div>
-              <div class="cell medium-6">
-                <label>
-                  {{ comparison_form.scope_average }}
-                  {{ comparison_form.scope_average.label }}
-                </label>
-                <p class="help-text">When enabled, Compare uses per-run averages to reduce skew from uneven scope sizes.</p>
-              </div>
-            </div>
-
-            <div class="grid-x grid-margin-x">
-              <div class="cell medium-6">
-                <label>{{ comparison_form.scope_a_runs.label }}
-                  {{ comparison_form.scope_a_runs }}
-                </label>
-                <div class="button-group tiny">
-                  <button type="button" class="button secondary compare-select-last-n" data-select-id="id_scope_a_runs" data-n="3">Last 3</button>
-                  <button type="button" class="button secondary compare-select-last-n" data-select-id="id_scope_a_runs" data-n="10">Last 10</button>
-                  <button type="button" class="button secondary compare-clear" data-select-id="id_scope_a_runs">Clear</button>
-                </div>
-                <label class="margin-top-0">Tier, Tournament, or Patch
-                  <select class="compare-tier-select" name="scope_a_tier" data-select-id="id_scope_a_runs">
-                    <option value="">Select a tier, tournament, patch, or preset</option>
-                    {% if compare_scope_tier_options %}
-                      <optgroup label="Tiers">
-                        {% for option in compare_scope_tier_options %}
-                          <option value="{{ option.value }}">{{ option.label }}</option>
-                        {% endfor %}
-                      </optgroup>
-                    {% endif %}
-                    {% if compare_scope_tournament_options %}
-                      <optgroup label="Tournaments">
-                        {% for option in compare_scope_tournament_options %}
-                          <option value="{{ option.value }}">{{ option.label }}</option>
-                        {% endfor %}
-                      </optgroup>
-                    {% endif %}
-                    {% if compare_scope_patch_options %}
-                      <optgroup label="Patch boundaries">
-                        {% for option in compare_scope_patch_options %}
-                          <option value="{{ option.value }}">{{ option.label }}</option>
-                        {% endfor %}
-                      </optgroup>
-                    {% endif %}
-                    {% if compare_scope_preset_options %}
-                      <optgroup label="Presets">
-                        {% for option in compare_scope_preset_options %}
-                          <option value="{{ option.value }}">{{ option.label }}</option>
-                        {% endfor %}
-                      </optgroup>
-                    {% endif %}
-                  </select>
-                </label>
-                <p class="help-text">Selects all recorded runs matching this tier, tournament, patch window, or preset.</p>
-              </div>
-              <div class="cell medium-6">
-                <label>{{ comparison_form.scope_b_runs.label }}
-                  {{ comparison_form.scope_b_runs }}
-                </label>
-                <div class="button-group tiny">
-                  <button type="button" class="button secondary compare-select-last-n" data-select-id="id_scope_b_runs" data-n="3">Last 3</button>
-                  <button type="button" class="button secondary compare-select-last-n" data-select-id="id_scope_b_runs" data-n="10">Last 10</button>
-                  <button type="button" class="button secondary compare-clear" data-select-id="id_scope_b_runs">Clear</button>
-                </div>
-                <label class="margin-top-0">Tier, Tournament, or Patch
-                  <select class="compare-tier-select" name="scope_b_tier" data-select-id="id_scope_b_runs">
-                    <option value="">Select a tier, tournament, patch, or preset</option>
-                    {% if compare_scope_tier_options %}
-                      <optgroup label="Tiers">
-                        {% for option in compare_scope_tier_options %}
-                          <option value="{{ option.value }}">{{ option.label }}</option>
-                        {% endfor %}
-                      </optgroup>
-                    {% endif %}
-                    {% if compare_scope_tournament_options %}
-                      <optgroup label="Tournaments">
-                        {% for option in compare_scope_tournament_options %}
-                          <option value="{{ option.value }}">{{ option.label }}</option>
-                        {% endfor %}
-                      </optgroup>
-                    {% endif %}
-                    {% if compare_scope_patch_options %}
-                      <optgroup label="Patch boundaries">
-                        {% for option in compare_scope_patch_options %}
-                          <option value="{{ option.value }}">{{ option.label }}</option>
-                        {% endfor %}
-                      </optgroup>
-                    {% endif %}
-                    {% if compare_scope_preset_options %}
-                      <optgroup label="Presets">
-                        {% for option in compare_scope_preset_options %}
-                          <option value="{{ option.value }}">{{ option.label }}</option>
-                        {% endfor %}
-                      </optgroup>
-                    {% endif %}
-                  </select>
-                </label>
-                <p class="help-text">Selects all recorded runs matching this tier, tournament, patch window, or preset.</p>
-              </div>
-            </div>
-
-            <details class="margin-top-1">
-              <summary class="muted">Window vs window (date ranges)</summary>
-              <div class="grid-x grid-margin-x margin-top-1">
-                <div class="cell medium-6">
-                  <label>{{ comparison_form.window_a_start.label }}
-                    {{ comparison_form.window_a_start }}
-                  </label>
-                  <label>{{ comparison_form.window_a_end.label }}
-                    {{ comparison_form.window_a_end }}
-                  </label>
-                </div>
-                <div class="cell medium-6">
-                  <label>{{ comparison_form.window_b_start.label }}
-                    {{ comparison_form.window_b_start }}
-                  </label>
-                  <label>{{ comparison_form.window_b_end.label }}
-                    {{ comparison_form.window_b_end }}
-                  </label>
-                </div>
-              </div>
-            </details>
-
-            <details class="margin-top-1">
-              <summary class="muted">Run vs run (fallback; advice unavailable)</summary>
-              <div class="grid-x grid-margin-x margin-top-1">
-                <div class="cell medium-6">
-                  <label>{{ comparison_form.run_a.label }}
-                    {{ comparison_form.run_a }}
-                  </label>
-                </div>
-                <div class="cell medium-6">
-                  <label>{{ comparison_form.run_b.label }}
-                    {{ comparison_form.run_b }}
-                  </label>
-                </div>
-              </div>
-            </details>
-
-            <button class="button secondary" type="submit">Compare</button>
-          </form>
-        </details>
+        <h5 class="margin-bottom-0">Compare</h5>
+        <p class="muted margin-top-0">Compare two scopes without changing the charts.</p>
+        <button class="button secondary" type="button" id="open-compare-modal">Compare</button>
       </div>
 
       {% if not demo_mode %}
@@ -1368,24 +1114,31 @@
             <h5 class="margin-bottom-0">Step 2 — Chart settings</h5>
             <p class="muted margin-top-0">Chart type and grouping apply to the selected metrics.</p>
             <div class="grid-x grid-margin-x">
-              <div class="cell medium-3">
+              <div class="cell medium-4">
                 <label>{{ chart_builder_form.chart_type.label }}
                   {{ chart_builder_form.chart_type }}
                 </label>
               </div>
-              <div class="cell medium-3">
+              <div class="cell medium-4">
                 <label>{{ chart_builder_form.x_axis.label }}
                   {{ chart_builder_form.x_axis }}
                 </label>
               </div>
-              <div class="cell medium-3">
+              <div class="cell medium-4">
                 <label>{{ chart_builder_form.group_by.label }}
                   {{ chart_builder_form.group_by }}
                 </label>
               </div>
-              <div class="cell medium-3">
+            </div>
+            <div class="grid-x grid-margin-x">
+              <div class="cell medium-4">
                 <label>{{ chart_builder_form.smoothing.label }}
                   {{ chart_builder_form.smoothing }}
+                </label>
+              </div>
+              <div class="cell medium-4">
+                <label>{{ chart_builder_form.aggregation.label }}
+                  {{ chart_builder_form.aggregation }}
                 </label>
               </div>
             </div>
@@ -1460,6 +1213,7 @@
                   <input type="hidden" name="group_by" id="saved-chart-group-by-hidden" value="">
                   <input type="hidden" name="comparison" id="saved-chart-comparison-hidden" value="">
                   <input type="hidden" name="smoothing" id="saved-chart-smoothing-hidden" value="">
+                  <input type="hidden" name="aggregation" id="saved-chart-aggregation-hidden" value="">
                   <input type="hidden" name="run_a" id="saved-chart-run-a-hidden" value="">
                   <input type="hidden" name="run_b" id="saved-chart-run-b-hidden" value="">
                   <input type="hidden" name="window_a_start" id="saved-chart-window-a-start-hidden" value="">
@@ -1526,6 +1280,7 @@
               <input type="hidden" name="group_by" id="snapshot-group-by-hidden" value="">
               <input type="hidden" name="comparison" id="snapshot-comparison-hidden" value="">
               <input type="hidden" name="smoothing" id="snapshot-smoothing-hidden" value="">
+              <input type="hidden" name="aggregation" id="snapshot-aggregation-hidden" value="">
               <input type="hidden" name="run_a" id="snapshot-run-a-hidden" value="">
               <input type="hidden" name="run_b" id="snapshot-run-b-hidden" value="">
               <input type="hidden" name="window_a_start" id="snapshot-window-a-start-hidden" value="">
@@ -1593,6 +1348,291 @@
             </div>
             <div class="explore-chart-legend" data-explore-modal-legend></div>
           </div>
+        </div>
+      </div>
+    </div>
+
+    <div class="modal-backdrop" id="compare-modal" aria-hidden="true">
+      <div class="modal-shell" role="dialog" aria-modal="true" aria-label="Compare">
+        <div class="grid-x grid-margin-x align-middle">
+          <div class="cell auto">
+            <h4 class="margin-0">Compare</h4>
+            <p class="muted margin-0">Compare two scopes without changing the charts.</p>
+          </div>
+          <div class="cell shrink">
+            <button class="button secondary" type="button" id="close-compare-modal" data-modal-close>Close</button>
+          </div>
+        </div>
+        <div class="margin-top-1">
+          {% if comparison_scope_warning %}
+            <div class="callout warning" role="status">{{ comparison_scope_warning }}</div>
+          {% endif %}
+          {% if comparison_result %}
+            <div class="callout success">
+              <p class="margin-0"><strong>Deltas ({{ comparison_result.metric }})</strong></p>
+              {% if comparison_result.kind == "runs" %}
+                <p class="margin-0">
+                  Baseline: Run A ({{ comparison_result.label_a }}) • Comparison: Run B ({{ comparison_result.label_b }})
+                </p>
+              {% elif comparison_result.kind == "run_sets" %}
+                <p class="margin-0">
+                  Baseline: Scope A (runs={{ comparison_result.scope_a_run_count }}) • Comparison: Scope B (runs={{ comparison_result.scope_b_run_count }})
+                </p>
+                <p class="margin-0 muted">Summary focus: {{ comparison_result.summary_focus }}</p>
+                {% if comparison_result.scope_summary_mode %}
+                  <p class="margin-0 muted">Scope summary: {{ comparison_result.scope_summary_mode }}</p>
+                {% endif %}
+                {% if not comparison_result.goal_aware_supported %}
+                  <p class="margin-0 muted">Goal-aware summary is available only for Economy focus.</p>
+                {% endif %}
+              {% else %}
+                <p class="margin-0">
+                  Baseline: Window A ({{ comparison_result.window_a.start_date }} to {{ comparison_result.window_a.end_date }})
+                  • Comparison: Window B ({{ comparison_result.window_b.start_date }} to {{ comparison_result.window_b.end_date }})
+                </p>
+                <p class="margin-0 muted">Summary focus: {{ comparison_result.summary_focus }}</p>
+                {% if comparison_result.scope_summary_mode %}
+                  <p class="margin-0 muted">Scope summary: {{ comparison_result.scope_summary_mode }}</p>
+                {% endif %}
+              {% endif %}
+              <ul class="margin-bottom-0">
+                {% if comparison_result.baseline_value is not None %}
+                  <li>Baseline: {{ comparison_result.baseline_value|floatformat:2 }} {{ comparison_result.metric }}</li>
+                {% else %}
+                  <li>Baseline: n/a</li>
+                {% endif %}
+                {% if comparison_result.comparison_value is not None %}
+                  <li>Comparison: {{ comparison_result.comparison_value|floatformat:2 }} {{ comparison_result.metric }}</li>
+                {% else %}
+                  <li>Comparison: n/a</li>
+                {% endif %}
+                {% if comparison_result.delta %}
+                  <li>Absolute: {{ comparison_result.delta.absolute|floatformat:2 }}</li>
+                  {% if comparison_result.percent_display is not None %}
+                    <li>Percent: {{ comparison_result.percent_display|floatformat:2 }}%</li>
+                  {% else %}
+                    <li>Percent: n/a (baseline is 0)</li>
+                  {% endif %}
+                {% else %}
+                  <li>Absolute: n/a</li>
+                  <li>Percent: n/a</li>
+                {% endif %}
+              </ul>
+
+              {% if comparison_result.metric_summaries %}
+                <hr class="margin-top-1 margin-bottom-1">
+                <p class="margin-0"><strong>Summary metrics</strong></p>
+                <table class="stack">
+                  <thead>
+                    <tr>
+                      <th>Metric</th>
+                      <th>Scope A</th>
+                      <th>Scope B</th>
+                      <th>Δ</th>
+                      <th>%</th>
+                      <th>N(A)</th>
+                      <th>N(B)</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {% for row in comparison_result.metric_summaries %}
+                      <tr>
+                        <td>{{ row.label }} <span class="muted">({{ row.unit }})</span></td>
+                        <td>
+                          {% if row.baseline_value is not None %}
+                            <span class="metric-value" data-format="unit-value" data-unit="{{ row.unit }}" data-value="{{ row.baseline_value }}"></span>
+                          {% else %}
+                            n/a
+                          {% endif %}
+                        </td>
+                        <td>
+                          {% if row.comparison_value is not None %}
+                            <span class="metric-value" data-format="unit-value" data-unit="{{ row.unit }}" data-value="{{ row.comparison_value }}"></span>
+                          {% else %}
+                            n/a
+                          {% endif %}
+                        </td>
+                        <td>
+                          {% if row.delta %}
+                            <span class="metric-value" data-format="unit-value" data-unit="{{ row.unit }}" data-value="{{ row.delta.absolute }}"></span>
+                          {% else %}
+                            n/a
+                          {% endif %}
+                        </td>
+                        <td>
+                          {% if row.percent_display is not None %}
+                            <span class="metric-value" data-format="unit-value" data-unit="%" data-value="{{ row.percent_display }}" data-suffix="%"></span>
+                          {% else %}
+                            n/a
+                          {% endif %}
+                        </td>
+                        <td>{{ row.baseline_n }}</td>
+                        <td>{{ row.comparison_n }}</td>
+                      </tr>
+                    {% endfor %}
+                  </tbody>
+                </table>
+              {% endif %}
+
+              {% if comparison_result.metric_limitations %}
+                <p class="margin-bottom-0"><strong>Limitations</strong></p>
+                <ul class="margin-bottom-0">
+                  {% for limitation in comparison_result.metric_limitations %}
+                    <li>{{ limitation }}</li>
+                  {% endfor %}
+                </ul>
+              {% endif %}
+            </div>
+          {% endif %}
+
+          <form method="get" class="margin-top-1" id="compare-form">
+            <p class="help-text">Advice requires at least 3 runs in each scope unless Average each scope is enabled.</p>
+            <div class="grid-x grid-margin-x">
+              <div class="cell medium-6">
+                <label>{{ comparison_form.summary_focus.label }}
+                  {{ comparison_form.summary_focus }}
+                </label>
+              </div>
+              <div class="cell medium-6">
+                <label>
+                  {{ comparison_form.scope_average }}
+                  {{ comparison_form.scope_average.label }}
+                </label>
+                <p class="help-text">When enabled, Compare uses per-run averages to reduce skew from uneven scope sizes.</p>
+              </div>
+            </div>
+
+            <div class="grid-x grid-margin-x">
+              <div class="cell medium-6">
+                <label>{{ comparison_form.scope_a_runs.label }}
+                  {{ comparison_form.scope_a_runs }}
+                </label>
+                <div class="button-group tiny">
+                  <button type="button" class="button secondary compare-select-last-n" data-select-id="id_scope_a_runs" data-n="3">Last 3</button>
+                  <button type="button" class="button secondary compare-select-last-n" data-select-id="id_scope_a_runs" data-n="10">Last 10</button>
+                  <button type="button" class="button secondary compare-clear" data-select-id="id_scope_a_runs">Clear</button>
+                </div>
+                <label class="margin-top-0">Tier, Tournament, or Patch
+                  <select class="compare-tier-select" name="scope_a_tier" data-select-id="id_scope_a_runs">
+                    <option value="">Select a tier, tournament, patch, or preset</option>
+                    {% if compare_scope_tier_options %}
+                      <optgroup label="Tiers">
+                        {% for option in compare_scope_tier_options %}
+                          <option value="{{ option.value }}">{{ option.label }}</option>
+                        {% endfor %}
+                      </optgroup>
+                    {% endif %}
+                    {% if compare_scope_tournament_options %}
+                      <optgroup label="Tournaments">
+                        {% for option in compare_scope_tournament_options %}
+                          <option value="{{ option.value }}">{{ option.label }}</option>
+                        {% endfor %}
+                      </optgroup>
+                    {% endif %}
+                    {% if compare_scope_patch_options %}
+                      <optgroup label="Patch boundaries">
+                        {% for option in compare_scope_patch_options %}
+                          <option value="{{ option.value }}">{{ option.label }}</option>
+                        {% endfor %}
+                      </optgroup>
+                    {% endif %}
+                    {% if compare_scope_preset_options %}
+                      <optgroup label="Presets">
+                        {% for option in compare_scope_preset_options %}
+                          <option value="{{ option.value }}">{{ option.label }}</option>
+                        {% endfor %}
+                      </optgroup>
+                    {% endif %}
+                  </select>
+                </label>
+                <p class="help-text">Selects all recorded runs matching this tier, tournament, patch window, or preset.</p>
+              </div>
+              <div class="cell medium-6">
+                <label>{{ comparison_form.scope_b_runs.label }}
+                  {{ comparison_form.scope_b_runs }}
+                </label>
+                <div class="button-group tiny">
+                  <button type="button" class="button secondary compare-select-last-n" data-select-id="id_scope_b_runs" data-n="3">Last 3</button>
+                  <button type="button" class="button secondary compare-select-last-n" data-select-id="id_scope_b_runs" data-n="10">Last 10</button>
+                  <button type="button" class="button secondary compare-clear" data-select-id="id_scope_b_runs">Clear</button>
+                </div>
+                <label class="margin-top-0">Tier, Tournament, or Patch
+                  <select class="compare-tier-select" name="scope_b_tier" data-select-id="id_scope_b_runs">
+                    <option value="">Select a tier, tournament, patch, or preset</option>
+                    {% if compare_scope_tier_options %}
+                      <optgroup label="Tiers">
+                        {% for option in compare_scope_tier_options %}
+                          <option value="{{ option.value }}">{{ option.label }}</option>
+                        {% endfor %}
+                      </optgroup>
+                    {% endif %}
+                    {% if compare_scope_tournament_options %}
+                      <optgroup label="Tournaments">
+                        {% for option in compare_scope_tournament_options %}
+                          <option value="{{ option.value }}">{{ option.label }}</option>
+                        {% endfor %}
+                      </optgroup>
+                    {% endif %}
+                    {% if compare_scope_patch_options %}
+                      <optgroup label="Patch boundaries">
+                        {% for option in compare_scope_patch_options %}
+                          <option value="{{ option.value }}">{{ option.label }}</option>
+                        {% endfor %}
+                      </optgroup>
+                    {% endif %}
+                    {% if compare_scope_preset_options %}
+                      <optgroup label="Presets">
+                        {% for option in compare_scope_preset_options %}
+                          <option value="{{ option.value }}">{{ option.label }}</option>
+                        {% endfor %}
+                      </optgroup>
+                    {% endif %}
+                  </select>
+                </label>
+                <p class="help-text">Selects all recorded runs matching this tier, tournament, patch window, or preset.</p>
+              </div>
+            </div>
+
+            <details class="margin-top-1">
+              <summary class="muted">Window vs window (date ranges)</summary>
+              <div class="grid-x grid-margin-x margin-top-1">
+                <div class="cell medium-6">
+                  <label>{{ comparison_form.window_a_start.label }}
+                    {{ comparison_form.window_a_start }}
+                  </label>
+                  <label>{{ comparison_form.window_a_end.label }}
+                    {{ comparison_form.window_a_end }}
+                  </label>
+                </div>
+                <div class="cell medium-6">
+                  <label>{{ comparison_form.window_b_start.label }}
+                    {{ comparison_form.window_b_start }}
+                  </label>
+                  <label>{{ comparison_form.window_b_end.label }}
+                    {{ comparison_form.window_b_end }}
+                  </label>
+                </div>
+              </div>
+            </details>
+
+            <details class="margin-top-1">
+              <summary class="muted">Run vs run (fallback; advice unavailable)</summary>
+              <div class="grid-x grid-margin-x margin-top-1">
+                <div class="cell medium-6">
+                  <label>{{ comparison_form.run_a.label }}
+                    {{ comparison_form.run_a }}
+                  </label>
+                </div>
+                <div class="cell medium-6">
+                  <label>{{ comparison_form.run_b.label }}
+                    {{ comparison_form.run_b }}
+                  </label>
+                </div>
+              </div>
+            </details>
+
+            <button class="button secondary" type="submit">Compare</button>
+          </form>
         </div>
       </div>
     </div>
@@ -1716,6 +1756,7 @@
           const groupBy = document.querySelector("#chart-builder-modal [name='group_by']");
           const comparison = document.querySelector("#chart-builder-modal [name='comparison']");
           const smoothing = document.querySelector("#chart-builder-modal [name='smoothing']");
+          const aggregation = document.querySelector("#chart-builder-modal [name='aggregation']");
           const runA = document.querySelector("#chart-builder-modal [name='run_a']");
           const runB = document.querySelector("#chart-builder-modal [name='run_b']");
           const aStart = document.querySelector("#chart-builder-modal [name='window_a_start']");
@@ -1737,6 +1778,7 @@
           setHidden("builder-group-by-hidden", groupBy ? groupBy.value : "");
           setHidden("builder-comparison-hidden", comparison ? comparison.value : "");
           setHidden("builder-smoothing-hidden", smoothing ? smoothing.value : "");
+          setHidden("builder-aggregation-hidden", aggregation ? aggregation.value : "");
           setHidden("builder-run-a-hidden", runA ? runA.value : "");
           setHidden("builder-run-b-hidden", runB ? runB.value : "");
           setHidden("builder-window-a-start-hidden", aStart ? aStart.value : "");
@@ -1791,6 +1833,7 @@
           const groupBy = document.querySelector("#chart-builder-modal [name='group_by']");
           const comparison = document.querySelector("#chart-builder-modal [name='comparison']");
           const smoothing = document.querySelector("#chart-builder-modal [name='smoothing']");
+          const aggregation = document.querySelector("#chart-builder-modal [name='aggregation']");
           const runA = document.querySelector("#chart-builder-modal [name='run_a']");
           const runB = document.querySelector("#chart-builder-modal [name='run_b']");
           const aStart = document.querySelector("#chart-builder-modal [name='window_a_start']");
@@ -1811,6 +1854,7 @@
           setHidden(`${prefix}-group-by-hidden`, groupBy ? groupBy.value : "");
           setHidden(`${prefix}-comparison-hidden`, comparison ? comparison.value : "");
           setHidden(`${prefix}-smoothing-hidden`, smoothing ? smoothing.value : "");
+          setHidden(`${prefix}-aggregation-hidden`, aggregation ? aggregation.value : "");
           setHidden(`${prefix}-run-a-hidden`, runA ? runA.value : "");
           setHidden(`${prefix}-run-b-hidden`, runB ? runB.value : "");
           setHidden(`${prefix}-window-a-start-hidden`, aStart ? aStart.value : "");
@@ -1918,6 +1962,7 @@
             if (groupBySelect) groupBySelect.value = payload.group_by || "time";
             if (comparisonSelect) comparisonSelect.value = payload.comparison || "none";
             if (smoothingSelect) smoothingSelect.value = payload.smoothing || "none";
+            if (aggregationSelect) aggregationSelect.value = payload.aggregation || "";
             if (runASelect) runASelect.value = payload.run_a || "";
             if (runBSelect) runBSelect.value = payload.run_b || "";
             if (windowInputs[0]) windowInputs[0].value = payload.window_a_start || "";
@@ -1926,6 +1971,7 @@
             if (windowInputs[3]) windowInputs[3].value = payload.window_b_end || "";
             updateChartTypeConstraints();
             enforceSchemaConstraints();
+            updateMetricCompatibility();
           }
 
           function syncSavedSelection() {
@@ -2010,6 +2056,7 @@
         const groupBySelect = document.querySelector("#chart-builder-modal [name='group_by']");
         const comparisonSelect = document.querySelector("#chart-builder-modal [name='comparison']");
         const smoothingSelect = document.querySelector("#chart-builder-modal [name='smoothing']");
+        const aggregationSelect = document.querySelector("#chart-builder-modal [name='aggregation']");
         const constraintsBox = document.getElementById("builder-constraints");
         const constraintsText = document.getElementById("builder-constraints-text");
         const runASelect = document.querySelector("#chart-builder-modal [name='run_a']");
@@ -2029,6 +2076,43 @@
           if (!metricsSelect || !metricsSelect.options) return 0;
           for (const option of metricsSelect.options) if (option.selected) count += 1;
           return count;
+        }
+
+        function aggregationOptions(keys) {
+          let allowed = null;
+          for (const key of keys) {
+            const meta = chartBuilderMetricMeta[key];
+            if (!meta || !meta.allowed_aggregations) continue;
+            const optionSet = new Set(meta.allowed_aggregations || []);
+            if (!allowed) {
+              allowed = optionSet;
+            } else {
+              allowed = new Set([...allowed].filter((value) => optionSet.has(value)));
+            }
+          }
+          if (!allowed) return [];
+          return ["sum", "avg"].filter((agg) => allowed.has(agg));
+        }
+
+        function updateAggregationOptions(keys) {
+          if (!aggregationSelect) return;
+          if (!keys.length) {
+            aggregationSelect.disabled = true;
+            return;
+          }
+          const options = aggregationOptions(keys);
+          for (const option of aggregationSelect.options) {
+            option.disabled = !options.includes(option.value);
+          }
+          if (!options.length) {
+            aggregationSelect.disabled = true;
+            return;
+          }
+          if (!options.includes(aggregationSelect.value)) {
+            aggregationSelect.value = options[0];
+          }
+          const axisMode = xAxisSelect ? xAxisSelect.value : "time";
+          aggregationSelect.disabled = axisMode === "metric" || options.length === 1;
         }
 
         function updateChartTypeConstraints() {
@@ -2148,6 +2232,7 @@
             if (groupBySelect) groupBySelect.disabled = true;
             if (comparisonSelect) comparisonSelect.disabled = true;
             if (smoothingSelect) smoothingSelect.disabled = true;
+            if (aggregationSelect) aggregationSelect.disabled = true;
             if (runASelect) runASelect.disabled = true;
             if (runBSelect) runBSelect.disabled = true;
             for (const input of windowInputs) {
@@ -2162,6 +2247,7 @@
           if (xAxisSelect) xAxisSelect.disabled = false;
           if (comparisonSelect) comparisonSelect.disabled = false;
           if (smoothingSelect) smoothingSelect.disabled = false;
+          updateAggregationOptions(keys);
           if (groupBySelect) groupBySelect.disabled = false;
           enforceSchemaConstraints();
           updateComparisonControls();
@@ -2234,6 +2320,46 @@
         {% if chart_builder_errors %}
           openModal();
         {% endif %}
+      })();
+    </script>
+
+    <script>
+      (function() {
+        function bindModal(modalId, openId, closeId) {
+          const modal = document.getElementById(modalId);
+          const openBtn = document.getElementById(openId);
+          const closeBtn = document.getElementById(closeId);
+          if (!modal || !openBtn || !closeBtn) return;
+
+          function openModal() {
+            modal.classList.add("is-open");
+            modal.setAttribute("aria-hidden", "false");
+            modal.dataset.returnFocusId = openId;
+            closeBtn.focus();
+          }
+
+          function closeModal() {
+            modal.classList.remove("is-open");
+            modal.setAttribute("aria-hidden", "true");
+            const returnId = modal.dataset.returnFocusId;
+            if (returnId) {
+              const target = document.getElementById(returnId);
+              if (target) target.focus();
+            }
+          }
+
+          openBtn.addEventListener("click", openModal);
+          closeBtn.addEventListener("click", closeModal);
+          modal.addEventListener("click", (ev) => {
+            if (ev.target === modal) closeModal();
+          });
+          modal.addEventListener("keydown", (ev) => {
+            if (ev.key === "Escape") closeModal();
+          });
+        }
+
+        bindModal("compare-modal", "open-compare-modal", "close-compare-modal");
+        bindModal("advice-modal", "open-advice-modal", "close-advice-modal");
       })();
     </script>
 

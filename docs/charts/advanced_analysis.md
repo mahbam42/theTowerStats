@@ -2,7 +2,7 @@
 
 ## Overview
 
-Advanced Analysis collects the tools that compare snapshots, summarize changes, and export derived metrics. It helps you review differences without changing your stored runs.
+Advanced Analysis collects the tools that compare snapshots, summarize changes, and export derived metrics. It is accessed through the Advice modal on the Charts dashboard.
 
 ## When to Use This
 
@@ -13,12 +13,13 @@ Advanced Analysis collects the tools that compare snapshots, summarize changes, 
 ## How to Use
 
 1. Select **Charts** in the navigation.
-2. Select **Advanced analysis** to expand the panel.
+2. Select **Advice** to open the Advice modal.
 3. Select **Snapshot A** to anchor the comparison.
 4. Select a comparison mode for Advice.
 5. Select **Snapshot B** when comparing snapshot to snapshot.
 6. Review or adjust the goal weights for a goal-aware summary.
 7. Select **Export derived metrics (CSV)** to download a snapshot of derived chart values.
+8. Select **Close** to return to the dashboard.
 
 ## How to Read the Results
 

@@ -120,14 +120,14 @@ Utility metrics:
 | Guardian coins stolen | guardian_coins_stolen | Battle Report (observed) | Battle Report Guardian section: coins stolen (rolls up into Coins Earned by Source). |
 | Common Modules | guardian_common_modules_fetched | Battle Report (observed) | Battle Report Guardian section: common modules fetched. |
 | Core Shards | guardian_core_shards_fetched | Battle Report (observed) | Battle Report Guardian section: core shards fetched. |
-| Guardian Damage | guardian_damage | Battle Report (observed) | Battle Report Guardian section: damage dealt by the Guardian. |
+| Guardian Damage | guardian_damage | Battle Report (observed) | Battle Report Guardian section: damage dealt by the Guardian. Explore and Chart Builder support Sum and Average for this metric. |
 | Gems | guardian_gems_fetched | Battle Report (observed) | Battle Report Guardian section: gems fetched. |
 | Generator Shards | guardian_generator_shards_fetched | Battle Report (observed) | Battle Report Guardian section: generator shards fetched. |
 | Medals | guardian_medals_fetched | Battle Report (observed) | Battle Report Guardian section: medals fetched. |
 | Rare Modules | guardian_rare_modules_fetched | Battle Report (observed) | Battle Report Guardian section: rare modules fetched. |
 | Reroll Shards | guardian_reroll_shards_fetched | Battle Report (observed) | Battle Report Guardian section: reroll shards fetched. |
 | Runs using selected guardian chip | guardian_runs_count | Planned (not yet ingested) | Guardian chip presence per run is planned and not populated yet. |
-| Guardian Summoned Enemies | guardian_summoned_enemies | Battle Report (observed) | Battle Report Guardian section: summoned enemies count. |
+| Guardian Summoned Enemies | guardian_summoned_enemies | Battle Report (observed) | Battle Report Guardian section: summoned enemies count. Explore and Chart Builder support Sum and Average for this metric. |
 | Inner Land Mine Damage | inner_land_mine_damage | Battle Report (observed) |  |
 | Interest earned | interest_earned | Battle Report (observed) | Observed interest earned from Battle Reports. |
 | Land Mine Damage | land_mine_damage | Battle Report (observed) |  |

@@ -61,7 +61,7 @@ Explore helps you build your own questions about past runs and see aggregated an
 > Queries are player-scoped. Results are based only on your own runs.
 
 > ⚠️ Note
-> Average is available only for currency, counter, and time metrics.
+> Average is available for currency, counter, time, and Guardian Damage metrics.
 
 > ⚠️ Note
 > Percent of total uses the current breakdown total and shows blank values when the total is zero.

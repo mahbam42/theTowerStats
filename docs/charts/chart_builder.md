@@ -21,13 +21,14 @@ Chart Builder lets you create a custom chart from the available metrics and appl
 3. In **Step 1 — Metrics**, select one or more metrics to chart.
 4. Review any constraint or availability messages shown for the metric selections.
 5. In **Step 2 — Chart settings**, select the chart style (Line, Area, Bar, Scatter, or Donut) and the X-axis mode (**Time** or **Metric vs metric**).
-6. (Optional) In **Step 3 — Comparison**, select a comparison mode when you want an additional line or grouping.
-7. Select **Apply to dashboard** to add the custom chart to the dashboard.
-8. (Optional) Use **Saved charts** to load a previously saved Chart Builder entry.
-9. (Optional) Enter a name and select **Save chart builder entry** to save or update the current setup.
-10. (Optional) Select **Delete saved chart** to remove a saved entry you no longer need.
-11. (Optional) Select **Save snapshot** to save the current builder selections under a name.
-12. (Optional) Select **Load snapshot** to restore a previously saved chart configuration.
+6. If **Aggregation** is available, select **Sum** or **Average**.
+7. (Optional) In **Step 3 — Comparison**, select a comparison mode when you want an additional line or grouping.
+8. Select **Apply to dashboard** to add the custom chart to the dashboard.
+9. (Optional) Use **Saved charts** to load a previously saved Chart Builder entry.
+10. (Optional) Enter a name and select **Save chart builder entry** to save or update the current setup.
+11. (Optional) Select **Delete saved chart** to remove a saved entry you no longer need.
+12. (Optional) Select **Save snapshot** to save the current builder selections under a name.
+13. (Optional) Select **Load snapshot** to restore a previously saved chart configuration.
 
 ### Example: Free Upgrades vs Coins Earned (Scatter)
 
@@ -42,6 +43,7 @@ Chart Builder lets you create a custom chart from the available metrics and appl
 - The preview and the applied chart reflect your current Charts filters (date window, tier, preset, and other options).
 - Constraint messages explain when a selection cannot be shown for the current scope (for example, missing values or not enough runs).
 - **Time** uses dates or run labels on the X-axis, while **Metric vs metric** compares two selected values per run.
+- **Aggregation** controls whether per-day values are summed or averaged before charting.
 - If a chart shows multiple lines, the legend describes what each line represents for the comparison you selected.
 - If a chart shows gaps, at least one run in the scope is missing the underlying value for that point.
 - Saved charts store your Chart Builder selections so you can reuse and adjust them later.

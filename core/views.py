@@ -59,7 +59,7 @@ from analysis.dto import RunAnalysis
 from analysis.metrics import MetricComputeConfig, compute_metric_value, get_metric_definition
 from analysis.quantity import UnitType
 from analysis.rates import coins_per_hour as coins_per_hour_rate
-from analysis.series_registry import DEFAULT_REGISTRY
+from analysis.series_registry import DEFAULT_REGISTRY, allowed_chart_builder_aggregations
 from core.demo import DEMO_USERNAME, demo_mode_enabled, get_demo_player, set_demo_mode
 from core.changelog import latest_changelog_summary
 from core.parsers.battle_report import battle_date_is_fallback
@@ -433,6 +433,7 @@ def dashboard(request: HttpRequest) -> HttpResponse:
                 merged["group_by"] = config_dto.group_by
                 merged["comparison"] = config_dto.comparison
                 merged["smoothing"] = config_dto.smoothing
+                merged["aggregation"] = config_dto.aggregation or ""
                 merged["x_axis"] = config_dto.x_axis
                 if config_dto.scopes is not None:
                     merged["run_a"] = str(config_dto.scopes[0].run_id or "")
@@ -1029,6 +1030,8 @@ def dashboard(request: HttpRequest) -> HttpResponse:
                     "unit": spec.unit,
                     "category": str(spec.category),
                     "supports_rolling_avg": ("moving_average" in spec.allowed_transforms),
+                    "default_aggregation": spec.aggregation,
+                    "allowed_aggregations": list(allowed_chart_builder_aggregations(spec)),
                 }
                 for spec in DEFAULT_REGISTRY.list()
             }
@@ -1762,6 +1765,7 @@ def _chart_builder_payload(builder_form: ChartBuilderForm) -> dict[str, object]:
         "group_by": builder_form.cleaned_data.get("group_by"),
         "comparison": builder_form.cleaned_data.get("comparison"),
         "smoothing": builder_form.cleaned_data.get("smoothing"),
+        "aggregation": builder_form.cleaned_data.get("aggregation") or "",
         "run_a": getattr(run_a, "id", None) or "",
         "run_b": getattr(run_b, "id", None) or "",
         "window_a_start": window_a_start.isoformat() if window_a_start else "",

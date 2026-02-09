@@ -112,7 +112,8 @@ def analyze_chart_config_dto(
             continue
         groups = _group_points(metric_points_by_key[metric_key], config=config)
         for group_label, points in groups.items():
-            values, counts = _aggregate_points(points, labels, aggregation=spec.aggregation)
+            aggregation = config.aggregation or spec.aggregation
+            values, counts = _aggregate_points(points, labels, aggregation=aggregation)
             if config.smoothing == "rolling_avg":
                 window = moving_average_window or 7
                 values = [round(v, 2) if v is not None else None for v in simple_moving_average(values, window=window)]
@@ -242,7 +243,11 @@ def _analyze_donut(records: Iterable[object], *, config: ChartConfigDTO, registr
                 continue
             total += float(point.value)
             count += 1
-        values.append(round(total, 2))
+        aggregation = config.aggregation or spec.aggregation
+        if aggregation == "avg" and count:
+            values.append(round(total / count, 2))
+        else:
+            values.append(round(total, 2))
         counts.append(count)
 
     unit = units[0] if units and all(u == units[0] for u in units) else ""

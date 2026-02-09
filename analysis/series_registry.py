@@ -179,6 +179,24 @@ class MetricSeriesRegistry:
 
 _COMMON_FILTERS: Final[frozenset[FilterKey]] = frozenset({"date_range", "tier", "preset"})
 
+METRIC_AGGREGATION_OVERRIDES: Final[dict[str, tuple[Aggregation, ...]]] = {
+    "guardian_damage": ("sum", "avg"),
+    "guardian_summoned_enemies": ("sum", "avg"),
+}
+
+
+def allowed_chart_builder_aggregations(spec: MetricSeriesSpec) -> tuple[Aggregation, ...]:
+    """Return the allowed aggregations for Chart Builder selections.
+
+    Args:
+        spec: MetricSeriesSpec to evaluate.
+
+    Returns:
+        Tuple of allowed aggregation keys for Chart Builder use.
+    """
+
+    return METRIC_AGGREGATION_OVERRIDES.get(spec.key, (spec.aggregation,))
+
 
 DEFAULT_REGISTRY: Final[MetricSeriesRegistry] = MetricSeriesRegistry(
     specs=(

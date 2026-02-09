@@ -19,6 +19,7 @@ GroupBy = Literal["time", "tier", "preset"]
 ComparisonMode = Literal["none", "before_after", "run_vs_run"]
 SmoothingMode = Literal["none", "rolling_avg"]
 XAxisMode = Literal["time", "metric"]
+AggregationMode = Literal["sum", "avg"]
 
 
 @dataclass(frozen=True, slots=True)
@@ -73,6 +74,7 @@ class ChartConfigDTO:
         group_by: Grouping selection for splitting datasets.
         comparison: Optional two-scope comparison mode.
         smoothing: Optional smoothing mode (rolling average).
+        aggregation: Optional aggregation override ("sum" or "avg").
         context: Context filters used when producing the chart.
         scopes: Exactly two scopes when `comparison != "none"`.
         x_axis: X-axis mode ("time" or metric-vs-metric).
@@ -85,6 +87,7 @@ class ChartConfigDTO:
     comparison: ComparisonMode
     smoothing: SmoothingMode
     context: ChartContextDTO
+    aggregation: AggregationMode | None = None
     scopes: tuple[ChartScopeDTO, ChartScopeDTO] | None = None
     x_axis: XAxisMode = "time"
     version: str = "phase7_chart_config_v1"

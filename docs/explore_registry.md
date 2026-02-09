@@ -17,6 +17,7 @@ Explore relies on a registry that describes which metrics are available, how the
 - `_allowed_aggregations_for_unit` uses the series registry aggregation default (`sum` or `avg`) and the unit type to determine allowed aggregations.
 - Count-only metrics return `count` as the only aggregation.
 - Currency, time, and count units allow `avg` in addition to `sum`.
+- Guardian Damage and Guardian Summoned Enemies explicitly allow `sum` and `avg` via metric aggregation overrides.
 
 ## Breakdowns
 

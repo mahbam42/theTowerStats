@@ -5,7 +5,7 @@ from __future__ import annotations
 from dataclasses import dataclass
 
 from analysis.chart_config_dto import ChartConfigDTO
-from analysis.series_registry import MetricSeriesRegistry
+from analysis.series_registry import MetricSeriesRegistry, allowed_chart_builder_aggregations
 
 
 @dataclass(frozen=True, slots=True)
@@ -80,6 +80,13 @@ def validate_chart_config_dto(
             errors.append(f"Unknown metric key: {key!r}.")
             continue
         specs.append(spec)
+
+    if config.aggregation:
+        for spec in specs:
+            if config.aggregation not in allowed_chart_builder_aggregations(spec):
+                errors.append(
+                    f"Aggregation {config.aggregation!r} is not supported for metric key: {spec.key!r}."
+                )
 
     if len(specs) >= 2 and config.x_axis != "metric":
         units = {spec.unit for spec in specs}

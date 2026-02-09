@@ -45,6 +45,7 @@ def build_chart_config_dto(*, context_form: ChartContextForm, builder_form: Char
         group_by=selection.group_by,
         comparison=selection.comparison,
         smoothing=selection.smoothing,
+        aggregation=selection.aggregation,
         context=context,
         scopes=builder_form.scopes(),
         x_axis=selection.x_axis,

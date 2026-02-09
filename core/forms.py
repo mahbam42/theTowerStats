@@ -17,7 +17,7 @@ from django import forms
 from analysis.event_windows import event_window_for_date
 from analysis.chart_config_dto import ChartScopeDTO
 from analysis.explore_registry import build_explore_metric_registry, list_explore_breakdowns, list_explore_metrics
-from analysis.series_registry import DEFAULT_REGISTRY
+from analysis.series_registry import DEFAULT_REGISTRY, allowed_chart_builder_aggregations
 from core.charting.configs import default_selected_chart_ids, list_selectable_chart_configs
 from core.charting.builder import (
     ChartBuilderSelection,
@@ -1055,6 +1055,12 @@ class ChartBuilderForm(forms.Form):
         choices=(("none", "None"), ("rolling_avg", "Rolling average")),
         label="Smoothing",
     )
+    aggregation = forms.ChoiceField(
+        required=False,
+        choices=(("sum", "Sum"), ("avg", "Average")),
+        label="Aggregation",
+        help_text="Optional override for how values are aggregated.",
+    )
 
     run_a = GameDataChoiceField(required=False, queryset=BattleReport.objects.none(), label="Run A")
     run_b = GameDataChoiceField(required=False, queryset=BattleReport.objects.none(), label="Run B")
@@ -1093,6 +1099,7 @@ class ChartBuilderForm(forms.Form):
         group_by = str(cleaned.get("group_by") or "time")
         comparison = str(cleaned.get("comparison") or "none")
         smoothing = str(cleaned.get("smoothing") or "none")
+        aggregation = str(cleaned.get("aggregation") or "")
 
         if chart_type == "donut" and len(metric_keys) < 2:
             self.add_error("metric_keys", "Donut charts require at least two metrics.")
@@ -1147,7 +1154,28 @@ class ChartBuilderForm(forms.Form):
                 for key in missing:
                     self.add_error(key, "Required for before/after comparisons.")
 
+        allowed_aggregations = self._chart_builder_aggregation_options(metric_keys)
+        if aggregation:
+            if aggregation not in allowed_aggregations:
+                self.add_error("aggregation", "Aggregation is not supported for the selected metrics.")
+        elif allowed_aggregations:
+            cleaned["aggregation"] = allowed_aggregations[0]
+
         return cleaned
+
+    def _chart_builder_aggregation_options(self, metric_keys: tuple[str, ...]) -> tuple[str, ...]:
+        """Return allowed aggregations for the selected metric keys."""
+
+        options: set[str] | None = None
+        for key in metric_keys:
+            spec = DEFAULT_REGISTRY.get(key)
+            if spec is None:
+                continue
+            allowed = {str(item) for item in allowed_chart_builder_aggregations(spec)}
+            options = allowed if options is None else options & allowed
+        if not options:
+            return ()
+        return tuple(agg for agg in ("sum", "avg") if agg in options)
 
     def selection(self) -> ChartBuilderSelection:
         """Return a typed selection for building a runtime ChartConfig.
@@ -1168,6 +1196,7 @@ class ChartBuilderForm(forms.Form):
         group_by = str(self.cleaned_data.get("group_by") or "time")
         comparison = str(self.cleaned_data.get("comparison") or "none")
         smoothing = str(self.cleaned_data.get("smoothing") or "none")
+        aggregation = self.cleaned_data.get("aggregation")
         scope_a = None
         scope_b = None
         if comparison == "run_vs_run":
@@ -1197,6 +1226,7 @@ class ChartBuilderForm(forms.Form):
             x_axis=x_axis,  # type: ignore[arg-type]
             scope_a=scope_a,
             scope_b=scope_b,
+            aggregation=str(aggregation) if aggregation else None,  # type: ignore[arg-type]
         )
 
     def scopes(self) -> tuple[ChartScopeDTO, ChartScopeDTO] | None:

@@ -3,11 +3,11 @@
 from __future__ import annotations
 
 from dataclasses import dataclass
-from typing import Final, Literal
+from typing import Final, Literal, cast
 
 from .metrics import METRICS
 from .quantity import UnitType
-from .series_registry import DEFAULT_REGISTRY
+from .series_registry import DEFAULT_REGISTRY, METRIC_AGGREGATION_OVERRIDES
 
 Aggregation = Literal["sum", "count", "avg"]
 BreakdownKind = Literal["field", "metric_group"]
@@ -94,6 +94,30 @@ def _allowed_aggregations_for_unit(
     return ("count",)
 
 
+def _apply_aggregation_override(
+    metric_key: str, allowed_aggregations: tuple[Aggregation, ...]
+) -> tuple[Aggregation, ...]:
+    """Apply explicit aggregation overrides for named metrics.
+
+    Args:
+        metric_key: Metric key being registered.
+        allowed_aggregations: Base allowed aggregation tuple.
+
+    Returns:
+        Allowed aggregations with any explicit overrides applied.
+    """
+
+    override = METRIC_AGGREGATION_OVERRIDES.get(metric_key)
+    if override is None:
+        return allowed_aggregations
+    ordered = tuple(
+        cast(Aggregation, agg)
+        for agg in ("sum", "count", "avg")
+        if agg == "count" or agg in override
+    )
+    return ordered or allowed_aggregations
+
+
 def build_explore_metric_registry() -> dict[str, ExploreMetricDefinition]:
     """Build the Explore metric registry from the Chart Builder registry."""
 
@@ -106,6 +130,7 @@ def build_explore_metric_registry() -> dict[str, ExploreMetricDefinition]:
             aggregation=spec.aggregation,
             unit_type=unit_type,
         )
+        allowed_aggregations = _apply_aggregation_override(spec.key, allowed_aggregations)
         is_counter = unit_type == UnitType.count
         registry[spec.key] = ExploreMetricDefinition(
             key=spec.key,

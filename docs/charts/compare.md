@@ -2,7 +2,7 @@
 
 ## Overview
 
-Compare lets you review differences between two scopes of runs on the Charts dashboard. It helps you understand how results change across two groups or windows.
+Compare lets you review differences between two scopes of runs in a modal on the Charts dashboard. It helps you understand how results change across two groups or windows.
 
 ## When to Use This
 
@@ -13,7 +13,7 @@ Compare lets you review differences between two scopes of runs on the Charts das
 ## How to Use
 
 1. Select **Charts** in the navigation.
-2. Select **Compare** to expand the comparison panel.
+2. Select **Compare** to open the comparison modal.
 3. Select **Summary focus** to choose the category you want to emphasize.
 4. (Optional) Enable **Average each scope** to compare per-run averages instead of totals.
 5. Select multiple runs in **Scope A runs** and **Scope B runs**.
@@ -22,6 +22,7 @@ Compare lets you review differences between two scopes of runs on the Charts das
 8. Enable **Include tournaments** when you want tournament runs to appear in the lists.
 9. Confirm each run entry by its tier, wave, date, and time.
 10. Select **Compare** to view the delta summary and any available Advice.
+11. Select **Close** to return to the dashboard.
 
 ## How to Read the Results
 
