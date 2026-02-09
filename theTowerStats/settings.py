@@ -210,6 +210,22 @@ DATABASES = {
         conn_max_age=_env_int("DJANGO_DB_CONN_MAX_AGE", default=60 if not DEBUG else 0),
     )
 }
+if RUNNING_TESTS:
+    _DJANGO_TEST_DATABASE_URL = os.getenv("DJANGO_TEST_DATABASE_URL")
+    _DJANGO_TEST_USE_SQLITE = _env_bool(
+        "DJANGO_TEST_USE_SQLITE",
+        default=os.getenv("GITHUB_ACTIONS") is None,
+    )
+    if _DJANGO_TEST_DATABASE_URL:
+        DATABASES["default"] = dj_database_url.parse(
+            _DJANGO_TEST_DATABASE_URL,
+            conn_max_age=_env_int("DJANGO_DB_CONN_MAX_AGE", default=0),
+        )
+    elif _DJANGO_TEST_USE_SQLITE:
+        DATABASES["default"] = dj_database_url.parse(
+            f"sqlite:///{BASE_DIR / 'db.sqlite3'}",
+            conn_max_age=_env_int("DJANGO_DB_CONN_MAX_AGE", default=0),
+        )
 
 AUTH_PASSWORD_VALIDATORS = [
     {"NAME": "django.contrib.auth.password_validation.UserAttributeSimilarityValidator"},
