@@ -3932,7 +3932,7 @@ Add as a filter.
 CLOSED: [2026-01-31 Sat 15:04]
 - State "DONE"       from "TODO"       [2026-01-31 Sat 15:04]
 metrics_reference.md needs to include the key values (used on explore dashboard) as a column. 
-*** v0.10.0 [10/11]
+*** v0.10.0 [10/12]
 Includes Game Patch 27.4
 **** DONE [#B] Lifetime Stats Modal                                 :feat:
 CLOSED: [2026-02-09 Mon 11:26]
@@ -4092,6 +4092,23 @@ CLOSED: [2026-02-08 Sun 18:31]
 CLOSED: [2026-02-09 Mon 12:10]
 - State "DONE"       from "TODO"       [2026-02-09 Mon 12:10]
 everything since commit fcb23e3
+**** TODO [#A] Dependabot Bug Fixes
+1. We need a pipfile.lock drafted based on requirements.txt and requirements-dev.txt and possibly a dependabot.yml file 
+2. Here is a list of the detected errors:
+   - Django has Observable Timing Discrepancy (found in requirements.txt)
+     An issue was discovered in 6.0 before 6.0.2, 5.2 before 5.2.11, and 4.2 before 4.2.28. The django.contrib.auth.handlers.modwsgi.check_password() function for authentication via mod_wsgi allows remote attackers to enumerate users via a timing attack. Earlier, unsupported Django series (such as 5.0.x, 4.1.x, and 3.2.x) were not evaluated and may also be affected.
+
+   - Django has Inefficient Algorithmic Complexity
+     An issue was discovered in 6.0 before 6.0.2, 5.2 before 5.2.11, and 4.2 before 4.2.28. ASGIRequest allows a remote attacker to cause a potential denial-of-service via a crafted request with multiple duplicate headers. Earlier, unsupported Django series (such as 5.0.x, 4.1.x, and 3.2.x) were not evaluated and may also be affected.
+   - Django has Inefficient Algorithmic Complexity
+     An issue was discovered in 6.0 before 6.0.2, 5.2 before 5.2.11, and 4.2 before 4.2.28. django.utils.text.Truncator.chars() and Truncator.words() methods (with html=True) and the truncatechars_html and truncatewords_html template filters allow a remote attacker to cause a potential denial-of-service via crafted inputs containing a large number of unmatched HTML end tags. Earlier, unsupported Django series (such as 5.0.x, 4.1.x, and 3.2.x) were not evaluated and may also be affected.
+   - Django has an SQL Injection issue
+     An issue was discovered in 6.0 before 6.0.2, 5.2 before 5.2.11, and 4.2 before 4.2.28. FilteredRelation is subject to SQL injection in column aliases via control characters, using a suitably crafted dictionary, with dictionary expansion, as the **kwargs passed to QuerySet methods annotate(), aggregate(), extra(), values(), values_list(), and alias(). Earlier, unsupported Django series (such as 5.0.x, 4.1.x, and 3.2.x) were not evaluated and may also be affected.
+   - Django has an SQL Injection issue
+     An issue was discovered in 6.0 before 6.0.2, 5.2 before 5.2.11, and 4.2 before 4.2.28. .QuerySet.order_by() is subject to SQL injection in column aliases containing periods when the same alias is, using a suitably crafted dictionary, with dictionary expansion, used in FilteredRelation. Earlier, unsupported Django series (such as 5.0.x, 4.1.x, and 3.2.x) were not evaluated and may also be affected.
+   - Django has an SQL Injection issue
+     An issue was discovered in 6.0 before 6.0.2, 5.2 before 5.2.11, and 4.2 before 4.2.28. Raster lookups on RasterField (only implemented on PostGIS) allows remote attackers to inject SQL via the band index parameter. Earlier, unsupported Django series (such as 5.0.x, 4.1.x, and 3.2.x) were not evaluated and may also be affected.
+3. They all seem to point to the Django version we happened to be using as the problem. So I've already edited requirements.txt to enforce their recommended version 5.2.11
 **** WAIT [#A] Verify wiki fetch support for Scout Guardian Chip (Blocking)
 - State "WAIT"       from "TODO"       [2026-02-08 Sun 15:45] \\
   Not published to the Wiki yet. Will complete prompt59.md when data is available
