@@ -4,6 +4,14 @@ This project follows Semantic Versioning.
 
 ## [Unreleased]
 
+## [0.10.1]
+
+### Changed
+- Dependency management now includes a Pipfile lockfile and Dependabot updates for Python requirements.
+
+### Fixed
+- Bump Django minimum version to 5.2.11 to address upstream security advisories.
+
 ## [0.10.0]
 
 ### Added
