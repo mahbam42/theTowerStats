@@ -227,6 +227,19 @@ if RUNNING_TESTS:
             conn_max_age=_env_int("DJANGO_DB_CONN_MAX_AGE", default=0),
         )
 
+_DB_CONNECT_TIMEOUT = _env_int("DJANGO_DB_CONNECT_TIMEOUT", default=5)
+_DB_STATEMENT_TIMEOUT_MS = _env_int("DJANGO_DB_STATEMENT_TIMEOUT_MS", default=0)
+_default_database = DATABASES["default"]
+if str(_default_database.get("ENGINE", "")).startswith("django.db.backends.postgresql"):
+    _db_options = _default_database.setdefault("OPTIONS", {})
+    if _DB_CONNECT_TIMEOUT > 0:
+        _db_options.setdefault("connect_timeout", _DB_CONNECT_TIMEOUT)
+    if _DB_STATEMENT_TIMEOUT_MS > 0:
+        _existing_options = str(_db_options.get("options", "")).strip()
+        _timeout_flag = f"-c statement_timeout={_DB_STATEMENT_TIMEOUT_MS}"
+        if _timeout_flag not in _existing_options.split():
+            _db_options["options"] = f"{_existing_options} {_timeout_flag}".strip()
+
 AUTH_PASSWORD_VALIDATORS = [
     {"NAME": "django.contrib.auth.password_validation.UserAttributeSimilarityValidator"},
     {"NAME": "django.contrib.auth.password_validation.MinimumLengthValidator"},
