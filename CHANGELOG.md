@@ -8,9 +8,12 @@ This project follows Semantic Versioning.
 
 ### Changed
 - Dependency management now includes a Pipfile lockfile and Dependabot updates for Python requirements.
+- Dependencies: bump Gunicorn to 25.x and pytest to 9.x.
+- Deploy pipeline: wiki rebuild supports offline mode and an optional timeout via `TOWERSTATS_WIKI_REBUILD_TIMEOUT_SECONDS`.
 
 ### Fixed
 - Bump Django minimum version to 5.2.11 to address upstream security advisories.
+- Deploy pipeline no longer aborts when wiki rebuild fails; it logs the failure and continues.
 
 ## [0.10.0]
 

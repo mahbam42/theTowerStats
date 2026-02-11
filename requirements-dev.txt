@@ -1,6 +1,6 @@
 -r requirements.txt
 
-pytest>=8,<9
+pytest>=9,<10
 pytest-django>=4.8,<5
 ruff>=0.6,<1
 mypy>=1.10,<2
