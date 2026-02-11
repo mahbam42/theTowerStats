@@ -47,5 +47,8 @@ Runs the deploy-time pipeline (migrations, wiki rebuild, reparse).
 - `--skip-migrations` skips `migrate`.
 - `--skip-wiki` skips `rebuild_wiki_definitions --target all --write`.
 - `--skip-reparse` skips `reparse_battle_reports --write`.
+- `TOWERSTATS_WIKI_OFFLINE=1` forces `rebuild_wiki_definitions --skip-fetch` (no network fetch).
+- `TOWERSTATS_WIKI_REBUILD_TIMEOUT_SECONDS` caps wiki rebuild runtime (default 300 seconds, set to 0 to disable). When exceeded, the rebuild is skipped and deploy continues.
+- Wiki rebuild failures are logged and do not abort the deploy pipeline.
 
 ::: core.management.commands.deploy_railway
