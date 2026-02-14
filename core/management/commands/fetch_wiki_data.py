@@ -17,6 +17,7 @@ import re
 import urllib.error
 import urllib.parse
 import urllib.request
+import urllib.response
 
 from django.core.management.base import BaseCommand, CommandError
 
@@ -667,7 +668,7 @@ def _fetch_fandom_html_via_api(url: str) -> str:
     return html
 
 
-def _decode_response_text(response: urllib.request.addinfourl) -> str:
+def _decode_response_text(response: urllib.response.addinfourl) -> str:
     """Decode a urllib response body using the response charset when present."""
 
     content_type = response.headers.get("Content-Type", "")

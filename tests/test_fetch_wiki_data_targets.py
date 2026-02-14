@@ -4,6 +4,7 @@ from __future__ import annotations
 
 import pytest
 import urllib.error
+from http.client import HTTPMessage
 from django.core.management.base import CommandError
 
 from core.management.commands import fetch_wiki_data
@@ -71,7 +72,7 @@ def test_fetch_html_fandom_fallback_uses_parse_api(monkeypatch) -> None:
             "https://the-tower-idle-tower-defense.fandom.com/wiki/Guardian",
             403,
             "Forbidden",
-            {},
+            HTTPMessage(),
             None,
         )
 
