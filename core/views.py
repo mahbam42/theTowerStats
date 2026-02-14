@@ -454,6 +454,7 @@ def dashboard(request: HttpRequest) -> HttpResponse:
                     )
                 merged["preset"] = str(config_dto.context.preset_id or "")
                 merged["include_tournaments"] = "on" if config_dto.context.include_tournaments else ""
+                merged["include_hidden"] = "on" if config_dto.context.include_hidden else ""
             else:
                 builder_payload = dict(snapshot.chart_builder or {})
                 context_payload = dict(snapshot.chart_context or {})
@@ -989,6 +990,7 @@ def dashboard(request: HttpRequest) -> HttpResponse:
         preset_id=getattr(chart_form.cleaned_data.get("preset"), "id", None),
         snapshot_id=getattr(chart_form.cleaned_data.get("context_snapshot"), "id", None),
         past_n_runs=chart_form.cleaned_data.get("past_runs"),
+        include_hidden=bool(chart_form.cleaned_data.get("include_hidden") or False),
     )
     explore_modal_dsl = _explore_modal_dsl_text(
         player_id=str(player.id),
@@ -1432,6 +1434,8 @@ def _runs_for_chart_context_dto(*, player: Player, context: ChartContextDTO) -> 
     force_tournaments = bool(context.tournament_filter)
     if not context.include_tournaments and not force_tournaments:
         runs = runs.exclude(Q(run_progress__tier__isnull=True) | Q(run_progress__is_tournament=True))
+    if not context.include_hidden:
+        runs = runs.filter(is_hidden=False)
     if context.start_date:
         runs = runs.filter(effective_battle_date__date__gte=context.start_date)
     if context.end_date:
@@ -1487,6 +1491,7 @@ def _battle_history_columns() -> tuple[BattleHistoryColumn, ...]:
         BattleHistoryColumn("battle_date", "Battle date", sort_key="run_progress__battle_date", default_visible=True),
         BattleHistoryColumn("tier", "Tier", sort_key="run_progress__tier", default_visible=True),
         BattleHistoryColumn("tournament", "Tournament", sort_key="run_progress__is_tournament"),
+        BattleHistoryColumn("hidden", "Hidden", sort_key="is_hidden", default_visible=True),
         BattleHistoryColumn("wave", "Highest wave", sort_key="run_progress__wave", default_visible=True),
         BattleHistoryColumn("real_time", "Real time", sort_key="run_progress__real_time_seconds"),
         BattleHistoryColumn("killed_by", "Killed by", sort_key="run_progress__killed_by", default_visible=True),
@@ -2589,6 +2594,19 @@ def battle_history(request: HttpRequest) -> HttpResponse:
                 candidates=[update_form.cleaned_data.get("next")],
                 fallback=reverse("core:battle_history"),
             )
+        if action == "set_report_hidden":
+            report_id = int(request.POST.get("report_id") or 0)
+            is_hidden = _parse_context_bool(request.POST.get("hidden"))
+            updated = BattleReport.objects.filter(player=player, id=report_id).update(
+                is_hidden=is_hidden
+            )
+            if not updated:
+                messages.error(request, "Run row not found.")
+            return safe_redirect(
+                request,
+                candidates=[request.POST.get("next")],
+                fallback=reverse("core:battle_history"),
+            )
 
         import_form = BattleReportImportForm(request.POST, player=player)
         if import_form.is_valid():
@@ -2756,6 +2774,7 @@ def battle_history(request: HttpRequest) -> HttpResponse:
             "wave": "run_progress__wave",
             "killed_by": "run_progress__killed_by",
             "real_time": "run_progress__real_time_seconds",
+            "hidden": "is_hidden",
             "coins_earned": "run_progress__coins_earned",
             "coins_per_hour": "coins_per_hour",
             "cash_earned": "run_progress__cash_earned",
@@ -2791,6 +2810,7 @@ def battle_history(request: HttpRequest) -> HttpResponse:
         preset_id=getattr(modal_preset, "id", None),
         snapshot_id=getattr(modal_snapshot, "id", None),
         past_n_runs=None,
+        include_hidden=False,
     )
     explore_modal_dsl = _explore_modal_dsl_text(
         player_id=str(player.id),
@@ -4012,6 +4032,8 @@ def ultimate_weapon_progress(request: HttpRequest) -> HttpResponse:
                 force_tournaments = bool(dto.context.tournament_filter)
                 if not dto.context.include_tournaments and not force_tournaments:
                     runs_qs = runs_qs.exclude(Q(run_progress__tier__isnull=True) | Q(run_progress__is_tournament=True))
+                if not dto.context.include_hidden:
+                    runs_qs = runs_qs.filter(is_hidden=False)
                 if dto.context.start_date:
                     runs_qs = runs_qs.filter(effective_battle_date__date__gte=dto.context.start_date)
                 if dto.context.end_date:
@@ -5407,6 +5429,10 @@ def _filtered_runs(filter_form: ChartContextForm, *, player: Player) -> QuerySet
     include_tournaments = bool(valid and (filter_form.cleaned_data.get("include_tournaments") or False))
     if not include_tournaments and not force_tournaments:
         runs = runs.exclude(Q(run_progress__tier__isnull=True) | Q(run_progress__is_tournament=True))
+    include_hidden = bool(valid and (filter_form.cleaned_data.get("include_hidden") or False))
+    force_hidden = bool(snapshot_context and snapshot_context.include_hidden)
+    if not include_hidden and not force_hidden:
+        runs = runs.filter(is_hidden=False)
     if not valid:
         return runs
 
@@ -5623,6 +5649,7 @@ def _snapshot_context_from_filter(snapshot: ChartSnapshot | None) -> ChartContex
             raw_context.get("excluded_preset_ids") or raw_context.get("exclude_presets")
         ),
         include_tournaments=_parse_context_bool(raw_context.get("include_tournaments")),
+        include_hidden=_parse_context_bool(raw_context.get("include_hidden")),
         patch_boundaries=tuple(patch_boundaries),
     )
 
@@ -5634,6 +5661,8 @@ def _apply_snapshot_context_filters(
 
     if snapshot_context is None:
         return runs
+    if not snapshot_context.include_hidden:
+        runs = runs.filter(is_hidden=False)
     if snapshot_context.start_date:
         runs = runs.filter(effective_battle_date__date__gte=snapshot_context.start_date)
     if snapshot_context.end_date:
@@ -5746,6 +5775,7 @@ def _explore_form_initial_from_payload(payload: dict[str, object]) -> dict[str, 
         "preset": scope.get("preset") or "",
         "snapshot": scope.get("snapshot") or "",
         "past_n_runs": scope.get("past_n_runs") or "",
+        "include_hidden": bool(scope.get("include_hidden")),
         "metric_key": metric.get("key") or "",
         "aggregation": metric.get("aggregation") or "sum",
         "percent_of_total": bool(metric.get("percent_of_total")) if isinstance(metric, dict) else False,
@@ -5808,6 +5838,8 @@ def _explore_form_initial_from_request(params: QueryDict) -> dict[str, object]:
     for field in ("start_date", "end_date", "preset", "snapshot", "past_n_runs", "death_cause"):
         if params.get(field):
             initial[field] = params.get(field)
+    if params.get("include_hidden"):
+        initial["include_hidden"] = _parse_context_bool(params.get("include_hidden"))
     patch_boundaries = [value for value in params.getlist("patch_boundaries") if value]
     if patch_boundaries:
         boundaries = _resolve_patch_boundary_tokens(patch_boundaries)
@@ -5825,6 +5857,7 @@ def _explore_prefill_scope_from_request(params: QueryDict) -> ExploreScope:
     preset_id = _parse_context_int(params.get("preset") or params.get("preset_id"))
     snapshot_id = _parse_context_int(params.get("snapshot"))
     past_n_runs = _parse_context_int(params.get("past_n_runs"))
+    include_hidden = _parse_context_bool(params.get("include_hidden"))
     return ExploreScope(
         start_date=start_date,
         end_date=end_date,
@@ -5832,6 +5865,7 @@ def _explore_prefill_scope_from_request(params: QueryDict) -> ExploreScope:
         preset_id=preset_id,
         snapshot_id=snapshot_id,
         past_n_runs=past_n_runs,
+        include_hidden=include_hidden,
     )
 
 
@@ -5937,6 +5971,7 @@ def _explore_query_from_payload(payload: dict[str, object]) -> ExploreQuery:
             preset_id=_parse_context_int(scope.get("preset")),
             snapshot_id=_parse_context_int(scope.get("snapshot")),
             past_n_runs=_parse_context_int(scope.get("past_n_runs")),
+            include_hidden=_parse_context_bool(scope.get("include_hidden")),
         ),
         filters=filters,
         breakdowns=breakdowns,
@@ -5967,6 +6002,7 @@ def _explore_query_from_form(form: ExploreQueryForm, *, player: Player) -> Explo
         preset_id=getattr(cleaned.get("preset"), "id", None),
         snapshot_id=getattr(cleaned.get("snapshot"), "id", None),
         past_n_runs=cleaned.get("past_n_runs"),
+        include_hidden=bool(cleaned.get("include_hidden") or False),
     )
 
     filters: list[ExploreFilter] = []
@@ -6077,6 +6113,9 @@ def _apply_explore_scope(
     )
     if not force_tournaments:
         runs = runs.exclude(Q(run_progress__tier__isnull=True) | Q(run_progress__is_tournament=True))
+    include_hidden = bool(scope.include_hidden or (snapshot_context and snapshot_context.include_hidden))
+    if not include_hidden:
+        runs = runs.filter(is_hidden=False)
     if scope.start_date:
         runs = runs.filter(effective_battle_date__date__gte=scope.start_date)
     if scope.end_date:
@@ -6592,6 +6631,10 @@ def _context_filtered_runs(filter_form: ChartContextForm, *, player: Player) -> 
     include_tournaments = bool(valid and (filter_form.cleaned_data.get("include_tournaments") or False))
     if not include_tournaments and not force_tournaments:
         runs = runs.exclude(Q(run_progress__tier__isnull=True) | Q(run_progress__is_tournament=True))
+    include_hidden = bool(valid and (filter_form.cleaned_data.get("include_hidden") or False))
+    force_hidden = bool(snapshot_context and snapshot_context.include_hidden)
+    if not include_hidden and not force_hidden:
+        runs = runs.filter(is_hidden=False)
     if not valid:
         return runs
 

@@ -24,18 +24,19 @@ Explore helps you build your own questions about past runs and see aggregated an
 7. Enter a name on the first line so you can save or edit the query later.
 8. Review the Scope lines and replace any placeholders with real values when needed.
 9. Use all or * when you want a scope line to stay open.
-10. Add Filter lines to narrow the runs in scope.
-11. Add a Patch boundary filter when you want to limit results to one or more patch windows.
-12. To exclude tournaments, add not tournament to the Tier scope line.
-13. To exclude specific dates, add not followed by one or more ISO dates on the date scope line.
-14. To include presets by name, list one or more preset names on the preset scope line.
-15. To exclude presets by name, add not followed by one or more preset names on the preset scope line.
-16. Add a Breakdown line to group results.
-17. Add a Metric line and an Aggregation.
-18. Add an Output line when you want a chart or KPI.
-19. Select **Run query**.
-20. Select **Save query** to store changes; a saved query with the same name is overwritten.
-21. Select **Delete query** to remove a saved query you previously loaded.
+10. In the Hidden scope line, set the value to include when you want hidden Battle Reports to appear in results.
+11. Add Filter lines to narrow the runs in scope.
+12. Add a Patch boundary filter when you want to limit results to one or more patch windows.
+13. To exclude tournaments, add not tournament to the Tier scope line.
+14. To exclude specific dates, add not followed by one or more ISO dates on the date scope line.
+15. To include presets by name, list one or more preset names on the preset scope line.
+16. To exclude presets by name, add not followed by one or more preset names on the preset scope line.
+17. Add a Breakdown line to group results.
+18. Add a Metric line and an Aggregation.
+19. Add an Output line when you want a chart or KPI.
+20. Select **Run query**.
+21. Select **Save query** to store changes; a saved query with the same name is overwritten.
+22. Select **Delete query** to remove a saved query you previously loaded.
 
 ## How to Read the Results
 
@@ -63,7 +64,7 @@ Explore helps you build your own questions about past runs and see aggregated an
 > Queries are player-scoped. Results are based only on your own runs.
 
 > ⚠️ Note
-> Average is available for currency, counter, time, and Guardian Damage metrics.
+> Average is available for currency, counter, time, and select damage metrics (for example, Guardian Damage and Flame Bot Damage).
 
 > ⚠️ Note
 > Percent of total uses the current breakdown total and shows blank values when the total is zero.
@@ -82,6 +83,9 @@ Explore helps you build your own questions about past runs and see aggregated an
 
 > ⚠️ Note
 > The app excludes tournament runs by default. Adding not tournament makes the exclusion explicit in the query.
+
+> ⚠️ Note
+> Hidden Battle Reports are excluded by default. Set the Hidden scope line to include when you want them in Explore results.
 
 > ⚠️ Note
 > Patch boundary filters include runs between the selected patch date and the next boundary date.

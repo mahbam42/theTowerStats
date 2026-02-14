@@ -20,6 +20,17 @@ from player_state.models import PlayerBot, PlayerBotParameter
 pytestmark = pytest.mark.integration
 
 
+@pytest.mark.django_db
+def test_bots_progress_includes_respec_callout(auth_client, player) -> None:
+    """Bots dashboard shows the bot respec affordance."""
+
+    response = auth_client.get(reverse("core:bots_progress"))
+    assert response.status_code == 200
+    content = response.content.decode("utf-8")
+    assert "Bot Respec" in content
+    assert "Bot Respec (300 Gems)" in content
+
+
 def _wiki(*, suffix: str | None = None) -> WikiData:
     """Create a minimal WikiData revision row."""
 

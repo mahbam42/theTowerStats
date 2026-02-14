@@ -251,6 +251,58 @@ def test_dashboard_quick_import_tournament_override_excludes_from_charts_by_defa
 
 
 @pytest.mark.django_db
+def test_dashboard_hidden_runs_excluded_unless_included(auth_client, player) -> None:
+    """Hidden Battle Reports stay out of charts unless included in the context."""
+
+    visible_report = BattleReport.objects.create(
+        player=player,
+        raw_text="Battle Report\nCoins earned    1,000\n",
+        checksum="h" * 64,
+        is_hidden=False,
+    )
+    BattleReportProgress.objects.create(
+        battle_report=visible_report,
+        player=player,
+        battle_date=datetime(2025, 12, 3, tzinfo=timezone.utc),
+        tier=1,
+        wave=10,
+        real_time_seconds=60,
+    )
+    hidden_report = BattleReport.objects.create(
+        player=player,
+        raw_text="Battle Report\nCoins earned    2,000\n",
+        checksum="i" * 64,
+        is_hidden=True,
+    )
+    BattleReportProgress.objects.create(
+        battle_report=hidden_report,
+        player=player,
+        battle_date=datetime(2025, 12, 4, tzinfo=timezone.utc),
+        tier=1,
+        wave=10,
+        real_time_seconds=60,
+    )
+
+    response = auth_client.get(
+        reverse("core:dashboard"),
+        {"start_date": date(2025, 12, 1), "end_date": date(2025, 12, 5)},
+    )
+    assert response.status_code == 200
+    assert response.context["scope_summary"]["runs_in_scope"] == 1
+
+    response = auth_client.get(
+        reverse("core:dashboard"),
+        {
+            "start_date": date(2025, 12, 1),
+            "end_date": date(2025, 12, 5),
+            "include_hidden": "on",
+        },
+    )
+    assert response.status_code == 200
+    assert response.context["scope_summary"]["runs_in_scope"] == 2
+
+
+@pytest.mark.django_db
 @override_settings(DEBUG=False)
 def test_dashboard_import_exception_shows_user_error(auth_client, monkeypatch) -> None:
     """Unexpected ingest failures surface a safe error message in production."""

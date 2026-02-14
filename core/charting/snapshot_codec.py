@@ -26,6 +26,7 @@ def encode_chart_config_dto(config: ChartConfigDTO) -> dict[str, Any]:
         "preset_id": config.context.preset_id,
         "excluded_preset_ids": list(config.context.excluded_preset_ids),
         "include_tournaments": bool(config.context.include_tournaments),
+        "include_hidden": bool(config.context.include_hidden),
         "patch_boundaries": [
             _encode_date(boundary) for boundary in config.context.patch_boundaries
         ],
@@ -84,6 +85,7 @@ def decode_chart_config_dto(payload: dict[str, Any]) -> ChartConfigDTO:
         preset_id=_parse_int(context_raw.get("preset_id")),
         excluded_preset_ids=_parse_int_list(context_raw.get("excluded_preset_ids")),
         include_tournaments=_parse_bool(context_raw.get("include_tournaments")),
+        include_hidden=_parse_bool(context_raw.get("include_hidden")),
         patch_boundaries=tuple(patch_boundaries),
     )
     scopes_raw = payload.get("scopes")

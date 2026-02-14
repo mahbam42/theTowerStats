@@ -273,6 +273,9 @@ def format_explore_dsl(
             default_value=default_scope.past_n_runs,
         )
     )
+    lines.append(
+        "scope hidden " + ("include" if scope.include_hidden else "exclude")
+    )
 
     if query:
         for entry in remaining_filters:
@@ -453,6 +456,7 @@ def build_explore_autocomplete(
         "preset",
         "snapshot",
         "past_n_runs",
+        "hidden",
         "death_cause",
         "wave",
         "run",
@@ -602,6 +606,7 @@ def _parse_scope_line(
             preset_id=scope.preset_id,
             snapshot_id=scope.snapshot_id,
             past_n_runs=scope.past_n_runs,
+            include_hidden=scope.include_hidden,
         )
     elif field == "tier":
         if _is_all_token(normalized):
@@ -612,6 +617,7 @@ def _parse_scope_line(
                 preset_id=scope.preset_id,
                 snapshot_id=scope.snapshot_id,
                 past_n_runs=scope.past_n_runs,
+                include_hidden=scope.include_hidden,
             )
         else:
             operator = ""
@@ -645,6 +651,7 @@ def _parse_scope_line(
                     preset_id=scope.preset_id,
                     snapshot_id=scope.snapshot_id,
                     past_n_runs=scope.past_n_runs,
+                    include_hidden=scope.include_hidden,
                 )
     elif field == "preset":
         all_token = _is_all_token(main_value)
@@ -677,6 +684,7 @@ def _parse_scope_line(
             preset_id=None if all_token else (preset_value if preset_value is not None else default_scope.preset_id),
             snapshot_id=scope.snapshot_id,
             past_n_runs=scope.past_n_runs,
+            include_hidden=scope.include_hidden,
         )
     elif field == "snapshot":
         all_token = _is_all_token(normalized)
@@ -688,6 +696,7 @@ def _parse_scope_line(
             preset_id=scope.preset_id,
             snapshot_id=None if all_token else (snapshot_value if snapshot_value is not None else default_scope.snapshot_id),
             past_n_runs=scope.past_n_runs,
+            include_hidden=scope.include_hidden,
         )
     elif field == "past_n_runs":
         all_token = _is_all_token(normalized)
@@ -699,6 +708,27 @@ def _parse_scope_line(
             preset_id=scope.preset_id,
             snapshot_id=scope.snapshot_id,
             past_n_runs=None if all_token else (runs_value if runs_value is not None else default_scope.past_n_runs),
+            include_hidden=scope.include_hidden,
+        )
+    elif field == "hidden":
+        token = normalized.strip().casefold()
+        if _is_all_token(token):
+            include_hidden = True
+        elif token in {"include", "yes", "true", "on", "1"}:
+            include_hidden = True
+        elif token in {"exclude", "no", "false", "off", "0"}:
+            include_hidden = False
+        else:
+            errors.append("Hidden scope expects include or exclude.")
+            include_hidden = scope.include_hidden
+        scope = ExploreScope(
+            start_date=scope.start_date,
+            end_date=scope.end_date,
+            tier=scope.tier,
+            preset_id=scope.preset_id,
+            snapshot_id=scope.snapshot_id,
+            past_n_runs=scope.past_n_runs,
+            include_hidden=include_hidden,
         )
     else:
         errors.append(f"Unknown scope field: {field}.")

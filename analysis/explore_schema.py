@@ -30,6 +30,7 @@ class ExploreScope:
     preset_id: int | None
     snapshot_id: int | None
     past_n_runs: int | None
+    include_hidden: bool = False
 
 
 @dataclass(frozen=True, slots=True)
@@ -196,6 +197,7 @@ def parse_scope(scope: ExploreScope) -> dict[str, object | None]:
         "preset": scope.preset_id,
         "snapshot": scope.snapshot_id,
         "past_n_runs": scope.past_n_runs,
+        "include_hidden": scope.include_hidden,
     }
 
 

@@ -23,6 +23,7 @@ The DSL is line-based. Lines are parsed in any order.
 | `scope preset` | Targets presets by id or name. | `scope preset 12 "Farm"` |
 | `scope snapshot` | Targets a snapshot by id. | `scope snapshot 4 "Phase 9"` |
 | `scope past_n_runs` | Limits to the most recent runs. | `scope past_n_runs 20` |
+| `scope hidden` | Includes or excludes hidden reports. | `scope hidden include` |
 | `scope ... not tournament` | Excludes tournament runs. | `scope tier >= 7 not tournament` |
 | `scope date ... not` | Excludes specific dates. | `scope date 2025-01-01..2025-01-31 not 2025-01-15` |
 | `scope preset ... not` | Excludes preset names. | `scope preset farm not speed run` |
@@ -68,6 +69,7 @@ When placeholders are present or a scope line is omitted, parsing falls back to 
 - Metric aliases are accepted (for example, `enemies_destroyed_elites` maps to `enemies_destroyed_elite`, and `run_duration` maps to `real_time_hours`).
 - Placeholders do not override prefilled defaults.
 - `all` or `*` clears a prefilled scope value and keeps the scope open.
+- `scope hidden` accepts `include`, `exclude`, `all`, or `*`.
 - `filter patch in` accepts patch labels or ISO dates; the resolver matches against `PatchBoundary`.
 
 ## Integration Notes

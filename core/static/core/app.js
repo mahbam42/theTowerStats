@@ -246,6 +246,7 @@
       const tier = getFormValue("tier");
       const preset = getFormValue("preset");
       const includeTournaments = form && form.elements["include_tournaments"] ? form.elements["include_tournaments"].checked : null;
+      const includeHidden = form && form.elements["include_hidden"] ? form.elements["include_hidden"].checked : null;
       const windowKind = getFormValue("window_kind");
       const windowN = getFormValue("window_n");
       const movingAverage = getFormValue("moving_average_window");
@@ -254,6 +255,7 @@
       if (tier) url.searchParams.set("tier", tier);
       if (preset) url.searchParams.set("preset", preset);
       if (includeTournaments) url.searchParams.set("include_tournaments", "on");
+      if (includeHidden) url.searchParams.set("include_hidden", "on");
       if (windowKind) url.searchParams.set("window_kind", windowKind);
       if (windowN) url.searchParams.set("window_n", windowN);
       if (movingAverage) url.searchParams.set("moving_average_window", movingAverage);

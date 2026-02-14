@@ -28,6 +28,10 @@ class BattleReport(models.Model):
     raw_text = models.TextField()
     parsed_at = models.DateTimeField(auto_now_add=True)
     checksum = models.CharField(max_length=64, db_index=True)
+    is_hidden = models.BooleanField(
+        default=False,
+        help_text="Exclude this report from Charts and Explore unless explicitly included.",
+    )
 
     class Meta:
         verbose_name = "Battle Report"

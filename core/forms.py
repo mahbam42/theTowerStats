@@ -226,6 +226,11 @@ class ChartContextForm(forms.Form):
         label="Include tournaments",
         help_text="By default, tournament runs are excluded from analytics and charts.",
     )
+    include_hidden = forms.BooleanField(
+        required=False,
+        label="Include hidden reports",
+        help_text="Hidden Battle Reports are excluded from charts by default.",
+    )
     ultimate_weapon = forms.ModelChoiceField(
         required=False,
         queryset=UltimateWeaponDefinition.objects.none(),
@@ -372,6 +377,9 @@ class ChartContextForm(forms.Form):
         self.fields["include_tournaments"].widget.attrs["title"] = (
             "Include tournament runs in charts and derived metrics."
         )
+        self.fields["include_hidden"].widget.attrs["title"] = (
+            "Include Battle Reports marked as hidden."
+        )
         self.fields["window_kind"].widget.attrs["title"] = (
             "Limit the chart scope to the most recent runs or days after other filters."
         )
@@ -493,6 +501,8 @@ class BattleHistoryFilterForm(forms.Form):
             ("run_progress__tier", "Tier (low → high)"),
             ("-run_progress__is_tournament", "Tournament (Yes → No)"),
             ("run_progress__is_tournament", "Tournament (No → Yes)"),
+            ("-is_hidden", "Hidden (Yes → No)"),
+            ("is_hidden", "Hidden (No → Yes)"),
             ("-run_progress__wave", "Wave (high → low)"),
             ("run_progress__wave", "Wave (low → high)"),
             ("-run_progress__real_time_seconds", "Real time (high → low)"),
@@ -1311,6 +1321,10 @@ class ExploreQueryForm(forms.Form):
         min_value=1,
         max_value=365,
         label="Past N runs",
+    )
+    include_hidden = forms.BooleanField(
+        required=False,
+        label="Include hidden reports",
     )
 
     primary_breakdown = forms.ChoiceField(required=False, choices=(), label="Primary breakdown")

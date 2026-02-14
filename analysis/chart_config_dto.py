@@ -34,6 +34,7 @@ class ChartContextDTO:
         preset_id: Optional preset id filter.
         excluded_preset_ids: Preset ids to exclude from the scope.
         include_tournaments: Whether tournament runs are included in the scope.
+        include_hidden: Whether hidden Battle Reports are included in the scope.
         patch_boundaries: Patch boundary dates used to define included windows.
     """
 
@@ -44,6 +45,7 @@ class ChartContextDTO:
     preset_id: int | None = None
     excluded_preset_ids: tuple[int, ...] = ()
     include_tournaments: bool = False
+    include_hidden: bool = False
     patch_boundaries: tuple[date, ...] = ()
 
 

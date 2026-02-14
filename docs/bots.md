@@ -10,6 +10,7 @@ The Bots page helps you track which bots are unlocked, how far each upgrade para
 - You want to record upgrade progress for a bot’s parameters.
 - You want to compare total Medals invested across different bots.
 - You want to review whether a bot appears in your imported runs.
+- You want to review the bot respec cost and limits.
 
 ## How to Use
 
@@ -21,6 +22,7 @@ The Bots page helps you track which bots are unlocked, how far each upgrade para
 6. Select **Details** on an unlocked bot to view its upgrade parameters.
 7. Select **Level Up** on a parameter to increase its level by 1.
 8. Select **Level Down** on a parameter to reduce its level by 1.
+9. Review the **Bot Respec** card for the current cost, availability, and refund scope.
 
 ## How to Read the Results
 
@@ -32,6 +34,7 @@ The Bots page helps you track which bots are unlocked, how far each upgrade para
 - **Next** shows the next-level value, with the change emphasized in parentheses when it can be parsed.
 - **Cost** shows the next-level upgrade cost (informational only).
 - **MAX** indicates the parameter has reached the highest known level and cannot be increased further in the app.
+- **Bot Respec** summarizes the respec cost, availability, and what is refunded.
 
 ## Notes & Limitations
 
@@ -46,6 +49,12 @@ The Bots page helps you track which bots are unlocked, how far each upgrade para
 
 > **Note**
 > **Level Down** is available as a safety option if you accidentally record an upgrade you did not intend.
+
+> **Note**
+> Bot respecs are performed in-game. The app only documents the cost, frequency, and refund scope.
+
+> **Note**
+> Bot respecs refund medal upgrades and unlocks only; Labs are not refunded.
 
 > **Caution**
 > Cooldown and duration values are based on external wiki tables and are shown in seconds. Wiki values can be inaccurate or drift over time.

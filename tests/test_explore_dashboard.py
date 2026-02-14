@@ -120,6 +120,68 @@ def test_explore_query_runs_and_saves(auth_client, player) -> None:
 
 
 @pytest.mark.django_db
+def test_explore_hidden_runs_excluded_unless_included(auth_client, player) -> None:
+    """Explore scopes exclude hidden runs unless explicitly included."""
+
+    visible = BattleReport.objects.create(
+        player=player,
+        raw_text="Battle Report\nCoins earned\t1,000\n",
+        checksum="hidden-visible".ljust(64, "x"),
+        is_hidden=False,
+    )
+    BattleReportProgress.objects.create(
+        battle_report=visible,
+        player=player,
+        battle_date=datetime(2025, 12, 6, tzinfo=timezone.utc),
+        tier=6,
+        wave=200,
+        real_time_seconds=300,
+        coins_earned=1000,
+    )
+    hidden = BattleReport.objects.create(
+        player=player,
+        raw_text="Battle Report\nCoins earned\t2,000\n",
+        checksum="hidden-hidden".ljust(64, "x"),
+        is_hidden=True,
+    )
+    BattleReportProgress.objects.create(
+        battle_report=hidden,
+        player=player,
+        battle_date=datetime(2025, 12, 7, tzinfo=timezone.utc),
+        tier=6,
+        wave=210,
+        real_time_seconds=300,
+        coins_earned=2000,
+    )
+
+    base_dsl = (
+        'name "Hidden scope"\n'
+        "scope date [date:YYYY-MM-DD]..[date:YYYY-MM-DD]\n"
+        "scope tier [tier:—]\n"
+        "scope preset [preset:—]\n"
+        "scope snapshot [snapshot:—]\n"
+        "scope past_n_runs [runs:—]\n"
+        "breakdown by run\n"
+        "metric coins_earned sum\n"
+        "output table\n"
+    )
+
+    response = auth_client.post(
+        reverse("core:explore"),
+        data={"dsl_query": f"{base_dsl}scope hidden exclude\n", "action": "run_explore_query"},
+    )
+    assert response.status_code == 200
+    assert response.context["explore_results"]["run_count"] == 1
+
+    response = auth_client.post(
+        reverse("core:explore"),
+        data={"dsl_query": f"{base_dsl}scope hidden include\n", "action": "run_explore_query"},
+    )
+    assert response.status_code == 200
+    assert response.context["explore_results"]["run_count"] == 2
+
+
+@pytest.mark.django_db
 @pytest.mark.regression
 def test_explore_saved_query_preserves_comments_and_autoloads(auth_client, player) -> None:
     """Saved Explore queries keep comment lines and reload after saving."""

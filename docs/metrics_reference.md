@@ -61,6 +61,9 @@ Utility metrics:
 | Black Hole Damage | black_hole_damage | Battle Report (observed) |  |
 | Runs using selected bot | bot_runs_count | Planned (not yet ingested) | Run-level bot presence will be available after bot usage ingestion is implemented. |
 | Bot uptime | bot_uptime_percent | Planned (not yet ingested) | Bot uptime is planned; current bot-related values come from Battle Report metrics only. |
+| Flame Bot Damage | flame_bot_damage | Battle Report (observed) | Battle Report bot section: damage dealt by Flame Bot. |
+| Thunder Bot Stuns | thunder_bot_stuns | Battle Report (observed) | Battle Report bot section: stuns delivered by Thunder Bot. |
+| Golden Bot Coins Earned | golden_bot_coins_earned | Battle Report (observed) | Battle Report bot section: coins earned by Golden Bot (rolls up into Coins Earned by Source). |
 | Cash earned | cash_earned | Battle Report (observed) |  |
 | Cash From Golden Tower | cash_from_golden_tower | Battle Report (observed) | Battle Report utility breakdown: cash earned from Golden Tower. |
 | Other cash | cash_from_other_sources | Battle Report (derived) | Residual cash not covered by named sources. |

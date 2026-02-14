@@ -609,6 +609,27 @@ METRICS: Final[dict[str, MetricDefinition]] = {
         category=MetricCategory.fetch,
         kind="observed",
     ),
+    "flame_bot_damage": MetricDefinition(
+        key="flame_bot_damage",
+        label="Flame Bot Damage",
+        unit="damage",
+        category=MetricCategory.damage,
+        kind="observed",
+    ),
+    "thunder_bot_stuns": MetricDefinition(
+        key="thunder_bot_stuns",
+        label="Thunder Bot Stuns",
+        unit="count",
+        category=MetricCategory.combat,
+        kind="observed",
+    ),
+    "golden_bot_coins_earned": MetricDefinition(
+        key="golden_bot_coins_earned",
+        label="Golden Bot Coins Earned",
+        unit="coins",
+        category=MetricCategory.economy,
+        kind="observed",
+    ),
     "uw_uptime_percent": MetricDefinition(
         key="uw_uptime_percent",
         label="Ultimate Weapon uptime",

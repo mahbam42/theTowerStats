@@ -167,6 +167,7 @@ DAMAGE_SOURCE_METRICS: Final[tuple[str, ...]] = (
     "swamp_damage",
     "electrons_damage",
     "rend_armor_damage",
+    "flame_bot_damage",
 )
 
 ENEMY_TYPE_METRICS: Final[tuple[str, ...]] = (
@@ -194,6 +195,7 @@ COIN_SOURCE_METRICS: Final[tuple[str, ...]] = (
     "coins_from_coin_bonuses",
     "guardian_coins_stolen",
     "guardian_coins_fetched",
+    "golden_bot_coins_earned",
     "coins_from_other_sources",
 )
 

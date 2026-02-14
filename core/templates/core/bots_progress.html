@@ -3,6 +3,22 @@
 {% block title %}Bots Progress • theTowerStats{% endblock %}
 
 {% block content %}
+<div class="grid-x grid-margin-x">
+  <div class="cell">
+    <div class="callout secondary">
+      <div class="grid-x grid-margin-x align-middle">
+        <div class="cell auto">
+          <h5 class="margin-0">Bot Respec</h5>
+          <p class="muted margin-0">Refund medal upgrades and unlocks. Labs are not refunded.</p>
+          <p class="muted margin-0">Cost: 300 Gems • Available once per event.</p>
+        </div>
+        <div class="cell shrink">
+          <button class="button secondary" type="button" disabled aria-disabled="true">Bot Respec (300 Gems)</button>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
 {% include "core/components/upgradeable_entity_dashboard.html" with dashboard_kicker="Progress" dashboard_title="Bots" dashboard_note="Upgrades currently assume sufficient Medals. Costs are informational only." filter_form=filter_form entities=bots entity_badge="Bot" total_invested_label="Total Medals invested" unlock_cost_currency_label="Medals" unlock_action_value="unlock_bot" level_up_action_value="level_up_bot_param" level_down_action_value="level_down_bot_param" show_activation=False goals_widget_rows=goals_widget_rows goals_widget_goal_type=goals_widget_goal_type %}
 {% endblock %}
 

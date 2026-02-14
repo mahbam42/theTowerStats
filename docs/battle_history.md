@@ -26,10 +26,11 @@ Battle History helps you review your past runs in a table so you can compare res
 8. Select values in **Filters** to narrow the table, including **Snapshot** when needed.
 9. Select **Columns** to choose which columns appear, then select **Save columns**.
 10. Select a column header to sort the table by that column.
-11. Select a run row to open the Battle Report Modal. For details, see [Battle Report Modal](battle_report_modal.md).
-12. Select **Query Explorer** to open Explore with your current filters.
-13. To change a run’s preset later, select a value in the **Preset** selector inside that row.
-14. To filter by a preset, select a value in **Preset** under **Filters**, or select a preset badge in the table.
+11. Use the **Hidden** column to mark a report as hidden when you want to exclude it from Charts and Explore by default.
+12. Select a run row to open the Battle Report Modal. For details, see [Battle Report Modal](battle_report_modal.md).
+13. Select **Query Explorer** to open Explore with your current filters.
+14. To change a run’s preset later, select a value in the **Preset** selector inside that row.
+15. To filter by a preset, select a value in **Preset** under **Filters**, or select a preset badge in the table.
 
 ## How to Read the Results
 
@@ -44,6 +45,7 @@ Battle History helps you review your past runs in a table so you can compare res
 - **Real time** shows the run duration as reported by the game.
 - **Gem blocks**, **Cells earned**, and **Reroll shards** show run resources that may be missing in older or incomplete reports.
 - **Recovery packages** shows how many Recovery Packages the run recorded, when present in the report.
+- **Hidden** shows whether the report is excluded from Charts and Explore by default.
 - **Preset** is an optional label you can use to group runs for review. The game currently allows 5 presets, and this app lets you save more. Presets do not change any gameplay results.
 - **Top 3 Tournament Logs** shows your three best tournament-marked runs by highest wave.
 - Tournament badges show **Tournament** with the recorded rank when available.
@@ -65,6 +67,9 @@ Battle History helps you review your past runs in a table so you can compare res
 
 > **Note**
 > Tournament rank is required when **Tournament run** is enabled. Older runs may show “Tournament” without a rank if they were imported before the rank field existed.
+
+> **Note**
+> Hidden reports remain visible in Battle History. Charts and Explore exclude them by default, while Lifetime Stats always include all stored reports.
 
 > **Note**
 > **Highest Wave by Tier** and **Top 3 Tournament Logs** use all imported runs, not the current filter selections. Tournament runs only appear in the tournament summary when you marked them during import.
