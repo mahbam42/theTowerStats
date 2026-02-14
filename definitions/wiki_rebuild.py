@@ -63,6 +63,11 @@ _GUARDIAN_EXPECTED_PARAMETER_KEYS: dict[str, tuple[str, str, str]] = {
         ParameterKey.DURATION.value,
         ParameterKey.CASH_BONUS.value,
     ),
+    "scout": (
+        ParameterKey.COOLDOWN.value,
+        ParameterKey.MULTIPLIER.value,
+        ParameterKey.DURATION.value,
+    ),
 }
 
 _BOT_LEVEL_ZERO_VALUES: dict[str, dict[str, str]] = {
@@ -898,8 +903,10 @@ def _guardian_header_pairs(raw_row: dict, *, slug: str) -> list[tuple[str, str]]
     by_parameter_key: dict[str, list[str]] = {}
     for header in value_headers:
         mapped_key = _guardian_parameter_key(header, slug=slug)
-        if mapped_key == ParameterKey.MULTIPLIER.value and "multiplier" not in header.strip().casefold():
-            continue
+        if mapped_key == ParameterKey.MULTIPLIER.value:
+            header_text = header.strip().casefold()
+            if "multiplier" not in header_text and not (slug == "scout" and "range bonus" in header_text):
+                continue
         by_parameter_key.setdefault(mapped_key, []).append(header)
 
     pairs: list[tuple[str, str]] = []
@@ -960,6 +967,13 @@ def _guardian_parameter_key(value_header: str, *, slug: str) -> str:
             return ParameterKey.DURATION.value
         if "cash bonus" in normalized:
             return ParameterKey.CASH_BONUS.value
+    if slug == "scout":
+        if "cooldown" in normalized:
+            return ParameterKey.COOLDOWN.value
+        if "duration" in normalized:
+            return ParameterKey.DURATION.value
+        if "range bonus" in normalized:
+            return ParameterKey.MULTIPLIER.value
     # Fallback: keep it stable but explicit failures should be enforced by tests.
     return ParameterKey.MULTIPLIER.value
 
