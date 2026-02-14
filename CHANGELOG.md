@@ -2,16 +2,16 @@
 
 This project follows Semantic Versioning.
 
-## [Unreleased]
-
 ## [0.10.1]
 
 ### Changed
+- Guardian chip rebuild recognizes Scout chip parameter ordering (Cooldown, Range Bonus, Duration).
 - Dependency management now includes a Pipfile lockfile and Dependabot updates for Python requirements.
 - Dependencies: bump Gunicorn to 25.x and pytest to 9.x.
 - Deploy pipeline: wiki rebuild supports offline mode and an optional timeout via `TOWERSTATS_WIKI_REBUILD_TIMEOUT_SECONDS`.
 
 ### Fixed
+- `fetch_wiki_data` falls back to the Fandom MediaWiki parse API when direct page fetches return 403/429.
 - Bump Django minimum version to 5.2.11 to address upstream security advisories.
 - Deploy pipeline no longer aborts when wiki rebuild fails; it logs the failure and continues.
 
@@ -25,6 +25,7 @@ This project follows Semantic Versioning.
 - Staging database refresh script for pruning production snapshots to a single player.
 
 ### Changed
+- Guardian chip rebuild recognizes Scout chip parameter ordering (Cooldown, Range Bonus, Duration).
 - Compare and Advice now open in modals on the Charts dashboard.
 - Game Speed calculator now uses the Wave Accelerator card level for timing adjustments.
 - Labs Speed Up calculator deadlines use UTC midnight at the end of the current Event window.
