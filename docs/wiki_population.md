@@ -21,6 +21,11 @@ Use `fetch_wiki_data` to capture raw tables into `definitions.WikiData`. Pick th
 > **Note**
 > Use `--check` for a dry run when validating selectors or table indexes.
 
+> **Note**
+> Some Fandom pages return a 403 when fetched by automation. When that happens,
+> the ingestion step falls back to the MediaWiki parse API and continues using
+> the returned HTML payload.
+
 ## Step 2 — Rebuild definitions
 
 Translate stored wiki rows into structured definitions without re-downloading pages:

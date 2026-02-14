@@ -12,7 +12,10 @@ Design goals:
 
 from __future__ import annotations
 
+import json
 import re
+import urllib.error
+import urllib.parse
 import urllib.request
 
 from django.core.management.base import BaseCommand, CommandError
@@ -602,6 +605,24 @@ def _fetch_html(url: str) -> str:
         CommandError: When the page cannot be fetched.
     """
 
+    try:
+        return _fetch_html_via_request(url)
+    except urllib.error.HTTPError as exc:
+        if exc.code in {403, 429} and _is_fandom_url(url):
+            try:
+                return _fetch_fandom_html_via_api(url)
+            except Exception as fallback_exc:  # noqa: BLE001 - surfaced below
+                raise CommandError(
+                    f"Failed to fetch wiki page: {url} (status={exc.code}; fandom API fallback failed)"
+                ) from fallback_exc
+        raise CommandError(f"Failed to fetch wiki page: {url} (status={exc.code})") from exc
+    except Exception as exc:  # noqa: BLE001 - user-visible error wrapper
+        raise CommandError(f"Failed to fetch wiki page: {url}") from exc
+
+
+def _fetch_html_via_request(url: str) -> str:
+    """Fetch HTML content from a URL using a standard request."""
+
     request = urllib.request.Request(
         url,
         headers={
@@ -609,12 +630,68 @@ def _fetch_html(url: str) -> str:
             "Accept": "text/html,application/xhtml+xml",
         },
     )
-    try:
-        with urllib.request.urlopen(request, timeout=30) as response:
-            content_type = response.headers.get("Content-Type", "")
-            charset = "utf-8"
-            if "charset=" in content_type:
-                charset = content_type.split("charset=", 1)[1].split(";", 1)[0].strip() or "utf-8"
-            return response.read().decode(charset, errors="replace")
-    except Exception as exc:  # noqa: BLE001 - user-visible error wrapper
-        raise CommandError(f"Failed to fetch wiki page: {url}") from exc
+    with urllib.request.urlopen(request, timeout=30) as response:
+        return _decode_response_text(response)
+
+
+def _fetch_fandom_html_via_api(url: str) -> str:
+    """Fetch a fandom wiki page via the MediaWiki parse API."""
+
+    parsed = urllib.parse.urlparse(url)
+    page_title = _fandom_page_title(url)
+    query = urllib.parse.urlencode(
+        {
+            "action": "parse",
+            "page": page_title,
+            "prop": "text",
+            "formatversion": "2",
+            "format": "json",
+        }
+    )
+    api_url = f"{parsed.scheme}://{parsed.netloc}/api.php?{query}"
+    request = urllib.request.Request(
+        api_url,
+        headers={
+            "User-Agent": "theTowerStats/phase2.75 (wiki ingestion)",
+            "Accept": "application/json",
+        },
+    )
+    with urllib.request.urlopen(request, timeout=30) as response:
+        payload = _decode_response_text(response)
+    data = json.loads(payload)
+    if "error" in data:
+        raise CommandError(f"Fandom API error: {data['error']}")
+    html = data.get("parse", {}).get("text")
+    if not isinstance(html, str) or not html:
+        raise CommandError("Fandom API response missing parse.text HTML payload.")
+    return html
+
+
+def _decode_response_text(response: urllib.request.addinfourl) -> str:
+    """Decode a urllib response body using the response charset when present."""
+
+    content_type = response.headers.get("Content-Type", "")
+    charset = "utf-8"
+    if "charset=" in content_type:
+        charset = content_type.split("charset=", 1)[1].split(";", 1)[0].strip() or "utf-8"
+    return response.read().decode(charset, errors="replace")
+
+
+def _is_fandom_url(url: str) -> bool:
+    """Return True when the URL points at a fandom-hosted domain."""
+
+    parsed = urllib.parse.urlparse(url)
+    return parsed.netloc.endswith("fandom.com")
+
+
+def _fandom_page_title(url: str) -> str:
+    """Extract a MediaWiki page title from a fandom URL."""
+
+    parsed = urllib.parse.urlparse(url)
+    path = parsed.path or ""
+    if "/wiki/" in path:
+        page = path.split("/wiki/", 1)[1]
+    else:
+        page = path.strip("/").rsplit("/", 1)[-1]
+    page = urllib.parse.unquote(page)
+    return page or "Main_Page"

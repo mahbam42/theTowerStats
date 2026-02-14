@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import pytest
+import urllib.error
 from django.core.management.base import CommandError
 
 from core.management.commands import fetch_wiki_data
@@ -61,3 +62,41 @@ def test_resolve_table_indexes_slots_prefers_slots_table_over_leading_tables() -
     )
     assert fetch_wiki_data._resolve_table_indexes(html, target="slots", explicit_indexes=None, spec=spec) == [1]
 
+
+def test_fetch_html_fandom_fallback_uses_parse_api(monkeypatch) -> None:
+    """Fandom 403 responses should fall back to the MediaWiki parse API."""
+
+    def fake_fetch_html(_url: str) -> str:
+        raise urllib.error.HTTPError(
+            "https://the-tower-idle-tower-defense.fandom.com/wiki/Guardian",
+            403,
+            "Forbidden",
+            {},
+            None,
+        )
+
+    class FakeResponse:
+        def __init__(self, payload: str) -> None:
+            self._payload = payload
+            self.headers = {"Content-Type": "application/json; charset=utf-8"}
+
+        def read(self) -> bytes:
+            return self._payload.encode("utf-8")
+
+        def __enter__(self) -> "FakeResponse":
+            return self
+
+        def __exit__(self, exc_type, exc, tb) -> None:
+            return None
+
+    def fake_urlopen(request, timeout=30):
+        assert "api.php" in request.full_url
+        return FakeResponse('{"parse": {"text": "<table></table>"}}')
+
+    monkeypatch.setattr(fetch_wiki_data, "_fetch_html_via_request", fake_fetch_html)
+    monkeypatch.setattr(fetch_wiki_data.urllib.request, "urlopen", fake_urlopen)
+
+    html = fetch_wiki_data._fetch_html(
+        "https://the-tower-idle-tower-defense.fandom.com/wiki/Guardian"
+    )
+    assert html == "<table></table>"
