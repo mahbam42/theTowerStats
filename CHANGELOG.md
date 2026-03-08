@@ -2,6 +2,22 @@
 
 This project follows Semantic Versioning.
 
+## [0.11.0]
+
+### Added
+- Explore query templates backed by database storage, including Admin-managed built-in templates for Farming Efficiency by Tier, Guardian Chip Performance, and Reroll Shards Earned.
+- Battle History rank filtering for the Top 3 Tournament Logs summary widget.
+- Bot Respec event-window tracking so usage is recorded per event window instead of as a timeless lock.
+
+### Changed
+- Dependencies updated across runtime and development tooling, including Django 5.2.12 and aligned package/version files.
+- Explore template records remain editable through Django Admin and are copied into the editor without auto-running.
+- Local staging database refresh now reapplies Django migrations against the restored local database after `pg_restore`.
+
+### Fixed
+- Coins Earned by Source now includes `guardian_coins_stolen` in the chart breakdown.
+- Bot Respec stays disabled only for the current event window and becomes available again when the next event window starts.
+
 ## [0.10.1]
 
 ### Changed
