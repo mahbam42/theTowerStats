@@ -5,6 +5,7 @@ from __future__ import annotations
 import importlib.util
 import os
 from pathlib import Path
+from types import SimpleNamespace
 from types import ModuleType
 
 import pytest
@@ -71,3 +72,58 @@ def test_build_prune_sql_includes_player_deletes() -> None:
     assert "DELETE FROM public.table_a WHERE player_id <> 42;" in sql
     assert "DELETE FROM public.table_b WHERE player_id <> 42;" in sql
     assert "DELETE FROM public.player_state_player WHERE id <> 42;" in sql
+
+
+@pytest.mark.regression
+def test_main_runs_local_migrations_after_restore(
+    monkeypatch: pytest.MonkeyPatch, tmp_path: Path
+) -> None:
+    """Ensure snapshot refresh reapplies local migrations before pruning.
+
+    Args:
+        monkeypatch: Pytest environment patch helper.
+        tmp_path: Temporary directory fixture.
+
+    Returns:
+        None.
+    """
+
+    module = load_script_module()
+    commands: list[tuple[list[str], str]] = []
+
+    monkeypatch.setattr(
+        module,
+        "parse_args",
+        lambda: SimpleNamespace(
+            env_file=str(tmp_path / ".env"),
+            prod_url_var="PROD_READONLY_DATABASE_URL",
+            local_url_var="LOCAL_DATABASE_URL",
+            dump_path=str(tmp_path / "snapshot.dump"),
+            schema="public",
+            player_display_name="mahbam42",
+            player_id=42,
+            skip_migrate=False,
+        ),
+    )
+    monkeypatch.setattr(module, "load_env_file", lambda path: None)
+    monkeypatch.setattr(module, "require_tool", lambda name: None)
+    monkeypatch.setattr(
+        module,
+        "run_command",
+        lambda args, *, label: commands.append((args, label)),
+    )
+    monkeypatch.setattr(module, "fetch_player_tables", lambda db_url, schema: ["battle"])
+    monkeypatch.setattr(module, "fetch_fk_edges", lambda db_url, schema, tables: [])
+    monkeypatch.setattr(module, "topo_sort", lambda nodes, edges: list(nodes))
+    monkeypatch.setattr(module, "build_prune_sql", lambda schema, tables, player_id: "SELECT 1;")
+    monkeypatch.setattr(module, "run_psql", lambda sql, db_url: "")
+    monkeypatch.setenv("PROD_READONLY_DATABASE_URL", "postgresql://prod")
+    monkeypatch.setenv("LOCAL_DATABASE_URL", "postgresql://local")
+
+    module.main()
+
+    assert [label for _, label in commands] == [
+        "pg_dump",
+        "pg_restore",
+        "manage.py migrate",
+    ]

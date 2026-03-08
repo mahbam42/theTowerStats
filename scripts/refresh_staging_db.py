@@ -7,6 +7,7 @@ import argparse
 import os
 import shutil
 import subprocess
+import sys
 from pathlib import Path
 from typing import Iterable
 
@@ -44,6 +45,22 @@ def run_command(args: list[str], *, label: str) -> None:
         subprocess.run(args, check=True)
     except subprocess.CalledProcessError as exc:
         raise RuntimeError(f"{label} failed with exit code {exc.returncode}.") from exc
+
+
+def run_local_migrations(manage_py_path: Path) -> None:
+    """Apply local Django migrations after restoring the production snapshot.
+
+    Args:
+        manage_py_path: Path to the repository's ``manage.py`` entry point.
+
+    Returns:
+        None.
+    """
+
+    run_command(
+        [sys.executable, str(manage_py_path), "migrate", "--noinput"],
+        label="manage.py migrate",
+    )
 
 
 def run_psql(sql: str, db_url: str) -> str:
@@ -225,6 +242,11 @@ def parse_args() -> argparse.Namespace:
         default=None,
         help="Player id to keep (overrides display-name lookup).",
     )
+    parser.add_argument(
+        "--skip-migrate",
+        action="store_true",
+        help="Skip applying local Django migrations after restoring the snapshot.",
+    )
     return parser.parse_args()
 
 
@@ -247,6 +269,8 @@ def main() -> None:
     require_tool("psql")
 
     dump_path = Path(args.dump_path)
+    repo_root = Path(__file__).resolve().parents[1]
+    manage_py_path = repo_root / "manage.py"
 
     print("Dumping production database...")
     run_command(
@@ -276,6 +300,10 @@ def main() -> None:
         ],
         label="pg_restore",
     )
+
+    if not args.skip_migrate:
+        print("Applying local Django migrations...")
+        run_local_migrations(manage_py_path)
 
     if args.player_id is None:
         player_id = get_player_id(local_url, args.schema, args.player_display_name)
