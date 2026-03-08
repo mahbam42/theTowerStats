@@ -62,7 +62,7 @@ def seed_additional_explore_query_templates(apps, schema_editor) -> None:
     )
 
     for template in templates:
-        ExploreQueryTemplate.objects.update_or_create(
+        ExploreQueryTemplate.objects.get_or_create(
             name=template["name"],
             defaults=template,
         )

@@ -2,9 +2,11 @@
 
 from __future__ import annotations
 
+import importlib
 from datetime import datetime, timezone
 
 import pytest
+from django.apps import apps
 from django.core.exceptions import ValidationError
 from django.urls import reverse
 
@@ -12,6 +14,10 @@ from gamedata.models import BattleReport, BattleReportDerivedMetrics, BattleRepo
 from player_state.models import ExploreQuery, ExploreQueryTemplate, Preset
 
 pytestmark = pytest.mark.integration
+
+seed_additional_explore_query_templates = importlib.import_module(
+    "player_state.migrations.0015_seed_additional_explore_query_templates"
+).seed_additional_explore_query_templates
 
 
 @pytest.mark.django_db
@@ -322,6 +328,37 @@ def test_explore_default_templates_include_seeded_examples() -> None:
     assert "metric guardian_damage sum" in templates["Guardian Chip Performance"].dsl_text
     assert "output bar" in templates["Reroll Shards Earned"].dsl_text
     assert "scope hidden exclude" in templates["Reroll Shards Earned"].dsl_text
+
+
+@pytest.mark.integration
+@pytest.mark.django_db
+def test_explore_template_seed_preserves_existing_admin_edits() -> None:
+    """Seed migrations must not overwrite admin-edited built-in templates."""
+
+    template = ExploreQueryTemplate.objects.get(name="Guardian Chip Performance")
+    template.description = "Customized by admin"
+    template.dsl_text = (
+        'name "Guardian Chip Performance"\n'
+        "breakdown by date\n"
+        "metric guardian_damage avg\n"
+        "output table\n"
+    )
+    template.tags = "custom"
+    template.is_active = False
+    template.save()
+
+    seed_additional_explore_query_templates(apps, None)
+    template.refresh_from_db()
+
+    assert template.description == "Customized by admin"
+    assert template.dsl_text == (
+        'name "Guardian Chip Performance"\n'
+        "breakdown by date\n"
+        "metric guardian_damage avg\n"
+        "output table\n"
+    )
+    assert template.tags == "custom"
+    assert template.is_active is False
 
 
 @pytest.mark.django_db

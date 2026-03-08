@@ -44,7 +44,7 @@ Use the refresh script to pull a read-only production snapshot into your local d
 .venv/bin/python scripts/refresh_staging_db.py --player-display-name mahbam42
 ```
 
-The script reads `.env` by default and expects `PROD_READONLY_DATABASE_URL` and `LOCAL_DATABASE_URL` to be set. After restoring the snapshot it also runs local Django migrations so newer local tables remain available even when the production dump comes from an older schema. For the manual workflow and grant setup, see `archive/stagingDB.md`.
+The script reads `.env` by default and expects `PROD_READONLY_DATABASE_URL` and `LOCAL_DATABASE_URL` to be set. After restoring the snapshot it also runs local Django migrations against `LOCAL_DATABASE_URL` so newer local tables remain available even when the production dump comes from an older schema. For the manual workflow and grant setup, see `archive/stagingDB.md`.
 
 Local Django entry points now also read `.env` automatically. If `DATABASE_URL` in `.env` points at the same local Postgres database as `LOCAL_DATABASE_URL`, `python manage.py runserver` will read the refreshed snapshot without needing a manual `export DATABASE_URL=...`.
 
@@ -99,6 +99,7 @@ The Charts dashboard is driven by declarative `ChartConfig` entries and a centra
 - Templates are global, not player-scoped.
 - Explore only lists templates where `is_active=True`, ordered alphabetically by name.
 - Templates are copied into the editor and remain editable before the player runs or saves them.
+- Seed migrations only create missing built-in templates and do not overwrite later admin edits.
 - Seeded templates currently include `Farming Efficiency by Tier`, `Guardian Chip Performance`, and `Reroll Shards Earned`.
 
 ## Event window helpers

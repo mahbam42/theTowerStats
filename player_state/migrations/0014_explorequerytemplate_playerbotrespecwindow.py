@@ -10,7 +10,7 @@ def seed_explore_query_templates(apps, schema_editor) -> None:
     """Create the initial admin-managed Explore template records."""
 
     ExploreQueryTemplate = apps.get_model("player_state", "ExploreQueryTemplate")
-    ExploreQueryTemplate.objects.update_or_create(
+    ExploreQueryTemplate.objects.get_or_create(
         name="Farming Efficiency by Tier",
         defaults={
             "description": (

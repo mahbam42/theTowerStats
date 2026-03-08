@@ -89,7 +89,7 @@ def test_main_runs_local_migrations_after_restore(
     """
 
     module = load_script_module()
-    commands: list[tuple[list[str], str]] = []
+    commands: list[tuple[list[str], str, dict[str, str] | None]] = []
 
     monkeypatch.setattr(
         module,
@@ -110,7 +110,7 @@ def test_main_runs_local_migrations_after_restore(
     monkeypatch.setattr(
         module,
         "run_command",
-        lambda args, *, label: commands.append((args, label)),
+        lambda args, *, label, env=None: commands.append((args, label, env)),
     )
     monkeypatch.setattr(module, "fetch_player_tables", lambda db_url, schema: ["battle"])
     monkeypatch.setattr(module, "fetch_fk_edges", lambda db_url, schema, tables: [])
@@ -122,8 +122,10 @@ def test_main_runs_local_migrations_after_restore(
 
     module.main()
 
-    assert [label for _, label in commands] == [
+    assert [label for _, label, _ in commands] == [
         "pg_dump",
         "pg_restore",
         "manage.py migrate",
     ]
+    assert commands[2][2] is not None
+    assert commands[2][2]["DATABASE_URL"] == "postgresql://local"

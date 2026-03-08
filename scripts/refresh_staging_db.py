@@ -39,27 +39,43 @@ def require_tool(name: str) -> None:
         raise RuntimeError(f"Missing required tool: {name}")
 
 
-def run_command(args: list[str], *, label: str) -> None:
-    """Run a subprocess command and raise a clear error on failure."""
-    try:
-        subprocess.run(args, check=True)
-    except subprocess.CalledProcessError as exc:
-        raise RuntimeError(f"{label} failed with exit code {exc.returncode}.") from exc
-
-
-def run_local_migrations(manage_py_path: Path) -> None:
-    """Apply local Django migrations after restoring the production snapshot.
+def run_command(
+    args: list[str], *, label: str, env: dict[str, str] | None = None
+) -> None:
+    """Run a subprocess command and raise a clear error on failure.
 
     Args:
-        manage_py_path: Path to the repository's ``manage.py`` entry point.
+        args: Command and arguments to execute.
+        label: Human-readable operation label for error messages.
+        env: Optional environment variable mapping for the subprocess.
 
     Returns:
         None.
     """
 
+    try:
+        subprocess.run(args, check=True, env=env)
+    except subprocess.CalledProcessError as exc:
+        raise RuntimeError(f"{label} failed with exit code {exc.returncode}.") from exc
+
+
+def run_local_migrations(manage_py_path: Path, *, local_db_url: str) -> None:
+    """Apply local Django migrations after restoring the production snapshot.
+
+    Args:
+        manage_py_path: Path to the repository's ``manage.py`` entry point.
+        local_db_url: Database URL that was restored and should be migrated.
+
+    Returns:
+        None.
+    """
+
+    migrate_env = os.environ.copy()
+    migrate_env["DATABASE_URL"] = local_db_url
     run_command(
         [sys.executable, str(manage_py_path), "migrate", "--noinput"],
         label="manage.py migrate",
+        env=migrate_env,
     )
 
 
@@ -303,7 +319,7 @@ def main() -> None:
 
     if not args.skip_migrate:
         print("Applying local Django migrations...")
-        run_local_migrations(manage_py_path)
+        run_local_migrations(manage_py_path, local_db_url=local_url)
 
     if args.player_id is None:
         player_id = get_player_id(local_url, args.schema, args.player_display_name)
