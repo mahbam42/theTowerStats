@@ -299,6 +299,32 @@ def test_explore_query_template_admin_changelist_renders(client, user) -> None:
 
 
 @pytest.mark.django_db
+def test_explore_default_templates_include_seeded_examples() -> None:
+    """Built-in Explore templates include seeded Guardian and reroll examples."""
+
+    templates = {
+        template.name: template
+        for template in ExploreQueryTemplate.objects.filter(
+            name__in=(
+                "Farming Efficiency by Tier",
+                "Guardian Chip Performance",
+                "Reroll Shards Earned",
+            )
+        )
+    }
+
+    assert set(templates) == {
+        "Farming Efficiency by Tier",
+        "Guardian Chip Performance",
+        "Reroll Shards Earned",
+    }
+    assert "scope past_n_runs 5" in templates["Guardian Chip Performance"].dsl_text
+    assert "metric guardian_damage sum" in templates["Guardian Chip Performance"].dsl_text
+    assert "output bar" in templates["Reroll Shards Earned"].dsl_text
+    assert "scope hidden exclude" in templates["Reroll Shards Earned"].dsl_text
+
+
+@pytest.mark.django_db
 @pytest.mark.regression
 def test_explore_saved_query_overwrites_by_name(auth_client, player) -> None:
     """Saving the same query name replaces the existing saved entry."""

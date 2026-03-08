@@ -99,6 +99,7 @@ The Charts dashboard is driven by declarative `ChartConfig` entries and a centra
 - Templates are global, not player-scoped.
 - Explore only lists templates where `is_active=True`, ordered alphabetically by name.
 - Templates are copied into the editor and remain editable before the player runs or saves them.
+- Seeded templates currently include `Farming Efficiency by Tier`, `Guardian Chip Performance`, and `Reroll Shards Earned`.
 
 ## Event window helpers
 
