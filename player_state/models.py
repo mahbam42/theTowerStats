@@ -1,11 +1,14 @@
-"""Database models for player progress and configuration."""
+"""Database models for player progress, templates, and configuration."""
 
 from __future__ import annotations
 
-from django.core.exceptions import ValidationError
 from django.conf import settings
+from django.core.exceptions import ValidationError
 from django.db import models
 
+from analysis.explore_dsl import parse_explore_dsl
+from analysis.explore_registry import DEFAULT_BREAKDOWNS, build_explore_metric_registry
+from analysis.explore_schema import ExploreScope, validate_explore_query
 from definitions.models import (
     BotDefinition,
     BotParameterDefinition,
@@ -256,6 +259,110 @@ class ExploreQuery(models.Model):
         """Return a concise display string for admin contexts."""
 
         return f"ExploreQuery({self.name})"
+
+
+class ExploreQueryTemplate(models.Model):
+    """Admin-managed read-only Explore template shown to all players."""
+
+    name = models.CharField(max_length=120, unique=True)
+    description = models.TextField(blank=True)
+    dsl_text = models.TextField(
+        help_text="Explore DSL copied into the editor when a player uses the template.",
+    )
+    tags = models.CharField(
+        max_length=255,
+        blank=True,
+        help_text="Optional comma-separated tags for lightweight Explore categorization.",
+    )
+    is_active = models.BooleanField(
+        default=True,
+        help_text="Hide inactive templates from Explore without deleting them.",
+    )
+    created_at = models.DateTimeField(auto_now_add=True)
+    updated_at = models.DateTimeField(auto_now=True)
+
+    class Meta:
+        ordering = ("name", "id")
+
+    def __str__(self) -> str:
+        """Return a concise display string for admin contexts."""
+
+        return f"ExploreQueryTemplate({self.name})"
+
+    @property
+    def tag_list(self) -> tuple[str, ...]:
+        """Return normalized tags for template display usage."""
+
+        return tuple(part.strip() for part in self.tags.split(",") if part.strip())
+
+    def clean(self) -> None:
+        """Validate template DSL against Explore parsing and schema rules."""
+
+        dsl_text = (self.dsl_text or "").strip()
+        if not dsl_text:
+            raise ValidationError({"dsl_text": "Template DSL is required."})
+
+        parse_result = parse_explore_dsl(
+            dsl_text,
+            player_id="template",
+            default_scope=ExploreScope(
+                start_date=None,
+                end_date=None,
+                tier=None,
+                preset_id=None,
+                snapshot_id=None,
+                past_n_runs=None,
+                include_hidden=False,
+            ),
+        )
+        if parse_result.errors:
+            raise ValidationError({"dsl_text": " ".join(parse_result.errors)})
+        assert parse_result.query is not None
+
+        validation = validate_explore_query(
+            parse_result.query,
+            metric_registry=build_explore_metric_registry(),
+            breakdown_registry=DEFAULT_BREAKDOWNS,
+        )
+        if validation.errors:
+            raise ValidationError({"dsl_text": " ".join(validation.errors)})
+
+    def save(self, *args, **kwargs) -> None:
+        """Persist the template after validation."""
+
+        self.full_clean()
+        super().save(*args, **kwargs)
+
+
+class PlayerBotRespecWindow(models.Model):
+    """Track whether a player has used Bot Respec in a specific Event window."""
+
+    player = models.ForeignKey(
+        Player,
+        on_delete=models.CASCADE,
+        related_name="bot_respec_windows",
+    )
+    window_start = models.DateField()
+    window_end = models.DateField()
+    used_at = models.DateTimeField(auto_now_add=True)
+
+    class Meta:
+        constraints = [
+            models.UniqueConstraint(
+                fields=["player", "window_start", "window_end"],
+                name="uniq_player_bot_respec_window",
+            )
+        ]
+        ordering = ("-window_start", "-used_at")
+
+    def __str__(self) -> str:
+        """Return a concise display string for admin contexts."""
+
+        return (
+            "PlayerBotRespecWindow("
+            f"player={self.player_id}, window={self.window_start.isoformat()}..{self.window_end.isoformat()}"
+            ")"
+        )
 
 
 class PlayerCard(models.Model):

@@ -1541,6 +1541,7 @@ def test_dashboard_view_window_delta_respects_preset_filter(auth_client, player)
 
 
 @pytest.mark.django_db
+@pytest.mark.regression
 def test_dashboard_view_renders_coins_by_source_donut(auth_client, player) -> None:
     """Render the Coins Earned by Source donut chart from Battle Report values."""
 
@@ -1561,7 +1562,7 @@ def test_dashboard_view_renders_coins_by_source_donut(auth_client, player) -> No
             "Coins from Coin Upgrade\t832.21K",
             "Coins from Coin Bonuses\t335.53K",
             "Guardian",
-            "Guardian coins stolen\t0",
+            "Guardian coins stolen\t1.20K",
             "Coins Fetched\t805",
             "",
         ]
@@ -1594,8 +1595,10 @@ def test_dashboard_view_renders_coins_by_source_donut(auth_client, player) -> No
     values = panel["datasets"][0]["data"]
     death_wave_label = next(label for label in labels if label.startswith("Coins From Death Wave"))
     assert values[labels.index(death_wave_label)] == 2350.0
+    stolen_label = next(label for label in labels if label.startswith("Guardian coins stolen"))
+    assert values[labels.index(stolen_label)] == 1200.0
     other_label = next(label for label in labels if label.startswith("Other coins"))
-    assert values[labels.index(other_label)] == 5045.0
+    assert values[labels.index(other_label)] == 3845.0
     assert sum(v for v in values if v is not None) == 1_240_000.0
 
 

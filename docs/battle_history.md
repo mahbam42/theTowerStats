@@ -48,6 +48,7 @@ Battle History helps you review your past runs in a table so you can compare res
 - **Hidden** shows whether the report is excluded from Charts and Explore by default.
 - **Preset** is an optional label you can use to group runs for review. The game currently allows 5 presets, and this app lets you save more. Presets do not change any gameplay results.
 - **Top 3 Tournament Logs** shows your three best tournament-marked runs by highest wave.
+- **Tournament rank** in the tournament summary limits that widget to one recorded rank without changing the main table filters.
 - Tournament badges show **Tournament** with the recorded rank when available.
 - Selecting a column header toggles between ascending and descending order for that column.
 
@@ -73,6 +74,9 @@ Battle History helps you review your past runs in a table so you can compare res
 
 > **Note**
 > **Highest Wave by Tier** and **Top 3 Tournament Logs** use all imported runs, not the current filter selections. Tournament runs only appear in the tournament summary when you marked them during import.
+
+> **Note**
+> The tournament rank selector only changes the **Top 3 Tournament Logs** summary card. It does not change the main Battle History table.
 
 > **Caution**
 > This app does not invent or infer missing values.

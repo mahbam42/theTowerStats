@@ -22,7 +22,7 @@ The Bots page helps you track which bots are unlocked, how far each upgrade para
 6. Select **Details** on an unlocked bot to view its upgrade parameters.
 7. Select **Level Up** on a parameter to increase its level by 1.
 8. Select **Level Down** on a parameter to reduce its level by 1.
-9. Review the **Bot Respec** card for the current cost, availability, and refund scope.
+9. Select **Bot Respec (300 Gems)** after you respec in-game when you want the app to record that the current event window's respec has been used.
 
 ## How to Read the Results
 
@@ -34,7 +34,7 @@ The Bots page helps you track which bots are unlocked, how far each upgrade para
 - **Next** shows the next-level value, with the change emphasized in parentheses when it can be parsed.
 - **Cost** shows the next-level upgrade cost (informational only).
 - **MAX** indicates the parameter has reached the highest known level and cannot be increased further in the app.
-- **Bot Respec** summarizes the respec cost, availability, and what is refunded.
+- **Bot Respec** summarizes the respec cost, availability, what is refunded, and whether the current event window's respec has already been recorded.
 
 ## Notes & Limitations
 
@@ -51,7 +51,7 @@ The Bots page helps you track which bots are unlocked, how far each upgrade para
 > **Level Down** is available as a safety option if you accidentally record an upgrade you did not intend.
 
 > **Note**
-> Bot respecs are performed in-game. The app only documents the cost, frequency, and refund scope.
+> Bot respecs are performed in-game. The app records whether you have already used the current event window's respec, but it does not reset Bot levels or unlocks for you.
 
 > **Note**
 > Bot respecs refund medal upgrades and unlocks only; Labs are not refunded.

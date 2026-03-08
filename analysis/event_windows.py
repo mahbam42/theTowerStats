@@ -11,6 +11,7 @@ from datetime import date, timedelta
 
 
 EVENT_WINDOW_DAYS = 14
+DEFAULT_EVENT_WINDOW_ANCHOR = date(2025, 12, 9)
 
 
 @dataclass(frozen=True, slots=True)
@@ -46,6 +47,30 @@ def event_window_for_date(*, target: date, anchor: date, window_days: int = EVEN
     start = anchor + timedelta(days=window_index * window_days)
     end = start + timedelta(days=window_days - 1)
     return EventWindow(start=start, end=end)
+
+
+def current_event_window(
+    *,
+    target: date | None = None,
+    anchor: date = DEFAULT_EVENT_WINDOW_ANCHOR,
+    window_days: int = EVENT_WINDOW_DAYS,
+) -> EventWindow:
+    """Return the current Event window using the shared app anchor date.
+
+    Args:
+        target: Date to evaluate. Defaults to today's date when omitted.
+        anchor: Known Event start date used as the shared stepping origin.
+        window_days: Window size in days (defaults to 14).
+
+    Returns:
+        EventWindow containing the target date.
+    """
+
+    return event_window_for_date(
+        target=target or date.today(),
+        anchor=anchor,
+        window_days=window_days,
+    )
 
 
 def shift_event_window(window: EventWindow, *, shift: int, window_days: int = EVENT_WINDOW_DAYS) -> EventWindow:
@@ -93,4 +118,3 @@ def coerce_window_bounds(*, start: date | None, end: date | None, window_days: i
         end = start + timedelta(days=window_days - 1)
     assert start is not None and end is not None
     return EventWindow(start=start, end=end)
-

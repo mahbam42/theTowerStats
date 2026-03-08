@@ -14,7 +14,7 @@ from typing import Iterable
 
 from django import forms
 
-from analysis.event_windows import event_window_for_date
+from analysis.event_windows import current_event_window
 from analysis.chart_config_dto import ChartScopeDTO
 from analysis.explore_registry import build_explore_metric_registry, list_explore_breakdowns, list_explore_metrics
 from analysis.series_registry import DEFAULT_REGISTRY, allowed_chart_builder_aggregations
@@ -421,7 +421,7 @@ class ChartContextForm(forms.Form):
         else:
             cleaned["tournament_filter"] = None
         if not cleaned.get("start_date") and not cleaned.get("end_date"):
-            window = event_window_for_date(target=self._today, anchor=date(2025, 12, 9))
+            window = current_event_window(target=self._today)
             cleaned["start_date"] = window.start
             cleaned["end_date"] = window.end
         if not cleaned.get("charts"):
@@ -587,7 +587,7 @@ class LifetimeStatsFilterForm(forms.Form):
         mode = (cleaned.get("range_mode") or "all").strip().casefold()
         cleaned["range_mode"] = mode
         if mode == "event":
-            window = event_window_for_date(target=self._today, anchor=date(2025, 12, 9))
+            window = current_event_window(target=self._today)
             cleaned["start_date"] = window.start
             cleaned["end_date"] = window.end
             return cleaned

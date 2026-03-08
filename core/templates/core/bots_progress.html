@@ -11,9 +11,28 @@
           <h5 class="margin-0">Bot Respec</h5>
           <p class="muted margin-0">Refund medal upgrades and unlocks. Labs are not refunded.</p>
           <p class="muted margin-0">Cost: 300 Gems • Available once per event.</p>
+          <p class="muted margin-0">Current event window: {{ bot_respec.window_start|date:"Y-m-d" }} to {{ bot_respec.window_end|date:"Y-m-d" }}.</p>
+          <p class="muted margin-0">
+            {% if bot_respec.available %}
+              Available now. Use this after you respec in-game to record that the event's respec has been spent.
+            {% else %}
+              Already marked as used for this event window.{% if bot_respec.used_at %} Recorded {{ bot_respec.used_at|date:"Y-m-d H:i" }}.{% endif %}
+            {% endif %}
+          </p>
         </div>
         <div class="cell shrink">
-          <button class="button secondary" type="button" disabled aria-disabled="true">Bot Respec (300 Gems)</button>
+          <form method="post" class="margin-0">
+            {% csrf_token %}
+            <input type="hidden" name="action" value="mark_bot_respec_used">
+            <input type="hidden" name="next" value="{{ request.get_full_path }}">
+            <button
+              class="button secondary"
+              type="submit"
+              {% if not bot_respec.available %}disabled aria-disabled="true"{% endif %}
+            >
+              Bot Respec (300 Gems)
+            </button>
+          </form>
         </div>
       </div>
     </div>

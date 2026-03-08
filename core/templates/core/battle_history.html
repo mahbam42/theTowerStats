@@ -168,12 +168,26 @@
         <div class="margin-top-1">
           <h5 class="margin-bottom-0">Top 3 Tournament Logs</h5>
           <p class="muted margin-top-0 margin-bottom-1">All imported runs marked as tournaments during import.</p>
+          <form method="get" class="stacked margin-bottom-1">
+            {% for key, value in tournament_summary_query_items %}
+              <input type="hidden" name="{{ key }}" value="{{ value }}">
+            {% endfor %}
+            <label>Tournament rank
+              <select name="top_tournament_rank" onchange="this.form.submit()">
+                <option value="">All ranks</option>
+                {% for key, label in tournament_rank_choices %}
+                  <option value="{{ key }}"{% if tournament_summary_rank == key %} selected{% endif %}>{{ label }}</option>
+                {% endfor %}
+              </select>
+            </label>
+          </form>
           {% if top_tournament_logs %}
             <div class="table-scroll">
               <table class="stack">
                 <thead>
                   <tr>
                     <th scope="col">Battle date</th>
+                    <th scope="col">Rank</th>
                     <th scope="col">Highest wave</th>
                   </tr>
                 </thead>
@@ -183,6 +197,9 @@
                       <td>
                         {% if entry.battle_date %}{{ entry.battle_date }}{% else %}<span class="muted">—</span>{% endif %}
                       </td>
+                      <td>
+                        {% if entry.tournament_rank %}{{ entry.tournament_rank|title }}{% else %}<span class="muted">—</span>{% endif %}
+                      </td>
                       <td>{{ entry.wave }}</td>
                     </tr>
                   {% endfor %}
@@ -190,7 +207,13 @@
               </table>
             </div>
           {% else %}
-            <div class="empty-state" role="status">No tournament runs recorded.</div>
+            <div class="empty-state" role="status">
+              {% if tournament_summary_rank %}
+                No {{ tournament_summary_rank|title }} tournament runs recorded.
+              {% else %}
+                No tournament runs recorded.
+              {% endif %}
+            </div>
           {% endif %}
         </div>
 

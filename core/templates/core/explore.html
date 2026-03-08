@@ -37,13 +37,6 @@
             <label class="margin-0">Saved query
               <select name="query_id" onchange="this.form.submit()">
                 <option value="">Select a saved query</option>
-                {% if stored_queries %}
-                  <optgroup label="Built-in">
-                    {% for query in stored_queries %}
-                      <option value="{{ query.id }}"{% if stored_query_id == query.id %} selected{% endif %}>{{ query.name }}</option>
-                    {% endfor %}
-                  </optgroup>
-                {% endif %}
                 {% if saved_queries %}
                   <optgroup label="Saved">
                     {% for query in saved_queries %}
@@ -92,6 +85,48 @@
             {% endif %}
           </div>
         </form>
+      </div>
+    </div>
+  </div>
+
+  <div class="grid-x grid-margin-x">
+    <div class="cell">
+      <div class="card-shell">
+        <div class="grid-x grid-margin-x align-middle">
+          <div class="cell auto">
+            <h4 class="margin-bottom-0">Query Templates</h4>
+            <p class="muted margin-top-0">Read-only starter queries you can copy into the editor and customize before running.</p>
+          </div>
+        </div>
+        {% if query_templates %}
+          <div class="grid-x grid-margin-x">
+            {% for template in query_templates %}
+              <div class="cell large-4 medium-6">
+                <div class="callout secondary">
+                  <h5 class="margin-bottom-0">{{ template.name }}</h5>
+                  {% if template.description %}
+                    <p class="muted margin-top-0">{{ template.description }}</p>
+                  {% endif %}
+                  {% if template.tag_list %}
+                    <p class="muted margin-top-0 margin-bottom-1">
+                      {% for tag in template.tag_list %}
+                        <span class="badge secondary">{{ tag }}</span>
+                      {% endfor %}
+                    </p>
+                  {% endif %}
+                  <a
+                    class="button secondary small margin-bottom-0"
+                    href="{% url 'core:explore' %}?template_id={{ template.id }}"
+                  >
+                    Use this query
+                  </a>
+                </div>
+              </div>
+            {% endfor %}
+          </div>
+        {% else %}
+          <div class="empty-state" role="status">No query templates are active.</div>
+        {% endif %}
       </div>
     </div>
   </div>

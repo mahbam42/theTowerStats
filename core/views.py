@@ -33,7 +33,12 @@ from analysis.chart_config_dto import ChartContextDTO
 from analysis.chart_config_engine import analyze_chart_config_dto
 from analysis.chart_config_validator import validate_chart_config_dto
 from analysis.deltas import delta
-from analysis.event_windows import coerce_window_bounds, event_window_for_date, shift_event_window
+from analysis.event_windows import (
+    DEFAULT_EVENT_WINDOW_ANCHOR,
+    coerce_window_bounds,
+    current_event_window,
+    shift_event_window,
+)
 from analysis.engine import analyze_metric_series, analyze_runs
 from analysis.explore_dsl import build_explore_autocomplete, format_explore_dsl, parse_explore_dsl
 from analysis.explore_engine import execute_explore_query
@@ -160,11 +165,13 @@ from player_state.models import (
     ChartDashboardPreference,
     ChartSnapshot,
     ExploreQuery as ExploreQueryModel,
+    ExploreQueryTemplate,
     GoalTarget,
     GoalType,
     MAX_ACTIVE_GUARDIAN_CHIPS,
     Player,
     PlayerBot,
+    PlayerBotRespecWindow,
     PlayerBotParameter,
     PlayerCard,
     PlayerGuardianChip,
@@ -405,7 +412,7 @@ def dashboard(request: HttpRequest) -> HttpResponse:
                 parsed_end = None
 
             if parsed_start is None and parsed_end is None:
-                base = event_window_for_date(target=date.today(), anchor=date(2025, 12, 9))
+                base = current_event_window(target=date.today())
             else:
                 base = coerce_window_bounds(start=parsed_start, end=parsed_end)
 
@@ -619,10 +626,10 @@ def dashboard(request: HttpRequest) -> HttpResponse:
 
     if not defaulted_get.get("start_date") and not defaulted_get.get("end_date"):
         if demo_mode_enabled(request):
-            defaulted_get["start_date"] = date(2025, 12, 9).isoformat()
+            defaulted_get["start_date"] = DEFAULT_EVENT_WINDOW_ANCHOR.isoformat()
             defaulted_get["end_date"] = date(2025, 12, 22).isoformat()
         else:
-            window = event_window_for_date(target=date.today(), anchor=date(2025, 12, 9))
+            window = current_event_window(target=date.today())
             defaulted_get["start_date"] = window.start.isoformat()
             defaulted_get["end_date"] = window.end.isoformat()
 
@@ -1780,20 +1787,10 @@ def _chart_builder_payload(builder_form: ChartBuilderForm) -> dict[str, object]:
     }
 
 
-FARMING_EFFICIENCY_QUERY_ID = "farming-efficiency-by-tier"
 FARMING_EFFICIENCY_QUERY_NAME = "Farming Efficiency by Tier"
 FARMING_MIN_RUNS = 3
 FARMING_PLATEAU_THRESHOLD = 0.05
 FARMING_VARIANCE_THRESHOLD = 0.4
-
-
-@dataclass(frozen=True, slots=True)
-class ExploreStoredQuery:
-    """Metadata for built-in Explore queries."""
-
-    id: str
-    name: str
-    dsl_text: str
 
 
 @dataclass(frozen=True, slots=True)
@@ -1819,22 +1816,16 @@ class ExploreResultRowPayload(TypedDict):
     run_id: int | None
 
 
-def _farming_efficiency_dsl(*, default_scope: ExploreScope) -> str:
-    """Return the DSL text for the farming efficiency stored query."""
-
-    start = default_scope.start_date.isoformat() if default_scope.start_date else "[date:YYYY-MM-DD]"
-    end = default_scope.end_date.isoformat() if default_scope.end_date else "[date:YYYY-MM-DD]"
-    preset = str(default_scope.preset_id) if default_scope.preset_id else "[preset:—]"
-    snapshot = str(default_scope.snapshot_id) if default_scope.snapshot_id else "[snapshot:—]"
-    past_runs = str(default_scope.past_n_runs) if default_scope.past_n_runs else "[runs:—]"
+def farming_efficiency_template_dsl() -> str:
+    """Return the DSL text for the default Farming Efficiency template."""
 
     lines = [
         f'name "{FARMING_EFFICIENCY_QUERY_NAME}"',
-        f"scope date {start}..{end}",
+        "scope date [date:YYYY-MM-DD]..[date:YYYY-MM-DD]",
         "scope tier all not tournament",
-        f"scope preset {preset}",
-        f"scope snapshot {snapshot}",
-        f"scope past_n_runs {past_runs}",
+        "scope preset [preset:—]",
+        "scope snapshot [snapshot:—]",
+        "scope past_n_runs [runs:—]",
         "breakdown by tier",
         "metric coins_per_hour avg",
         "# Optional secondary metrics (avg):",
@@ -1846,18 +1837,6 @@ def _farming_efficiency_dsl(*, default_scope: ExploreScope) -> str:
         "output table",
     ]
     return "\n".join(lines)
-
-
-def _explore_stored_queries(*, default_scope: ExploreScope) -> tuple[ExploreStoredQuery, ...]:
-    """Return built-in Explore queries for the saved query dropdown."""
-
-    return (
-        ExploreStoredQuery(
-            id=FARMING_EFFICIENCY_QUERY_ID,
-            name=FARMING_EFFICIENCY_QUERY_NAME,
-            dsl_text=_farming_efficiency_dsl(default_scope=default_scope),
-        ),
-    )
 
 
 def _explore_metric_value(record: BattleReport, *, metric_key: str) -> float | None:
@@ -2053,25 +2032,27 @@ def explore_dashboard(request: HttpRequest) -> HttpResponse:
 
     explore_registry = build_explore_metric_registry()
     saved_queries = ExploreQueryModel.objects.filter(player=player).order_by("name", "id")
+    query_templates = ExploreQueryTemplate.objects.filter(is_active=True).order_by("name", "id")
     loaded_query: ExploreQueryModel | None = None
     loaded_payload: dict[str, object] | None = None
+    loaded_template: ExploreQueryTemplate | None = None
     prefill_scope = _explore_prefill_scope_from_request(request.GET)
-    stored_queries = _explore_stored_queries(default_scope=prefill_scope)
-    stored_query_map = {query.id: query for query in stored_queries}
-    stored_query: ExploreStoredQuery | None = None
-    if request.method == "GET" and request.GET.get("query_id"):
-        query_id_raw = request.GET.get("query_id") or ""
-        if query_id_raw in stored_query_map:
-            stored_query = stored_query_map[query_id_raw]
-        else:
-            try:
-                query_id = int(query_id_raw or 0)
-            except ValueError:
-                query_id = 0
-            if query_id:
-                loaded_query = saved_queries.filter(id=query_id).first()
-                if loaded_query is not None:
-                    loaded_payload = dict(loaded_query.query or {})
+    if request.method == "GET" and request.GET.get("template_id"):
+        try:
+            template_id = int(request.GET.get("template_id") or 0)
+        except ValueError:
+            template_id = 0
+        if template_id:
+            loaded_template = query_templates.filter(id=template_id).first()
+    if loaded_template is None and request.method == "GET" and request.GET.get("query_id"):
+        try:
+            query_id = int(request.GET.get("query_id") or 0)
+        except ValueError:
+            query_id = 0
+        if query_id:
+            loaded_query = saved_queries.filter(id=query_id).first()
+            if loaded_query is not None:
+                loaded_payload = dict(loaded_query.query or {})
     just_saved_id = None
     if request.method == "GET":
         just_saved_id = _consume_explore_just_saved_query_id(request)
@@ -2131,55 +2112,8 @@ def explore_dashboard(request: HttpRequest) -> HttpResponse:
         payload_dsl_text = _explore_payload_dsl_text(loaded_payload)
         dsl_text = payload_dsl_text or format_explore_dsl(loaded_query_data, default_scope=prefill_scope)
 
-    if stored_query is not None and not form.is_bound:
-        dsl_text = stored_query.dsl_text
-        parse_result = parse_explore_dsl(
-            dsl_text,
-            player_id=str(player.id),
-            default_scope=prefill_scope,
-        )
-        validation_errors.extend(parse_result.errors)
-        validation_warnings.extend(parse_result.warnings)
-        if parse_result.query is not None and not parse_result.errors:
-            validation = validate_explore_query(
-                parse_result.query,
-                metric_registry=explore_registry,
-                breakdown_registry=DEFAULT_BREAKDOWNS,
-            )
-            validation_errors.extend(validation.errors)
-            validation_warnings.extend(validation.warnings)
-            query_payload = _explore_payload_with_dsl(
-                build_query_payload(parse_result.query),
-                dsl_input,
-            )
-            if not validation.errors:
-                execution_query = parse_result.query
-                if parse_result.query.visualization_hint == "kpi":
-                    execution_query = ExploreQuery(
-                        schema_version=parse_result.query.schema_version,
-                        player_id=parse_result.query.player_id,
-                        name=parse_result.query.name,
-                        scope=parse_result.query.scope,
-                        filters=parse_result.query.filters,
-                        breakdowns=(),
-                        metrics=parse_result.query.metrics,
-                        visualization_hint=parse_result.query.visualization_hint,
-                    )
-                results = _explore_execute_query(
-                    execution_query,
-                    player=player,
-                    registry=explore_registry,
-                )
-                executed_query = execution_query
-                if results["run_count"] == 0:
-                    validation_warnings.append(
-                        "Empty scope: no runs match the current scope and filters."
-                    )
-                if not results["rows"]:
-                    validation_warnings.append(
-                        "Missing data: no matching metric values were found."
-                    )
-                _append_explore_missing_warnings(results, validation_warnings)
+    if loaded_template is not None and not form.is_bound:
+        dsl_text = loaded_template.dsl_text
 
     if uses_dsl:
         dsl_text = dsl_input
@@ -2379,9 +2313,9 @@ def explore_dashboard(request: HttpRequest) -> HttpResponse:
     context = {
         "form": form,
         "saved_queries": saved_queries,
+        "query_templates": query_templates,
         "loaded_query": loaded_query,
-        "stored_queries": stored_queries,
-        "stored_query_id": stored_query.id if stored_query is not None else "",
+        "loaded_template_id": loaded_template.id if loaded_template is not None else "",
         "query_payload": query_payload,
         "explore_dsl_text": dsl_text,
         "explore_dsl_autocomplete": autocomplete_payload,
@@ -2656,8 +2590,15 @@ def battle_history(request: HttpRequest) -> HttpResponse:
         .annotate(highest_wave=Max("wave"))
         .order_by("tier")
     )
+    tournament_summary_rank = (request.GET.get("top_tournament_rank") or "").strip()
+    valid_tournament_ranks = {key for key, _label in TOURNAMENT_RANK_CHOICES}
+    if tournament_summary_rank not in valid_tournament_ranks:
+        tournament_summary_rank = ""
+    top_tournament_logs_qs = progress_qs.filter(is_tournament=True, wave__isnull=False)
+    if tournament_summary_rank:
+        top_tournament_logs_qs = top_tournament_logs_qs.filter(tournament_rank=tournament_summary_rank)
     top_tournament_logs = list(
-        progress_qs.filter(is_tournament=True, wave__isnull=False).order_by("-wave", "-battle_date", "-id")[:3]
+        top_tournament_logs_qs.order_by("-wave", "-battle_date", "-id")[:3]
     )
 
     sort_key = filter_form.cleaned_data.get("sort") or "-run_progress__battle_date"
@@ -2800,6 +2741,12 @@ def battle_history(request: HttpRequest) -> HttpResponse:
     if "page" in querystring:
         querystring.pop("page")
     base_querystring = querystring.urlencode()
+    tournament_summary_query_items = [
+        (key, value)
+        for key, value_list in request.GET.lists()
+        if key not in {"top_tournament_rank", "page"}
+        for value in value_list
+    ]
     battle_report_order_json = json.dumps(_ordered_battle_report_ids(runs_for_pagination))
     modal_preset = filter_form.cleaned_data.get("preset") if filter_form.is_valid() else None
     modal_snapshot = filter_form.cleaned_data.get("snapshot") if filter_form.is_valid() else None
@@ -2831,6 +2778,9 @@ def battle_history(request: HttpRequest) -> HttpResponse:
             "player_presets": Preset.objects.filter(player=player).order_by("name"),
             "highest_wave_by_tier": highest_wave_by_tier,
             "top_tournament_logs": top_tournament_logs,
+            "tournament_summary_rank": tournament_summary_rank,
+            "tournament_rank_choices": TOURNAMENT_RANK_CHOICES,
+            "tournament_summary_query_items": tournament_summary_query_items,
             "page_obj": page_obj,
             "page_rows": page_rows,
             "base_querystring": base_querystring,
@@ -4680,6 +4630,12 @@ def bots_progress(request: HttpRequest) -> HttpResponse:
     player = _request_player(request)
     if request.method == "POST" and demo_mode_enabled(request):
         return _reject_demo_write(request)
+    current_window = current_event_window(target=timezone.now().astimezone(dt_timezone.utc).date())
+    current_respec = PlayerBotRespecWindow.objects.filter(
+        player=player,
+        window_start=current_window.start,
+        window_end=current_window.end,
+    ).first()
     player_cards = tuple(
         PlayerCard.objects.filter(player=player, stars_unlocked__gt=0).select_related("card_definition")
     )
@@ -4712,6 +4668,24 @@ def bots_progress(request: HttpRequest) -> HttpResponse:
             candidates=[request.POST.get("next"), request.META.get("HTTP_REFERER")],
             fallback=request.path,
         )
+
+        if action == "mark_bot_respec_used":
+            if current_respec is None:
+                current_respec = PlayerBotRespecWindow.objects.create(
+                    player=player,
+                    window_start=current_window.start,
+                    window_end=current_window.end,
+                )
+                messages.success(
+                    request,
+                    "Bot Respec marked as used for the current event window.",
+                )
+            else:
+                messages.warning(
+                    request,
+                    "Bot Respec is already marked as used for the current event window.",
+                )
+            return redirect_response
 
         if action == "unlock_bot":
             bot_id = int(request.POST.get("entity_id") or 0)
@@ -5103,6 +5077,12 @@ def bots_progress(request: HttpRequest) -> HttpResponse:
         {
             "filter_form": filter_form,
             "bots": tiles,
+            "bot_respec": {
+                "available": current_respec is None,
+                "used_at": current_respec.used_at if current_respec is not None else None,
+                "window_start": current_window.start,
+                "window_end": current_window.end,
+            },
             "goals_widget_rows": goals_widget_rows(player=player, goal_type=str(GoalType.BOT)),
             "goals_widget_goal_type": str(GoalType.BOT),
         },
@@ -5206,7 +5186,7 @@ def calculator_tools(request: HttpRequest) -> HttpResponse:
         goal = goal_lookup.get(goal_key, LAB_GOALS[0])
         remaining_seconds = max(goal.total_seconds - current_seconds, 0)
         utc_now = timezone.now().astimezone(dt_timezone.utc)
-        event_window = event_window_for_date(target=utc_now.date(), anchor=date(2025, 12, 9))
+        event_window = current_event_window(target=utc_now.date())
         deadline = datetime.combine(
             event_window.end + timedelta(days=1),
             time(0, 0),

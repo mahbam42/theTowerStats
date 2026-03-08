@@ -5,10 +5,11 @@ from __future__ import annotations
 from datetime import datetime, timezone
 
 import pytest
+from django.core.exceptions import ValidationError
 from django.urls import reverse
 
 from gamedata.models import BattleReport, BattleReportDerivedMetrics, BattleReportProgress
-from player_state.models import ExploreQuery, Preset
+from player_state.models import ExploreQuery, ExploreQueryTemplate, Preset
 
 pytestmark = pytest.mark.integration
 
@@ -216,6 +217,85 @@ def test_explore_saved_query_preserves_comments_and_autoloads(auth_client, playe
     reload_response = auth_client.get(reverse("core:explore"), {"query_id": saved.id})
     assert reload_response.status_code == 200
     assert "# keep this line" in reload_response.context["explore_dsl_text"]
+
+
+@pytest.mark.django_db
+def test_explore_view_lists_active_templates_alphabetically(auth_client) -> None:
+    """Explore shows active query templates in alphabetical order."""
+
+    ExploreQueryTemplate.objects.create(
+        name="Zulu template",
+        description="Last",
+        dsl_text='name "Zulu"\nbreakdown by tier\nmetric coins_earned sum\noutput table\n',
+        tags="economy",
+        is_active=True,
+    )
+    ExploreQueryTemplate.objects.create(
+        name="Alpha template",
+        description="First",
+        dsl_text='name "Alpha"\nbreakdown by tier\nmetric coins_earned sum\noutput table\n',
+        tags="starter",
+        is_active=True,
+    )
+    ExploreQueryTemplate.objects.create(
+        name="Hidden template",
+        description="Hidden",
+        dsl_text='name "Hidden"\nbreakdown by tier\nmetric coins_earned sum\noutput table\n',
+        is_active=False,
+    )
+
+    response = auth_client.get(reverse("core:explore"))
+    assert response.status_code == 200
+
+    content = response.content.decode("utf-8")
+    alpha_index = content.index("Alpha template")
+    zulu_index = content.index("Zulu template")
+    assert alpha_index < zulu_index
+    assert "Hidden template" not in content
+
+
+@pytest.mark.django_db
+def test_explore_template_copy_loads_dsl_without_running(auth_client) -> None:
+    """Selecting a template copies its DSL into the editor without auto-running it."""
+
+    template = ExploreQueryTemplate.objects.create(
+        name="Coins by tier",
+        description="Template copy test",
+        dsl_text='name "Coins by tier"\nbreakdown by tier\nmetric coins_earned sum\noutput table\n',
+        tags="economy, starter",
+        is_active=True,
+    )
+
+    response = auth_client.get(reverse("core:explore"), {"template_id": template.id})
+    assert response.status_code == 200
+    assert response.context["explore_dsl_text"] == template.dsl_text
+    assert response.context["explore_results"] is None
+
+
+@pytest.mark.django_db
+def test_explore_query_template_rejects_invalid_dsl() -> None:
+    """Explore query templates validate DSL before saving."""
+
+    template = ExploreQueryTemplate(
+        name="Invalid template",
+        dsl_text='name ""\nmetric missing_metric sum\noutput table\n',
+    )
+
+    with pytest.raises(ValidationError):
+        template.full_clean()
+
+
+@pytest.mark.django_db
+def test_explore_query_template_admin_changelist_renders(client, user) -> None:
+    """Staff users can manage Explore query templates in Django Admin."""
+
+    user.is_staff = True
+    user.is_superuser = True
+    user.save(update_fields=["is_staff", "is_superuser"])
+    client.force_login(user)
+
+    response = client.get(reverse("admin:player_state_explorequerytemplate_changelist"))
+    assert response.status_code == 200
 
 
 @pytest.mark.django_db

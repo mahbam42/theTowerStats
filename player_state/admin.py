@@ -10,8 +10,11 @@ from django.db.models import QuerySet
 from player_state.models import (
     BattleHistoryColumnPreference,
     ChartSnapshot,
+    ExploreQuery,
+    ExploreQueryTemplate,
     Player,
     PlayerBot,
+    PlayerBotRespecWindow,
     PlayerBotParameter,
     PlayerCard,
     PlayerGuardianChip,
@@ -115,6 +118,25 @@ class BattleHistoryColumnPreferenceAdmin(PlayerScopedAdmin):
     list_filter = ("player",)
 
 
+@admin.register(ExploreQuery)
+class ExploreQueryAdmin(PlayerScopedAdmin):
+    """Admin configuration for ExploreQuery."""
+
+    list_display = ("player", "name", "updated_at")
+    list_filter = ("player",)
+    search_fields = ("name",)
+
+
+@admin.register(ExploreQueryTemplate)
+class ExploreQueryTemplateAdmin(admin.ModelAdmin):
+    """Admin configuration for ExploreQueryTemplate."""
+
+    list_display = ("name", "is_active", "updated_at")
+    list_filter = ("is_active",)
+    search_fields = ("name", "description", "tags")
+    ordering = ("name",)
+
+
 @admin.register(PlayerCard)
 class PlayerCardAdmin(PlayerScopedAdmin):
     """Admin configuration for PlayerCard."""
@@ -129,6 +151,14 @@ class PlayerBotAdmin(PlayerScopedAdmin):
 
     list_display = ("player", "bot_slug", "unlocked", "updated_at")
     list_filter = ("player", "unlocked")
+
+
+@admin.register(PlayerBotRespecWindow)
+class PlayerBotRespecWindowAdmin(PlayerScopedAdmin):
+    """Admin configuration for PlayerBotRespecWindow."""
+
+    list_display = ("player", "window_start", "window_end", "used_at")
+    list_filter = ("player", "window_start")
 
 
 @admin.register(PlayerUltimateWeapon)

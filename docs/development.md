@@ -91,6 +91,18 @@ The Charts dashboard is driven by declarative `ChartConfig` entries and a centra
 
 - Farming efficiency by tier compares each tier to the nearest available tier when building deltas and plateau checks, while still warning about missing tiers.
 
+## Explore query templates
+
+- Explore query templates are stored in the database and managed through Django Admin.
+- Templates are global, not player-scoped.
+- Explore only lists templates where `is_active=True`, ordered alphabetically by name.
+- Templates are copied into the editor and remain editable before the player runs or saves them.
+
+## Event window helpers
+
+- Shared Event-window calculations live in `analysis/event_windows.py`.
+- Use the shared helper instead of duplicating the Event anchor date in dashboard-specific code paths.
+
 ## Time semantics
 
 - **Real time** comes from the Battle Report’s “Real Time” field and is used for per-hour rates such as coins/real hour.

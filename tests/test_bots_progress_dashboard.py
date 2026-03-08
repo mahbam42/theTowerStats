@@ -7,6 +7,7 @@ from uuid import uuid4
 import pytest
 from django.urls import reverse
 
+from analysis.event_windows import current_event_window, shift_event_window
 from definitions.models import (
     BotDefinition,
     BotParameterDefinition,
@@ -15,7 +16,7 @@ from definitions.models import (
     ParameterKey,
     WikiData,
 )
-from player_state.models import PlayerBot, PlayerBotParameter
+from player_state.models import PlayerBot, PlayerBotParameter, PlayerBotRespecWindow
 
 pytestmark = pytest.mark.integration
 
@@ -29,6 +30,49 @@ def test_bots_progress_includes_respec_callout(auth_client, player) -> None:
     content = response.content.decode("utf-8")
     assert "Bot Respec" in content
     assert "Bot Respec (300 Gems)" in content
+    assert "Available now." in content
+    assert response.context["bot_respec"]["available"] is True
+
+
+@pytest.mark.django_db
+@pytest.mark.regression
+def test_bots_progress_marks_respec_used_for_current_event(auth_client, player) -> None:
+    """Marking Bot Respec used locks the current Event window."""
+
+    url = reverse("core:bots_progress")
+    response = auth_client.post(url, data={"action": "mark_bot_respec_used"}, follow=True)
+    assert response.status_code == 200
+
+    window = current_event_window()
+    assert PlayerBotRespecWindow.objects.filter(
+        player=player,
+        window_start=window.start,
+        window_end=window.end,
+    ).exists()
+
+    content = response.content.decode("utf-8")
+    assert "Already marked as used for this event window." in content
+    assert 'disabled aria-disabled="true"' in content
+
+
+@pytest.mark.django_db
+@pytest.mark.regression
+def test_bots_progress_respec_lock_resets_on_new_event_window(auth_client, player) -> None:
+    """A prior Event window usage record does not lock the current Event window."""
+
+    previous_window = shift_event_window(current_event_window(), shift=-1)
+    PlayerBotRespecWindow.objects.create(
+        player=player,
+        window_start=previous_window.start,
+        window_end=previous_window.end,
+    )
+
+    response = auth_client.get(reverse("core:bots_progress"))
+    assert response.status_code == 200
+
+    content = response.content.decode("utf-8")
+    assert "Available now." in content
+    assert 'disabled aria-disabled="true"' not in content
 
 
 def _wiki(*, suffix: str | None = None) -> WikiData:

@@ -6,7 +6,14 @@ from datetime import date
 
 import pytest
 
-from analysis.event_windows import EventWindow, coerce_window_bounds, event_window_for_date, shift_event_window
+from analysis.event_windows import (
+    DEFAULT_EVENT_WINDOW_ANCHOR,
+    EventWindow,
+    coerce_window_bounds,
+    current_event_window,
+    event_window_for_date,
+    shift_event_window,
+)
 
 pytestmark = pytest.mark.unit
 
@@ -44,6 +51,13 @@ def test_shift_event_window_moves_by_one_window() -> None:
     shifted = shift_event_window(window, shift=1)
     assert shifted.start == date(2025, 12, 23)
     assert shifted.end == date(2026, 1, 5)
+
+
+def test_current_event_window_uses_shared_anchor() -> None:
+    """Current Event helper should use the shared app anchor date."""
+
+    window = current_event_window(target=DEFAULT_EVENT_WINDOW_ANCHOR)
+    assert window == EventWindow(start=date(2025, 12, 9), end=date(2025, 12, 22))
 
 
 def test_coerce_window_bounds_requires_one_side() -> None:

@@ -11,32 +11,35 @@ Explore helps you build your own questions about past runs and see aggregated an
 - You want to summarize results across many runs without adding columns.
 - You want to group outcomes by tier, preset, or death cause.
 - You want to check how a single metric varies by a chosen breakdown.
+- You want to start from a read-only template before writing your own query.
 - You want to reuse a saved query for the same scope later.
 
 ## How to Use
 
 1. Select **Explore** in the navigation.
-2. Review the Query Builder text area at the top of the page.
-3. Use the Saved query dropdown to load a built-in query such as Farming Efficiency by Tier.
-4. Review the [Metrics Reference](metrics_reference.md) to see the full list of metrics shared with Chart Builder.
-5. Review [Explore Breakdowns](explore_breakdowns.md) when you want to group results by a category.
-6. Review the [Explore DSL](explore_dsl.md) reference if you want the full syntax list.
-7. Enter a name on the first line so you can save or edit the query later.
-8. Review the Scope lines and replace any placeholders with real values when needed.
-9. Use all or * when you want a scope line to stay open.
-10. In the Hidden scope line, set the value to include when you want hidden Battle Reports to appear in results.
-11. Add Filter lines to narrow the runs in scope.
-12. Add a Patch boundary filter when you want to limit results to one or more patch windows.
-13. To exclude tournaments, add not tournament to the Tier scope line.
-14. To exclude specific dates, add not followed by one or more ISO dates on the date scope line.
-15. To include presets by name, list one or more preset names on the preset scope line.
-16. To exclude presets by name, add not followed by one or more preset names on the preset scope line.
-17. Add a Breakdown line to group results.
-18. Add a Metric line and an Aggregation.
-19. Add an Output line when you want a chart or KPI.
-20. Select **Run query**.
-21. Select **Save query** to store changes; a saved query with the same name is overwritten.
-22. Select **Delete query** to remove a saved query you previously loaded.
+2. Review **Query Templates** when you want a starter query.
+3. Select **Use this query** to copy a template into the Query Builder.
+4. Review the Query Builder text area at the top of the page.
+5. Use the **Saved query** dropdown to reload a query you already saved.
+6. Review the [Metrics Reference](metrics_reference.md) to see the full list of metrics shared with Chart Builder.
+7. Review [Explore Breakdowns](explore_breakdowns.md) when you want to group results by a category.
+8. Review the [Explore DSL](explore_dsl.md) reference if you want the full syntax list.
+9. Enter a name on the first line so you can save or edit the query later.
+10. Review the Scope lines and replace any placeholders with real values when needed.
+11. Use all or * when you want a scope line to stay open.
+12. In the Hidden scope line, set the value to include when you want hidden Battle Reports to appear in results.
+13. Add Filter lines to narrow the runs in scope.
+14. Add a Patch boundary filter when you want to limit results to one or more patch windows.
+15. To exclude tournaments, add not tournament to the Tier scope line.
+16. To exclude specific dates, add not followed by one or more ISO dates on the date scope line.
+17. To include presets by name, list one or more preset names on the preset scope line.
+18. To exclude presets by name, add not followed by one or more preset names on the preset scope line.
+19. Add a Breakdown line to group results.
+20. Add a Metric line and an Aggregation.
+21. Add an Output line when you want a chart or KPI.
+22. Select **Run query**.
+23. Select **Save query** to store changes; a saved query with the same name is overwritten.
+24. Select **Delete query** to remove a saved query you previously loaded.
 
 ## How to Read the Results
 
@@ -62,6 +65,9 @@ Explore helps you build your own questions about past runs and see aggregated an
 
 > ⚠️ Note
 > Queries are player-scoped. Results are based only on your own runs.
+
+> ⚠️ Note
+> Query Templates are shared starter queries managed through the Admin Panel. Copying a template does not save it to your account until you select **Save query**.
 
 > ⚠️ Note
 > Average is available for currency, counter, time, and select damage metrics (for example, Guardian Damage and Flame Bot Damage).

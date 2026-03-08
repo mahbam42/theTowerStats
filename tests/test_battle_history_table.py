@@ -536,3 +536,43 @@ def test_battle_history_renders_highest_wave_and_tournament_summaries(auth_clien
     assert highest_wave_segment is not None
     assert "200" in highest_wave_segment.group(0)
     assert "400" not in highest_wave_segment.group(0)
+
+
+@pytest.mark.django_db
+@pytest.mark.regression
+def test_battle_history_tournament_summary_filters_by_rank(auth_client, player) -> None:
+    """Top tournament summary can be filtered to a specific tournament rank."""
+
+    gold_report, _ = ingest_battle_report(
+        _report(battle_date="2025-12-05 11:00:00", tier="1", wave=450),
+        player=player,
+        is_tournament=True,
+    )
+    silver_report, _ = ingest_battle_report(
+        _report(battle_date="2025-12-06 11:00:00", tier="1", wave=320),
+        player=player,
+        is_tournament=True,
+    )
+    bronze_report, _ = ingest_battle_report(
+        _report(battle_date="2025-12-07 11:00:00", tier="1", wave=280),
+        player=player,
+        is_tournament=True,
+    )
+    gold_report.run_progress.tournament_rank = "gold"
+    gold_report.run_progress.save(update_fields=["tournament_rank"])
+    silver_report.run_progress.tournament_rank = "silver"
+    silver_report.run_progress.save(update_fields=["tournament_rank"])
+    bronze_report.run_progress.tournament_rank = "copper"
+    bronze_report.run_progress.save(update_fields=["tournament_rank"])
+
+    response = auth_client.get(reverse("core:battle_history"), {"top_tournament_rank": "gold"})
+    assert response.status_code == 200
+
+    top_logs = response.context["top_tournament_logs"]
+    assert len(top_logs) == 1
+    assert top_logs[0].wave == 450
+    assert top_logs[0].tournament_rank == "gold"
+
+    content = response.content.decode("utf-8")
+    assert "All ranks" in content
+    assert "Gold" in content
