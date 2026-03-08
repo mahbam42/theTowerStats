@@ -1,76 +1,76 @@
 
 # Table of Contents
 
-1.  [Stats Tracking App for The Tower Mobile Game](#orgaf7a57e)
-    1.  [Goals/Intent](#org68a81ca)
-    2.  [Requirements](#org31b5f68)
-    3.  [Overall Architecture](#org6db69bc)
-    4.  [Features](#org48c09dc)
-    5.  [Core Responsibilities](#org0a8165e)
-        1.  [Rate Calculations](#org7e2e129)
-        2.  [Delta Calculations](#org6a96ea2)
-        3.  [Parameterized Effects](#orgf46e431)
-        4.  [Aggregations by Intent (Presets)](#org9a6dd58)
-        5.  [Analysis Engine Invocation](#orgb4a31c4)
-        6.  [Output Shape](#org708a04a)
-        7.  [Module Structure (Suggested)](#orgc9af3d9)
-    6.  [UX Design](#orgf6f2f7f)
-    7.  [Example Stat Data](#orgffd54f1)
-    8.  [Models](#orgd3260ef)
-        1.  [Game Data](#org3e772e2)
-        2.  [BotsParameters](#org183560e)
-        3.  [CardDefinition](#orgf656095)
-        4.  [CardLevel / Star](#orgb173125)
-        5.  [CardParameters](#org0061b99)
-        6.  [CardSlots](#org06c4ed3)
-        7.  [GuardianChipParemeters](#org0908363)
-        8.  [PlayerBot](#org3bc49fe)
-        9.  [PlayerCard](#orgb28063b)
-        10. [PlayerGuardianChip](#org7b2ac06)
-        11. [PlayerUltimateWeapon](#org7fb0cd2)
-        12. [PresetTags](#org1c44e24)
-        13. [UltimateWeaponParameters](#org0989670)
-        14. [Unit Model](#org67ddb7d)
-        15. [WikiData](#org7521a93)
-    9.  [Views](#org4bbf262)
-        1.  [Battle History](#orgbf65581)
-        2.  [Cards](#org50ede97)
-        3.  [Charts](#orgd08ae4b)
-        4.  [UW Progress](#orga56796d)
-        5.  [Guardian Progress](#org7910f78)
-        6.  [Bots Progress](#orgf757e3e)
-    10. [Management Commands](#org760bebc)
-        1.  [fetch<sub>wiki</sub><sub>data</sub>](#orge1bac03)
-        2.  [add<sub>battle</sub><sub>report</sub>](#orgc09af5e)
-    11. [Repo Structure](#org6d10c41)
-    12. [Testing Standards](#org1357923)
-    13. [Sprint Roadmap](#org236dfc2)
-        1.  [Phase 1 Foundations](#org0b00882)
-        2.  [Phase 2 Context](#orgded4e38)
-        3.  [Phase 3 — App Structure & UX](#orge344b3f)
-        4.  [Phase 4 Effects](#org12b65c7)
-        5.  [Phase 5 Dashboard UX <code>[100%]</code>](#org05b69d5)
-        6.  [Phase 6 Expansion of Foundation and Context <code>[100%]</code>](#org11f80d7)
-        7.  [Phase 7 Power Tools <code>[100%]</code>](#orga11e911)
-        8.  [Phase 8 Multiple Player Support <code>[100%]</code>](#orge6bcd96)
-        9.  [Phase 9 Deploy and Clean out Backlog <code>[100%]</code>](#org3dcf26e)
-        10. [Phase 10 v0.2.0](#org5a1f181)
-        11. [Phase 10B Additional UX](#org99051ec)
-        12. [Phase 11 Bug Fixes <code>[6/6]</code>](#org4b0ec46)
-        13. [Bugs/Enhancements <code>[103/103]</code>](#org5e3ef88)
-        14. [v0.10.0 <code>[15/15]</code>](#org4f80776)
-    14. [Backlog <code>[3/8]</code>](#org16222b9)
-        1.  [Auto-migration of stored queries](#org2d85a4b)
-        2.  [Labs Tracking](#org5d9796c)
-        3.  [Query Templates](#org268d6b5)
-        4.  [Add Card Slots to Goals](#org23f07f0):patch:
-        5.  [Exploratory Pattern Analysis (v0.X.0)](#org307b088):kMeans:enhancement:
-        6.  [Draft a “This app is done” release note](#org2ecfbed)
-        7.  [Required Doc Type Header (Must Prepend to All Docs)](#org5bf2b30)
-        8.  [What-If Scenarios](#orgb703b00)
-        9.  [Ranked Recommendations](#org4349f6f)
-        10. [Complete](#org309e043)
-    15. [Codex Tasks](#orgd5c77e9)
+1.  [Stats Tracking App for The Tower Mobile Game](#orgb5fd074)
+    1.  [Goals/Intent](#orgbb2be69)
+    2.  [Requirements](#org4b7ff46)
+    3.  [Overall Architecture](#org2539e1c)
+    4.  [Features](#org4aef7f8)
+    5.  [Core Responsibilities](#org1fd4af6)
+        1.  [Rate Calculations](#org2e4b880)
+        2.  [Delta Calculations](#orgb5459f0)
+        3.  [Parameterized Effects](#org67f7faf)
+        4.  [Aggregations by Intent (Presets)](#org948a008)
+        5.  [Analysis Engine Invocation](#org85cb7d4)
+        6.  [Output Shape](#org517bd23)
+        7.  [Module Structure (Suggested)](#org88ebc35)
+    6.  [UX Design](#org2313fbd)
+    7.  [Example Stat Data](#org15a9f81)
+    8.  [Models](#org70cbf87)
+        1.  [Game Data](#orge2f8b4b)
+        2.  [BotsParameters](#org39e7454)
+        3.  [CardDefinition](#org331fd54)
+        4.  [CardLevel / Star](#orgd43a828)
+        5.  [CardParameters](#org681ff19)
+        6.  [CardSlots](#org94d6342)
+        7.  [GuardianChipParemeters](#org8bc01b9)
+        8.  [PlayerBot](#org08d6ec2)
+        9.  [PlayerCard](#org26672eb)
+        10. [PlayerGuardianChip](#org040cbeb)
+        11. [PlayerUltimateWeapon](#org87bd75c)
+        12. [PresetTags](#org05040e6)
+        13. [UltimateWeaponParameters](#org5100ae1)
+        14. [Unit Model](#org5f1e2e4)
+        15. [WikiData](#orgaa88335)
+    9.  [Views](#orgf2fe847)
+        1.  [Battle History](#org2310ae7)
+        2.  [Cards](#org00a2d08)
+        3.  [Charts](#org8452b66)
+        4.  [UW Progress](#org620a3cc)
+        5.  [Guardian Progress](#org5e12550)
+        6.  [Bots Progress](#orgd28144d)
+    10. [Management Commands](#orgade206a)
+        1.  [fetch<sub>wiki</sub><sub>data</sub>](#org594017a)
+        2.  [add<sub>battle</sub><sub>report</sub>](#org78eeb40)
+    11. [Repo Structure](#orga2a7be1)
+    12. [Testing Standards](#orgdb8033d)
+    13. [Sprint Roadmap](#orgfa95511)
+        1.  [Phase 1 Foundations](#org779664f)
+        2.  [Phase 2 Context](#org20d0e36)
+        3.  [Phase 3 — App Structure & UX](#org666fce3)
+        4.  [Phase 4 Effects](#orgc06516f)
+        5.  [Phase 5 Dashboard UX <code>[100%]</code>](#org7f25300)
+        6.  [Phase 6 Expansion of Foundation and Context <code>[100%]</code>](#org13cc233)
+        7.  [Phase 7 Power Tools <code>[100%]</code>](#org3ff0352)
+        8.  [Phase 8 Multiple Player Support <code>[100%]</code>](#orgdf9e475)
+        9.  [Phase 9 Deploy and Clean out Backlog <code>[100%]</code>](#org402228a)
+        10. [Phase 10 v0.2.0](#org4f7f97f)
+        11. [Phase 10B Additional UX](#org225bf6b)
+        12. [Phase 11 Bug Fixes <code>[6/6]</code>](#org83180ec)
+        13. [Bugs/Enhancements <code>[103/103]</code>](#org64f065c)
+        14. [v0.10.0 <code>[15/15]</code>](#org36bb877)
+        15. [v0.11.0 <code>[0/7]</code>](#org74400dd)
+    14. [Backlog <code>[3/8]</code>](#orgfee28e5)
+        1.  [Auto-migration of stored queries](#org5f9d106)
+        2.  [Labs Tracking](#orga5d5238)
+        3.  [Add Card Slots to Goals](#org297ee56):patch:
+        4.  [Exploratory Pattern Analysis (v0.X.0)](#org6431e1b):kMeans:enhancement:
+        5.  [Draft a “This app is done” release note](#orge3bd6a4)
+        6.  [Required Doc Type Header (Must Prepend to All Docs)](#org596636c)
+        7.  [What-If Scenarios](#org2dc55b1)
+        8.  [Ranked Recommendations](#orgf9ea7e9)
+        9.  [Complete](#org7b2bacb)
+    15. [Codex Tasks](#orgb17f441)
 
 ****Codex:**** So help me I will end you if I ever see you checkout or touch this file. Refer to agents.md if you stumble upon this file again.
 
@@ -82,12 +82,12 @@ If discrepancies are found, refer to git history where available.
 &#x2013;>
 
 
-<a id="orgaf7a57e"></a>
+<a id="orgb5fd074"></a>
 
 # Stats Tracking App for The Tower Mobile Game
 
 
-<a id="org68a81ca"></a>
+<a id="orgbb2be69"></a>
 
 ## Goals/Intent
 
@@ -102,7 +102,7 @@ If discrepancies are found, refer to git history where available.
     -   Battle Results form is designed for mobile
 
 
-<a id="org31b5f68"></a>
+<a id="org4b7ff46"></a>
 
 ## Requirements
 
@@ -118,7 +118,7 @@ ruff
 mypy
 
 
-<a id="org6db69bc"></a>
+<a id="org2539e1c"></a>
 
 ## Overall Architecture
 
@@ -133,7 +133,7 @@ Derived Metrics
 Charts / Views
 
 
-<a id="org48c09dc"></a>
+<a id="org4aef7f8"></a>
 
 ## Features
 
@@ -160,12 +160,12 @@ Targets:
 -   UW Upgrade Table
 
 
-<a id="org0a8165e"></a>
+<a id="org1fd4af6"></a>
 
 ## Core Responsibilities
 
 
-<a id="org7e2e129"></a>
+<a id="org2e4b880"></a>
 
 ### Rate Calculations
 
@@ -179,7 +179,7 @@ Targets:
 These back Phase 1 charts directly.
 
 
-<a id="org6a96ea2"></a>
+<a id="orgb5459f0"></a>
 
 ### Delta Calculations
 
@@ -197,7 +197,7 @@ Examples:
 No interpretation — just math.
 
 
-<a id="orgf46e431"></a>
+<a id="org67f7faf"></a>
 
 ### Parameterized Effects
 
@@ -214,7 +214,7 @@ These are:
 -   Fully testable with golden tests
 
 
-<a id="org9a6dd58"></a>
+<a id="org948a008"></a>
 
 ### Aggregations by Intent (Presets)
 
@@ -227,7 +227,7 @@ These are:
 It does not decide which preset is better.
 
 
-<a id="orgb4a31c4"></a>
+<a id="org85cb7d4"></a>
 
 ### Analysis Engine Invocation
 
@@ -238,7 +238,7 @@ It does not decide which preset is better.
     -   No DB writes
 
 
-<a id="org708a04a"></a>
+<a id="org517bd23"></a>
 
 ### Output Shape
 
@@ -261,7 +261,7 @@ All outputs should conform to a small set of DTO-style objects:
 This maps cleanly to Chart.js datasets.
 
 
-<a id="orgc9af3d9"></a>
+<a id="org88ebc35"></a>
 
 ### Module Structure (Suggested)
 
@@ -278,7 +278,7 @@ analysis/
 │   └── fixtures/
 
 
-<a id="orgf6f2f7f"></a>
+<a id="org2313fbd"></a>
 
 ## UX Design
 
@@ -289,7 +289,7 @@ analysis/
 -   Maxed Out/Completed Upgrades are highlighted with a Gold Box outline
 
 
-<a id="orgffd54f1"></a>
+<a id="org15a9f81"></a>
 
 ## Example Stat Data
 
@@ -392,12 +392,12 @@ Rare Modules	0
 \#+END<sub>SR</sub>
 
 
-<a id="orgd3260ef"></a>
+<a id="org70cbf87"></a>
 
 ## Models
 
 
-<a id="org3e772e2"></a>
+<a id="orge2f8b4b"></a>
 
 ### Game Data
 
@@ -548,7 +548,7 @@ Properties:
     Rare Modules	0
 
 
-<a id="org183560e"></a>
+<a id="org39e7454"></a>
 
 ### BotsParameters
 
@@ -556,7 +556,7 @@ Wiki-derived, FK to PlayerBots
 Immutable per revision. When the wiki changes, insert a new row — don’t overwrite.
 
 
-<a id="orgf656095"></a>
+<a id="org331fd54"></a>
 
 ### CardDefinition
 
@@ -569,7 +569,7 @@ Properties:
 -   preset<sub>tags</sub> (FK)
 
 
-<a id="orgb173125"></a>
+<a id="orgd43a828"></a>
 
 ### CardLevel / Star
 
@@ -578,7 +578,7 @@ Properties:
 -   **value:** value of current effect (between base and max)
 
 
-<a id="org0061b99"></a>
+<a id="org681ff19"></a>
 
 ### CardParameters
 
@@ -586,7 +586,7 @@ Wiki-derived, FK to PlayerCard
 Immutable per revision. When the wiki changes, insert a new row — don’t overwrite.
 
 
-<a id="org06c4ed3"></a>
+<a id="org94d6342"></a>
 
 ### CardSlots
 
@@ -599,7 +599,7 @@ Properties:
 -   Cost integer (Gems)
 
 
-<a id="org0908363"></a>
+<a id="org8bc01b9"></a>
 
 ### GuardianChipParemeters
 
@@ -607,7 +607,7 @@ Wiki-derived, FK to PlayerGuardianChip
 Immutable per revision. When the wiki changes, insert a new row — don’t overwrite.
 
 
-<a id="org3bc49fe"></a>
+<a id="org08d6ec2"></a>
 
 ### PlayerBot
 
@@ -617,7 +617,7 @@ Properties:
 -   **unlocked:** checkbox
 
 
-<a id="orgb28063b"></a>
+<a id="org26672eb"></a>
 
 ### PlayerCard
 
@@ -629,7 +629,7 @@ Properties:
 -   **Cards:** integer progress toward next level. 0, 3, 5, 8, 12, 20, 32
 
 
-<a id="org7b2ac06"></a>
+<a id="org040cbeb"></a>
 
 ### PlayerGuardianChip
 
@@ -639,7 +639,7 @@ Properties:
 -   **unlocked:** checkbox
 
 
-<a id="org7fb0cd2"></a>
+<a id="org87bd75c"></a>
 
 ### PlayerUltimateWeapon
 
@@ -649,7 +649,7 @@ Properties:
 -   **unlocked:** checkbox
 
 
-<a id="org1c44e24"></a>
+<a id="org05040e6"></a>
 
 ### PresetTags
 
@@ -658,7 +658,7 @@ Properties:
 -   **limit:** FK with Card Slots
 
 
-<a id="org0989670"></a>
+<a id="org5100ae1"></a>
 
 ### UltimateWeaponParameters
 
@@ -677,7 +677,7 @@ Properties:
 -   **Spent:** integer (stones)
 
 
-<a id="org67ddb7d"></a>
+<a id="org5f1e2e4"></a>
 
 ### Unit Model
 
@@ -691,7 +691,7 @@ Properties:
 -   **unit<sub>type</sub>:** coins, damage, count, time
 
 
-<a id="org7521a93"></a>
+<a id="orgaa88335"></a>
 
 ### WikiData
 
@@ -707,26 +707,26 @@ Stores the anchor names and retrived data caches for Card, Ultimate Weapons, and
 -   parse<sub>version</sub>
 
 
-<a id="org4bbf262"></a>
+<a id="orgf2fe847"></a>
 
 ## Views
 
 
-<a id="orgbf65581"></a>
+<a id="org2310ae7"></a>
 
 ### Battle History
 
 View previously entered stats 
 
 
-<a id="org50ede97"></a>
+<a id="org00a2d08"></a>
 
 ### Cards
 
 Combine 'Cards,' 'CardLevel' and 'CardSlots'
 
 
-<a id="orgd08ae4b"></a>
+<a id="org8452b66"></a>
 
 ### Charts
 
@@ -770,14 +770,14 @@ Sub Charts:
     -   Coins per wave vs wave number
 
 
-<a id="orga56796d"></a>
+<a id="org620a3cc"></a>
 
 ### UW Progress
 
 -   Button to add new UW
 
 
-<a id="org7910f78"></a>
+<a id="org5e12550"></a>
 
 ### Guardian Progress
 
@@ -785,19 +785,19 @@ Sub Charts:
 -   checkbox to flag equiped
 
 
-<a id="orgf757e3e"></a>
+<a id="orgd28144d"></a>
 
 ### Bots Progress
 
 -   button to add new bot
 
 
-<a id="org760bebc"></a>
+<a id="orgade206a"></a>
 
 ## Management Commands
 
 
-<a id="orge1bac03"></a>
+<a id="org594017a"></a>
 
 ### fetch<sub>wiki</sub><sub>data</sub>
 
@@ -818,7 +818,7 @@ Example:
 -   “Logs entity added / changed / unchanged counts”
 
 
-<a id="orgc09af5e"></a>
+<a id="org78eeb40"></a>
 
 ### add<sub>battle</sub><sub>report</sub>
 
@@ -827,7 +827,7 @@ Ingest and parse battle report data from the player. This is a large blob of dat
 Parser should gracefully alert the player to new labels that may appear after a game update.
 
 
-<a id="org6d10c41"></a>
+<a id="orga2a7be1"></a>
 
 ## Repo Structure
 
@@ -865,7 +865,7 @@ theTower<sub>stats</sub><sub>app</sub>
 └── &#x2026;
 
 
-<a id="org1357923"></a>
+<a id="orgdb8033d"></a>
 
 ## Testing Standards
 
@@ -876,14 +876,14 @@ theTower<sub>stats</sub><sub>app</sub>
 -   When completing code, start building/executing tests as specific as possible to the code you changed so that you can catch issues efficiently, then make your way to broader tests as you build confidence.
 
 
-<a id="org236dfc2"></a>
+<a id="orgfa95511"></a>
 
 ## Sprint Roadmap
 
 Each phase must be demoable without admin intervention.
 
 
-<a id="org0b00882"></a>
+<a id="org779664f"></a>
 
 ### DONE Phase 1 Foundations
 
@@ -927,7 +927,7 @@ Each phase must be demoable without admin intervention.
     -   [X] Test suite passes with no skipped tests
 
 
-<a id="orgded4e38"></a>
+<a id="org20d0e36"></a>
 
 ### DONE Phase 2 Context
 
@@ -973,7 +973,7 @@ Each phase must be demoable without admin intervention.
     -   [X] 1 aggregation test using presets
 
 
-<a id="orge344b3f"></a>
+<a id="org666fce3"></a>
 
 ### DONE Phase 3 — App Structure & UX
 
@@ -987,7 +987,7 @@ Each phase must be demoable without admin intervention.
     -   [X] Model completeness (structure, not logic)
 
 
-<a id="org12b65c7"></a>
+<a id="orgc06516f"></a>
 
 ### DONE Phase 4 Effects
 
@@ -1111,7 +1111,7 @@ Each phase must be demoable without admin intervention.
         -   [X] 1 test validating revision behavior
 
 
-<a id="org05b69d5"></a>
+<a id="org7f25300"></a>
 
 ### DONE Phase 5 Dashboard UX <code>[100%]</code>
 
@@ -1519,7 +1519,7 @@ General conventions across all Dashboards:
     4.  Understand trends …without explanation.
 
 
-<a id="org11f80d7"></a>
+<a id="org13cc233"></a>
 
 ### DONE Phase 6 Expansion of Foundation and Context <code>[100%]</code>
 
@@ -1730,7 +1730,7 @@ This prevents balance arguments from stalling Phase 6.
 -   No efficiency or recommendation logic depends on undocumented assumptions
 
 
-<a id="orga11e911"></a>
+<a id="org3ff0352"></a>
 
 ### DONE Phase 7 Power Tools <code>[100%]</code>
 
@@ -1864,7 +1864,7 @@ This prevents balance arguments from stalling Phase 6.
         Implement explicit insufficiency detection (e.g., <N runs per scope, missing values, empty windows) and return a structured advice item that says “Insufficient data” + why; add tests for empty and thin scopes.
 
 
-<a id="orge6bcd96"></a>
+<a id="orgdf9e475"></a>
 
 ### DONE Phase 8 Multiple Player Support <code>[100%]</code>
 
@@ -2235,7 +2235,7 @@ Thirty guild members can use this daily without seeing, affecting, or confusing 
     Run checks or Ruff Check, mypy ., pytest -q
 
 
-<a id="org3dcf26e"></a>
+<a id="org402228a"></a>
 
 ### DONE Phase 9 Deploy and Clean out Backlog <code>[100%]</code>
 
@@ -2399,7 +2399,7 @@ You can confidently deploy when all Blocking items are complete, even if none of
     I dont see a UI element for it, nor is it covered in the documentation
 
 
-<a id="org5a1f181"></a>
+<a id="org4f7f97f"></a>
 
 ### DONE Phase 10 v0.2.0
 
@@ -2704,7 +2704,7 @@ Non-Goals:
         Search should have global scope within the app. 
 
 
-<a id="org99051ec"></a>
+<a id="org225bf6b"></a>
 
 ### DONE Phase 10B Additional UX
 
@@ -2824,7 +2824,7 @@ Non-Goals for Phase 10:
     Desktop: keep visible but secondary-styled
 
 
-<a id="org4b0ec46"></a>
+<a id="org83180ec"></a>
 
 ### DONE Phase 11 Bug Fixes <code>[6/6]</code>
 
@@ -2916,7 +2916,7 @@ Non-Goals for Phase 10:
         Especially when using &#x2013;target all.
 
 
-<a id="org5e3ef88"></a>
+<a id="org64f065c"></a>
 
 ### DONE Bugs/Enhancements <code>[103/103]</code>
 
@@ -4608,7 +4608,7 @@ Non-Goals for Phase 10:
         metrics<sub>reference.md</sub> needs to include the key values (used on explore dashboard) as a column. 
 
 
-<a id="org4f80776"></a>
+<a id="org36bb877"></a>
 
 ### v0.10.0 <code>[15/15]</code>
 
@@ -5145,8 +5145,84 @@ Includes Game Patch 27.4
     
     New Guardian Chip added 2026-02-02. Will need to set initial zero level values and ensure wiki scraping works 
 
+16. 0.10.2 <code>[0/1]</code>
 
-<a id="org16222b9"></a>
+    1.  TODO Incomplete URL Substring Sanitization     :bug:
+    
+        Copilot logged a high alert in core/management/commands/fetch<sub>wiki</sub><sub>data.py</sub>:685,
+        
+        Sanitizing untrusted URLs is a common technique for preventing attacks such as request forgeries and malicious redirections. Usually, this is done by checking that the host of a URL is in a set of allowed hosts.
+        
+        However, treating the URL as a string and checking if one of the allowed hosts is a substring of the URL is very prone to errors. Malicious URLs can bypass such security checks by embedding one of the allowed hosts in an unexpected location.
+        
+        Even if the substring check is not used in a security-critical context, the incomplete check may still cause undesirable behaviors when the check succeeds accidentally.
+        
+        Recommendation
+        Parse a URL before performing a check on its host value, and ensure that the check handles arbitrary subdomain sequences correctly.
+        
+        <https://cwe.mitre.org/data/definitions/20.html>
+
+
+<a id="org74400dd"></a>
+
+### v0.11.0 <code>[0/7]</code>
+
+1.  TODO Dependancy Cleanup
+
+    1.  TODO Bump django to 5.2.12 to resolve security issues     :chore:
+    
+        Found by Dependabot
+        
+        -   URLField.to<sub>python</sub>() in Django calls urllib.parse.urlsplit(), which performs NFKC normalization on Windows that is disproportionately slow for certain Unicode characters, allowing a remote attacker to cause denial of service via large URL inputs containing these characters.
+        -   An issue was discovered in 6.0 before 6.0.3, 5.2 before 5.2.12, and 4.2 before 4.2.29.
+            URLField.to<sub>python</sub>() in Django calls urllib.parse.urlsplit(), which performs NFKC normalization on Windows that is disproportionately slow for certain Unicode characters, allowing a remote attacker to cause denial of service via large URL inputs containing these characters.
+            Earlier, unsupported Django series (such as 5.0.x, 4.1.x, and 3.2.x) were not evaluated and may also be affected. Django would like to thank Seokchan Yoon for reporting this issue.
+        -   An issue was discovered in 6.0 before 6.0.3, 5.2 before 5.2.12, and 4.2 before 4.2.29.
+            Race condition in file-system storage and file-based cache backends in Django allows an attacker to cause file system objects to be created with incorrect permissions via concurrent requests, where one thread's temporary umask change affects other threads in multi-threaded environments.
+            Earlier, unsupported Django series (such as 5.0.x, 4.1.x, and 3.2.x) were not evaluated and may also be affected. Django would like to thank Tarek Nakkouch for reporting this issue.
+    
+    2.  TODO Merge dependabot PRs/Branches
+    
+        Mostly minor version bumps on dependencies.
+        
+        -   We'll accept mkdocs-material entering maintenance mode for now and evaluate alternatives in the future.
+        -   The rest look minor for implementing
+    
+    3.  TODO Refactor to remove dj-database-url     :chore:
+    
+        It was a bootstrap solution to migration to railway when we first deployed. Things have been working smoother since so we need to remove the dependancy.
+
+2.  TODO On Battle History Add Rank Filter to 'Top 3 Tournament Logs'     :enhancement:
+
+    Select Copper, Silver, Gold, Platinum, Champions, Legends to show top 3 for only the selected rank 
+
+3.  TODO Respec Bots button disabled     :feat:
+
+    Should be initially accessible, then locked until the end of the current event window.
+
+4.  TODO Add guardian<sub>coins</sub><sub>stolen</sub> to coins earned by source     :bug:
+
+    Don't know why it was missing but is needed. 
+
+5.  TODO Query Templates
+
+    Provide read-only templates to help players start queries without suggestions.
+    
+    Tasks:
+    
+    -   Define template storage shape (name, description, DSL/JSON, tags).
+    -   Add template list view in Explorer with “Use this query” action.
+    -   Ensure templates are opt-in and editable after copy.
+    -   Add minimal documentation for templates (User Guide + Dev docs).
+    -   Tests: template list rendering, copy action, schema validation for templates.
+    
+    Acceptance notes:
+    
+    -   Templates do not auto-run.
+    -   Templates must not embed advice or prescriptions.
+
+
+<a id="orgfee28e5"></a>
 
 ## Backlog <code>[3/8]</code>
 
@@ -5156,7 +5232,7 @@ Includes Game Patch 27.4
 -   Real-time scraping
 
 
-<a id="org2d85a4b"></a>
+<a id="org5f9d106"></a>
 
 ### TODO Auto-migration of stored queries
 
@@ -5185,34 +5261,14 @@ preserve the user's intent without silently changing results.
     canonical location.
 
 
-<a id="org5d9796c"></a>
+<a id="orga5d5238"></a>
 
 ### Labs Tracking
 
 Track Labs progress and unlocks
 
 
-<a id="org268d6b5"></a>
-
-### TODO Query Templates
-
-Provide read-only templates to help players start queries without suggestions.
-
-Tasks:
-
--   Define template storage shape (name, description, DSL/JSON, tags).
--   Add template list view in Explorer with “Use this query” action.
--   Ensure templates are opt-in and editable after copy.
--   Add minimal documentation for templates (User Guide + Dev docs).
--   Tests: template list rendering, copy action, schema validation for templates.
-
-Acceptance notes:
-
--   Templates do not auto-run.
--   Templates must not embed advice or prescriptions.
-
-
-<a id="org23f07f0"></a>
+<a id="org297ee56"></a>
 
 ### WAIT Add Card Slots to Goals     :patch:
 
@@ -5266,7 +5322,7 @@ What not to do (still true):
 That would violate our own Explainability over Optimization rule.
 
 
-<a id="org307b088"></a>
+<a id="org6431e1b"></a>
 
 ### TODO Exploratory Pattern Analysis (v0.X.0)     :kMeans:enhancement:
 
@@ -5449,7 +5505,7 @@ K-means belongs entirely inside of analysis
 -   It never implies success
 
 
-<a id="org2ecfbed"></a>
+<a id="orge3bd6a4"></a>
 
 ### TODO Draft a “This app is done” release note
 
@@ -5475,7 +5531,7 @@ K-means belongs entirely inside of analysis
 -   Mention k-means as a future big feature if we collect enough users
 
 
-<a id="org5bf2b30"></a>
+<a id="org596636c"></a>
 
 ### CANCELED Required Doc Type Header (Must Prepend to All Docs)
 
@@ -5566,7 +5622,7 @@ If Codex is unsure which header to use:
     Validate the final document against the Documentation Self-Check Checklist before completing the task.
 
 
-<a id="orgb703b00"></a>
+<a id="org2dc55b1"></a>
 
 ### CANCELED What-If Scenarios
 
@@ -5590,7 +5646,7 @@ No RNG modeling
 No balance speculation
 
 
-<a id="org4349f6f"></a>
+<a id="orgf9ea7e9"></a>
 
 ### CANCELED Ranked Recommendations
 
@@ -5624,7 +5680,7 @@ What would change the recommendation
 This keeps it defensible.
 
 
-<a id="org309e043"></a>
+<a id="org7b2bacb"></a>
 
 ### Complete
 
@@ -5706,7 +5762,7 @@ This keeps it defensible.
     Mostly a visual tweak, but adds context and history for the player to interpert their performance history. 
 
 
-<a id="orgd5c77e9"></a>
+<a id="orgb17f441"></a>
 
 ## Codex Tasks
 

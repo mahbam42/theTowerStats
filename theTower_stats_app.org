@@ -4139,6 +4139,68 @@ CLOSED: [2026-02-14 Sat 12:56]
 - State "WAIT"       from "TODO"       [2026-02-08 Sun 15:45] \\
   Not published to the Wiki yet. Will complete prompt59.md when data is available
 New Guardian Chip added 2026-02-02. Will need to set initial zero level values and ensure wiki scraping works 
+
+**** 0.10.2 [0/1]
+
+***** TODO [#A] Incomplete URL Substring Sanitization               :bug:
+Copilot logged a high alert in core/management/commands/fetch_wiki_data.py:685,
+
+Sanitizing untrusted URLs is a common technique for preventing attacks such as request forgeries and malicious redirections. Usually, this is done by checking that the host of a URL is in a set of allowed hosts.
+
+However, treating the URL as a string and checking if one of the allowed hosts is a substring of the URL is very prone to errors. Malicious URLs can bypass such security checks by embedding one of the allowed hosts in an unexpected location.
+
+Even if the substring check is not used in a security-critical context, the incomplete check may still cause undesirable behaviors when the check succeeds accidentally.
+
+Recommendation
+Parse a URL before performing a check on its host value, and ensure that the check handles arbitrary subdomain sequences correctly.
+
+https://cwe.mitre.org/data/definitions/20.html
+
+*** v0.11.0 [0/7]
+
+**** TODO [#A] Dependancy Cleanup 
+
+***** TODO [#A] Bump django to 5.2.12 to resolve security issues  :chore:
+Found by Dependabot
+
+- URLField.to_python() in Django calls urllib.parse.urlsplit(), which performs NFKC normalization on Windows that is disproportionately slow for certain Unicode characters, allowing a remote attacker to cause denial of service via large URL inputs containing these characters.
+- An issue was discovered in 6.0 before 6.0.3, 5.2 before 5.2.12, and 4.2 before 4.2.29.
+  URLField.to_python() in Django calls urllib.parse.urlsplit(), which performs NFKC normalization on Windows that is disproportionately slow for certain Unicode characters, allowing a remote attacker to cause denial of service via large URL inputs containing these characters.
+  Earlier, unsupported Django series (such as 5.0.x, 4.1.x, and 3.2.x) were not evaluated and may also be affected. Django would like to thank Seokchan Yoon for reporting this issue.
+- An issue was discovered in 6.0 before 6.0.3, 5.2 before 5.2.12, and 4.2 before 4.2.29.
+  Race condition in file-system storage and file-based cache backends in Django allows an attacker to cause file system objects to be created with incorrect permissions via concurrent requests, where one thread's temporary umask change affects other threads in multi-threaded environments.
+  Earlier, unsupported Django series (such as 5.0.x, 4.1.x, and 3.2.x) were not evaluated and may also be affected. Django would like to thank Tarek Nakkouch for reporting this issue.
+
+***** TODO [#B] Merge dependabot PRs/Branches
+Mostly minor version bumps on dependencies.
+- We'll accept mkdocs-material entering maintenance mode for now and evaluate alternatives in the future.
+- The rest look minor for implementing
+
+***** TODO [#C] Refactor to remove dj-database-url                :chore:
+It was a bootstrap solution to migration to railway when we first deployed. Things have been working smoother since so we need to remove the dependancy.
+**** TODO [#A] On Battle History Add Rank Filter to 'Top 3 Tournament Logs' :enhancement:
+Select Copper, Silver, Gold, Platinum, Champions, Legends to show top 3 for only the selected rank 
+
+**** TODO [#B] Respec Bots button disabled                          :feat:
+Should be initially accessible, then locked until the end of the current event window.
+
+**** TODO [#B] Add guardian_coins_stolen to coins earned by source   :bug:
+Don't know why it was missing but is needed. 
+
+**** TODO [#B] Query Templates
+Provide read-only templates to help players start queries without suggestions.
+
+Tasks:
+- Define template storage shape (name, description, DSL/JSON, tags).
+- Add template list view in Explorer with “Use this query” action.
+- Ensure templates are opt-in and editable after copy.
+- Add minimal documentation for templates (User Guide + Dev docs).
+- Tests: template list rendering, copy action, schema validation for templates.
+
+Acceptance notes:
+- Templates do not auto-run.
+- Templates must not embed advice or prescriptions.
+
 ** Backlog [3/8]
 “Out of Scope”:
 - Cloud sync
@@ -4173,19 +4235,6 @@ preserve the user's intent without silently changing results.
 *** Labs Tracking
 Track Labs progress and unlocks
 
-*** TODO [#C] Query Templates
-Provide read-only templates to help players start queries without suggestions.
-
-Tasks:
-- Define template storage shape (name, description, DSL/JSON, tags).
-- Add template list view in Explorer with “Use this query” action.
-- Ensure templates are opt-in and editable after copy.
-- Add minimal documentation for templates (User Guide + Dev docs).
-- Tests: template list rendering, copy action, schema validation for templates.
-
-Acceptance notes:
-- Templates do not auto-run.
-- Templates must not embed advice or prescriptions.
 
 *** WAIT [#B] Add Card Slots to Goals                               :patch:
 
