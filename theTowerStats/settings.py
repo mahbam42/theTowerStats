@@ -16,6 +16,39 @@ import dj_database_url
 
 BASE_DIR = Path(__file__).resolve().parent.parent
 
+
+def _load_env_file(path: Path) -> None:
+    """Load environment variables from a simple ``.env`` file.
+
+    Args:
+        path: Filesystem path to the environment file.
+
+    Returns:
+        None. Missing files are ignored and existing environment variables win.
+    """
+
+    if not path.exists():
+        return
+
+    for raw_line in path.read_text(encoding="utf-8").splitlines():
+        line = raw_line.strip()
+        if not line or line.startswith("#"):
+            continue
+        if line.startswith("export "):
+            line = line[len("export ") :]
+        key, sep, value = line.partition("=")
+        if not sep:
+            continue
+        key = key.strip()
+        value = value.strip()
+        if value and value[0] in {"\"", "'"} and value[-1] == value[0]:
+            value = value[1:-1]
+        os.environ.setdefault(key, value)
+
+
+_load_env_file(BASE_DIR / ".env")
+
+
 def _env_bool(name: str, *, default: bool) -> bool:
     """Parse a boolean environment variable.
 

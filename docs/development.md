@@ -46,6 +46,8 @@ Use the refresh script to pull a read-only production snapshot into your local d
 
 The script reads `.env` by default and expects `PROD_READONLY_DATABASE_URL` and `LOCAL_DATABASE_URL` to be set. For the manual workflow and grant setup, see `archive/stagingDB.md`.
 
+Local Django entry points now also read `.env` automatically. If `DATABASE_URL` in `.env` points at the same local Postgres database as `LOCAL_DATABASE_URL`, `python manage.py runserver` will read the refreshed snapshot without needing a manual `export DATABASE_URL=...`.
+
 ## Repository docs in MkDocs
 
 MkDocs includes repo-root GitHub Markdown files (for example, `CHANGELOG.md` and
