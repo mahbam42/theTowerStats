@@ -585,21 +585,21 @@
         },
         "mkdocs-gen-files": {
             "hashes": [
-                "sha256:52022dc14dcc0451e05e54a8f5d5e7760351b6701eff816d1e9739577ec5635e",
-                "sha256:815af15f3e2dbfda379629c1b95c02c8e6f232edf2a901186ea3b204ab1135b2"
+                "sha256:57d7ff2229e23d077e46d14a33db6d37c8823f6ce1a503c874c1764a71679763",
+                "sha256:b3182bfc6219e35b8d26658cb988368659d5d023aac30c2a819247558fc12189"
             ],
             "index": "pypi",
             "markers": "python_version >= '3.9'",
-            "version": "==0.6.0"
+            "version": "==0.6.1"
         },
         "mkdocs-get-deps": {
             "hashes": [
-                "sha256:162b3d129c7fad9b19abfdcb9c1458a651628e4b1dea628ac68790fb3061c60c",
-                "sha256:2bf11d0b133e77a0dd036abeeb06dec8775e46efa526dc70667d8863eefc6134"
+                "sha256:8ee8d5f316cdbbb2834bc1df6e69c08fe769a83e040060de26d3c19fad3599a1",
+                "sha256:e7878cbeac04860b8b5e0ca31d3abad3df9411a75a32cde82f8e44b6c16ff650"
             ],
             "index": "pypi",
-            "markers": "python_version >= '3.8'",
-            "version": "==0.2.0"
+            "markers": "python_version >= '3.9'",
+            "version": "==0.2.2"
         },
         "mkdocs-localsearch": {
             "hashes": [
@@ -744,6 +744,14 @@
             ],
             "markers": "python_version >= '3.9'",
             "version": "==1.6.0"
+        },
+        "properdocs": {
+            "hashes": [
+                "sha256:6fa0cfa2e01bf338f684892c8a506cf70ea88ae7f3479c933b6fa20168101cbd",
+                "sha256:adc7b16e562890af0e098a7e5b02e3a81c20894a87d6a28d345c9300de73c26e"
+            ],
+            "markers": "python_version >= '3.9'",
+            "version": "==1.6.7"
         },
         "pygments": {
             "hashes": [
