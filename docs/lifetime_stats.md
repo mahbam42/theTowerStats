@@ -12,6 +12,7 @@ Lifetime Stats summarizes key economy, combat, and utility totals across all of 
 - You want to compare totals across a specific event window or custom date range.
 - You want to confirm which metrics are tracked without building a chart.
 - You want to locate a metric in Explore for deeper analysis.
+- You want a quick way to open the bug report or feature request form from the app menu.
 
 ## How to Use
 
@@ -21,6 +22,7 @@ Lifetime Stats summarizes key economy, combat, and utility totals across all of 
 4. Select **Apply** to refresh the totals.
 5. Select **Explore** to review additional metrics on the [Explore dashboard](explore.md).
 6. Review [Metrics Reference](metrics_reference.md) to see the full list of chartable metrics.
+7. (Optional) Use **Report a bug / request a feature** in the same menu when you want to send feedback from the app.
 
 ## How to Read the Results
 

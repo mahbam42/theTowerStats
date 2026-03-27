@@ -122,6 +122,15 @@
                   <button type="button" class="link-button" id="open-lifetime-stats">Lifetime Stats</button>
                 </li>
                 <li>
+                  <a
+                    href="https://github.com/mahbam42/theTowerStats/issues/new/choose"
+                    target="_blank"
+                    rel="noopener noreferrer"
+                  >
+                    Report a bug / request a feature
+                  </a>
+                </li>
+                <li>
                   <form action="{% url 'logout' %}" method="post">
                     {% csrf_token %}
                     <input type="hidden" name="next" value="{% url 'login' %}" />
