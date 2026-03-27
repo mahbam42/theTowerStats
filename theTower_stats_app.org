@@ -4156,10 +4156,12 @@ Parse a URL before performing a check on its host value, and ensure that the che
 
 https://cwe.mitre.org/data/definitions/20.html
 
-*** v0.11.0 [0/7]
+*** v0.11.0 [5/5]
 
-**** TODO [#A] Dependancy Cleanup 
+**** DONE [#A] Dependancy Cleanup 
+CLOSED: [2026-03-17 Tue 17:21]
 
+- State "DONE"       from "TODO"       [2026-03-17 Tue 17:21]
 ***** TODO [#A] Bump django to 5.2.12 to resolve security issues  :chore:
 Found by Dependabot
 
@@ -4178,16 +4180,24 @@ Mostly minor version bumps on dependencies.
 
 ***** TODO [#C] Refactor to remove dj-database-url                :chore:
 It was a bootstrap solution to migration to railway when we first deployed. Things have been working smoother since so we need to remove the dependancy.
-**** TODO [#A] On Battle History Add Rank Filter to 'Top 3 Tournament Logs' :enhancement:
+**** DONE [#A] On Battle History Add Rank Filter to 'Top 3 Tournament Logs' :enhancement:
+CLOSED: [2026-03-17 Tue 17:21]
+- State "DONE"       from "TODO"       [2026-03-17 Tue 17:21]
 Select Copper, Silver, Gold, Platinum, Champions, Legends to show top 3 for only the selected rank 
 
-**** TODO [#B] Respec Bots button disabled                          :feat:
+**** DONE [#B] Respec Bots button disabled                          :feat:
+CLOSED: [2026-03-17 Tue 17:22]
+- State "DONE"       from "TODO"       [2026-03-17 Tue 17:22]
 Should be initially accessible, then locked until the end of the current event window.
 
-**** TODO [#B] Add guardian_coins_stolen to coins earned by source   :bug:
+**** DONE [#B] Add guardian_coins_stolen to coins earned by source   :bug:
+CLOSED: [2026-03-17 Tue 17:21]
+- State "DONE"       from "TODO"       [2026-03-17 Tue 17:21]
 Don't know why it was missing but is needed. 
 
-**** TODO [#B] Query Templates
+**** DONE [#B] Query Templates
+CLOSED: [2026-03-17 Tue 17:22]
+- State "DONE"       from "TODO"       [2026-03-17 Tue 17:22]
 Provide read-only templates to help players start queries without suggestions.
 
 Tasks:
@@ -4201,40 +4211,78 @@ Acceptance notes:
 - Templates do not auto-run.
 - Templates must not embed advice or prescriptions.
 
-** Backlog [3/8]
-“Out of Scope”:
-- Cloud sync
-- Real-time scraping
+*** v0.12.0 [0/6]
 
-*** TODO [#C] Auto-migration of stored queries
+**** TODO [#A] Merge PR Branches from Dependabot
+Bump mkdocs-get-deps, mkdocs-material, ruff, mkdocs-gen-files, and requests. Bumping Requests to 2.33 also resolves an open security warning. 
 
-The Explore DSL is expected to evolve as metrics, aliases, and scopes change. When we introduce
-automatic migration for stored queries, it should focus on safe, deterministic transforms that
-preserve the user's intent without silently changing results.
+**** TODO [#A] Add Card Usage Table in a Modal
+Based on Preset Tags marked on Battle Reports. Accessible from the Cards Dashboard. Shows the 'runs used' and 'percentage used' (based on total runs recorded).
+- Columns are sortable (higest, lowest, etc).
+- Include a second table of Preset Usage
+- May include Tournaments by default
+- Place Button to access modal next to 'charts' button in upper right
+
+**** TODO [#B] Security Warning: Pygments has Regular Expression Denial of Service (ReDoS) due to Inefficient Regex for GUID Matching
+A security flaw has been discovered in pygments up to 2.19.2. The impacted element is the function AdlLexer of the file pygments/lexers/archetype.py. The manipulation results in inefficient regular expression complexity. The attack is only possible with local access. The exploit has been released to the public and may be used for attacks. The project was informed of the problem early through an issue report but has not responded yet.
+
+Looks like there may not be a fix yet. But we should investigate the risks and if we can mitigate them within our codebase. 
+
+**** TODO [#B] Security Warning: Incomplete URL substring sanitization
+Sanitizing untrusted URLs is a common technique for preventing attacks such as request forgeries and malicious redirections. Usually, this is done by checking that the host of a URL is in a set of allowed hosts.
+
+#+BEGIN_SRC python
+ # core/management/commands/fetch_wiki_data.py:685 
+ """Return True when the URL points at a fandom-hosted domain."""
+
+ parsed = urllib.parse.urlparse(url)
+ return parsed.netloc.endswith("fandom.com")
+      # Warning
+      #  Incomplete URL substring sanitization
+      #  The string fandom.com
+      #   may be at an arbitrary position in the sanitized URL.
+
+  def _fandom_page_title(url: str) -> str:
+#+END_SRC
+
+**** TODO [#B] Bot Respec needs to Lock All Bots, reset levels and goals (for bots) :bug:fix:
+
+**** TODO [#C] Collapse Query Templates on Explore Dashboard         :fix:
+When query is run
+
+*** Future
+**** WAIT Game v28.0 Changes
+
+- State "WAIT"       from              [2026-03-17 Tue 17:22] \\
+  waiting on release notes
+
+**** TODO [#C] Auto-migration of stored queries
+
+The Explore DSL is expected to evolve as metrics, aliases, and scopes change. When we introduce automatic migration for stored queries, it should focus on safe, deterministic transforms that preserve the user's intent without silently changing results.
 
 ### Scope
 
 - Add a stored query schema version and preserve the original text alongside migrated output.
-- Migrate only well-defined changes (for example, metric renames, alias consolidation, scope key
-  renames, or output defaults) backed by registry metadata.
+- Migrate only well-defined changes (for example, metric renames, alias consolidation, scope key renames, or output defaults) backed by registry metadata.
 - Keep migrations deterministic, reversible, and fully traceable for review and debugging.
 - Run migrations at load time and persist only after validation succeeds.
 - Avoid migrations that depend on user data, current run history, or dynamic context.
 
 ### Notes
 
-- Fail closed: if a migration cannot be applied, keep the original text and return a validation
-  error with remediation guidance.
+- Fail closed: if a migration cannot be applied, keep the original text and return a validation error with remediation guidance.
 - Record migration metadata (version, timestamp, rule ids) for audit trails.
-- Prefer additive behavior; removing unsupported tokens should be a last resort and must be
-  explicitly flagged.
+- Prefer additive behavior; removing unsupported tokens should be a last resort and must be explicitly flagged.
 - Treat deprecated tokens as warnings with suggested replacements until a migration rule exists.
-- Ensure the Explore registry exposes migration hints (aliases, deprecations, replacements) in one
-  canonical location.
+- Ensure the Explore registry exposes migration hints (aliases, deprecations, replacements) in one canonical location.
+  
+** Backlog [3/6]
+“Out of Scope”:
+- Cloud sync
+- Real-time scraping
 
 *** Labs Tracking
 Track Labs progress and unlocks
-
 
 *** WAIT [#B] Add Card Slots to Goals                               :patch:
 
