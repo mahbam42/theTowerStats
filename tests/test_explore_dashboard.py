@@ -279,6 +279,69 @@ def test_explore_template_copy_loads_dsl_without_running(auth_client) -> None:
 
 
 @pytest.mark.django_db
+def test_explore_successful_run_collapses_query_templates(auth_client, player) -> None:
+    """Successful query runs collapse the Query Templates panel."""
+
+    report = BattleReport.objects.create(
+        player=player,
+        raw_text="Battle Report\nCoins earned\t1,000\n",
+        checksum="explore-collapse".ljust(64, "x"),
+    )
+    BattleReportProgress.objects.create(
+        battle_report=report,
+        player=player,
+        battle_date=datetime(2025, 12, 5, tzinfo=timezone.utc),
+        tier=7,
+        wave=100,
+        real_time_seconds=300,
+    )
+    BattleReportDerivedMetrics.objects.create(
+        player=player,
+        battle_report=report,
+        values={"coins_earned": 1000},
+        raw_values={"coins_earned": "1000"},
+    )
+
+    dsl_query = (
+        'name "Coins by tier"\n'
+        "scope date [date:YYYY-MM-DD]..[date:YYYY-MM-DD]\n"
+        "scope tier [tier:—]\n"
+        "scope preset [preset:—]\n"
+        "scope snapshot [snapshot:—]\n"
+        "scope past_n_runs [runs:—]\n"
+        "breakdown by tier\n"
+        "metric coins_earned sum\n"
+        "output table\n"
+    )
+
+    response = auth_client.post(
+        reverse("core:explore"),
+        data={"dsl_query": dsl_query, "action": "run_explore_query"},
+    )
+    assert response.status_code == 200
+    assert response.context["collapse_query_templates"] is True
+    assert 'id="query-templates-panel"' in response.content.decode("utf-8")
+    assert 'id="query-templates-panel" open' not in response.content.decode("utf-8")
+
+
+@pytest.mark.django_db
+def test_explore_validation_errors_keep_query_templates_open(auth_client) -> None:
+    """Validation errors leave the Query Templates panel open."""
+
+    response = auth_client.post(
+        reverse("core:explore"),
+        data={
+            "dsl_query": 'name "Invalid"\nmetric missing_metric sum\noutput table\n',
+            "action": "run_explore_query",
+        },
+    )
+
+    assert response.status_code == 200
+    assert response.context["collapse_query_templates"] is False
+    assert 'id="query-templates-panel" open' in response.content.decode("utf-8")
+
+
+@pytest.mark.django_db
 def test_explore_query_template_rejects_invalid_dsl() -> None:
     """Explore query templates validate DSL before saving."""
 

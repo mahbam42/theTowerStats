@@ -101,3 +101,22 @@ def test_fetch_html_fandom_fallback_uses_parse_api(monkeypatch) -> None:
         "https://the-tower-idle-tower-defense.fandom.com/wiki/Guardian"
     )
     assert html == "<table></table>"
+
+
+@pytest.mark.regression
+def test_is_fandom_url_accepts_fandom_hosts() -> None:
+    """Host validation accepts canonical Fandom domains only."""
+
+    assert fetch_wiki_data._is_fandom_url("https://the-tower-idle-tower-defense.fandom.com/wiki/Guardian") is True
+    assert fetch_wiki_data._is_fandom_url("https://fandom.com/wiki/Test") is True
+    assert fetch_wiki_data._is_fandom_url("https://subdomain.FANDOM.com/wiki/Test") is True
+
+
+@pytest.mark.regression
+def test_is_fandom_url_rejects_suffix_and_userinfo_bypass_hosts() -> None:
+    """Host validation rejects crafted domains that only contain fandom.com as a substring."""
+
+    assert fetch_wiki_data._is_fandom_url("https://evilfandom.com/wiki/Test") is False
+    assert fetch_wiki_data._is_fandom_url("https://fandom.com.evil.test/wiki/Test") is False
+    assert fetch_wiki_data._is_fandom_url("https://fandom.com@evil.test/wiki/Test") is False
+    assert fetch_wiki_data._is_fandom_url("https:///wiki/Test") is False

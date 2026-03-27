@@ -682,7 +682,10 @@ def _is_fandom_url(url: str) -> bool:
     """Return True when the URL points at a fandom-hosted domain."""
 
     parsed = urllib.parse.urlparse(url)
-    return parsed.netloc.endswith("fandom.com")
+    hostname = (parsed.hostname or "").strip(".").lower()
+    if not hostname:
+        return False
+    return hostname == "fandom.com" or hostname.endswith(".fandom.com")
 
 
 def _fandom_page_title(url: str) -> str:

@@ -16,7 +16,7 @@ from definitions.models import (
     ParameterKey,
     WikiData,
 )
-from player_state.models import PlayerBot, PlayerBotParameter, PlayerBotRespecWindow
+from player_state.models import GoalTarget, GoalType, PlayerBot, PlayerBotParameter, PlayerBotRespecWindow
 
 pytestmark = pytest.mark.integration
 
@@ -31,6 +31,7 @@ def test_bots_progress_includes_respec_callout(auth_client, player) -> None:
     assert "Bot Respec" in content
     assert "Bot Respec (300 Gems)" in content
     assert "Available now." in content
+    assert "This resets all bots to locked" in content
     assert response.context["bot_respec"]["available"] is True
 
 
@@ -53,6 +54,54 @@ def test_bots_progress_marks_respec_used_for_current_event(auth_client, player) 
     content = response.content.decode("utf-8")
     assert "Already marked as used for this event window." in content
     assert 'disabled aria-disabled="true"' in content
+
+
+@pytest.mark.django_db
+@pytest.mark.regression
+def test_bots_progress_respec_resets_bots_and_clears_bot_goals(auth_client, player) -> None:
+    """Bot Respec resets bot levels, locks bots, and removes bot goals."""
+
+    bot_def = _bot_with_four_parameters(slug="respec_bot", name="Respec Bot")
+    bot = PlayerBot.objects.create(
+        player=player,
+        bot_definition=bot_def,
+        bot_slug=bot_def.slug,
+        unlocked=True,
+    )
+    param_defs = list(bot_def.parameter_definitions.order_by("id"))
+    assert len(param_defs) == 4
+    for index, param_def in enumerate(param_defs, start=1):
+        PlayerBotParameter.objects.create(
+            player=player,
+            player_bot=bot,
+            parameter_definition=param_def,
+            level=min(index, 2),
+        )
+
+    GoalTarget.objects.create(
+        player=player,
+        goal_type=str(GoalType.BOT),
+        goal_key=f"bot:{bot_def.slug}:{param_defs[0].key}",
+        target_level=2,
+    )
+
+    response = auth_client.post(
+        reverse("core:bots_progress"),
+        data={"action": "mark_bot_respec_used"},
+        follow=True,
+    )
+    assert response.status_code == 200
+
+    bot.refresh_from_db()
+    assert bot.unlocked is False
+    assert not GoalTarget.objects.filter(player=player, goal_type=str(GoalType.BOT)).exists()
+    assert all(
+        level == 0
+        for level in PlayerBotParameter.objects.filter(player=player, player_bot=bot).values_list("level", flat=True)
+    )
+
+    content = response.content.decode("utf-8")
+    assert "Locked 1 bots, reset 4 bot parameter rows, and cleared 1 bot goals." in content
 
 
 @pytest.mark.django_db

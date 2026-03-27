@@ -17,7 +17,7 @@ Explore helps you build your own questions about past runs and see aggregated an
 ## How to Use
 
 1. Select **Explore** in the navigation.
-2. Review **Query Templates** when you want a starter query.
+2. Expand **Query Templates** when you want a starter query.
 3. Select **Use this query** to copy a template into the Query Builder.
 4. Review the Query Builder text area at the top of the page.
 5. Use the **Saved query** dropdown to reload a query you already saved.
@@ -38,8 +38,10 @@ Explore helps you build your own questions about past runs and see aggregated an
 20. Add a Metric line and an Aggregation.
 21. Add an Output line when you want a chart or KPI.
 22. Select **Run query**.
-23. Select **Save query** to store changes; a saved query with the same name is overwritten.
-24. Select **Delete query** to remove a saved query you previously loaded.
+23. Review the results area after the query runs.
+24. Re-open **Query Templates** if you want to copy a different starter query after a successful run.
+25. Select **Save query** to store changes; a saved query with the same name is overwritten.
+26. Select **Delete query** to remove a saved query you previously loaded.
 
 ## How to Read the Results
 
@@ -68,6 +70,9 @@ Explore helps you build your own questions about past runs and see aggregated an
 
 > ⚠️ Note
 > Query Templates are shared starter queries managed through the Admin Panel. Copying a template does not save it to your account until you select **Save query**.
+
+> ⚠️ Note
+> After a successful query run, the **Query Templates** panel collapses to keep the results area in view.
 
 > ⚠️ Note
 > Average is available for currency, counter, time, and select damage metrics (for example, Guardian Damage and Flame Bot Damage).

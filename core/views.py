@@ -2323,6 +2323,12 @@ def explore_dashboard(request: HttpRequest) -> HttpResponse:
         "explore_errors": tuple(validation_errors),
         "explore_warnings": tuple(validation_warnings),
         "explore_farming": farming_summary,
+        "collapse_query_templates": (
+            request.method == "POST"
+            and request.POST.get("action") == "run_explore_query"
+            and not validation_errors
+            and results is not None
+        ),
     }
     return render(request, "core/explore.html", context)
 
@@ -3276,6 +3282,94 @@ def _preset_filter_querystring(query_params: QueryDict, *, preset_id: int) -> st
     return params.urlencode()
 
 
+def _usage_percentage(*, run_count: int, total_runs: int) -> float:
+    """Return the percentage of runs represented by a usage count.
+
+    Args:
+        run_count: Matching runs for the row being summarized.
+        total_runs: Total visible runs used as the denominator.
+
+    Returns:
+        The percentage value in the range 0..100.
+    """
+
+    if total_runs <= 0:
+        return 0.0
+    return (float(run_count) / float(total_runs)) * 100.0
+
+
+def _build_cards_usage_rows(
+    *,
+    cards: Sequence[PlayerCard],
+    preset_usage_counts: dict[int, int],
+    total_runs: int,
+) -> list[dict[str, object]]:
+    """Build Cards dashboard usage rows from preset-tagged run counts.
+
+    Args:
+        cards: Player cards to summarize.
+        preset_usage_counts: Visible run counts keyed by preset id.
+        total_runs: Total visible run count for percentage calculations.
+
+    Returns:
+        A list of card usage rows sorted by highest usage first.
+    """
+
+    rows: list[dict[str, object]] = []
+    for card in cards:
+        definition = card.card_definition
+        name = definition.name if definition is not None else card.card_slug
+        presets = tuple(card.presets.all())
+        runs_used = sum(preset_usage_counts.get(preset.id, 0) for preset in presets if preset.id is not None)
+        rows.append(
+            {
+                "name": name,
+                "runs_used": runs_used,
+                "percentage_used": _usage_percentage(run_count=runs_used, total_runs=total_runs),
+                "presets": presets,
+            }
+        )
+    return sorted(
+        rows,
+        key=lambda row: (-cast(int, row["runs_used"]), str(row["name"]).lower()),
+    )
+
+
+def _build_preset_usage_rows(
+    *,
+    presets: Sequence[Preset],
+    preset_usage_counts: dict[int, int],
+    total_runs: int,
+) -> list[dict[str, object]]:
+    """Build preset usage rows for the Cards usage modal.
+
+    Args:
+        presets: Known presets for the player.
+        preset_usage_counts: Visible run counts keyed by preset id.
+        total_runs: Total visible run count for percentage calculations.
+
+    Returns:
+        A list of preset usage rows sorted by highest usage first.
+    """
+
+    rows = [
+        {
+            "name": preset.name,
+            "badge_color": preset.badge_color(),
+            "runs_used": preset_usage_counts.get(preset.id, 0) if preset.id is not None else 0,
+            "percentage_used": _usage_percentage(
+                run_count=preset_usage_counts.get(preset.id, 0) if preset.id is not None else 0,
+                total_runs=total_runs,
+            ),
+        }
+        for preset in presets
+    ]
+    return sorted(
+        rows,
+        key=lambda row: (-cast(int, row["runs_used"]), str(row["name"]).lower()),
+    )
+
+
 @login_required
 def cards(request: HttpRequest) -> HttpResponse:
     """Render the Cards dashboard (slots + inventory + preset tagging)."""
@@ -3458,6 +3552,21 @@ def cards(request: HttpRequest) -> HttpResponse:
         card_qs = card_qs.filter(presets__in=selected_presets).distinct()
 
     cards = list(card_qs)
+    presets = tuple(Preset.objects.filter(player=player).order_by("name"))
+    preset_usage_counts = {
+        row["preset_id"]: row["run_count"]
+        for row in (
+            BattleReportProgress.objects.filter(
+                player=player,
+                battle_report__is_hidden=False,
+                preset_id__isnull=False,
+            )
+            .values("preset_id")
+            .annotate(run_count=Count("battle_report_id"))
+        )
+        if row["preset_id"] is not None
+    }
+    total_visible_runs = BattleReport.objects.filter(player=player, is_hidden=False).count()
 
     rows = []
     for card in cards:
@@ -3509,7 +3618,6 @@ def cards(request: HttpRequest) -> HttpResponse:
         "next_cost": next_cost,
     }
 
-    presets = Preset.objects.filter(player=player).order_by("name")
     preset_links = [
         {
             "preset": preset,
@@ -3540,6 +3648,17 @@ def cards(request: HttpRequest) -> HttpResponse:
             "rows": rows,
             "sort_querystrings": sort_querystrings,
             "current_sort": current_sort,
+            "card_usage_rows": _build_cards_usage_rows(
+                cards=cards,
+                preset_usage_counts=preset_usage_counts,
+                total_runs=total_visible_runs,
+            ),
+            "preset_usage_rows": _build_preset_usage_rows(
+                presets=presets,
+                preset_usage_counts=preset_usage_counts,
+                total_runs=total_visible_runs,
+            ),
+            "card_usage_total_runs": total_visible_runs,
         },
     )
 
@@ -4671,14 +4790,21 @@ def bots_progress(request: HttpRequest) -> HttpResponse:
 
         if action == "mark_bot_respec_used":
             if current_respec is None:
-                current_respec = PlayerBotRespecWindow.objects.create(
-                    player=player,
-                    window_start=current_window.start,
-                    window_end=current_window.end,
-                )
+                with transaction.atomic():
+                    reset_summary = _apply_bot_respec_reset(player=player)
+                    current_respec = PlayerBotRespecWindow.objects.create(
+                        player=player,
+                        window_start=current_window.start,
+                        window_end=current_window.end,
+                    )
                 messages.success(
                     request,
-                    "Bot Respec marked as used for the current event window.",
+                    (
+                        "Bot Respec recorded for the current event window. "
+                        f"Locked {reset_summary['bots_locked']} bots, reset "
+                        f"{reset_summary['levels_reset']} bot parameter rows, and cleared "
+                        f"{reset_summary['goals_cleared']} bot goals."
+                    ),
                 )
             else:
                 messages.warning(
@@ -5087,6 +5213,34 @@ def bots_progress(request: HttpRequest) -> HttpResponse:
             "goals_widget_goal_type": str(GoalType.BOT),
         },
     )
+
+
+def _apply_bot_respec_reset(*, player: Player) -> dict[str, int]:
+    """Reset bot progression to the locked baseline used after an in-game respec.
+
+    Args:
+        player: Owning player whose bot state should be reset.
+
+    Returns:
+        A summary of the rows affected for user-facing confirmation.
+    """
+
+    levels_reset = PlayerBotParameter.objects.filter(
+        player=player,
+    ).exclude(level=0).update(level=0)
+    bots_locked = PlayerBot.objects.filter(
+        player=player,
+        unlocked=True,
+    ).update(unlocked=False)
+    goals_cleared, _ = GoalTarget.objects.filter(
+        player=player,
+        goal_type=str(GoalType.BOT),
+    ).delete()
+    return {
+        "levels_reset": levels_reset,
+        "bots_locked": bots_locked,
+        "goals_cleared": goals_cleared,
+    }
 
 
 def _calculator_run_label(run: BattleReport) -> str:

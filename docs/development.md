@@ -131,3 +131,4 @@ Phase 8 introduces first-class multi-player support.
 
 - Post actions that accept `next` must validate the URL before redirecting. Use `core.redirects.safe_redirect` for any redirect derived from user input.
 - AJAX error payloads should avoid raw exception details and return a user-safe message in production.
+- The documentation toolchain pulls in Pygments transitively. In this repo it is used for trusted, repo-authored docs only, not player input. If docs rendering is ever exposed to untrusted content, run that highlighting/build step with a timeout and process isolation.

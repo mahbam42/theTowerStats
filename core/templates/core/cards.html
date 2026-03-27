@@ -16,6 +16,7 @@
             <p class="muted margin-0">Track card slots, inventory, and preset tags.</p>
           </div>
           <div class="cell shrink text-right">
+            <button class="button secondary" type="button" id="open-card-usage-modal">Usage</button>
             <a class="button secondary" href="{% url 'core:dashboard' %}">Charts</a>
           </div>
         </div>
@@ -400,6 +401,105 @@
       </div>
     </div>
   </div>
+
+  <div class="modal-backdrop" id="card-usage-modal" aria-hidden="true">
+    <div class="modal-shell" role="dialog" aria-modal="true" aria-label="Card Usage">
+      <div class="grid-x align-justify align-middle">
+        <div class="cell auto">
+          <h4 class="margin-0">Card Usage</h4>
+          <p class="muted margin-0">Based on non-hidden Battle Reports. Tournaments are included by default.</p>
+          <p class="muted margin-0">Percentages use all visible recorded runs as the denominator: {{ card_usage_total_runs }} total.</p>
+        </div>
+        <div class="cell shrink">
+          <button class="button secondary" type="button" id="close-card-usage-modal">Close</button>
+        </div>
+      </div>
+
+      <div class="margin-top-1">
+        <h5 class="margin-bottom-1">Cards</h5>
+        {% if card_usage_rows %}
+          <div class="table-scroll">
+            <table class="stack" data-usage-table>
+              <thead>
+                <tr>
+                  <th scope="col">
+                    <button class="button tiny secondary" type="button" data-sort-key="name">Card</button>
+                  </th>
+                  <th scope="col">
+                    <button class="button tiny secondary" type="button" data-sort-key="runs">Runs used</button>
+                  </th>
+                  <th scope="col">
+                    <button class="button tiny secondary" type="button" data-sort-key="percentage">Percentage used</button>
+                  </th>
+                  <th scope="col">Preset tags</th>
+                </tr>
+              </thead>
+              <tbody>
+                {% for row in card_usage_rows %}
+                  <tr
+                    data-name="{{ row.name|lower }}"
+                    data-runs="{{ row.runs_used }}"
+                    data-percentage="{{ row.percentage_used|floatformat:4 }}"
+                  >
+                    <td>{{ row.name }}</td>
+                    <td>{{ row.runs_used }}</td>
+                    <td>{{ row.percentage_used|floatformat:1 }}%</td>
+                    <td>
+                      {% for preset in row.presets %}
+                        <span class="badge preset-badge preset-color-{{ preset.badge_color }}">{{ preset.name }}</span>
+                      {% empty %}
+                        —
+                      {% endfor %}
+                    </td>
+                  </tr>
+                {% endfor %}
+              </tbody>
+            </table>
+          </div>
+        {% else %}
+          <div class="empty-state" role="status">No cards are available for usage analysis.</div>
+        {% endif %}
+      </div>
+
+      <div class="margin-top-1">
+        <h5 class="margin-bottom-1">Preset Usage</h5>
+        {% if preset_usage_rows %}
+          <div class="table-scroll">
+            <table class="stack" data-usage-table>
+              <thead>
+                <tr>
+                  <th scope="col">
+                    <button class="button tiny secondary" type="button" data-sort-key="name">Preset</button>
+                  </th>
+                  <th scope="col">
+                    <button class="button tiny secondary" type="button" data-sort-key="runs">Runs used</button>
+                  </th>
+                  <th scope="col">
+                    <button class="button tiny secondary" type="button" data-sort-key="percentage">Percentage used</button>
+                  </th>
+                </tr>
+              </thead>
+              <tbody>
+                {% for row in preset_usage_rows %}
+                  <tr
+                    data-name="{{ row.name|lower }}"
+                    data-runs="{{ row.runs_used }}"
+                    data-percentage="{{ row.percentage_used|floatformat:4 }}"
+                  >
+                    <td><span class="badge preset-badge preset-color-{{ row.badge_color }}">{{ row.name }}</span></td>
+                    <td>{{ row.runs_used }}</td>
+                    <td>{{ row.percentage_used|floatformat:1 }}%</td>
+                  </tr>
+                {% endfor %}
+              </tbody>
+            </table>
+          </div>
+        {% else %}
+          <div class="empty-state" role="status">No presets recorded.</div>
+        {% endif %}
+      </div>
+    </div>
+  </div>
 {% endblock %}
 
 {% block extra_scripts %}
@@ -447,6 +547,66 @@
           });
         });
       }
+
+      function bindModal(modalId, openId, closeId) {
+        const modal = document.getElementById(modalId);
+        const openBtn = document.getElementById(openId);
+        const closeBtn = document.getElementById(closeId);
+        if (!modal || !openBtn || !closeBtn) return;
+
+        function openModal() {
+          modal.classList.add("is-open");
+          modal.setAttribute("aria-hidden", "false");
+        }
+
+        function closeModal() {
+          modal.classList.remove("is-open");
+          modal.setAttribute("aria-hidden", "true");
+        }
+
+        openBtn.addEventListener("click", openModal);
+        closeBtn.addEventListener("click", closeModal);
+        modal.addEventListener("click", function (event) {
+          if (event.target === modal) closeModal();
+        });
+      }
+
+      function sortUsageTable(table, sortKey, descending) {
+        const tbody = table.querySelector("tbody");
+        if (!tbody) return;
+        const rows = Array.from(tbody.querySelectorAll("tr"));
+        rows.sort(function (a, b) {
+          const aValue = a.dataset[sortKey] || "";
+          const bValue = b.dataset[sortKey] || "";
+          if (sortKey === "name") {
+            return descending ? bValue.localeCompare(aValue) : aValue.localeCompare(bValue);
+          }
+          const aNumber = Number(aValue);
+          const bNumber = Number(bValue);
+          return descending ? bNumber - aNumber : aNumber - bNumber;
+        });
+        rows.forEach(function (row) {
+          tbody.appendChild(row);
+        });
+      }
+
+      document.querySelectorAll("[data-usage-table]").forEach(function (table) {
+        table.querySelectorAll("[data-sort-key]").forEach(function (button) {
+          button.addEventListener("click", function () {
+            const sortLabel = button.getAttribute("data-sort-key");
+            if (!sortLabel) return;
+            const sortKey = sortLabel === "runs" ? "runs" : sortLabel === "percentage" ? "percentage" : "name";
+            const currentKey = table.getAttribute("data-current-sort");
+            const currentDirection = table.getAttribute("data-current-direction") || "desc";
+            const descending = currentKey === sortKey ? currentDirection !== "desc" : sortKey !== "name";
+            sortUsageTable(table, sortKey, descending);
+            table.setAttribute("data-current-sort", sortKey);
+            table.setAttribute("data-current-direction", descending ? "desc" : "asc");
+          });
+        });
+      });
+
+      bindModal("card-usage-modal", "open-card-usage-modal", "close-card-usage-modal");
     })();
   </script>
 {% endblock %}

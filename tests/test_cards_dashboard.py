@@ -3,11 +3,13 @@
 from __future__ import annotations
 
 import re
+from datetime import datetime, timezone
 
 import pytest
 from django.urls import reverse
 
 from definitions.models import CardDefinition, WikiData
+from gamedata.models import BattleReport, BattleReportProgress
 from player_state.models import PlayerCard, Preset
 
 pytestmark = pytest.mark.integration
@@ -159,6 +161,23 @@ def _card_level_in_table(html: str, *, card_name: str) -> str:
     match = pattern.search(html)
     assert match is not None, f"Card row for {card_name!r} not found."
     return match.group("level").strip()
+
+
+def _usage_modal_names(html: str, *, heading: str) -> list[str]:
+    """Extract the first-column labels from a usage table in the modal."""
+
+    section_pattern = re.compile(
+        rf"<h5 class=\"margin-bottom-1\">{re.escape(heading)}</h5>(?P<section>.*?)</table>",
+        re.DOTALL,
+    )
+    section_match = section_pattern.search(html)
+    assert section_match is not None, f"Usage section {heading!r} not found."
+    section = section_match.group("section")
+    body_match = re.search(r"<tbody>(?P<body>.*?)</tbody>", section, flags=re.DOTALL)
+    assert body_match is not None
+    body = body_match.group("body")
+    labels = re.findall(r"<tr[^>]*>\s*<td>(?P<label>.*?)</td>", body, flags=re.DOTALL)
+    return [" ".join(re.sub(r"<[^>]+>", "", label).split()) for label in labels]
 
 
 @pytest.mark.django_db
@@ -421,3 +440,56 @@ def test_cards_dashboard_allows_placeholders_when_level_is_zero(auth_client, pla
     response = auth_client.get(url)
     content = response.content.decode("utf-8")
     assert "Increase critical chance by +#%" in content
+
+
+@pytest.mark.django_db
+@pytest.mark.regression
+def test_cards_dashboard_usage_modal_counts_visible_runs_by_preset(auth_client, player) -> None:
+    """Usage modal rolls visible preset-tagged runs up to cards and presets."""
+
+    alpha = CardDefinition.objects.create(name="Alpha", slug="alpha", rarity="Common")
+    beta = CardDefinition.objects.create(name="Beta", slug="beta", rarity="Rare")
+
+    farming = Preset.objects.create(player=player, name="Farming")
+    tournament = Preset.objects.create(player=player, name="Tournament")
+
+    alpha_card = PlayerCard.objects.create(player=player, card_definition=alpha, card_slug=alpha.slug)
+    beta_card = PlayerCard.objects.create(player=player, card_definition=beta, card_slug=beta.slug)
+    alpha_card.presets.add(farming, tournament, through_defaults={"player": player})
+    beta_card.presets.add(farming, through_defaults={"player": player})
+
+    def _report(*, checksum: str, preset: Preset | None, hidden: bool, is_tournament: bool) -> None:
+        report = BattleReport.objects.create(
+            player=player,
+            raw_text="Battle Report\n",
+            checksum=checksum.ljust(64, "x"),
+            is_hidden=hidden,
+        )
+        BattleReportProgress.objects.create(
+            battle_report=report,
+            player=player,
+            battle_date=datetime(2025, 12, 1, tzinfo=timezone.utc),
+            preset=preset,
+            preset_name_snapshot=preset.name if preset else "",
+            preset_color_snapshot=preset.badge_color() if preset else "",
+            tier=10,
+            wave=100,
+            is_tournament=is_tournament,
+        )
+
+    _report(checksum="farming-1", preset=farming, hidden=False, is_tournament=False)
+    _report(checksum="farming-2", preset=farming, hidden=False, is_tournament=False)
+    _report(checksum="tourney-1", preset=tournament, hidden=False, is_tournament=True)
+    _report(checksum="hidden-1", preset=tournament, hidden=True, is_tournament=True)
+
+    response = auth_client.get(reverse("core:cards"))
+    assert response.status_code == 200
+
+    content = response.content.decode("utf-8")
+    assert 'id="open-card-usage-modal"' in content
+    assert "Tournaments are included by default." in content
+    assert "Percentages use all visible recorded runs as the denominator: 3 total." in content
+    assert "100.0%" in content
+    assert "66.7%" in content
+    assert _usage_modal_names(content, heading="Cards")[:2] == ["Alpha", "Beta"]
+    assert _usage_modal_names(content, heading="Preset Usage")[:2] == ["Farming", "Tournament"]

@@ -7,6 +7,9 @@
 
 ### `fetch_wiki_data`
 
+> ⚠️ Note
+> `fetch_wiki_data` only accepts true `fandom.com` hosts for the MediaWiki parse-API fallback. Crafted hosts that merely contain `fandom.com` as a substring are rejected.
+
 ::: core.management.commands.fetch_wiki_data
 
 ### `rebuild_wiki_definitions`

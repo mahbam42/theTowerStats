@@ -11,6 +11,7 @@ Cards help you track your card slot progression and keep an organized view of yo
 - You want to group cards into named presets for quick filtering.
 - You want to compare cards by level, rarity, progress, or maxed status.
 - You want a fast table view of all cards and their current values.
+- You want to review how often preset-tagged cards appear across your recorded runs.
 
 ## How to Use
 
@@ -32,6 +33,9 @@ Cards help you track your card slot progression and keep an organized view of yo
 16. Select the same column header again to reverse the sort order.
 17. Select **Reset Filters** to return to the full list.
 18. Review **Total Cards Progress** to see an overall collection summary across all cards.
+19. Select **Usage** to open the card usage modal.
+20. Review the **Cards** and **Preset Usage** tables when you want to compare observed usage across all visible runs.
+21. Select a column header in the modal to reorder the usage tables.
 
 ## How to Read the Results
 
@@ -44,6 +48,8 @@ Cards help you track your card slot progression and keep an organized view of yo
 - **(MAX)** indicates the card is fully maxed and can no longer be increased.
 - **Parameters** show the card description with the current level value emphasized when the card is owned.
 - **Presets** are optional labels you define to group runs and cards (unlocked via the in-game Lab Research “Card Presets”). The game currently allows 5 presets, and the app lets you save more. Define and set presets from the Cards dashboard.
+- **Runs used** counts how many non-hidden Battle Reports match at least one preset assigned to that card.
+- **Percentage used** shows the share of all non-hidden recorded runs represented by that card or preset.
 - **Total Cards Progress** summarizes overall collection progress across all cards:
   - **Cards Remaining** shows how many card copies are left until every card is fully maxed.
   - **Total Cards** shows the total copies required to fully max every card.
@@ -73,6 +79,12 @@ Cards help you track your card slot progression and keep an organized view of yo
 
 > **Note**
 > In-game preset selections can change mid-run. In the app, presets are static labels you apply for grouping and filtering.
+
+> **Note**
+> The **Usage** modal includes tournament runs by default.
+
+> **Note**
+> Hidden Battle Reports are excluded from the **Usage** modal.
 
 > **Caution**
 > The Cards page is an organizer and tracker. It does not recommend builds or presets.

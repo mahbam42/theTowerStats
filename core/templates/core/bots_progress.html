@@ -11,10 +11,11 @@
           <h5 class="margin-0">Bot Respec</h5>
           <p class="muted margin-0">Refund medal upgrades and unlocks. Labs are not refunded.</p>
           <p class="muted margin-0">Cost: 300 Gems • Available once per event.</p>
+          <p class="muted margin-0">This resets all bots to locked, returns bot parameter levels to 0, and clears bot goals in the app.</p>
           <p class="muted margin-0">Current event window: {{ bot_respec.window_start|date:"Y-m-d" }} to {{ bot_respec.window_end|date:"Y-m-d" }}.</p>
           <p class="muted margin-0">
             {% if bot_respec.available %}
-              Available now. Use this after you respec in-game to record that the event's respec has been spent.
+              Available now. Use this only after you respec in-game. This action is destructive for bot progress tracked here.
             {% else %}
               Already marked as used for this event window.{% if bot_respec.used_at %} Recorded {{ bot_respec.used_at|date:"Y-m-d H:i" }}.{% endif %}
             {% endif %}
