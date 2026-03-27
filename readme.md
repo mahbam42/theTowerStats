@@ -67,6 +67,7 @@ Guiding principles:
 - Use the Explore DSL to filter, group, and summarize your imported runs (including patch boundary windows)
 - Preview Explore output in the Query Explorer modal from Battle History or Charts
 - Save named Explore queries for reuse
+- Use shared Query Templates as starter queries and reopen them after successful runs when needed
 - Aggregate supported metrics with sum, count, average, and percent-of-total outputs
 
 ### 📈 Lifetime Stats
@@ -94,7 +95,9 @@ Guiding principles:
 
 - Read-only dashboards for cards, ultimate weapons, guardian chips, and bots
 - See unlocks, parameter levels, and last-updated timestamps
+- Cards dashboard includes a usage modal summarizing card and preset usage across visible runs
 - Guardian chips track active slot limits and unlock costs
+- Bot Respec resets tracked bot unlocks, bot parameter levels, and bot goals to match an in-game respec
 - Wiki‑derived data is versioned and attributed, never overwritten
 
 ### 🗂 Presets (Player Intent, Not Strategy)
@@ -108,6 +111,7 @@ Guiding principles:
 - Dark theme UI with consistent tables, callouts, and navigation styling
 - Improved callout and help-text contrast in dark theme
 - Shared dashboard shell with top navigation, global search, and consistent callouts
+- Account menu includes Lifetime Stats plus a direct bug report / feature request link
 - Foundation grid/forms for Battle History, Charts, and progress dashboards
 - Clear charts designed to answer real questions quickly
 - Optional demo dataset (early, mid, and late game samples) for safe exploration without importing your own data
@@ -137,8 +141,8 @@ This app is about:
 
 ## Current Progress
 
-- Current development: **v0.11.0**
-- Latest release: **v0.11.0**
+- Current development: **v0.12.0**
+- Latest release: **v0.12.0**
 - Changelog: `CHANGELOG.md`
 - Stable: Battle Report import, Battle History, Charts (including snapshots and compare scopes), Explore, Lifetime Stats, Calculator Tools, and collection progress dashboards
 - Multi-user: Each signed-in account has its own isolated dataset

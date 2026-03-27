@@ -2,6 +2,21 @@
 
 This project follows Semantic Versioning.
 
+## [0.12.0]
+
+### Added
+- Cards dashboard usage modal with sortable card and preset usage tables based on visible Battle Report preset tags.
+- Shared account-menu link to open the GitHub bug report / feature request chooser.
+
+### Changed
+- Bot Respec now performs a destructive in-app reset that locks tracked bots, resets bot parameter levels to 0, and clears bot goals after the in-game respec is recorded.
+- Explore Query Templates now collapse after a successful query run and remain open when validation errors are present.
+- Dependencies updated across runtime and development tooling, including refreshed constraints and lockfile entries for `dj-database-url`, `gunicorn`, `psycopg`, `whitenoise`, `requests`, `ruff`, `mkdocs-material`, `mkdocs-gen-files`, `mkdocs-get-deps`, `pymdown-extensions`, and `mkdocstrings-python`.
+- Local virtual environment and lockfile now align with Django 5.2.12 and Requests 2.33.0.
+
+### Fixed
+- `fetch_wiki_data` now validates parsed Fandom hostnames instead of relying on substring suffix checks for the MediaWiki parse-API fallback.
+
 ## [0.11.0]
 
 ### Added
