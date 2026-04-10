@@ -3932,7 +3932,9 @@ Add as a filter.
 CLOSED: [2026-01-31 Sat 15:04]
 - State "DONE"       from "TODO"       [2026-01-31 Sat 15:04]
 metrics_reference.md needs to include the key values (used on explore dashboard) as a column. 
-*** v0.10.0 [15/15]
+*** DONE v0.10.0 [15/15]
+CLOSED: [2026-03-27 Fri 15:27]
+- State "DONE"       from              [2026-03-27 Fri 15:27]
 Includes Game Patch 27.4
 **** DONE [#B] Lifetime Stats Modal                                 :feat:
 CLOSED: [2026-02-09 Mon 11:26]
@@ -4156,8 +4158,10 @@ Parse a URL before performing a check on its host value, and ensure that the che
 
 https://cwe.mitre.org/data/definitions/20.html
 
-*** v0.11.0 [5/5]
+*** DONE v0.11.0 [5/5]
+CLOSED: [2026-03-27 Fri 15:27]
 
+- State "DONE"       from              [2026-03-27 Fri 15:27]
 **** DONE [#A] Dependancy Cleanup 
 CLOSED: [2026-03-17 Tue 17:21]
 
@@ -4211,24 +4215,34 @@ Acceptance notes:
 - Templates do not auto-run.
 - Templates must not embed advice or prescriptions.
 
-*** v0.12.0 [0/6]
+*** DONE v0.12.0 [6/6]
+CLOSED: [2026-03-27 Fri 15:27]
 
-**** TODO [#A] Merge PR Branches from Dependabot
+- State "DONE"       from              [2026-03-27 Fri 15:27]
+**** DONE [#A] Merge PR Branches from Dependabot
+CLOSED: [2026-03-27 Fri 15:27]
+- State "DONE"       from "TODO"       [2026-03-27 Fri 15:27]
 Bump mkdocs-get-deps, mkdocs-material, ruff, mkdocs-gen-files, and requests. Bumping Requests to 2.33 also resolves an open security warning. 
 
-**** TODO [#A] Add Card Usage Table in a Modal
+**** DONE [#A] Add Card Usage Table in a Modal
+CLOSED: [2026-03-27 Fri 15:27]
+- State "DONE"       from "TODO"       [2026-03-27 Fri 15:27]
 Based on Preset Tags marked on Battle Reports. Accessible from the Cards Dashboard. Shows the 'runs used' and 'percentage used' (based on total runs recorded).
 - Columns are sortable (higest, lowest, etc).
 - Include a second table of Preset Usage
 - May include Tournaments by default
 - Place Button to access modal next to 'charts' button in upper right
 
-**** TODO [#B] Security Warning: Pygments has Regular Expression Denial of Service (ReDoS) due to Inefficient Regex for GUID Matching
+**** DONE [#B] Security Warning: Pygments has Regular Expression Denial of Service (ReDoS) due to Inefficient Regex for GUID Matching
+CLOSED: [2026-03-27 Fri 15:27]
+- State "DONE"       from "TODO"       [2026-03-27 Fri 15:27]
 A security flaw has been discovered in pygments up to 2.19.2. The impacted element is the function AdlLexer of the file pygments/lexers/archetype.py. The manipulation results in inefficient regular expression complexity. The attack is only possible with local access. The exploit has been released to the public and may be used for attacks. The project was informed of the problem early through an issue report but has not responded yet.
 
 Looks like there may not be a fix yet. But we should investigate the risks and if we can mitigate them within our codebase. 
 
-**** TODO [#B] Security Warning: Incomplete URL substring sanitization
+**** DONE [#B] Security Warning: Incomplete URL substring sanitization
+CLOSED: [2026-03-27 Fri 15:27]
+- State "DONE"       from "TODO"       [2026-03-27 Fri 15:27]
 Sanitizing untrusted URLs is a common technique for preventing attacks such as request forgeries and malicious redirections. Usually, this is done by checking that the host of a URL is in a set of allowed hosts.
 
 #+BEGIN_SRC python
@@ -4245,17 +4259,16 @@ Sanitizing untrusted URLs is a common technique for preventing attacks such as r
   def _fandom_page_title(url: str) -> str:
 #+END_SRC
 
-**** TODO [#B] Bot Respec needs to Lock All Bots, reset levels and goals (for bots) :bug:fix:
+**** DONE [#B] Bot Respec needs to Lock All Bots, reset levels and goals (for bots) :bug:fix:
+CLOSED: [2026-03-27 Fri 15:27]
 
-**** TODO [#C] Collapse Query Templates on Explore Dashboard         :fix:
+- State "DONE"       from "TODO"       [2026-03-27 Fri 15:27]
+**** DONE [#C] Collapse Query Templates on Explore Dashboard         :fix:
+CLOSED: [2026-03-27 Fri 15:27]
+- State "DONE"       from "TODO"       [2026-03-27 Fri 15:27]
 When query is run
 
 *** Future
-**** WAIT Game v28.0 Changes
-
-- State "WAIT"       from              [2026-03-17 Tue 17:22] \\
-  waiting on release notes
-
 **** TODO [#C] Auto-migration of stored queries
 
 The Explore DSL is expected to evolve as metrics, aliases, and scopes change. When we introduce automatic migration for stored queries, it should focus on safe, deterministic transforms that preserve the user's intent without silently changing results.
@@ -4276,6 +4289,192 @@ The Explore DSL is expected to evolve as metrics, aliases, and scopes change. Wh
 - Treat deprecated tokens as warnings with suggested replacements until a migration rule exists.
 - Ensure the Explore registry exposes migration hints (aliases, deprecations, replacements) in one canonical location.
   
+*** TODO Game v28.0 Changes [0/5]
+
+- State "TODO"       from "WAIT"       [2026-04-09 Thu 14:36]
+- State "WAIT"       from              [2026-03-17 Tue 17:22] \\
+  waiting on release notes
+
+
+This will be a hardline update that will enforce the v28 patch boundary. New metrics and functionality will only work forward.
+
+**** TODO [#A] New Battle Report Metrics
+- Add all new metrics to Battle Report Derived Metrics at minimum or to appropriate models.
+- Add Records metrics to Lifetime Stats modal
+
+
+This is what the new battle history looks like:
+Battle Report
+Battle Date	Apr 10, 2026 18:12
+Game Time	2d 13h 1m 2s
+Real Time	13h 18m 35s
+Tier	3
+Wave	6402
+Killed By	Fast
+Coins Earned	2.24B
+Coins Per Hour	168.38M
+Cells Earned	4.64K
+Cells Per Hour	349
+Records
+Highest Coins / Minute	26.45M
+Largest Wave Skip	0
+Most Coins From Wave Skip	0
+Most Cells From Wave Skip	0
+Largest Smart Missile Stack	0
+Largest Golden Combo	0
+Most Coins From Golden Combo	0
+Largest Inner Landmine Charge	0
+Damage
+Damage Dealt	1.07O
+Projectiles	1.27S
+Rend Armor	0
+Death Ray	0
+Thorns	118.36S
+Orbs	897.89S
+Land Mines	40.40Q
+Chain Lightning	2.77s
+Smart Missiles	341.15q
+Inner Land Mines	0
+Poison Swamp	264.60Q
+Death Wave	250.95q
+Black Hole	57.15S
+Flame Bot	0
+Attack Chip	0
+Electrons	0
+Damage Taken
+Tower	157.83T
+Wall	37.24T
+Bonus Health Gained
+From Death Wave	100.25B
+Health Regenerated
+Lifesteal	5.65T
+Tower Health Regen	56.72B
+Wall Health Regen	0
+Damage Blocked
+Defense %	1.36q
+Defense Absolute	6.94T
+Chrono Field	0
+Chain Thunder	0
+Flame Bot	0
+Primordial Collapse	69.25T
+Negative Mass Projector	0
+Utility
+Recovery Packages	4274
+Free Attack Upgrade	3761
+Free Defense Upgrade	3706
+Free Utility Upgrade	2198
+Enemy Attack Levels Skipped	1643
+Enemy Health Levels Skipped	1406
+Counts
+Projectiles Count	18.36M
+Land Mines Spawned	210909
+Thunder Bot Stuns	0
+Waves Skipped	0
+Death Defy	0
+Hits Absorbed By Energy Shield	189
+Nuke	0
+Second Wind	1
+Demon Mode	0
+Enemies Hit By
+Projectiles	603.64K
+Thorns	49.17K
+Orbs	467.17K
+Death Ray	0
+Chain Lightning	610.59K
+Smart Missiles	11.51K
+Inner Land Mines	0
+Poison Swamp	128.50K
+Death Wave	81.47K
+Black Hole	284.72K
+Chrono Field	0
+Land Mines	379.85K
+Thunder Bot	0
+Flame Bot	0
+Attack Chip	0
+Orbital Augment	0
+Killed With Effect Active
+Golden Tower	93107
+Death Wave	81.47K
+Spotlight	65642
+Amplify Bot	0
+Golden Bot	29801
+Death Penalty	0
+Total Enemies
+Total Enemies	704226
+Basic	298665
+Fast	135873
+Tank	130714
+Ranged	114650
+Boss	641
+Protector	706
+Vampires	715
+Rays	742
+Scatters	696
+Saboteur	0
+Commander	0
+Overcharge	0
+Summoned Enemies	37.28K
+Coins
+Coins Earned	2.24B
+Coin Bonus Upgrade	1.98B
+Coins From Coin Bonuses	1.88B
+Critical Coin	0
+Golden Tower	1.89B
+Golden Combo	0
+Death Wave	721.40M
+Spotlight	95.24M
+Black Hole	1.88B
+Orbs	0
+Golden Bot	196.57M
+Wave Skip	0
+Coins / Wave	27.66M
+Coins Fetched	3.33M
+Bounty Coins	32.49M
+Cash
+Cash Earned	$9.07B
+Golden Tower	$5.76B
+Interest earned	$95.71M
+Currencies
+Cells Earned	4.64K
+Gems	146
+Ad Gems	120
+Gem Blocks Tapped	9
+Fetch Gems	28
+Medals	7
+Reroll Shards Earned	928
+Reroll Shards Fetched	48
+Cannon Shards	31
+Armor Shards	45
+Generator Shards	40
+Core Shards	35
+Common Modules	11
+Rare Modules	6
+Enemies Destroyed By
+Projectiles	20403
+Thorns	45645
+Land Mines	23996
+Orbs	467170
+Chain Lightning	106552
+Smart Missiles	1829
+Inner Land Mines	0
+Poison Swamp	4041
+Death Ray	0
+Black Hole	2048
+Flame Bot	0
+Other	36
+
+
+**** TODO [#A] Verify parser can handle the new Battle Report format
+
+**** TODO [#A] Charts are ignoring Blackhole Damage                  :bug:
+Chart shows 0% from Blackhole but battle report shows 'Black Hole Damage	16.46s' from run '4/3/2026, 9:07:00 AM • Run 296'
+
+Possibly due to magnitude of damage confusing the parser? 
+**** TODO [#A] Upgrade django version to 5.2.13
+Will resolve some security warnings from Dependabot
+**** TODO [#C] Pull and merge Dependabot version bumps
+Ruff, mypy, pymdown-extensions
+
 ** Backlog [3/6]
 “Out of Scope”:
 - Cloud sync
