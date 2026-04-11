@@ -3298,6 +3298,22 @@ def _usage_percentage(*, run_count: int, total_runs: int) -> float:
     return (float(run_count) / float(total_runs)) * 100.0
 
 
+_CARD_USAGE_OBSERVED_METRIC_LABELS: dict[str, str] = {
+    "energy_shield": "Energy Shield Hits Absorbed",
+    "nuke": "Nuke Uses",
+    "second_wind": "Second Wind Uses",
+    "demon_mode": "Demon Mode Uses",
+    "critical_coin": "Coins From Critical Coin",
+    "death_ray": "Death Ray Damage",
+}
+
+
+def _card_usage_observed_metric_label(*, card_slug: str) -> str:
+    """Return the observed Battle Report metric label associated with a card."""
+
+    return _CARD_USAGE_OBSERVED_METRIC_LABELS.get(card_slug, "")
+
+
 def _build_cards_usage_rows(
     *,
     cards: Sequence[PlayerCard],
@@ -3326,6 +3342,7 @@ def _build_cards_usage_rows(
                 "name": name,
                 "runs_used": runs_used,
                 "percentage_used": _usage_percentage(run_count=runs_used, total_runs=total_runs),
+                "observed_metric_label": _card_usage_observed_metric_label(card_slug=card.card_slug),
                 "presets": presets,
             }
         )

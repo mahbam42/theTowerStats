@@ -22,6 +22,31 @@ _LABEL_SEPARATOR = r"(?:[ \t]*:[ \t]*|\t+[ \t]*|[ \t]{2,})"
 _LABEL_VALUE_RE = re.compile(
     rf"(?im)^[ \t]*(?P<label>.+?){_LABEL_SEPARATOR}(?P<value>.*?)[ \t]*$"
 )
+_KNOWN_SECTION_HEADINGS = frozenset(
+    {
+        "records",
+        "damage",
+        "damage taken",
+        "bonus health gained",
+        "health regenerated",
+        "damage blocked",
+        "utility",
+        "counts",
+        "enemies hit by",
+        "killed with effect active",
+        "total enemies",
+        "enemies destroyed",
+        "enemies destroyed by",
+        "coins",
+        "cash",
+        "currencies",
+        "guardian",
+        "bots",
+        "fetch",
+    }
+)
+
+
 def _normalize_label(label: str) -> str:
     """Normalize labels for dictionary lookup.
 
@@ -193,7 +218,61 @@ def extract_raw_value_from_selectors(
         raw_value = sectioned_values.get((normalized_section, normalized_label))
         if raw_value is not None:
             return raw_value
+
+    for selector in selectors:
+        raw_value = _extract_raw_value_by_selector_scan(raw_text, selector=selector)
+        if raw_value is not None:
+            return raw_value
     return None
+
+
+def _extract_raw_value_by_selector_scan(raw_text: str, *, selector: MetricSelector) -> str | None:
+    """Best-effort fallback for single-space clipboard layouts.
+
+    Args:
+        raw_text: Raw Battle Report text.
+        selector: Selector describing the target label and optional section.
+
+    Returns:
+        The matched raw value when present; otherwise ``None``.
+    """
+
+    current_section: str | None = None
+    normalized_target_section = None if selector.section is None else _normalize_label(selector.section)
+
+    for raw_line in (raw_text or "").splitlines():
+        collapsed = re.sub(r"\s+", " ", (raw_line or "").strip())
+        if not collapsed:
+            continue
+
+        normalized_collapsed = _normalize_label(collapsed)
+        if normalized_collapsed == "battle report":
+            current_section = None
+            continue
+
+        matched_value = _extract_value_from_collapsed_prefix(collapsed, label=selector.label)
+        if matched_value is not None:
+            if selector.match_any_section:
+                return matched_value
+            current_normalized_section = None if current_section is None else _normalize_label(current_section)
+            if current_normalized_section == normalized_target_section:
+                return matched_value
+            continue
+
+        if normalized_collapsed in _KNOWN_SECTION_HEADINGS:
+            current_section = collapsed
+
+    return None
+
+
+def _extract_value_from_collapsed_prefix(collapsed_line: str, *, label: str) -> str | None:
+    """Return a value when a collapsed line begins with the selector label."""
+
+    match = re.match(rf"(?i)^{re.escape(label)}(?:\s+|:\s*)(?P<value>.+)$", collapsed_line)
+    if match is None:
+        return None
+    value = (match.group("value") or "").strip()
+    return value or None
 
 
 @lru_cache(maxsize=256)

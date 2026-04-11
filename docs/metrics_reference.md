@@ -86,10 +86,11 @@ Records metrics:
 | Coins from Coin Bonuses | coins_from_coin_bonuses | Battle Report (observed) | Battle Report utility breakdown: coins earned from coin bonuses. |
 | Coins from Coin Upgrade | coins_from_coin_upgrade | Battle Report (observed) | Battle Report utility breakdown: coins earned from coin upgrades. |
 | Coins From Critical Coin | coins_from_critical_coin | Battle Report (observed) | Battle Report coins breakdown: coins earned from Critical Coin. |
+| Coins From Golden Combo | coins_from_golden_combo | Battle Report (observed) | Battle Report coins breakdown: coins earned from Golden Combo. |
 | Coins From Death Wave | coins_from_death_wave | Battle Report (observed) | Battle Report utility breakdown: coins earned from Death Wave. |
 | Coins From Golden Tower | coins_from_golden_tower | Battle Report (observed) | Battle Report utility breakdown: coins earned from Golden Tower. |
 | Coins From Orb | coins_from_orb | Battle Report (observed) | Battle Report utility breakdown: coins earned from Orbs. |
-| Other coins | coins_from_other_sources | Battle Report (observed) | Residual coins not covered by named sources; ensures sources sum to total coins earned. |
+| Other coins | coins_from_other_sources | Battle Report (observed) | Residual coins not covered by named sources. In newer reports, overlapping named buckets can reduce or eliminate this residual. |
 | Coins From Spotlight | coins_from_spotlight | Battle Report (observed) | Battle Report utility breakdown: coins earned from Spotlight. |
 | Coins/hour (derived) | coins_per_hour | Battle Report (derived) | Calculated by the app from Coins Earned and Real Time. |
 | Coins/hour (game-based) | game_reported_coins_per_hour | Battle Report (observed) | Uses the per-hour value reported directly by the game in newer Battle Reports. |
@@ -188,6 +189,12 @@ Records metrics:
 | Demon Mode Uses | demon_mode_uses | Battle Report (observed) | Count reported in newer Battle Reports. |
 | Record: Highest Coins/Minute | record_highest_coins_per_minute | Battle Report (observed) | Available in newer Battle Reports and surfaced in Lifetime Stats, Charts, and Explore. |
 | Record: Largest Wave Skip | record_largest_wave_skip | Battle Report (observed) | Available in newer Battle Reports and surfaced in Lifetime Stats, Charts, and Explore. |
+| Record: Most Coins From Wave Skip | record_most_coins_from_wave_skip | Battle Report (observed) | Available in newer Battle Reports and surfaced in Lifetime Stats and Chart Builder. |
+| Record: Most Cells From Wave Skip | record_most_cells_from_wave_skip | Battle Report (observed) | Available in newer Battle Reports and surfaced in Lifetime Stats and Chart Builder. |
+| Record: Largest Smart Missile Stack | record_largest_smart_missile_stack | Battle Report (observed) | Available in newer Battle Reports and surfaced in Lifetime Stats and Chart Builder. |
+| Record: Largest Golden Combo | record_largest_golden_combo | Battle Report (observed) | Available in newer Battle Reports and surfaced in Lifetime Stats and Chart Builder. |
+| Record: Most Coins From Golden Combo | record_most_coins_from_golden_combo | Battle Report (observed) | Available in newer Battle Reports and surfaced in Lifetime Stats and Chart Builder. |
+| Record: Largest Inner Landmine Charge | record_largest_inner_landmine_charge | Battle Report (observed) | Available in newer Battle Reports and surfaced in Lifetime Stats and Chart Builder. |
 | Ultimate Weapon effective cooldown | uw_effective_cooldown_seconds | Planned (not yet ingested) | Ultimate Weapon cooldown metrics are planned and not populated yet. |
 | Runs using selected ultimate weapon | uw_runs_count | Planned (not yet ingested) | Ultimate Weapon run presence is planned and not populated yet. |
 | Ultimate Weapon uptime | uw_uptime_percent | Planned (not yet ingested) | Ultimate Weapon uptime is planned and not populated yet. |

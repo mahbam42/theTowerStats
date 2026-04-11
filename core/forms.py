@@ -24,7 +24,6 @@ from core.charting.builder import (
     build_before_after_scopes,
     build_run_vs_run_scopes,
 )
-from core.parsers.battle_report import _iter_label_value_lines
 from core.tournament import parse_tier_or_tournament, tier_filter_value, tournament_filter_value
 from definitions.models import BotDefinition, GuardianChipDefinition, PatchBoundary, UltimateWeaponDefinition
 from gamedata.models import BattleReport, BattleReportProgress, TOURNAMENT_RANK_CHOICES
@@ -35,6 +34,12 @@ class BattleReportImportForm(forms.Form):
     """Validate user-submitted raw Battle Report text."""
 
     _BATTLE_REPORT_HEADER_RE = r"(?im)^[^\S\n]*Battle Report[^\S\n]*$"
+    _REQUIRED_LINE_PATTERNS = {
+        "Battle Date": r"(?im)^[^\S\n]*Battle Date(?:[ \t]*:[ \t]*|[ \t]+).+\S[^\S\n]*$",
+        "Tier": r"(?im)^[^\S\n]*Tier(?:[ \t]*:[ \t]*|[ \t]+)\d+[^\S\n]*$",
+        "Wave": r"(?im)^[^\S\n]*Wave(?:[ \t]*:[ \t]*|[ \t]+)\d+[^\S\n]*$",
+        "Real Time": r"(?im)^[^\S\n]*Real Time(?:[ \t]*:[ \t]*|[ \t]+)\d.*$",
+    }
 
     raw_text = forms.CharField(
         label="Battle Report",
@@ -98,17 +103,10 @@ class BattleReportImportForm(forms.Form):
         if report_headers != 1:
             raise forms.ValidationError("Paste exactly one Battle Report (the header must appear once).")
 
-        label_counts: dict[str, int] = {"Battle Date": 0, "Tier": 0, "Wave": 0, "Real Time": 0}
-        for label, _ in _iter_label_value_lines(validation_text):
-            normalized = label.strip().casefold()
-            if normalized == "battle date":
-                label_counts["Battle Date"] += 1
-            elif normalized == "tier":
-                label_counts["Tier"] += 1
-            elif normalized == "wave":
-                label_counts["Wave"] += 1
-            elif normalized == "real time":
-                label_counts["Real Time"] += 1
+        label_counts = {
+            label: len(re.findall(pattern, validation_text))
+            for label, pattern in self._REQUIRED_LINE_PATTERNS.items()
+        }
 
         required_once = ("Tier", "Wave", "Real Time")
         missing_required = [label for label in required_once if label_counts[label] != 1]

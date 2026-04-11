@@ -64,7 +64,9 @@ Charts help you review how your run results change over time using the same valu
 - If a value is missing in the underlying Battle Report, the chart may show a gap for that date.
 - Scatter charts compare two values per run. Each dot represents a single run in your current filters.
 - Area charts emphasize momentum over time by shading the space under the line.
-- For donut charts, each slice represents the total for that value within your current filters, and the label includes the percent of the donut total. A slice named “Other coins” groups any remaining coins that are not listed as a named source.
+- For donut charts, each slice represents the total for that value within your current filters, and the label includes the percent of the donut total.
+- **Coins Earned by Source** shows the named observed coin buckets reported by the game. In newer reports, some coin buckets can overlap, so the chart does not add a residual “Other coins” slice.
+- Newer Battle Reports can also populate dedicated currency charts such as **Gems Earned**, **Ad Gems Earned**, and **Medals Earned**.
 - For **Free Upgrades by Run**, the **Total** badge confirms that hovering a bar shows the total of Attack, Defense, and Utility upgrades.
 - **Free Upgrades vs Coins Earned** compares total free upgrades to coins earned for each run.
 - If a point is flagged, the tooltip includes a short reason that explains the signal.

@@ -194,6 +194,7 @@ COIN_SOURCE_METRICS: Final[tuple[str, ...]] = (
     "coins_from_coin_upgrade",
     "coins_from_coin_bonuses",
     "coins_from_critical_coin",
+    "coins_from_golden_combo",
     "guardian_coins_stolen",
     "guardian_coins_fetched",
     "golden_bot_coins_earned",

@@ -431,6 +431,7 @@
                   <th scope="col">
                     <button class="button tiny secondary" type="button" data-sort-key="percentage">Percentage used</button>
                   </th>
+                  <th scope="col">Observed metric</th>
                   <th scope="col">Preset tags</th>
                 </tr>
               </thead>
@@ -444,6 +445,7 @@
                     <td>{{ row.name }}</td>
                     <td>{{ row.runs_used }}</td>
                     <td>{{ row.percentage_used|floatformat:1 }}%</td>
+                    <td>{{ row.observed_metric_label|default:"—" }}</td>
                     <td>
                       {% for preset in row.presets %}
                         <span class="badge preset-badge preset-color-{{ preset.badge_color }}">{{ preset.name }}</span>

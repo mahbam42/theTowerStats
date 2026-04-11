@@ -1,10 +1,8 @@
 # Lifetime Stats
 
-This page is **User Guide**. It explains how to review Lifetime Stats for your account.
-
 ## Overview
 
-Lifetime Stats summarizes key economy, combat, utility, and record values across all of your imported Battle Reports or a selected date window.
+Lifetime Stats summarizes key economy, combat, and utility values across all of your imported Battle Reports or a selected date window.
 
 ## When to Use This
 
@@ -26,12 +24,12 @@ Lifetime Stats summarizes key economy, combat, utility, and record values across
 
 ## How to Read the Results
 
-- Metrics are grouped by **Economy**, **Combat**, **Utility**, and **Records**.
-- Economy, Combat, and Utility values are totals for the runs included in the selected date range.
-- Records show the highest value reached within the selected date range for each tracked record metric.
+- Metrics are grouped by **Economy**, **Combat**, and **Utility**.
+- Most values are totals for the runs included in the selected date range.
+- Record-style metrics stay in the group where you would most likely compare them, such as **Highest Coins / Minute** in **Economy** or **Largest Golden Combo** in **Combat**.
 - Units are shown next to each value so you can distinguish coins, cash, cells, and other counts.
 - **Recent Coins per Hour** reflects the most recent run included in the selected range.
-- Records currently include values such as **Highest Coins / Minute** and **Largest Wave Skip** when those rows are present in your imported Battle Reports.
+- Utility includes wave-skip record values such as **Largest Wave Skip** when those rows are present in your imported Battle Reports.
 
 ## Notes & Limitations
 

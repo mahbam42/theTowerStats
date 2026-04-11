@@ -493,3 +493,42 @@ def test_cards_dashboard_usage_modal_counts_visible_runs_by_preset(auth_client, 
     assert "66.7%" in content
     assert _usage_modal_names(content, heading="Cards")[:2] == ["Alpha", "Beta"]
     assert _usage_modal_names(content, heading="Preset Usage")[:2] == ["Farming", "Tournament"]
+
+
+@pytest.mark.django_db
+def test_cards_dashboard_usage_modal_shows_observed_metric_column(auth_client, player) -> None:
+    """Usage modal shows the observed Battle Report metric associated with supported cards."""
+
+    energy = CardDefinition.objects.create(name="Energy Shield", slug="energy_shield", rarity="Epic")
+    death_ray = CardDefinition.objects.create(name="Death Ray", slug="death_ray", rarity="Epic")
+    alpha = CardDefinition.objects.create(name="Alpha", slug="alpha", rarity="Common")
+
+    preset = Preset.objects.create(player=player, name="Farming")
+
+    energy_card = PlayerCard.objects.create(player=player, card_definition=energy, card_slug=energy.slug)
+    death_ray_card = PlayerCard.objects.create(player=player, card_definition=death_ray, card_slug=death_ray.slug)
+    alpha_card = PlayerCard.objects.create(player=player, card_definition=alpha, card_slug=alpha.slug)
+    energy_card.presets.add(preset, through_defaults={"player": player})
+    death_ray_card.presets.add(preset, through_defaults={"player": player})
+    alpha_card.presets.add(preset, through_defaults={"player": player})
+
+    report = BattleReport.objects.create(player=player, raw_text="Battle Report\n", checksum="usage".ljust(64, "x"))
+    BattleReportProgress.objects.create(
+        battle_report=report,
+        player=player,
+        battle_date=datetime(2025, 12, 1, tzinfo=timezone.utc),
+        preset=preset,
+        preset_name_snapshot=preset.name,
+        preset_color_snapshot=preset.badge_color(),
+        tier=10,
+        wave=100,
+        is_tournament=False,
+    )
+
+    response = auth_client.get(reverse("core:cards"))
+    assert response.status_code == 200
+    content = response.content.decode("utf-8")
+
+    assert "Observed metric" in content
+    assert "Energy Shield Hits Absorbed" in content
+    assert "Death Ray Damage" in content

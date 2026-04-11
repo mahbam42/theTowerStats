@@ -79,6 +79,22 @@ def _metric_value(payload: dict[str, object], key: str) -> float | None:
     return None
 
 
+def _group_metric_keys(payload: dict[str, object], group_name: str) -> list[str]:
+    """Return metric keys for a named Lifetime Stats group."""
+
+    groups = payload.get("groups")
+    if not isinstance(groups, list):
+        return []
+    for group in groups:
+        if not isinstance(group, dict) or group.get("label") != group_name:
+            continue
+        metrics = group.get("metrics")
+        if not isinstance(metrics, list):
+            return []
+        return [str(metric.get("key")) for metric in metrics if isinstance(metric, dict)]
+    return []
+
+
 @pytest.mark.django_db
 @pytest.mark.golden
 def test_lifetime_stats_modal_returns_totals(auth_client, player) -> None:
@@ -194,6 +210,11 @@ def test_lifetime_stats_modal_returns_totals(auth_client, player) -> None:
     assert _metric_value(payload, "record_largest_golden_combo") == 9.0
     assert _metric_value(payload, "record_most_coins_from_golden_combo") == 300.0
     assert _metric_value(payload, "record_largest_inner_landmine_charge") == 10.0
+
+    assert [group["label"] for group in payload["groups"]] == ["Economy", "Combat", "Utility"]
+    assert "record_highest_coins_per_minute" in _group_metric_keys(payload, "Economy")
+    assert "record_largest_golden_combo" in _group_metric_keys(payload, "Combat")
+    assert "record_largest_wave_skip" in _group_metric_keys(payload, "Utility")
 
 
 @pytest.mark.django_db

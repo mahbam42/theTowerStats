@@ -145,11 +145,17 @@ RAW_TEXT_METRIC_SPECS: Final[dict[str, RawTextMetricSpec]] = {
         unit_type=UnitType.coins,
     ),
     "coins_from_critical_coin": RawTextMetricSpec(
-        selectors=(_scoped("Coins", "Critical Coin"),),
+        selectors=(
+            _legacy("Coins From Critical Coin"),
+            _scoped("Coins", "Critical Coin"),
+        ),
         unit_type=UnitType.coins,
     ),
     "coins_from_golden_combo": RawTextMetricSpec(
-        selectors=(_scoped("Coins", "Golden Combo"),),
+        selectors=(
+            _legacy("Coins From Golden Combo"),
+            _scoped("Coins", "Golden Combo"),
+        ),
         unit_type=UnitType.coins,
     ),
     "free_attack_upgrades": RawTextMetricSpec(

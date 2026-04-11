@@ -127,3 +127,69 @@ def test_extract_raw_text_metrics_keeps_legacy_black_hole_labels() -> None:
     assert extracted["black_hole_damage"].raw_value in {"16.46s", "17.46s"}
     assert extracted["black_hole_damage"].value > 0
     assert extracted["coins_from_black_hole"].value == 1_250_000.0
+
+
+@pytest.mark.regression
+def test_extract_raw_text_metrics_handles_single_space_v28_sections() -> None:
+    """Single-space clipboard pastes still extract section-scoped v28 metrics."""
+
+    raw_text = "\n".join(
+        [
+            "Battle Report",
+            "Battle Date Apr 10, 2026 18:12",
+            "Game Time 2d 13h 1m 2s",
+            "Real Time 13h 18m 35s",
+            "Tier 3",
+            "Wave 6402",
+            "Killed By Fast",
+            "Coins Earned 2.24B",
+            "Coins Per Hour 168.38M",
+            "Cells Earned 4.64K",
+            "Cells Per Hour 349",
+            "Damage",
+            "Chain Lightning 31.81T",
+            "Land Mines 40.40Q",
+            "Death Wave 250.95q",
+            "Smart Missiles 341.15q",
+            "Electrons 0",
+            "Rend Armor 0",
+            "Coins",
+            "Golden Tower 1.89B",
+            "Black Hole 1.88B",
+            "Spotlight 95.24M",
+            "Coin Bonus Upgrade 1.98B",
+            "Coins From Coin Bonuses 1.88B",
+            "Critical Coin 0",
+            "Golden Combo 0",
+            "Death Wave 721.40M",
+            "Golden Bot 196.57M",
+            "Currencies",
+            "Gems 146",
+            "Ad Gems 120",
+            "Medals 7",
+            "Fetch Gems 28",
+            "",
+        ]
+    )
+
+    extracted = extract_raw_text_metrics(raw_text)
+
+    assert extracted["chain_lightning_damage"].value > 0
+    assert extracted["land_mine_damage"].value > 0
+    assert extracted["death_wave_damage"].value > 0
+    assert extracted["smart_missile_damage"].value > 0
+    assert extracted["electrons_damage"].value == 0.0
+    assert extracted["rend_armor_damage"].value == 0.0
+    assert extracted["coins_from_golden_tower"].value == 1_890_000_000.0
+    assert extracted["coins_from_black_hole"].value == 1_880_000_000.0
+    assert extracted["coins_from_spotlight"].value == 95_240_000.0
+    assert extracted["coins_from_coin_upgrade"].value == 1_980_000_000.0
+    assert extracted["coins_from_coin_bonuses"].value == 1_880_000_000.0
+    assert extracted["coins_from_critical_coin"].value == 0.0
+    assert extracted["coins_from_golden_combo"].value == 0.0
+    assert extracted["coins_from_death_wave"].value == 721_400_000.0
+    assert extracted["golden_bot_coins_earned"].value == 196_570_000.0
+    assert extracted["gems_earned"].value == 146.0
+    assert extracted["ad_gems_earned"].value == 120.0
+    assert extracted["medals_earned"].value == 7.0
+    assert extracted["guardian_gems_fetched"].value == 28.0

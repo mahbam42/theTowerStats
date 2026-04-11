@@ -88,3 +88,25 @@ def test_import_form_accepts_v28_report_with_wave_skip_section_labels() -> None:
     form = BattleReportImportForm(data={"raw_text": raw_text})
 
     assert form.is_valid(), form.errors
+
+
+@pytest.mark.regression
+@pytest.mark.unit
+def test_import_form_accepts_wave_skip_labels_that_start_with_wave() -> None:
+    """Unknown labels that start with Wave do not count as duplicate Wave headers."""
+
+    raw_text = "\n".join(
+        [
+            "Battle Report",
+            "Tier 3",
+            "Wave 6402",
+            "Real Time 13h 18m 35s",
+            "Wave Skip 5",
+            "Wave Accelerator Kills 12",
+            "",
+        ]
+    )
+
+    form = BattleReportImportForm(data={"raw_text": raw_text})
+
+    assert form.is_valid(), form.errors

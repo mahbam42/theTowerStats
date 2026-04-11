@@ -88,6 +88,13 @@ def build_lifetime_stat_groups(
             unit="coins/hour",
         ),
         LifetimeStatSpec(
+            key="record_highest_coins_per_minute",
+            label="Highest Coins / Minute",
+            group="Economy",
+            source="raw_text_max",
+            unit="coins/min",
+        ),
+        LifetimeStatSpec(
             key="stones_spent",
             label="Stones Spent",
             group="Economy",
@@ -132,6 +139,27 @@ def build_lifetime_stat_groups(
             source="analysis",
         ),
         LifetimeStatSpec(
+            key="record_largest_golden_combo",
+            label="Largest Golden Combo",
+            group="Combat",
+            source="raw_text_max",
+            unit="count",
+        ),
+        LifetimeStatSpec(
+            key="record_most_coins_from_golden_combo",
+            label="Most Coins From Golden Combo",
+            group="Combat",
+            source="raw_text_max",
+            unit="coins",
+        ),
+        LifetimeStatSpec(
+            key="record_largest_inner_landmine_charge",
+            label="Largest Inner Landmine Charge",
+            group="Combat",
+            source="raw_text_max",
+            unit="count",
+        ),
+        LifetimeStatSpec(
             key="waves_reached",
             label="Waves Completed",
             group="Utility",
@@ -159,58 +187,30 @@ def build_lifetime_stat_groups(
             raw_unit=UnitType.count,
         ),
         LifetimeStatSpec(
-            key="record_highest_coins_per_minute",
-            label="Highest Coins / Minute",
-            group="Records",
-            source="raw_text_max",
-            unit="coins/min",
-        ),
-        LifetimeStatSpec(
             key="record_largest_wave_skip",
             label="Largest Wave Skip",
-            group="Records",
+            group="Utility",
             source="raw_text_max",
             unit="waves",
         ),
         LifetimeStatSpec(
             key="record_most_coins_from_wave_skip",
             label="Most Coins From Wave Skip",
-            group="Records",
+            group="Utility",
             source="raw_text_max",
             unit="coins",
         ),
         LifetimeStatSpec(
             key="record_most_cells_from_wave_skip",
             label="Most Cells From Wave Skip",
-            group="Records",
+            group="Utility",
             source="raw_text_max",
             unit="cells",
         ),
         LifetimeStatSpec(
             key="record_largest_smart_missile_stack",
             label="Largest Smart Missile Stack",
-            group="Records",
-            source="raw_text_max",
-            unit="count",
-        ),
-        LifetimeStatSpec(
-            key="record_largest_golden_combo",
-            label="Largest Golden Combo",
-            group="Records",
-            source="raw_text_max",
-            unit="count",
-        ),
-        LifetimeStatSpec(
-            key="record_most_coins_from_golden_combo",
-            label="Most Coins From Golden Combo",
-            group="Records",
-            source="raw_text_max",
-            unit="coins",
-        ),
-        LifetimeStatSpec(
-            key="record_largest_inner_landmine_charge",
-            label="Largest Inner Landmine Charge",
-            group="Records",
+            group="Utility",
             source="raw_text_max",
             unit="count",
         ),
@@ -225,7 +225,6 @@ def build_lifetime_stat_groups(
         "Economy": [],
         "Combat": [],
         "Utility": [],
-        "Records": [],
     }
     recent_record = records[-1] if records else None
 
@@ -304,7 +303,7 @@ def build_lifetime_stat_groups(
         )
 
     ordered_groups: list[dict[str, object]] = []
-    for group_name in ("Economy", "Combat", "Utility", "Records"):
+    for group_name in ("Economy", "Combat", "Utility"):
         rows = groups.get(group_name, [])
         ordered_groups.append(
             {

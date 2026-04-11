@@ -1561,6 +1561,9 @@ def test_dashboard_view_renders_coins_by_source_donut(auth_client, player) -> No
             "Coins From Orb\t0",
             "Coins from Coin Upgrade\t832.21K",
             "Coins from Coin Bonuses\t335.53K",
+            "Coins From Critical Coin\t250",
+            "Coins From Golden Combo\t175",
+            "Golden Bot Coins Earned\t578",
             "Guardian",
             "Guardian coins stolen\t1.20K",
             "Coins Fetched\t805",
@@ -1595,11 +1598,111 @@ def test_dashboard_view_renders_coins_by_source_donut(auth_client, player) -> No
     values = panel["datasets"][0]["data"]
     death_wave_label = next(label for label in labels if label.startswith("Coins From Death Wave"))
     assert values[labels.index(death_wave_label)] == 2350.0
+    critical_coin_label = next(label for label in labels if label.startswith("Coins From Critical Coin"))
+    assert values[labels.index(critical_coin_label)] == 250.0
+    golden_combo_label = next(label for label in labels if label.startswith("Coins From Golden Combo"))
+    assert values[labels.index(golden_combo_label)] == 175.0
+    golden_bot_label = next(label for label in labels if label.startswith("Golden Bot Coins Earned"))
+    assert values[labels.index(golden_bot_label)] == 578.0
     stolen_label = next(label for label in labels if label.startswith("Guardian coins stolen"))
     assert values[labels.index(stolen_label)] == 1200.0
-    other_label = next(label for label in labels if label.startswith("Other coins"))
-    assert values[labels.index(other_label)] == 3845.0
-    assert sum(v for v in values if v is not None) == 1_240_000.0
+    assert not any(label.startswith("Other coins") for label in labels)
+
+
+@pytest.mark.django_db
+@pytest.mark.regression
+def test_dashboard_view_renders_v28_single_space_damage_and_coin_sources(auth_client, player) -> None:
+    """Section-scoped v28 metrics render from single-space clipboard pastes."""
+
+    raw_text = "\n".join(
+        [
+            "Battle Report",
+            "Battle Date Apr 10, 2026 18:12",
+            "Game Time 2d 13h 1m 2s",
+            "Real Time 13h 18m 35s",
+            "Tier 3",
+            "Wave 6402",
+            "Killed By Fast",
+            "Coins Earned 2.24B",
+            "Coins Per Hour 168.38M",
+            "Cells Earned 4.64K",
+            "Cells Per Hour 349",
+            "Damage",
+            "Chain Lightning 2.77s",
+            "Land Mines 40.40Q",
+            "Death Wave 250.95q",
+            "Smart Missiles 341.15q",
+            "Electrons 0",
+            "Rend Armor 0",
+            "Black Hole 57.15S",
+            "Coins",
+            "Golden Tower 1.89B",
+            "Black Hole 1.88B",
+            "Spotlight 95.24M",
+            "Coin Bonus Upgrade 1.98B",
+            "Coins From Coin Bonuses 1.88B",
+            "Critical Coin 0",
+            "Golden Combo 0",
+            "Death Wave 721.40M",
+            "Golden Bot 196.57M",
+            "Coins Fetched 3.33M",
+            "Bounty Coins 32.49M",
+            "Currencies",
+            "Gems 146",
+            "Ad Gems 120",
+            "Medals 7",
+            "Fetch Gems 28",
+            "",
+        ]
+    )
+    report = BattleReport.objects.create(player=player, raw_text=raw_text, checksum="single-space".ljust(64, "x"))
+    BattleReportProgress.objects.create(
+        battle_report=report,
+        player=player,
+        battle_date=datetime(2026, 4, 10, 18, 12, tzinfo=timezone.utc),
+        tier=3,
+        wave=6402,
+        real_time_seconds=47_915,
+        coins_earned=2_240_000_000,
+        coins_earned_raw="2.24B",
+        cells_earned=4640,
+    )
+    extracted = extract_raw_text_metrics(raw_text)
+    BattleReportDerivedMetrics.objects.create(
+        battle_report=report,
+        player=player,
+        values={key: parsed.value for key, parsed in extracted.items()},
+        raw_values={key: parsed.raw_value for key, parsed in extracted.items()},
+    )
+
+    response = auth_client.get(
+        reverse("core:dashboard"),
+        {"charts": ["coins_by_source", "damage_by_source", "gems_earned", "medals_earned"], "start_date": date(2026, 4, 1)},
+    )
+    assert response.status_code == 200
+
+    panels = {p["id"]: p for p in json.loads(response.context["chart_panels_json"])}
+    damage_panel = panels["damage_by_source"]
+    damage_labels = damage_panel["labels"]
+    damage_values = damage_panel["datasets"][0]["data"]
+    for label_prefix in ("Chain Lightning Damage", "Land Mine Damage", "Death Wave Damage", "Smart Missile Damage"):
+        label = next(label for label in damage_labels if label.startswith(label_prefix))
+        assert damage_values[damage_labels.index(label)] > 0
+    for label_prefix in ("Electrons Damage", "Rend Armor Damage"):
+        label = next(label for label in damage_labels if label.startswith(label_prefix))
+        assert damage_values[damage_labels.index(label)] == 0.0
+
+    coins_panel = panels["coins_by_source"]
+    coins_labels = coins_panel["labels"]
+    assert any(label.startswith("Coins From Critical Coin") for label in coins_labels)
+    assert any(label.startswith("Coins From Golden Combo") for label in coins_labels)
+    assert any(label.startswith("Golden Bot Coins Earned") for label in coins_labels)
+    assert not any(label.startswith("Other coins") for label in coins_labels)
+
+    gems_panel = panels["gems_earned"]
+    assert gems_panel["datasets"][0]["data"] == [146.0]
+    medals_panel = panels["medals_earned"]
+    assert medals_panel["datasets"][0]["data"] == [7.0]
 
 
 @pytest.mark.django_db
