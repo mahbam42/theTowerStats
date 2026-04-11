@@ -193,10 +193,26 @@ COIN_SOURCE_METRICS: Final[tuple[str, ...]] = (
     "coins_from_orb",
     "coins_from_coin_upgrade",
     "coins_from_coin_bonuses",
+    "coins_from_critical_coin",
     "guardian_coins_stolen",
     "guardian_coins_fetched",
     "golden_bot_coins_earned",
     "coins_from_other_sources",
+)
+
+ENEMY_DESTROYED_SOURCE_METRICS: Final[tuple[str, ...]] = (
+    "enemies_destroyed_by_projectiles",
+    "enemies_destroyed_by_thorns",
+    "enemies_destroyed_by_land_mine",
+    "enemies_destroyed_by_orbs",
+    "enemies_destroyed_by_death_ray",
+    "enemies_destroyed_by_chain_lightning",
+    "enemies_destroyed_by_smart_missiles",
+    "enemies_destroyed_by_inner_land_mines",
+    "enemies_destroyed_by_poison_swamp",
+    "enemies_destroyed_by_black_hole",
+    "enemies_destroyed_by_flame_bot",
+    "enemies_destroyed_by_other",
 )
 
 GUARDIAN_OUTCOME_METRICS: Final[tuple[str, ...]] = (
@@ -233,6 +249,13 @@ DEFAULT_BREAKDOWNS: Final[dict[str, ExploreBreakdownDefinition]] = {
         kind="metric_group",
         metric_keys=COIN_SOURCE_METRICS,
         compatible_metric_keys=("coins_earned", *COIN_SOURCE_METRICS),
+    ),
+    "enemy_destroyed_source": ExploreBreakdownDefinition(
+        key="enemy_destroyed_source",
+        label="Enemy Destroyed Source",
+        kind="metric_group",
+        metric_keys=ENEMY_DESTROYED_SOURCE_METRICS,
+        compatible_metric_keys=("enemies_destroyed_total", *ENEMY_DESTROYED_SOURCE_METRICS),
     ),
     "guardian_outcome": ExploreBreakdownDefinition(
         key="guardian_outcome",

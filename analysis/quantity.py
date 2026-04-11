@@ -55,6 +55,10 @@ _MAGNITUDE_MULTIPLIERS: Final[dict[str, Decimal]] = {
     "t": Decimal(1_000_000_000_000),
     "q": Decimal(1_000_000_000_000_000),
     "Q": Decimal(1_000_000_000_000_000_000),
+    "s": Decimal(1_000_000_000_000_000_000_000),
+    "S": Decimal(1_000_000_000_000_000_000_000_000),
+    "o": Decimal(1_000_000_000_000_000_000_000_000_000),
+    "O": Decimal(1_000_000_000_000_000_000_000_000_000_000),
 }
 
 
@@ -85,8 +89,9 @@ def parse_quantity(raw_value: str, *, unit_type: UnitType = UnitType.count) -> Q
         - A leading `x` forces `unit_type=multiplier` and parses the remainder.
         - A trailing `%` forces `unit_type=multiplier` and normalizes as a
           fraction (e.g. `15%` -> `0.15`).
-        - Magnitude suffixes are case-insensitive except for `Q` (quintillion).
-        - Supported suffixes include lowercase `k`..`q` and uppercase `Q`.
+        - Magnitude suffixes are case-insensitive except for upper-tier pairs.
+        - Supported suffixes include lowercase `k`..`q`, uppercase `Q`,
+          lowercase `s`/`o`, and uppercase `S`/`O`.
     """
 
     trimmed = raw_value.strip()
@@ -142,7 +147,7 @@ def _parse_compact_number(value: str, *, unit_type: UnitType) -> Quantity:
     suffix = ""
     if prefix_stripped and prefix_stripped[-1].isalpha():
         suffix = prefix_stripped[-1]
-        if suffix != "Q":
+        if suffix not in {"Q", "S", "O"}:
             suffix = suffix.casefold()
         number_text = prefix_stripped[:-1]
     else:

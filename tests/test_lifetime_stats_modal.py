@@ -87,6 +87,15 @@ def test_lifetime_stats_modal_returns_totals(auth_client, player) -> None:
     raw_text_a = "\n".join(
         [
             "Battle Report",
+            "Records",
+            "Highest Coins / Minute\t25",
+            "Largest Wave Skip\t2",
+            "Most Coins From Wave Skip\t100",
+            "Most Cells From Wave Skip\t5",
+            "Largest Smart Missile Stack\t3",
+            "Largest Golden Combo\t4",
+            "Most Coins From Golden Combo\t250",
+            "Largest Inner Landmine Charge\t6",
             "Damage dealt\t100",
             "Thorn damage\t20",
             "Waves Skipped\t3",
@@ -107,6 +116,15 @@ def test_lifetime_stats_modal_returns_totals(auth_client, player) -> None:
     raw_text_b = "\n".join(
         [
             "Battle Report",
+            "Records",
+            "Highest Coins / Minute\t40",
+            "Largest Wave Skip\t5",
+            "Most Coins From Wave Skip\t150",
+            "Most Cells From Wave Skip\t7",
+            "Largest Smart Missile Stack\t8",
+            "Largest Golden Combo\t9",
+            "Most Coins From Golden Combo\t300",
+            "Largest Inner Landmine Charge\t10",
             "Damage dealt\t200",
             "Thorn damage\t40",
             "Waves Skipped\t4",
@@ -168,6 +186,14 @@ def test_lifetime_stats_modal_returns_totals(auth_client, player) -> None:
     assert _metric_value(payload, "interest_earned") == 120.0
     assert _metric_value(payload, "waves_skipped") == 7.0
     assert _metric_value(payload, "recent_coins_per_hour") == 2400.0
+    assert _metric_value(payload, "record_highest_coins_per_minute") == 40.0
+    assert _metric_value(payload, "record_largest_wave_skip") == 5.0
+    assert _metric_value(payload, "record_most_coins_from_wave_skip") == 150.0
+    assert _metric_value(payload, "record_most_cells_from_wave_skip") == 7.0
+    assert _metric_value(payload, "record_largest_smart_missile_stack") == 8.0
+    assert _metric_value(payload, "record_largest_golden_combo") == 9.0
+    assert _metric_value(payload, "record_most_coins_from_golden_combo") == 300.0
+    assert _metric_value(payload, "record_largest_inner_landmine_charge") == 10.0
 
 
 @pytest.mark.django_db

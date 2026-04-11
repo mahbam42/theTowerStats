@@ -56,6 +56,8 @@ Charts help you review how your run results change over time using the same valu
   - **Enemy Destruction** shows what actually killed enemies.
   - **Efficiency** shows time-normalized rates (per hour).
 - For per-hour charts (such as coins/real hour), the rate uses the run’s **Real Time** duration as reported in the Battle Report.
+- Some v28 metrics are available in both a derived form and a game-reported form. For example, **Coins/hour (derived)** is calculated by the app from Coins Earned and Real Time, while **Coins/hour (game-based)** uses the value reported directly by the game.
+- **Cells/hour (derived)** and **Cells/hour (game-based)** follow the same pattern when the report includes the game-reported value.
 - Snapshot filters apply alongside date ranges and other scope controls, so you can combine them.
 - When a chart includes multiple lines, each line label tells you what group it represents (for example, a tier or a preset label).
 - Excluded presets are removed from the scope even if they match other filters.
@@ -95,6 +97,9 @@ Charts help you review how your run results change over time using the same valu
 
 > **Note**
 > Large values in charts are abbreviated in axes and tooltips (K, M, B, T, q, Q). Exports keep the full numeric values.
+
+> **Note**
+> Newer Battle Reports can also include larger compact suffixes such as `s`, `S`, `o`, and `O`.
 
 > **Caution**
 > Some charts require additional selections. For example, “Runs Using Selected UW” needs an Ultimate Weapon selection.

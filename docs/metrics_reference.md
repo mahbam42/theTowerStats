@@ -54,6 +54,16 @@ Utility metrics:
 - Interest Earned
 - Waves Skipped
 
+Records metrics:
+- Highest Coins / Minute
+- Largest Wave Skip
+- Most Coins From Wave Skip
+- Most Cells From Wave Skip
+- Largest Smart Missile Stack
+- Largest Golden Combo
+- Most Coins From Golden Combo
+- Largest Inner Landmine Charge
+
 ### Metrics List
 
 | Metric | Key | Source | Notes |
@@ -68,18 +78,21 @@ Utility metrics:
 | Cash From Golden Tower | cash_from_golden_tower | Battle Report (observed) | Battle Report utility breakdown: cash earned from Golden Tower. |
 | Other cash | cash_from_other_sources | Battle Report (derived) | Residual cash not covered by named sources. |
 | Cells earned | cells_earned | Battle Report (observed) |  |
-| Cells/hour | cells_per_hour | Battle Report (derived) | Observed cells earned divided by real time (hours). |
+| Cells/hour (derived) | cells_per_hour | Battle Report (derived) | Calculated by the app from Cells Earned and Real Time. |
+| Cells/hour (game-based) | game_reported_cells_per_hour | Battle Report (observed) | Uses the per-hour value reported directly by the game in newer Battle Reports. |
 | Chain Lightning Damage | chain_lightning_damage | Battle Report (observed) |  |
 | Coins earned | coins_earned | Battle Report (observed) |  |
 | Coins From Black Hole | coins_from_black_hole | Battle Report (observed) | Battle Report utility breakdown: coins earned from Black Hole. |
 | Coins from Coin Bonuses | coins_from_coin_bonuses | Battle Report (observed) | Battle Report utility breakdown: coins earned from coin bonuses. |
 | Coins from Coin Upgrade | coins_from_coin_upgrade | Battle Report (observed) | Battle Report utility breakdown: coins earned from coin upgrades. |
+| Coins From Critical Coin | coins_from_critical_coin | Battle Report (observed) | Battle Report coins breakdown: coins earned from Critical Coin. |
 | Coins From Death Wave | coins_from_death_wave | Battle Report (observed) | Battle Report utility breakdown: coins earned from Death Wave. |
 | Coins From Golden Tower | coins_from_golden_tower | Battle Report (observed) | Battle Report utility breakdown: coins earned from Golden Tower. |
 | Coins From Orb | coins_from_orb | Battle Report (observed) | Battle Report utility breakdown: coins earned from Orbs. |
 | Other coins | coins_from_other_sources | Battle Report (observed) | Residual coins not covered by named sources; ensures sources sum to total coins earned. |
 | Coins From Spotlight | coins_from_spotlight | Battle Report (observed) | Battle Report utility breakdown: coins earned from Spotlight. |
-| Coins/hour | coins_per_hour | Battle Report (observed) | Observed coins earned divided by real time (hours). |
+| Coins/hour (derived) | coins_per_hour | Battle Report (derived) | Calculated by the app from Coins Earned and Real Time. |
+| Coins/hour (game-based) | game_reported_coins_per_hour | Battle Report (observed) | Uses the per-hour value reported directly by the game in newer Battle Reports. |
 | Run duration (hours) | real_time_hours | Battle Report (derived) | Real-time run duration converted to hours. |
 | Coins per wave | coins_per_wave | Battle Report (derived) | Coins earned divided by waves reached. |
 | Free Attack Upgrade | free_attack_upgrades | Battle Report (observed) | Battle Report utility breakdown: free attack upgrades. |
@@ -89,14 +102,29 @@ Utility metrics:
 | Recovery Packages | recovery_packages | Battle Report (derived) | Derived from the Recovery Packages line in the Battle Report. |
 | Effective cooldown | cooldown_reduction_effective | Planned (not yet ingested) | Ultimate Weapon cooldown reductions are planned and not populated yet. |
 | Damage dealt | damage_dealt | Battle Report (observed) | Total damage dealt from Battle Reports. |
+| Defense % Blocked Damage | defense_percent_blocked_damage | Battle Report (observed) | Damage prevented by Defense % in newer Battle Reports. |
+| Defense Absolute Blocked Damage | defense_absolute_blocked_damage | Battle Report (observed) | Damage prevented by Defense Absolute in newer Battle Reports. |
 | Death Ray Damage | death_ray_damage | Battle Report (observed) |  |
 | Death Wave Damage | death_wave_damage | Battle Report (observed) |  |
 | Electrons Damage | electrons_damage | Battle Report (observed) |  |
+| Chrono Field Blocked Damage | chrono_field_blocked_damage | Battle Report (observed) | Damage prevented by Chrono Field in newer Battle Reports. |
+| Chain Thunder Blocked Damage | chain_thunder_blocked_damage | Battle Report (observed) | Damage prevented by Chain Thunder in newer Battle Reports. |
+| Flame Bot Blocked Damage | flame_bot_blocked_damage | Battle Report (observed) | Damage prevented by Flame Bot in newer Battle Reports. |
+| Primordial Collapse Blocked Damage | primordial_collapse_blocked_damage | Battle Report (observed) | Damage prevented by Primordial Collapse in newer Battle Reports. |
+| Negative Mass Projector Blocked Damage | negative_mass_projector_blocked_damage | Battle Report (observed) | Damage prevented by Negative Mass Projector in newer Battle Reports. |
 | Basic | enemies_destroyed_basic | Battle Report (observed) |  |
 | Boss | enemies_destroyed_boss | Battle Report (observed) |  |
+| Destroyed by Black Hole | enemies_destroyed_by_black_hole | Battle Report (observed) |  |
+| Destroyed by Chain Lightning | enemies_destroyed_by_chain_lightning | Battle Report (observed) |  |
 | Destroyed by Death Ray | enemies_destroyed_by_death_ray | Battle Report (observed) |  |
+| Destroyed by Flame Bot | enemies_destroyed_by_flame_bot | Battle Report (observed) |  |
+| Destroyed by Inner Land Mines | enemies_destroyed_by_inner_land_mines | Battle Report (observed) |  |
 | Destroyed by Land Mine | enemies_destroyed_by_land_mine | Battle Report (observed) |  |
+| Destroyed by Other | enemies_destroyed_by_other | Battle Report (observed) |  |
 | Destroyed By Orbs | enemies_destroyed_by_orbs | Battle Report (observed) |  |
+| Destroyed by Poison Swamp | enemies_destroyed_by_poison_swamp | Battle Report (observed) |  |
+| Destroyed by Projectiles | enemies_destroyed_by_projectiles | Battle Report (observed) |  |
+| Destroyed by Smart Missiles | enemies_destroyed_by_smart_missiles | Battle Report (observed) |  |
 | Destroyed by Thorns | enemies_destroyed_by_thorns | Battle Report (observed) |  |
 | Commander | enemies_destroyed_commander | Battle Report (observed) |  |
 | Enemies destroyed (common) | enemies_destroyed_common | Battle Report (derived) | Derived from Basic, Fast, Ranged, Tank, and Protector counts. |
@@ -124,9 +152,13 @@ Utility metrics:
 | Common Modules | guardian_common_modules_fetched | Battle Report (observed) | Battle Report Guardian section: common modules fetched. |
 | Core Shards | guardian_core_shards_fetched | Battle Report (observed) | Battle Report Guardian section: core shards fetched. |
 | Guardian Damage | guardian_damage | Battle Report (observed) | Battle Report Guardian section: damage dealt by the Guardian. Explore and Chart Builder support Sum and Average for this metric. |
+| Gems Earned | gems_earned | Battle Report (observed) | Total gems earned in the run when reported in the newer Currencies section. |
+| Ad Gems Earned | ad_gems_earned | Battle Report (observed) | Total ad gems earned in the run when reported in the newer Currencies section. |
 | Gems | guardian_gems_fetched | Battle Report (observed) | Battle Report Guardian section: gems fetched. |
 | Generator Shards | guardian_generator_shards_fetched | Battle Report (observed) | Battle Report Guardian section: generator shards fetched. |
+| Lifesteal Healing | lifesteal_healing | Battle Report (observed) | Tracks health restored by Lifesteal from legacy and newer report formats. |
 | Medals | guardian_medals_fetched | Battle Report (observed) | Battle Report Guardian section: medals fetched. |
+| Medals Earned | medals_earned | Battle Report (observed) | Total medals earned in the run when reported in the newer Currencies section. |
 | Rare Modules | guardian_rare_modules_fetched | Battle Report (observed) | Battle Report Guardian section: rare modules fetched. |
 | Reroll Shards | guardian_reroll_shards_fetched | Battle Report (observed) | Battle Report Guardian section: reroll shards fetched. |
 | Runs using selected guardian chip | guardian_runs_count | Planned (not yet ingested) | Guardian chip presence per run is planned and not populated yet. |
@@ -143,6 +175,19 @@ Utility metrics:
 | Smart Missile Damage | smart_missile_damage | Battle Report (observed) |  |
 | Swamp Damage | swamp_damage | Battle Report (observed) |  |
 | Thorn Damage | thorn_damage | Battle Report (observed) |  |
+| Tower Damage Taken | tower_damage_taken | Battle Report (observed) | Damage taken by the tower in newer Battle Reports. |
+| Wall Damage Taken | wall_damage_taken | Battle Report (observed) | Damage taken by the wall in newer Battle Reports. |
+| Enemy Attack Levels Skipped | enemy_attack_levels_skipped | Battle Report (observed) | Newer Battle Reports can include skipped enemy attack levels. |
+| Enemy Health Levels Skipped | enemy_health_levels_skipped | Battle Report (observed) | Newer Battle Reports can include skipped enemy health levels. |
+| Projectiles Count | projectiles_count | Battle Report (observed) | Projectile count reported in newer Battle Reports. |
+| Land Mines Spawned | land_mines_spawned | Battle Report (observed) | Land mine spawn count reported in newer Battle Reports. |
+| Death Defy | death_defy_count | Battle Report (observed) | Count reported in newer Battle Reports. |
+| Energy Shield Hits Absorbed | energy_shield_hits_absorbed | Battle Report (observed) | Count reported in newer Battle Reports. |
+| Nuke Uses | nuke_uses | Battle Report (observed) | Count reported in newer Battle Reports. |
+| Second Wind Uses | second_wind_uses | Battle Report (observed) | Count reported in newer Battle Reports. |
+| Demon Mode Uses | demon_mode_uses | Battle Report (observed) | Count reported in newer Battle Reports. |
+| Record: Highest Coins/Minute | record_highest_coins_per_minute | Battle Report (observed) | Available in newer Battle Reports and surfaced in Lifetime Stats, Charts, and Explore. |
+| Record: Largest Wave Skip | record_largest_wave_skip | Battle Report (observed) | Available in newer Battle Reports and surfaced in Lifetime Stats, Charts, and Explore. |
 | Ultimate Weapon effective cooldown | uw_effective_cooldown_seconds | Planned (not yet ingested) | Ultimate Weapon cooldown metrics are planned and not populated yet. |
 | Runs using selected ultimate weapon | uw_runs_count | Planned (not yet ingested) | Ultimate Weapon run presence is planned and not populated yet. |
 | Ultimate Weapon uptime | uw_uptime_percent | Planned (not yet ingested) | Ultimate Weapon uptime is planned and not populated yet. |

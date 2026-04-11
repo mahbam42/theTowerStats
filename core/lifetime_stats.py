@@ -30,7 +30,7 @@ class LifetimeStatSpec:
     key: str
     label: str
     group: str
-    source: Literal["analysis", "raw_text", "player_state", "recent_analysis"]
+    source: Literal["analysis", "raw_text", "raw_text_max", "player_state", "recent_analysis"]
     metric_key: str | None = None
     unit: str | None = None
     raw_label: str | None = None
@@ -158,6 +158,62 @@ def build_lifetime_stat_groups(
             raw_label="Waves Skipped",
             raw_unit=UnitType.count,
         ),
+        LifetimeStatSpec(
+            key="record_highest_coins_per_minute",
+            label="Highest Coins / Minute",
+            group="Records",
+            source="raw_text_max",
+            unit="coins/min",
+        ),
+        LifetimeStatSpec(
+            key="record_largest_wave_skip",
+            label="Largest Wave Skip",
+            group="Records",
+            source="raw_text_max",
+            unit="waves",
+        ),
+        LifetimeStatSpec(
+            key="record_most_coins_from_wave_skip",
+            label="Most Coins From Wave Skip",
+            group="Records",
+            source="raw_text_max",
+            unit="coins",
+        ),
+        LifetimeStatSpec(
+            key="record_most_cells_from_wave_skip",
+            label="Most Cells From Wave Skip",
+            group="Records",
+            source="raw_text_max",
+            unit="cells",
+        ),
+        LifetimeStatSpec(
+            key="record_largest_smart_missile_stack",
+            label="Largest Smart Missile Stack",
+            group="Records",
+            source="raw_text_max",
+            unit="count",
+        ),
+        LifetimeStatSpec(
+            key="record_largest_golden_combo",
+            label="Largest Golden Combo",
+            group="Records",
+            source="raw_text_max",
+            unit="count",
+        ),
+        LifetimeStatSpec(
+            key="record_most_coins_from_golden_combo",
+            label="Most Coins From Golden Combo",
+            group="Records",
+            source="raw_text_max",
+            unit="coins",
+        ),
+        LifetimeStatSpec(
+            key="record_largest_inner_landmine_charge",
+            label="Largest Inner Landmine Charge",
+            group="Records",
+            source="raw_text_max",
+            unit="count",
+        ),
     )
 
     totals = {
@@ -165,7 +221,12 @@ def build_lifetime_stat_groups(
         "bits_spent": _total_bits_spent(player=player),
     }
 
-    groups: dict[str, list[dict[str, object]]] = {"Economy": [], "Combat": [], "Utility": []}
+    groups: dict[str, list[dict[str, object]]] = {
+        "Economy": [],
+        "Combat": [],
+        "Utility": [],
+        "Records": [],
+    }
     recent_record = records[-1] if records else None
 
     for spec in specs:
@@ -213,6 +274,24 @@ def build_lifetime_stat_groups(
             )
             continue
 
+        if spec.source == "raw_text_max":
+            max_value = _max_raw_text_metric(
+                records,
+                metric_key=metric_key,
+                raw_label=spec.raw_label,
+                raw_unit=spec.raw_unit,
+            )
+            unit = spec.unit or ""
+            groups[spec.group].append(
+                {
+                    "key": spec.key,
+                    "label": spec.label,
+                    "unit": unit,
+                    "numeric_value": max_value,
+                }
+            )
+            continue
+
         count, total = _sum_analysis_metric(records, metric_key=metric_key)
         metric_unit = spec.unit or get_metric_definition(metric_key).unit
         groups[spec.group].append(
@@ -225,7 +304,7 @@ def build_lifetime_stat_groups(
         )
 
     ordered_groups: list[dict[str, object]] = []
-    for group_name in ("Economy", "Combat", "Utility"):
+    for group_name in ("Economy", "Combat", "Utility", "Records"):
         rows = groups.get(group_name, [])
         ordered_groups.append(
             {
@@ -316,6 +395,39 @@ def _sum_raw_text_metric(
     if not count:
         return 0, None
     return count, total
+
+
+def _max_raw_text_metric(
+    records: Iterable[BattleReport],
+    *,
+    metric_key: str,
+    raw_label: str | None,
+    raw_unit: UnitType | None,
+) -> float | None:
+    """Return the maximum raw-text metric value across records."""
+
+    best: float | None = None
+    for record in records:
+        derived = getattr(record, "derived_metrics", None)
+        values = getattr(derived, "values", None) if derived is not None else None
+        if isinstance(values, dict) and metric_key in values:
+            value = values.get(metric_key)
+        else:
+            if not raw_label or raw_unit is None:
+                continue
+            raw_text = getattr(record, "raw_text", None)
+            if not isinstance(raw_text, str):
+                continue
+            parsed = extract_numeric_value(raw_text, label=raw_label, unit_type=raw_unit)
+            if parsed is None:
+                continue
+            value = parsed.value
+        if value is None:
+            continue
+        numeric = float(value)
+        if best is None or numeric > best:
+            best = numeric
+    return best
 
 
 def _total_stones_spent(*, player: Player) -> int:

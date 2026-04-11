@@ -42,6 +42,7 @@ Battle History helps you review your past runs in a table so you can compare res
 - **Killed By (diagnostic)** summarizes how often each **Killed by** label appears across the current filters.
 - **Coins earned**, **Cash earned**, and **Interest earned** match the values shown in the report summary.
 - **Coins/real hour** divides coins earned by the run’s **Real Time** duration as reported by the game.
+- Battle History continues to show the app’s derived coins-per-hour value in the table. Additional game-reported per-hour values are available in Charts and Explore when the imported report includes them.
 - **Real time** shows the run duration as reported by the game.
 - **Gem blocks**, **Cells earned**, and **Reroll shards** show run resources that may be missing in older or incomplete reports.
 - **Recovery packages** shows how many Recovery Packages the run recorded, when present in the report.
@@ -96,6 +97,9 @@ Battle History helps you review your past runs in a table so you can compare res
 
 > **Note**
 > Battle Reports can use tabs, colons, or spacing between labels and values. If an import fails, the page shows an error message under the Battle Report field.
+
+> **Note**
+> The app supports both older Battle Report layouts and the newer v28 section-based layout. Existing imported runs remain usable after the update.
 
 > **Note**
 > If the game introduces a new compact unit suffix (a letter at the end of a number), the import still succeeds. The raw value is saved, and the suffix is captured for review.

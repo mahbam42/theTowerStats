@@ -498,9 +498,9 @@ def _parse_hms_seconds(value: str) -> int | None:
 
 
 def _parse_unit_duration_seconds(value: str) -> int | None:
-    """Parse durations like `1h 2m 3s` or `45m 10s`."""
+    """Parse durations like `2d 1h 2m 3s` or `45m 10s`."""
 
-    matches = re.findall(r"(?i)(\d+)\s*([hms])", value)
+    matches = re.findall(r"(?i)(\d+)\s*([dhms])", value)
     if not matches:
         return None
 
@@ -508,7 +508,9 @@ def _parse_unit_duration_seconds(value: str) -> int | None:
     for number, unit in matches:
         amount = int(number)
         unit_lower = unit.lower()
-        if unit_lower == "h":
+        if unit_lower == "d":
+            total += amount * 86400
+        elif unit_lower == "h":
             total += amount * 3600
         elif unit_lower == "m":
             total += amount * 60

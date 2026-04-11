@@ -286,6 +286,39 @@ def test_parse_battle_report_preserves_unknown_suffixes() -> None:
     assert parsed.coins_earned is None
 
 
+@pytest.mark.regression
+def test_parse_battle_report_handles_v28_day_duration_sample() -> None:
+    """Parse v28 metadata with day-based game time durations."""
+
+    raw_text = "\n".join(
+        [
+            "Battle Report",
+            "Battle Date\tApr 10, 2026 18:12",
+            "Game Time\t2d 13h 1m 2s",
+            "Real Time\t13h 18m 35s",
+            "Tier\t3",
+            "Wave\t6402",
+            "Killed By\tFast",
+            "Coins Earned\t2.24B",
+            "Coins Per Hour\t168.38M",
+            "Cells Earned\t4.64K",
+            "Cells Per Hour\t349",
+            "",
+        ]
+    )
+
+    parsed = parse_battle_report(raw_text)
+
+    assert parsed.battle_date == datetime(2026, 4, 10, 18, 12, tzinfo=timezone.utc)
+    assert parsed.game_time_seconds == 219662
+    assert parsed.real_time_seconds == 47915
+    assert parsed.tier == 3
+    assert parsed.wave == 6402
+    assert parsed.killed_by == "Fast"
+    assert parsed.coins_earned == 2_240_000_000
+    assert parsed.cells_earned == 4640
+
+
 def test_extract_bot_usage_from_report_section() -> None:
     """Extract bot names from the Battle Report bots section."""
 

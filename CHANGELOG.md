@@ -2,6 +2,23 @@
 
 This project follows Semantic Versioning.
 
+## [0.13.0]
+
+### Added
+- Battle Report ingestion for the newer v28 section-based stat layout while keeping compatibility with older imported reports.
+- New chartable and explorable metrics for game-reported `Coins/hour`, game-reported `Cells/hour`, record rows, blocked-damage families, new currency rows, damage taken, enemy level skips, and newer Battle Report count metrics.
+- Lifetime Stats Records rows for Highest Coins / Minute, Largest Wave Skip, Most Coins From Wave Skip, Most Cells From Wave Skip, Largest Smart Missile Stack, Largest Golden Combo, Most Coins From Golden Combo, and Largest Inner Landmine Charge.
+
+### Changed
+- Metric labeling now distinguishes app-derived per-hour values from game-reported per-hour values.
+- Battle Report parsing now accepts day-based run durations when newer reports include `d` in the Game Time value.
+- Metrics Reference, Charts, Battle History, and Lifetime Stats documentation now describe the newer Battle Report layout and record-style metrics.
+
+### Fixed
+- Raw metric extraction now resolves section-scoped labels in newer Battle Reports without breaking older label formats.
+- Large compact-number parsing now accepts newer suffixes used by the game, including `s`, `S`, `o`, and `O`.
+- Legacy Black Hole damage extraction now tolerates the historical `Blackhole Damage` label variant.
+
 ## [0.12.0]
 
 ### Added
