@@ -150,7 +150,24 @@ Integration Tests validate cross-feature workflows and navigation across the app
 - The comparison view renders without errors.
 - The comparison is based on the selected runs or dates.
 
-### Integration Test 4: Search and navigation consistency
+### Integration Test 4: Source breakdown chart controls
+
+1. Open **Charts** with a player that has newer Battle Reports containing source breakdown values.
+2. Select **Coins Earned by Source** or **Damage by Source**.
+3. Confirm the chart loads in **Donut** view.
+4. Select **Bar** and confirm the same categories appear in descending order.
+5. If the breakdown contains many categories, confirm the chart area scrolls instead of cutting off labels.
+6. Select **Show data table** and confirm the full-screen modal shows the larger chart together with a table of the same rows.
+7. Return to **Donut** view and confirm very small non-zero slices show **<0.1%** instead of **0.0%**.
+8. Hover a large value that uses a high-order game suffix and confirm the compact label stays in the expected suffix family (`s`, `S`, `o`, `O`) instead of falling back to `Q`.
+
+**Expected**
+- Donut and bar views present the same underlying categories and totals.
+- The modal table matches the chart rows and ordering.
+- Small non-zero slices are not displayed as zero.
+- Higher-order compact suffixes remain stable in the UI.
+
+### Integration Test 5: Search and navigation consistency
 
 1. In the top navigation, select the search field.
 2. Search for a preset label you created earlier (for example, `golden-a`).
@@ -164,7 +181,7 @@ Integration Tests validate cross-feature workflows and navigation across the app
 - Opening the preset result applies the preset filter on Charts.
 - Battle History still contains the labeled report after navigation.
 
-### Integration Test 5: Progress tracking persistence
+### Integration Test 6: Progress tracking persistence
 
 1. In **Cards**, update the inventory of one card and apply a preset tag.
 2. Refresh the page.

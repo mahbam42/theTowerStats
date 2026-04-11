@@ -36,7 +36,9 @@ Reparse is idempotent and supports scoped backfills.
 
 - `--limit` processes the most recent N reports (highest ids) after any other filters.
 - `--patch` limits processing to the patch window that starts at the selected PatchBoundary date and ends at the next boundary date (exclusive). Provide a boundary label or ISO date.
+- Reparse refreshes persisted derived metrics when parser support expands, including newer section-based Battle Report rows that were not recognized when the run was first imported.
 - Reparse also backfills bot usage rows used by **Runs used** on the Bots dashboard.
+- `--check` is useful before and after a parser change. A non-zero `updated_derived` count indicates stored derived rows would be rewritten if `--write` is run.
 
 ::: core.management.commands.reparse_battle_reports
 

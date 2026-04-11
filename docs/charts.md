@@ -37,6 +37,7 @@ Charts help you review how your run results change over time using the same valu
 * Use **Chart Builder** to create a custom chart and apply it to your dashboard. For the full workflow, see [Chart Builder](charts/chart_builder.md).
 * Select **Full screen** to view a single chart in a larger, focused modal.
 * Select **Show data table** to open the full-screen chart modal with a table built from the current chart values.
+* Use **Show data table** when you want the larger chart and the exact values together in one view.
 * Select **Download PNG** on a chart to save an image of the chart as currently displayed.
 * For donut-based source breakdown charts, use **Donut** or **Bar** to switch between the circular view and a ranked horizontal bar view.
 * When a bar-based source breakdown contains many rows, the chart area becomes scrollable so labels and bar lengths remain readable.
@@ -71,6 +72,7 @@ Charts help you review how your run results change over time using the same valu
 - If a donut slice is present but extremely small, the label shows **<0.1%** instead of rounding the slice down to **0.0%**.
 - The **Bar** view can make heavily skewed source breakdowns easier to read because it ranks slices by size instead of compressing them into a small arc.
 - **Coins Earned by Source** shows the named observed coin buckets reported by the game. In newer reports, some coin buckets can overlap, so the chart does not add a residual “Other coins” slice.
+- Source breakdown charts can also include newer reported values such as **Coins From Critical Coin**, **Coins From Golden Combo**, **Golden Bot Coins Earned**, **Chain Lightning Damage**, **Smart Missile Damage**, and **Death Wave Damage** when those rows exist in your Battle Report.
 - Newer Battle Reports can also populate dedicated currency charts such as **Gems Earned**, **Ad Gems Earned**, and **Medals Earned**.
 - If an older imported Battle Report contains a supported value in its text, charts can still show that value after metric support is expanded in the app.
 - For **Free Upgrades by Run**, the **Total** badge confirms that hovering a bar shows the total of Attack, Defense, and Utility upgrades.
@@ -108,6 +110,9 @@ Charts help you review how your run results change over time using the same valu
 
 > **Note**
 > Newer Battle Reports can also include larger compact suffixes such as `s`, `S`, `o`, and `O`, and chart display now preserves those higher-order suffixes instead of collapsing them to lower tiers.
+
+> **Note**
+> Tournament runs are excluded from the standard chart scope unless you enable **Include tournaments** or choose a tournament-specific filter.
 
 > **Caution**
 > Some charts require additional selections. For example, “Runs Using Selected UW” needs an Ultimate Weapon selection.

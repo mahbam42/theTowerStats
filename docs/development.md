@@ -77,6 +77,14 @@ The Charts dashboard is driven by declarative `ChartConfig` entries and a centra
 - Built-in charts are declared in `core/charting/configs.py` and validated at import time.
 - `core/charting/validator.py` enforces strict rules so future Chart Builder output fails fast with clear errors.
 
+### Source breakdown rendering
+
+- Donut-based source breakdown panels can be viewed as either donut or ranked horizontal bar charts in the browser.
+- The fullscreen chart modal can also render a data table from the active chart payload so maintainers can compare exact values against the visual output.
+- Extremely small non-zero donut slices render as `<0.1%` instead of `0.0%` to avoid implying that the slice is absent.
+- Frontend compact-number formatters must preserve higher-order game suffixes such as `s`, `S`, `o`, and `O`; collapsing those values back into lower-order suffixes produces misleading chart labels.
+- Long horizontal bar views are intentionally scrollable so panel height stays bounded without truncating labels.
+
 ### Derived formulas
 
 - Formulas may use numeric constants, metric-key identifiers, unary `+/-`, and binary `+ - * /` only.
@@ -113,6 +121,12 @@ The Charts dashboard is driven by declarative `ChartConfig` entries and a centra
 - **In-game timing** (cooldowns and durations) is shown in seconds and is sourced from the external wiki tables.
 - **Accelerated time** can make real-world time diverge from in-game seconds (for example, due to speed effects); dashboards must label units explicitly.
 - Wiki-derived timing values are treated as reference data and may be inaccurate or drift over time.
+
+## Battle report reparsing
+
+- Battle report imports persist derived metrics at import time, but newer parser support can expose additional raw-text metrics later.
+- `analysis.metrics` can backfill missing raw-text-derived values at read time so older imports still render newly supported metrics in charts and tables.
+- `reparse_battle_reports --write` should still be used after parser changes to refresh stored derived metrics and reduce read-time fallbacks.
 
 ## Attributions
 

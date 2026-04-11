@@ -51,6 +51,7 @@ Cards help you track your card slot progression and keep an organized view of yo
 - **Runs used** counts how many non-hidden Battle Reports match at least one preset assigned to that card.
 - **Percentage used** shows the share of all non-hidden recorded runs represented by that card or preset.
 - **Observed metric** names the Battle Report metric the app tracks for supported cards such as **Energy Shield**, **Nuke**, **Second Wind**, **Demon Mode**, **Critical Coin**, and **Death Ray**.
+- The usage tables can include card-based observations such as **Energy Shield hits absorbed**, **Nuke uses**, **Second Wind uses**, **Demon Mode uses**, **Coins from Critical Coin**, and **Death Ray Damage** when those values are present in the imported reports.
 - **Total Cards Progress** summarizes overall collection progress across all cards:
   - **Cards Remaining** shows how many card copies are left until every card is fully maxed.
   - **Total Cards** shows the total copies required to fully max every card.

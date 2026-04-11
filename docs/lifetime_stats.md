@@ -26,10 +26,10 @@ Lifetime Stats summarizes key economy, combat, and utility values across all of 
 
 - Metrics are grouped by **Economy**, **Combat**, and **Utility**.
 - Most values are totals for the runs included in the selected date range.
-- Record-style metrics stay in the group where you would most likely compare them, such as **Highest Coins / Minute** in **Economy** or **Largest Golden Combo** in **Combat**.
+- Record-style metrics stay in the group where you would most likely compare them. For example, **Highest Coins / Minute** appears with **Recent Coins per Hour**, while combat records such as **Largest Golden Combo** and **Largest Inner Landmine Charge** remain under **Combat**.
 - Units are shown next to each value so you can distinguish coins, cash, cells, and other counts.
 - **Recent Coins per Hour** reflects the most recent run included in the selected range.
-- Utility includes wave-skip record values such as **Largest Wave Skip** when those rows are present in your imported Battle Reports.
+- Utility includes wave-skip record values such as **Largest Wave Skip**, **Most Cells From Wave Skip**, and **Largest Smart Missile Stack** when those rows are present in your imported Battle Reports.
 
 ## Notes & Limitations
 
