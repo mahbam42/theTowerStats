@@ -4268,29 +4268,10 @@ CLOSED: [2026-03-27 Fri 15:27]
 - State "DONE"       from "TODO"       [2026-03-27 Fri 15:27]
 When query is run
 
-*** Future
-**** TODO [#C] Auto-migration of stored queries
+*** DONE Game v28.0 Changes [5/5]
+CLOSED: [2026-04-11 Sat 15:24]
 
-The Explore DSL is expected to evolve as metrics, aliases, and scopes change. When we introduce automatic migration for stored queries, it should focus on safe, deterministic transforms that preserve the user's intent without silently changing results.
-
-### Scope
-
-- Add a stored query schema version and preserve the original text alongside migrated output.
-- Migrate only well-defined changes (for example, metric renames, alias consolidation, scope key renames, or output defaults) backed by registry metadata.
-- Keep migrations deterministic, reversible, and fully traceable for review and debugging.
-- Run migrations at load time and persist only after validation succeeds.
-- Avoid migrations that depend on user data, current run history, or dynamic context.
-
-### Notes
-
-- Fail closed: if a migration cannot be applied, keep the original text and return a validation error with remediation guidance.
-- Record migration metadata (version, timestamp, rule ids) for audit trails.
-- Prefer additive behavior; removing unsupported tokens should be a last resort and must be explicitly flagged.
-- Treat deprecated tokens as warnings with suggested replacements until a migration rule exists.
-- Ensure the Explore registry exposes migration hints (aliases, deprecations, replacements) in one canonical location.
-  
-*** TODO Game v28.0 Changes [0/5]
-
+- State "DONE"       from "TODO"       [2026-04-11 Sat 15:24]
 - State "TODO"       from "WAIT"       [2026-04-09 Thu 14:36]
 - State "WAIT"       from              [2026-03-17 Tue 17:22] \\
   waiting on release notes
@@ -4298,7 +4279,9 @@ The Explore DSL is expected to evolve as metrics, aliases, and scopes change. Wh
 
 This will be a hardline update that will enforce the v28 patch boundary. New metrics and functionality will only work forward.
 
-**** TODO [#A] New Battle Report Metrics
+**** DONE [#A] New Battle Report Metrics
+CLOSED: [2026-04-11 Sat 15:24]
+- State "DONE"       from "TODO"       [2026-04-11 Sat 15:24]
 - Add all new metrics to Battle Report Derived Metrics at minimum or to appropriate models.
 - Add Records metrics to Lifetime Stats modal
 
@@ -4464,17 +4447,46 @@ Flame Bot	0
 Other	36
 
 
-**** TODO [#A] Verify parser can handle the new Battle Report format
+**** DONE [#A] Verify parser can handle the new Battle Report format
+CLOSED: [2026-04-11 Sat 15:24]
 
-**** TODO [#A] Charts are ignoring Blackhole Damage                  :bug:
+- State "DONE"       from "TODO"       [2026-04-11 Sat 15:24]
+**** DONE [#A] Charts are ignoring Blackhole Damage                  :bug:
+CLOSED: [2026-04-11 Sat 15:24]
+- State "DONE"       from "TODO"       [2026-04-11 Sat 15:24]
 Chart shows 0% from Blackhole but battle report shows 'Black Hole Damage	16.46s' from run '4/3/2026, 9:07:00 AM • Run 296'
 
 Possibly due to magnitude of damage confusing the parser? 
-**** TODO [#A] Upgrade django version to 5.2.13
+**** DONE [#A] Upgrade django version to 5.2.13
+CLOSED: [2026-04-11 Sat 15:24]
+- State "DONE"       from "TODO"       [2026-04-11 Sat 15:24]
 Will resolve some security warnings from Dependabot
-**** TODO [#C] Pull and merge Dependabot version bumps
+**** DONE [#C] Pull and merge Dependabot version bumps
+CLOSED: [2026-04-11 Sat 15:24]
+- State "DONE"       from "TODO"       [2026-04-11 Sat 15:24]
 Ruff, mypy, pymdown-extensions
 
+*** Future
+**** TODO [#C] Auto-migration of stored queries
+
+The Explore DSL is expected to evolve as metrics, aliases, and scopes change. When we introduce automatic migration for stored queries, it should focus on safe, deterministic transforms that preserve the user's intent without silently changing results.
+
+### Scope
+
+- Add a stored query schema version and preserve the original text alongside migrated output.
+- Migrate only well-defined changes (for example, metric renames, alias consolidation, scope key renames, or output defaults) backed by registry metadata.
+- Keep migrations deterministic, reversible, and fully traceable for review and debugging.
+- Run migrations at load time and persist only after validation succeeds.
+- Avoid migrations that depend on user data, current run history, or dynamic context.
+
+### Notes
+
+- Fail closed: if a migration cannot be applied, keep the original text and return a validation error with remediation guidance.
+- Record migration metadata (version, timestamp, rule ids) for audit trails.
+- Prefer additive behavior; removing unsupported tokens should be a last resort and must be explicitly flagged.
+- Treat deprecated tokens as warnings with suggested replacements until a migration rule exists.
+- Ensure the Explore registry exposes migration hints (aliases, deprecations, replacements) in one canonical location.
+  
 ** Backlog [3/6]
 “Out of Scope”:
 - Cloud sync
