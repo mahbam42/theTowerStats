@@ -873,6 +873,15 @@ textarea:active {
   max-width: 100%;
 }
 
+.chart-data-table {
+  width: 100%;
+}
+
+.chart-data-table th,
+.chart-data-table td {
+  white-space: nowrap;
+}
+
 .battle-history-import details > summary {
   cursor: pointer;
 }
@@ -1053,6 +1062,12 @@ textarea:active {
 .charts-grid .chart-cell[data-chart-id="damage_by_source"] { order: 4; }
 .charts-grid .chart-cell[data-chart-id="free_upgrades_by_run"] { order: 5; }
 .charts-grid .chart-cell[data-chart-id="run_duration_vs_coins_earned"] { order: 6; }
+
+.chart-display-toggle.is-active {
+  background: var(--tts-color-accent);
+  border-color: var(--tts-color-accent);
+  color: #0f1115;
+}
 
 .charts-controls summary {
   cursor: pointer;

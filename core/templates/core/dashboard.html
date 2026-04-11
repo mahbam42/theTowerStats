@@ -371,7 +371,12 @@
                 </div>
                 <div class="cell shrink">
                   <div class="button-group">
+                    {% if panel.chart_type == "donut" %}
+                      <button type="button" class="button tiny secondary chart-display-toggle is-active" data-chart-id="{{ panel.id }}" data-display-mode="donut">Donut</button>
+                      <button type="button" class="button tiny secondary chart-display-toggle" data-chart-id="{{ panel.id }}" data-display-mode="bar">Bar</button>
+                    {% endif %}
                     <button type="button" class="button tiny secondary open-chart-modal" data-chart-id="{{ panel.id }}">Full screen</button>
+                    <button type="button" class="button tiny secondary open-chart-modal-with-table" data-chart-id="{{ panel.id }}">Show data table</button>
                     <button type="button" class="button tiny secondary download-chart-png" data-chart-id="{{ panel.id }}">Download PNG</button>
                   </div>
                 </div>
@@ -912,6 +917,86 @@
         return chart;
       }
 
+      function normalizeDonutBarLabel(label) {
+        return String(label || "").replace(/\s+\((?:<|>)?[0-9.]+%\)$/, "");
+      }
+
+      function renderHorizontalBarFromDonut(canvasId, panel) {
+        const canvas = document.getElementById(canvasId);
+        const ctx = canvas ? canvas.getContext("2d") : null;
+        if (!ctx || !panel?.datasets?.length) return;
+
+        const sourceDataset = panel.datasets[0] || {};
+        const rawLabels = Array.isArray(panel.labels) ? panel.labels : [];
+        const rawValues = Array.isArray(sourceDataset.data) ? sourceDataset.data : [];
+        const rawColors = Array.isArray(sourceDataset.backgroundColor) ? sourceDataset.backgroundColor : [];
+        const entries = rawLabels.map((label, index) => ({
+          label: normalizeDonutBarLabel(label),
+          value: rawValues[index],
+          color: rawColors[index] || "#3366CC",
+        }));
+        entries.sort((a, b) => {
+          const aValue = Number.isFinite(Number(a.value)) ? Number(a.value) : Number.NEGATIVE_INFINITY;
+          const bValue = Number.isFinite(Number(b.value)) ? Number(b.value) : Number.NEGATIVE_INFINITY;
+          return bValue - aValue;
+        });
+
+        const labels = entries.map((entry) => entry.label);
+        const values = entries.map((entry) => entry.value);
+        const colors = entries.map((entry) => entry.color);
+        const unit = sourceDataset.unit || "";
+        const gridColor = themeColor("--tts-color-grid", "rgba(0, 0, 0, 0.06)");
+        const tickColor = themeColor("--tts-color-chart-tick", "rgba(0, 0, 0, 0.72)");
+        return new Chart(ctx, {
+          type: "bar",
+          data: {
+            labels,
+            datasets: [
+              {
+                label: panel.title || "Series",
+                metricKey: panel.id,
+                metricKind: "observed",
+                unit,
+                seriesKind: "bar",
+                data: values,
+                backgroundColor: colors,
+                borderColor: colors,
+                borderWidth: 1,
+              },
+            ],
+          },
+          options: {
+            responsive: true,
+            indexAxis: "y",
+            plugins: {
+              legend: { display: false },
+              tooltip: {
+                ...baseTooltip,
+                callbacks: {
+                  title: (items) => (items && items[0] ? items[0].label : ""),
+                  label: (context) => {
+                    const value = context.parsed?.x;
+                    const unitLabel = unit ? ` ${unit}` : "";
+                    return `${formatChartNumber(value, unit)}${unitLabel}`;
+                  },
+                },
+              },
+            },
+            scales: {
+              x: {
+                beginAtZero: true,
+                grid: { color: gridColor },
+                ticks: { callback: (value) => formatCompactNumber(value), color: tickColor },
+              },
+              y: {
+                grid: { display: false },
+                ticks: { color: tickColor },
+              },
+            },
+          },
+        });
+      }
+
       function renderMetricChart(canvasId, datasets, runIds, xLabel, xUnit, yLabel, yUnit, chartType = "scatter") {
         const canvas = document.getElementById(canvasId);
         const ctx = canvas ? canvas.getContext("2d") : null;
@@ -981,8 +1066,11 @@
       }
 
       // Empty state is rendered server-side.
-      function renderChartPanel(panel, canvasId) {
+      function renderChartPanel(panel, canvasId, displayMode = null) {
         if (panel.chart_type === "donut") {
+          if (displayMode === "bar") {
+            return renderHorizontalBarFromDonut(canvasId, panel);
+          }
           return renderDonutChart(canvasId, panel.labels, panel.datasets);
         }
         if (panel.x_axis === "metric") {
@@ -1014,8 +1102,52 @@
         return renderLineChart(canvasId, panel.labels, panel.datasets, panel.run_ids);
       }
 
+      const panelChartInstances = new Map();
+      const panelDisplayModes = new Map();
+
+      function displayModeForPanel(panelId) {
+        return panelDisplayModes.get(panelId) || "donut";
+      }
+
+      function setToggleState(panelId, displayMode) {
+        for (const button of document.querySelectorAll(`.chart-display-toggle[data-chart-id="${panelId}"]`)) {
+          button.classList.toggle("is-active", button.dataset.displayMode === displayMode);
+        }
+      }
+
+      function rerenderPanel(panelId) {
+        const panel = chartPanels.find((entry) => entry.id === panelId);
+        if (!panel) return;
+        const prior = panelChartInstances.get(panelId);
+        if (prior && typeof prior.destroy === "function") {
+          prior.destroy();
+        }
+        const instance = renderChartPanel(panel, `chart-${panel.id}`, displayModeForPanel(panelId));
+        panelChartInstances.set(panelId, instance);
+        setToggleState(panelId, displayModeForPanel(panelId));
+      }
+
       for (const panel of chartPanels) {
-        renderChartPanel(panel, `chart-${panel.id}`);
+        if (panel.chart_type === "donut") {
+          panelDisplayModes.set(panel.id, "donut");
+        }
+        rerenderPanel(panel.id);
+      }
+
+      for (const button of document.querySelectorAll(".chart-display-toggle")) {
+        button.addEventListener("click", function () {
+          const panelId = button.dataset.chartId;
+          const displayMode = button.dataset.displayMode;
+          if (!panelId || !displayMode) return;
+          panelDisplayModes.set(panelId, displayMode);
+          rerenderPanel(panelId);
+          if (chartModal && chartModal.getAttribute("aria-hidden") === "false" && chartModalPanelId === panelId) {
+            const modalPanel = chartPanels.find((entry) => entry.id === panelId);
+            if (modalPanel) {
+              openChartModal(modalPanel);
+            }
+          }
+        });
       }
 
       function downloadChartPng(chartId) {
@@ -1039,16 +1171,76 @@
       const chartModalTitle = document.getElementById("chart-modal-title");
       const chartModalDescription = document.getElementById("chart-modal-description");
       const chartModalClose = document.getElementById("chart-modal-close");
+      const chartModalTableSection = document.getElementById("chart-modal-table-section");
+      const chartModalTableTitle = document.getElementById("chart-modal-table-title");
+      const chartModalTableWrap = document.getElementById("chart-modal-table-wrap");
       let chartModalInstance = null;
+      let chartModalPanelId = null;
 
-      function openChartModal(panel) {
+      function renderChartDataTable(panel) {
+        if (!chartModalTableWrap || !panel || !Array.isArray(panel.datasets) || !panel.datasets.length) return;
+
+        const escapeHtml = (value) =>
+          String(value ?? "")
+            .replaceAll("&", "&amp;")
+            .replaceAll("<", "&lt;")
+            .replaceAll(">", "&gt;")
+            .replaceAll('"', "&quot;")
+            .replaceAll("'", "&#39;");
+
+        const formatCell = (value, unit = "") => {
+          if (value === null || value === undefined) return "—";
+          if (typeof value === "object") {
+            const x = value.x ?? null;
+            const y = value.y ?? null;
+            if (x === null && y === null) return "—";
+            const xLabel = x === null ? "—" : formatChartNumber(x, "");
+            const yLabel = y === null ? "—" : formatChartNumber(y, unit);
+            return `x: ${xLabel}, y: ${yLabel}`;
+          }
+          return formatChartNumber(value, unit);
+        };
+
+        const labels = Array.isArray(panel.labels) ? panel.labels : [];
+        const datasets = panel.datasets;
+        const headerCells = ['<th scope="col">Label</th>'].concat(
+          datasets.map((dataset) => `<th scope="col">${escapeHtml(dataset.label || "Series")}</th>`)
+        );
+        const rows = labels.map((label, index) => {
+          const valueCells = datasets.map((dataset) => {
+            const unit = dataset?.unit || "";
+            const data = Array.isArray(dataset?.data) ? dataset.data : [];
+            return `<td>${escapeHtml(formatCell(data[index], unit))}</td>`;
+          });
+          return `<tr><th scope="row">${escapeHtml(label)}</th>${valueCells.join("")}</tr>`;
+        });
+
+        chartModalTableWrap.innerHTML = `
+          <table class="hover chart-data-table">
+            <thead><tr>${headerCells.join("")}</tr></thead>
+            <tbody>${rows.join("")}</tbody>
+          </table>
+        `;
+      }
+
+      function openChartModal(panel, { showTable = false } = {}) {
         if (!chartModal) return;
         if (chartModalInstance && typeof chartModalInstance.destroy === "function") {
           chartModalInstance.destroy();
         }
-        chartModalInstance = renderChartPanel(panel, "chart-modal-canvas");
+        chartModalInstance = renderChartPanel(panel, "chart-modal-canvas", displayModeForPanel(panel.id));
+        chartModalPanelId = panel.id;
         if (chartModalTitle) chartModalTitle.textContent = panel.title || "Chart";
         if (chartModalDescription) chartModalDescription.textContent = panel.description || "";
+        if (chartModalTableSection) {
+          chartModalTableSection.hidden = !showTable;
+        }
+        if (showTable) {
+          if (chartModalTableTitle) chartModalTableTitle.textContent = `${panel.title || "Chart"} data table`;
+          renderChartDataTable(panel);
+        } else if (chartModalTableWrap) {
+          chartModalTableWrap.innerHTML = "";
+        }
         chartModal.classList.add("is-open");
         chartModal.setAttribute("aria-hidden", "false");
       }
@@ -1059,8 +1251,15 @@
           chartModalInstance.destroy();
           chartModalInstance = null;
         }
+        chartModalPanelId = null;
         chartModal.classList.remove("is-open");
         chartModal.setAttribute("aria-hidden", "true");
+        if (chartModalTableSection) {
+          chartModalTableSection.hidden = true;
+        }
+        if (chartModalTableWrap) {
+          chartModalTableWrap.innerHTML = "";
+        }
       }
 
       if (chartModalClose) chartModalClose.addEventListener("click", closeChartModal);
@@ -1079,7 +1278,16 @@
           const panelId = btn.dataset.chartId;
           const panel = chartPanels.find((entry) => entry.id === panelId);
           if (!panel) return;
-          openChartModal(panel);
+          openChartModal(panel, { showTable: false });
+        });
+      }
+
+      for (const btn of document.querySelectorAll(".open-chart-modal-with-table")) {
+        btn.addEventListener("click", function () {
+          const panelId = btn.dataset.chartId;
+          const panel = chartPanels.find((entry) => entry.id === panelId);
+          if (!panel) return;
+          openChartModal(panel, { showTable: true });
         });
       }
       });
@@ -1660,6 +1868,10 @@
         </div>
         <div class="margin-top-1">
           <canvas id="chart-modal-canvas" width="1200" height="560"></canvas>
+        </div>
+        <div class="margin-top-1" id="chart-modal-table-section" hidden>
+          <h5 class="margin-bottom-0" id="chart-modal-table-title">Chart data table</h5>
+          <div class="table-scroll margin-top-1" id="chart-modal-table-wrap"></div>
         </div>
       </div>
     </div>

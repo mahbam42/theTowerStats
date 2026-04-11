@@ -36,7 +36,9 @@ Charts help you review how your run results change over time using the same valu
 * Open **Advanced analysis** to configure Advice, Goal-aware comparison, or derived metric export. For details, see [Advanced Analysis](charts/advanced_analysis.md).
 * Use **Chart Builder** to create a custom chart and apply it to your dashboard. For the full workflow, see [Chart Builder](charts/chart_builder.md).
 * Select **Full screen** to view a single chart in a larger, focused modal.
+* Select **Show data table** to open the full-screen chart modal with a table built from the current chart values.
 * Select **Download PNG** on a chart to save an image of the chart as currently displayed.
+* For donut-based source breakdown charts, use **Donut** or **Bar** to switch between the circular view and a ranked horizontal bar view.
 * Select a chart tooltip to open the Battle Report Modal for that run. The linked chart opens with the full date range and preserves your current filters so you can see data immediately. For details, see [Battle Report Modal](battle_report_modal.md).
 * Select **Compare** to open the comparison modal. For details, see [Compare](charts/compare.md).
 * Open **Quick import** to paste a Battle Report without leaving the Charts page.
@@ -66,6 +68,7 @@ Charts help you review how your run results change over time using the same valu
 - Area charts emphasize momentum over time by shading the space under the line.
 - For donut charts, each slice represents the total for that value within your current filters, and the label includes the percent of the donut total.
 - If a donut slice is present but extremely small, the label shows **<0.1%** instead of rounding the slice down to **0.0%**.
+- The **Bar** view can make heavily skewed source breakdowns easier to read because it ranks slices by size instead of compressing them into a small arc.
 - **Coins Earned by Source** shows the named observed coin buckets reported by the game. In newer reports, some coin buckets can overlap, so the chart does not add a residual “Other coins” slice.
 - Newer Battle Reports can also populate dedicated currency charts such as **Gems Earned**, **Ad Gems Earned**, and **Medals Earned**.
 - If an older imported Battle Report contains a supported value in its text, charts can still show that value after metric support is expanded in the app.

@@ -1607,6 +1607,11 @@ def test_dashboard_view_renders_coins_by_source_donut(auth_client, player) -> No
     stolen_label = next(label for label in labels if label.startswith("Guardian coins stolen"))
     assert values[labels.index(stolen_label)] == 1200.0
     assert not any(label.startswith("Other coins") for label in labels)
+    content = response.content.decode("utf-8")
+    assert 'data-chart-id="coins_by_source" data-display-mode="donut"' in content
+    assert 'data-chart-id="coins_by_source" data-display-mode="bar"' in content
+    assert 'class="button tiny secondary open-chart-modal-with-table" data-chart-id="coins_by_source"' in content
+    assert 'id="chart-modal-table-section"' in content
 
 
 @pytest.mark.django_db
