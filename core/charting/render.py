@@ -452,7 +452,7 @@ def _render_donut_chart(
     for label, value in zip(raw_labels, slice_values, strict=False):
         if total_value > 0 and isinstance(value, (int, float)):
             pct = 100.0 * float(value) / float(total_value)
-            slice_labels.append(f"{label} ({pct:.1f}%)")
+            slice_labels.append(f"{label} ({_format_donut_percentage_label(pct)})")
         else:
             slice_labels.append(label)
 
@@ -478,6 +478,25 @@ def _render_donut_chart(
         "backgroundColor": slice_colors,
     }
     return RenderedChart(config=config, data={"labels": slice_labels, "datasets": [dataset]}, unit=unit)
+
+
+def _format_donut_percentage_label(percent: float) -> str:
+    """Format donut percentages without hiding tiny nonzero slices.
+
+    Args:
+        percent: Percentage contribution for a donut slice.
+
+    Returns:
+        Display string for the percentage label.
+    """
+
+    if percent <= 0:
+        return "0.0%"
+    if percent < 0.1:
+        return "<0.1%"
+    if percent > 99.9:
+        return ">99.9%"
+    return f"{percent:.1f}%"
 
 
 def _render_scatter_chart(

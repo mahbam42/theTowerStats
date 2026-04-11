@@ -65,6 +65,7 @@ Charts help you review how your run results change over time using the same valu
 - Scatter charts compare two values per run. Each dot represents a single run in your current filters.
 - Area charts emphasize momentum over time by shading the space under the line.
 - For donut charts, each slice represents the total for that value within your current filters, and the label includes the percent of the donut total.
+- If a donut slice is present but extremely small, the label shows **<0.1%** instead of rounding the slice down to **0.0%**.
 - **Coins Earned by Source** shows the named observed coin buckets reported by the game. In newer reports, some coin buckets can overlap, so the chart does not add a residual “Other coins” slice.
 - Newer Battle Reports can also populate dedicated currency charts such as **Gems Earned**, **Ad Gems Earned**, and **Medals Earned**.
 - If an older imported Battle Report contains a supported value in its text, charts can still show that value after metric support is expanded in the app.
@@ -102,7 +103,7 @@ Charts help you review how your run results change over time using the same valu
 > Large values in charts are abbreviated in axes and tooltips (K, M, B, T, q, Q). Exports keep the full numeric values.
 
 > **Note**
-> Newer Battle Reports can also include larger compact suffixes such as `s`, `S`, `o`, and `O`.
+> Newer Battle Reports can also include larger compact suffixes such as `s`, `S`, `o`, and `O`, and chart display now preserves those higher-order suffixes instead of collapsing them to lower tiers.
 
 > **Caution**
 > Some charts require additional selections. For example, “Runs Using Selected UW” needs an Ultimate Weapon selection.

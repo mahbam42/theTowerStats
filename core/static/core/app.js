@@ -22,6 +22,10 @@
     const absValue = Math.abs(num);
     if (!Number.isFinite(absValue)) return String(value);
     const units = [
+      { threshold: 1_000_000_000_000_000_000_000_000_000_000, suffix: "O" },
+      { threshold: 1_000_000_000_000_000_000_000_000_000, suffix: "o" },
+      { threshold: 1_000_000_000_000_000_000_000_000, suffix: "S" },
+      { threshold: 1_000_000_000_000_000_000_000, suffix: "s" },
       { threshold: 1_000_000_000_000_000_000, suffix: "Q" },
       { threshold: 1_000_000_000_000_000, suffix: "q" },
       { threshold: 1_000_000_000_000, suffix: "T" },

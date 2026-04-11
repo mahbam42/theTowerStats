@@ -343,3 +343,63 @@ def test_donut_renders_percent_labels_and_optional_percent_values() -> None:
     dataset = rendered.data["datasets"][0]
     values = dataset["data"]
     assert sum(v for v in values if isinstance(v, (int, float))) == pytest.approx(100.0)
+
+
+def test_donut_renders_tiny_nonzero_slices_as_less_than_point_one_percent() -> None:
+    """Show tiny donut slices as nonzero instead of rounding them down to zero."""
+
+    raw_text = "\n".join(
+        [
+            "Battle Report",
+            "Battle Date\tDec 14, 2025 01:39",
+            "Real Time\t17m 35s",
+            "Damage",
+            "Orb Damage\t999.99T",
+            "Chain Lightning Damage\t1",
+            "",
+        ]
+    )
+    record = Record(
+        raw_text=raw_text,
+        parsed_at=datetime(2025, 12, 14, 1, 40, tzinfo=timezone.utc),
+        run_progress=Progress(
+            battle_date=datetime(2025, 12, 14, 1, 39, tzinfo=timezone.utc),
+            wave=1,
+            real_time_seconds=60,
+        ),
+        derived_metrics=_derived_metrics(raw_text),
+    )
+
+    config = ChartConfig(
+        id="tiny_donut_test",
+        title="Tiny donut test",
+        description=None,
+        category="damage",
+        domain="damage",
+        semantic_type="distribution",
+        chart_type="donut",
+        metric_series=(
+            ChartSeriesConfig(metric_key="orb_damage"),
+            ChartSeriesConfig(metric_key="chain_lightning_damage"),
+        ),
+        filters=ChartFilters(
+            date_range=DateRangeFilterConfig(
+                enabled=True,
+                default_start=datetime(2025, 12, 9, tzinfo=timezone.utc),
+            )
+        ),
+        ui=ChartUI(show_by_default=False, selectable=True, order=0),
+    )
+
+    rendered = render_chart(
+        config=config,
+        records=[record],
+        registry=DEFAULT_REGISTRY,
+        granularity="daily",
+        moving_average_window=None,
+        entity_selections={},
+    )
+
+    labels = rendered.data["labels"]
+    tiny_label = next(label for label in labels if label.startswith("Chain Lightning Damage"))
+    assert tiny_label.endswith("(<0.1%)")
