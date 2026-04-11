@@ -63,3 +63,28 @@ def test_import_form_accepts_tournament_rank() -> None:
         data={"raw_text": raw_text, "is_tournament": "on", "tournament_rank": "gold"}
     )
     assert form.is_valid()
+
+
+@pytest.mark.regression
+@pytest.mark.unit
+def test_import_form_accepts_v28_report_with_wave_skip_section_labels() -> None:
+    """Section labels that contain the word Wave do not count as duplicate Wave headers."""
+
+    raw_text = "\n".join(
+        [
+            "Battle Report",
+            "Battle Date\tApr 10, 2026 18:12",
+            "Game Time\t2d 13h 1m 2s",
+            "Real Time\t13h 18m 35s",
+            "Tier\t3",
+            "Wave\t6402",
+            "Records",
+            "Largest Wave Skip\t5",
+            "Most Coins From Wave Skip\t0",
+            "",
+        ]
+    )
+
+    form = BattleReportImportForm(data={"raw_text": raw_text})
+
+    assert form.is_valid(), form.errors

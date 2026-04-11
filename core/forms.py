@@ -24,6 +24,7 @@ from core.charting.builder import (
     build_before_after_scopes,
     build_run_vs_run_scopes,
 )
+from core.parsers.battle_report import _iter_label_value_lines
 from core.tournament import parse_tier_or_tournament, tier_filter_value, tournament_filter_value
 from definitions.models import BotDefinition, GuardianChipDefinition, PatchBoundary, UltimateWeaponDefinition
 from gamedata.models import BattleReport, BattleReportProgress, TOURNAMENT_RANK_CHOICES
@@ -33,7 +34,6 @@ from player_state.models import ChartSnapshot, GoalType, Player, Preset
 class BattleReportImportForm(forms.Form):
     """Validate user-submitted raw Battle Report text."""
 
-    _REQUIRED_HEADER_SEPARATOR = r"(?:[ \t]*:[ \t]*|[ \t]+)"
     _BATTLE_REPORT_HEADER_RE = r"(?im)^[^\S\n]*Battle Report[^\S\n]*$"
 
     raw_text = forms.CharField(
@@ -98,20 +98,25 @@ class BattleReportImportForm(forms.Form):
         if report_headers != 1:
             raise forms.ValidationError("Paste exactly one Battle Report (the header must appear once).")
 
-        patterns = {
-            "Battle Date": rf"(?im)^[^\S\n]*Battle Date{self._REQUIRED_HEADER_SEPARATOR}",
-            "Tier": rf"(?im)^[^\S\n]*Tier{self._REQUIRED_HEADER_SEPARATOR}",
-            "Wave": rf"(?im)^[^\S\n]*Wave{self._REQUIRED_HEADER_SEPARATOR}",
-            "Real Time": rf"(?im)^[^\S\n]*Real Time{self._REQUIRED_HEADER_SEPARATOR}",
-        }
-        counts = {label: len(re.findall(pattern, validation_text)) for label, pattern in patterns.items()}
+        label_counts: dict[str, int] = {"Battle Date": 0, "Tier": 0, "Wave": 0, "Real Time": 0}
+        for label, _ in _iter_label_value_lines(validation_text):
+            normalized = label.strip().casefold()
+            if normalized == "battle date":
+                label_counts["Battle Date"] += 1
+            elif normalized == "tier":
+                label_counts["Tier"] += 1
+            elif normalized == "wave":
+                label_counts["Wave"] += 1
+            elif normalized == "real time":
+                label_counts["Real Time"] += 1
+
         required_once = ("Tier", "Wave", "Real Time")
-        missing_required = [label for label in required_once if counts[label] != 1]
+        missing_required = [label for label in required_once if label_counts[label] != 1]
         if missing_required:
             labels = ", ".join(missing_required)
             raise forms.ValidationError(f"Paste exactly one Battle Report ({labels} must appear once).")
 
-        duplicates = [label for label, count in counts.items() if count > 1]
+        duplicates = [label for label, count in label_counts.items() if count > 1]
         if duplicates:
             raise forms.ValidationError(f"Duplicate headers detected: {', '.join(duplicates)}.")
         return raw_text

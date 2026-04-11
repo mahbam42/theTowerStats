@@ -102,6 +102,9 @@ Battle History helps you review your past runs in a table so you can compare res
 > The app supports both older Battle Report layouts and the newer v28 section-based layout. Existing imported runs remain usable after the update.
 
 > **Note**
+> Section labels such as **Largest Wave Skip** or **Most Coins From Wave Skip** do not count as extra Battle Report headers during import.
+
+> **Note**
 > If the game introduces a new compact unit suffix (a letter at the end of a number), the import still succeeds. The raw value is saved, and the suffix is captured for review.
 
 > **Note**
