@@ -67,6 +67,7 @@ Charts help you review how your run results change over time using the same valu
 - For donut charts, each slice represents the total for that value within your current filters, and the label includes the percent of the donut total.
 - **Coins Earned by Source** shows the named observed coin buckets reported by the game. In newer reports, some coin buckets can overlap, so the chart does not add a residual “Other coins” slice.
 - Newer Battle Reports can also populate dedicated currency charts such as **Gems Earned**, **Ad Gems Earned**, and **Medals Earned**.
+- If an older imported Battle Report contains a supported value in its text, charts can still show that value after metric support is expanded in the app.
 - For **Free Upgrades by Run**, the **Total** badge confirms that hovering a bar shows the total of Attack, Defense, and Utility upgrades.
 - **Free Upgrades vs Coins Earned** compares total free upgrades to coins earned for each run.
 - If a point is flagged, the tooltip includes a short reason that explains the signal.

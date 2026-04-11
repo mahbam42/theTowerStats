@@ -1706,6 +1706,83 @@ def test_dashboard_view_renders_v28_single_space_damage_and_coin_sources(auth_cl
 
 
 @pytest.mark.django_db
+@pytest.mark.regression
+def test_dashboard_view_backfills_stale_derived_metrics_from_raw_text(auth_client, player) -> None:
+    """Charts recover missing source metrics by reparsing the current Battle Report text."""
+
+    raw_text = "\n".join(
+        [
+            "Battle Report",
+            "Battle Date Apr 10, 2026 18:12",
+            "Game Time 2d 13h 1m 2s",
+            "Real Time 13h 18m 35s",
+            "Tier 3",
+            "Wave 6402",
+            "Killed By Fast",
+            "Coins Earned 2.24B",
+            "Cells Earned 4.64K",
+            "Damage",
+            "Chain Lightning 31.81T",
+            "Land Mines 40.40Q",
+            "Death Wave 250.95q",
+            "Smart Missiles 341.15q",
+            "Electrons 0",
+            "Rend Armor 0",
+            "Coins",
+            "Golden Tower 1.89B",
+            "Black Hole 1.88B",
+            "Spotlight 95.24M",
+            "Coin Bonus Upgrade 1.98B",
+            "Coins From Coin Bonuses 1.88B",
+            "Critical Coin 0",
+            "Golden Combo 0",
+            "Death Wave 721.40M",
+            "Golden Bot 196.57M",
+            "",
+        ]
+    )
+    report = BattleReport.objects.create(player=player, raw_text=raw_text)
+    BattleReportProgress.objects.create(
+        battle_report=report,
+        player=player,
+        battle_date=datetime(2026, 4, 10, 18, 12, tzinfo=timezone.utc),
+        tier=3,
+        wave=6402,
+        real_time_seconds=47_915,
+        coins_earned=2_240_000_000,
+        coins_earned_raw="2.24B",
+        cells_earned=4640,
+    )
+    BattleReportDerivedMetrics.objects.create(
+        battle_report=report,
+        player=player,
+        values={},
+        raw_values={},
+    )
+
+    response = auth_client.get(
+        reverse("core:dashboard"),
+        {"charts": ["coins_by_source", "damage_by_source"], "start_date": date(2026, 4, 1)},
+    )
+    assert response.status_code == 200
+
+    panels = {p["id"]: p for p in json.loads(response.context["chart_panels_json"])}
+    damage_panel = panels["damage_by_source"]
+    damage_labels = damage_panel["labels"]
+    damage_values = damage_panel["datasets"][0]["data"]
+    for label_prefix in ("Chain Lightning Damage", "Land Mine Damage", "Death Wave Damage", "Smart Missile Damage"):
+        label = next(label for label in damage_labels if label.startswith(label_prefix))
+        assert damage_values[damage_labels.index(label)] > 0
+
+    coins_panel = panels["coins_by_source"]
+    coins_labels = coins_panel["labels"]
+    coins_values = coins_panel["datasets"][0]["data"]
+    for label_prefix in ("Coins From Golden Tower", "Coins From Black Hole", "Coins from Coin Upgrade"):
+        label = next(label for label in coins_labels if label.startswith(label_prefix))
+        assert coins_values[coins_labels.index(label)] > 0
+
+
+@pytest.mark.django_db
 def test_dashboard_view_renders_empty_donut_with_typed_none_values(auth_client) -> None:
     """Render donut charts with no runs as typed-but-empty (None-valued) slices."""
 

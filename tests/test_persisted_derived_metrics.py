@@ -48,11 +48,39 @@ def test_persisted_derived_metric_used_when_present() -> None:
 
 
 def test_missing_persisted_metric_returns_none() -> None:
-    """Metrics without persisted values return None even when raw text is present."""
+    """Missing persisted metrics fall back to the current raw Battle Report text."""
 
     record = _Record(
         derived_metrics=_DerivedMetrics(values={}),
         raw_text="Battle Report\nCoins From Golden Tower\t9.9M\n",
+    )
+
+    value, _used, assumptions = compute_metric_value(
+        "coins_from_golden_tower",
+        record=record,
+        coins=None,
+        cash=None,
+        interest_earned=None,
+        cells=None,
+        reroll_shards=None,
+        wave=None,
+        real_time_seconds=None,
+        context=None,
+        entity_type=None,
+        entity_name=None,
+        config=MetricComputeConfig(),
+    )
+
+    assert value == 9_900_000.0
+    assert assumptions == ()
+
+
+def test_missing_metric_without_raw_text_still_returns_none() -> None:
+    """Metrics still return None when neither persisted nor raw-text values exist."""
+
+    record = _Record(
+        derived_metrics=_DerivedMetrics(values={}),
+        raw_text="Battle Report\nWave\t123\n",
     )
 
     value, _used, assumptions = compute_metric_value(

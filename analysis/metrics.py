@@ -9,7 +9,7 @@ from __future__ import annotations
 from dataclasses import dataclass
 from typing import Final
 
-from .raw_text_metrics import RAW_TEXT_METRIC_SPECS
+from .raw_text_metrics import RAW_TEXT_METRIC_SPECS, extract_raw_text_metrics
 from .uw_usage import is_ultimate_weapon_observed_active
 from .categories import MetricCategory
 from .context import ParameterInput, PlayerContextInput
@@ -1391,13 +1391,52 @@ def _compute_other_coins_from_sources(*, coins: int, derived_values: dict[str, f
 
 
 def _record_derived_values(record: object) -> dict[str, float]:
-    """Return persisted derived metric values from a record when available."""
+    """Return derived metric values, backfilling missing raw-text metrics on demand.
+
+    Args:
+        record: Run-like object that may expose `derived_metrics.values` and `raw_text`.
+
+    Returns:
+        Combined metric values where persisted derived metrics remain authoritative
+        and any missing raw-text metrics are filled from the current Battle Report
+        text when available.
+    """
 
     derived = getattr(record, "derived_metrics", None)
     values = getattr(derived, "values", None)
-    if isinstance(values, dict):
-        return {key: float(value) for key, value in values.items() if value is not None}
-    return {}
+    persisted = {key: float(value) for key, value in values.items() if value is not None} if isinstance(values, dict) else {}
+    raw_fallback = _record_raw_text_metric_values(record)
+    if not raw_fallback:
+        return persisted
+    merged = dict(raw_fallback)
+    merged.update(persisted)
+    return merged
+
+
+def _record_raw_text_metric_values(record: object) -> dict[str, float]:
+    """Parse raw Battle Report metrics once per record for fallback reads.
+
+    Args:
+        record: Run-like object that may expose `raw_text`.
+
+    Returns:
+        Parsed raw-text metric values, or an empty mapping when parsing is not possible.
+    """
+
+    cached = getattr(record, "_raw_text_metric_values_cache", None)
+    if isinstance(cached, dict):
+        return cached
+
+    raw_text = getattr(record, "raw_text", None)
+    if not isinstance(raw_text, str) or not raw_text.strip():
+        return {}
+
+    parsed = {key: extracted.value for key, extracted in extract_raw_text_metrics(raw_text).items()}
+    try:
+        setattr(record, "_raw_text_metric_values_cache", parsed)
+    except (AttributeError, TypeError):
+        pass
+    return parsed
 
 
 def category_for_metric(metric_key: str) -> MetricCategory | None:
