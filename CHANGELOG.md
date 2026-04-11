@@ -8,16 +8,28 @@ This project follows Semantic Versioning.
 - Battle Report ingestion for the newer v28 section-based stat layout while keeping compatibility with older imported reports.
 - New chartable and explorable metrics for game-reported `Coins/hour`, game-reported `Cells/hour`, record rows, blocked-damage families, new currency rows, damage taken, enemy level skips, and newer Battle Report count metrics.
 - Lifetime Stats Records rows for Highest Coins / Minute, Largest Wave Skip, Most Coins From Wave Skip, Most Cells From Wave Skip, Largest Smart Missile Stack, Largest Golden Combo, Most Coins From Golden Combo, and Largest Inner Landmine Charge.
+- Charts source-breakdown controls for switching donut panels to ranked horizontal bar views.
+- Full-screen chart modal support for showing a data table built from the active chart payload.
+- Additional card-usage observed metrics for Energy Shield hits absorbed, Nuke uses, Second Wind uses, Demon Mode uses, Coins from Critical Coin, and Death Ray Damage.
 
 ### Changed
 - Metric labeling now distinguishes app-derived per-hour values from game-reported per-hour values.
 - Battle Report parsing now accepts day-based run durations when newer reports include `d` in the Game Time value.
 - Metrics Reference, Charts, Battle History, and Lifetime Stats documentation now describe the newer Battle Report layout and record-style metrics.
+- Lifetime Stats now groups Highest Coins / Minute with Recent Coins per Hour, keeps newer combat records under Combat, and places wave-skip and smart-missile stack records under Utility.
+- Built-in charts now include newer source metrics and dedicated currency charts for Gems Earned, Ad Gems Earned, and Medals Earned.
+- Source-breakdown chart panels now place Show data table and Download PNG above the display-mode controls, and long horizontal bar views scroll within the panel instead of growing indefinitely.
+- Developer and user documentation now cover the newer chart controls, source metrics, reparse guidance, and manual QA coverage for v28 chart behavior.
 
 ### Fixed
 - Raw metric extraction now resolves section-scoped labels in newer Battle Reports without breaking older label formats.
 - Large compact-number parsing now accepts newer suffixes used by the game, including `s`, `S`, `o`, and `O`.
 - Legacy Black Hole damage extraction now tolerates the historical `Blackhole Damage` label variant.
+- Battle Report validation no longer rejects valid v28 reports when section labels or newer `Wave ...` rows appear in the pasted text.
+- Raw metric extraction now tolerates single-space v28 clipboard pastes for section-scoped metrics and source breakdown rows.
+- Charts can backfill missing raw-text-derived metrics from stored Battle Report text when older imports predate newer parser support.
+- Source-breakdown donuts now show tiny non-zero slices as `<0.1%` instead of `0.0%`.
+- Frontend chart formatting now preserves higher-order compact suffixes such as `s`, `S`, `o`, and `O` instead of collapsing them into lower-order suffixes.
 
 ## [0.12.0]
 
