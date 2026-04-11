@@ -370,18 +370,24 @@
                   {% endif %}
                 </div>
                 <div class="cell shrink">
-                  <div class="button-group">
-                    {% if panel.chart_type == "donut" %}
-                      <button type="button" class="button tiny secondary chart-display-toggle is-active" data-chart-id="{{ panel.id }}" data-display-mode="donut">Donut</button>
-                      <button type="button" class="button tiny secondary chart-display-toggle" data-chart-id="{{ panel.id }}" data-display-mode="bar">Bar</button>
-                    {% endif %}
-                    <button type="button" class="button tiny secondary open-chart-modal" data-chart-id="{{ panel.id }}">Full screen</button>
-                    <button type="button" class="button tiny secondary open-chart-modal-with-table" data-chart-id="{{ panel.id }}">Show data table</button>
-                    <button type="button" class="button tiny secondary download-chart-png" data-chart-id="{{ panel.id }}">Download PNG</button>
+                  <div class="chart-actions">
+                    <div class="button-group">
+                      <button type="button" class="button tiny secondary open-chart-modal-with-table" data-chart-id="{{ panel.id }}">Show data table</button>
+                      <button type="button" class="button tiny secondary download-chart-png" data-chart-id="{{ panel.id }}">Download PNG</button>
+                    </div>
+                    <div class="button-group">
+                      {% if panel.chart_type == "donut" %}
+                        <button type="button" class="button tiny secondary chart-display-toggle is-active" data-chart-id="{{ panel.id }}" data-display-mode="donut">Donut</button>
+                        <button type="button" class="button tiny secondary chart-display-toggle" data-chart-id="{{ panel.id }}" data-display-mode="bar">Bar</button>
+                      {% endif %}
+                      <button type="button" class="button tiny secondary open-chart-modal" data-chart-id="{{ panel.id }}">Full screen</button>
+                    </div>
                   </div>
                 </div>
               </div>
-              <canvas id="chart-{{ panel.id }}" width="900" height="260"></canvas>
+              <div class="chart-canvas-wrap" data-chart-wrap>
+                <canvas id="chart-{{ panel.id }}" width="900" height="260" data-default-height="260"></canvas>
+              </div>
             </div>
           </div>
         {% endfor %}
@@ -947,6 +953,15 @@
         const unit = sourceDataset.unit || "";
         const gridColor = themeColor("--tts-color-grid", "rgba(0, 0, 0, 0.06)");
         const tickColor = themeColor("--tts-color-chart-tick", "rgba(0, 0, 0, 0.72)");
+        const wrap = canvas.closest("[data-chart-wrap]");
+        const defaultHeight = Number(canvas.dataset.defaultHeight || canvas.getAttribute("height") || 260);
+        const rowHeight = 28;
+        const desiredHeight = Math.max(defaultHeight, labels.length * rowHeight + 48);
+        canvas.height = desiredHeight;
+        if (wrap) {
+          wrap.classList.add("is-scrollable");
+          wrap.style.maxHeight = canvasId === "chart-modal-canvas" ? "60vh" : "24rem";
+        }
         return new Chart(ctx, {
           type: "bar",
           data: {
@@ -967,6 +982,7 @@
           },
           options: {
             responsive: true,
+            maintainAspectRatio: false,
             indexAxis: "y",
             plugins: {
               legend: { display: false },
@@ -995,6 +1011,18 @@
             },
           },
         });
+      }
+
+      function resetCanvasSizing(canvasId) {
+        const canvas = document.getElementById(canvasId);
+        if (!canvas) return;
+        const wrap = canvas.closest("[data-chart-wrap]");
+        const defaultHeight = Number(canvas.dataset.defaultHeight || canvas.getAttribute("height") || 260);
+        canvas.height = defaultHeight;
+        if (wrap) {
+          wrap.classList.remove("is-scrollable");
+          wrap.style.maxHeight = "";
+        }
       }
 
       function renderMetricChart(canvasId, datasets, runIds, xLabel, xUnit, yLabel, yUnit, chartType = "scatter") {
@@ -1067,6 +1095,7 @@
 
       // Empty state is rendered server-side.
       function renderChartPanel(panel, canvasId, displayMode = null) {
+        resetCanvasSizing(canvasId);
         if (panel.chart_type === "donut") {
           if (displayMode === "bar") {
             return renderHorizontalBarFromDonut(canvasId, panel);
@@ -1867,7 +1896,9 @@
           </div>
         </div>
         <div class="margin-top-1">
-          <canvas id="chart-modal-canvas" width="1200" height="560"></canvas>
+          <div class="chart-canvas-wrap" data-chart-wrap>
+            <canvas id="chart-modal-canvas" width="1200" height="560" data-default-height="560"></canvas>
+          </div>
         </div>
         <div class="margin-top-1" id="chart-modal-table-section" hidden>
           <h5 class="margin-bottom-0" id="chart-modal-table-title">Chart data table</h5>

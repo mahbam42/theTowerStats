@@ -1612,6 +1612,9 @@ def test_dashboard_view_renders_coins_by_source_donut(auth_client, player) -> No
     assert 'data-chart-id="coins_by_source" data-display-mode="bar"' in content
     assert 'class="button tiny secondary open-chart-modal-with-table" data-chart-id="coins_by_source"' in content
     assert 'id="chart-modal-table-section"' in content
+    assert content.index("Show data table") < content.index("Download PNG")
+    assert content.index("Download PNG") < content.index("Donut")
+    assert content.index("Donut") < content.index("Full screen")
 
 
 @pytest.mark.django_db

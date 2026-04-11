@@ -831,6 +831,23 @@ textarea:active {
   box-shadow: 0 1px 4px var(--tts-color-shadow);
 }
 
+.chart-actions {
+  display: flex;
+  flex-direction: column;
+  gap: var(--tts-space-2);
+  align-items: flex-end;
+}
+
+.chart-canvas-wrap {
+  width: 100%;
+}
+
+.chart-canvas-wrap.is-scrollable {
+  overflow-y: auto;
+  overflow-x: hidden;
+  padding-right: var(--tts-space-1);
+}
+
 .modal-backdrop {
   position: fixed;
   inset: 0;

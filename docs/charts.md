@@ -39,6 +39,7 @@ Charts help you review how your run results change over time using the same valu
 * Select **Show data table** to open the full-screen chart modal with a table built from the current chart values.
 * Select **Download PNG** on a chart to save an image of the chart as currently displayed.
 * For donut-based source breakdown charts, use **Donut** or **Bar** to switch between the circular view and a ranked horizontal bar view.
+* When a bar-based source breakdown contains many rows, the chart area becomes scrollable so labels and bar lengths remain readable.
 * Select a chart tooltip to open the Battle Report Modal for that run. The linked chart opens with the full date range and preserves your current filters so you can see data immediately. For details, see [Battle Report Modal](battle_report_modal.md).
 * Select **Compare** to open the comparison modal. For details, see [Compare](charts/compare.md).
 * Open **Quick import** to paste a Battle Report without leaving the Charts page.
