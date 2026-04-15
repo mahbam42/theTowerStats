@@ -4467,6 +4467,10 @@ CLOSED: [2026-04-11 Sat 15:24]
 Ruff, mypy, pymdown-extensions
 
 *** Future
+**** TODO [#A] Add a way to tag runs as dissonance
+Will need to function similar to Tournament Runs. Shows in Battle History but filtered out in Charts/Explore.
+**** TODO [#B] On Card Usage Modal Observed Metric needs to show the sum of the metric
+**** TODO [#B] Add Waves Skipped to 'Wave Skip' Card's Observed Metrics
 **** TODO [#C] Auto-migration of stored queries
 
 The Explore DSL is expected to evolve as metrics, aliases, and scopes change. When we introduce automatic migration for stored queries, it should focus on safe, deterministic transforms that preserve the user's intent without silently changing results.
@@ -4486,7 +4490,6 @@ The Explore DSL is expected to evolve as metrics, aliases, and scopes change. Wh
 - Prefer additive behavior; removing unsupported tokens should be a last resort and must be explicitly flagged.
 - Treat deprecated tokens as warnings with suggested replacements until a migration rule exists.
 - Ensure the Explore registry exposes migration hints (aliases, deprecations, replacements) in one canonical location.
-  
 ** Backlog [3/6]
 “Out of Scope”:
 - Cloud sync
