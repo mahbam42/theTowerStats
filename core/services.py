@@ -19,6 +19,7 @@ from gamedata.models import (
 )
 from player_state.models import Player, Preset
 from analysis.raw_text_metrics import extract_raw_text_metrics
+from core.dissonance import level_snapshot_for_tier, record_dissonance_unlock
 from core.parsers.battle_report import (
     extract_bot_usage,
     extract_ultimate_weapon_usage,
@@ -35,6 +36,8 @@ def ingest_battle_report(
     preset_name: str | None = None,
     is_tournament: bool = False,
     tournament_rank: str | None = None,
+    is_dissonance: bool = False,
+    dissonance_type: str | None = None,
 ) -> tuple[BattleReport, bool]:
     """Ingest a Battle Report, rejecting duplicates by checksum.
 
@@ -44,6 +47,8 @@ def ingest_battle_report(
         preset_name: Optional preset label to associate with the run.
         is_tournament: Manual override to mark a run as a tournament.
         tournament_rank: Optional tournament rank label for manual tournament runs.
+        is_dissonance: Manual override to mark a run as a Dissonance run.
+        dissonance_type: Optional Dissonance type label for manual Dissonance runs.
 
     Returns:
         A tuple of (battle_report, created) where `created` is False when the report
@@ -53,6 +58,8 @@ def ingest_battle_report(
     parsed = parse_battle_report(raw_text)
     preset = _resolve_preset(preset_name, player=player)
     preset_snapshot = _preset_snapshot(preset)
+    tier = parsed.tier
+    dissonance_levels = level_snapshot_for_tier(player=player, tier=tier)
     try:
         with transaction.atomic():
             record_unrecognized_unit_suffixes(raw_text)
@@ -86,21 +93,41 @@ def ingest_battle_report(
                 reroll_shards_earned=parsed.reroll_shards_earned,
                 is_tournament=is_tournament,
                 tournament_rank=(tournament_rank if is_tournament else None),
+                is_dissonance=is_dissonance,
+                dissonance_type=(dissonance_type if is_dissonance else None),
+                dissonance_levels_snapshot=dissonance_levels,
             )
+            if is_dissonance:
+                record_dissonance_unlock(
+                    player=player,
+                    tier=tier,
+                    dissonance_type=dissonance_type,
+                    wave=parsed.wave,
+                )
             _ingest_run_bot_usage(battle_report=battle_report, player=player)
             _ingest_run_ultimate_weapon_usage(battle_report=battle_report, player=player)
             return battle_report, True
     except IntegrityError:
         battle_report = BattleReport.objects.get(player=player, checksum=parsed.checksum)
         record_unrecognized_unit_suffixes(raw_text)
-        if preset is not None or is_tournament:
+        if preset is not None or is_tournament or is_dissonance:
             BattleReportProgress.objects.filter(battle_report=battle_report, player=player).update(
                 preset=preset,
                 preset_name_snapshot=preset_snapshot["name"],
                 preset_color_snapshot=preset_snapshot["color"],
                 is_tournament=is_tournament,
                 tournament_rank=(tournament_rank if is_tournament else None),
+                is_dissonance=is_dissonance,
+                dissonance_type=(dissonance_type if is_dissonance else None),
+                dissonance_levels_snapshot=dissonance_levels,
             )
+            if is_dissonance:
+                record_dissonance_unlock(
+                    player=player,
+                    tier=tier,
+                    dissonance_type=dissonance_type,
+                    wave=parsed.wave,
+                )
         _persist_derived_metrics(battle_report=battle_report, player=player, raw_text=raw_text)
         _ingest_run_bot_usage(battle_report=battle_report, player=player)
         _ingest_run_ultimate_weapon_usage(battle_report=battle_report, player=player)

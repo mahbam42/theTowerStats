@@ -83,7 +83,7 @@ Cards help you track your card slot progression and keep an organized view of yo
 > In-game preset selections can change mid-run. In the app, presets are static labels you apply for grouping and filtering.
 
 > **Note**
-> The **Usage** modal includes tournament runs by default.
+> The **Usage** modal excludes Dissonance-tagged runs by default.
 
 > **Note**
 > Hidden Battle Reports are excluded from the **Usage** modal.

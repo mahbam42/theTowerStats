@@ -239,7 +239,7 @@ def test_dashboard_quick_import_tournament_override_excludes_from_charts_by_defa
     )
     response = auth_client.post(
         reverse("core:dashboard"),
-        data={"raw_text": raw_text, "is_tournament": "on", "tournament_rank": "gold"},
+        data={"raw_text": raw_text, "special_run": "tournament", "special_run_detail": "gold"},
         follow=True,
     )
     assert response.status_code == 200
@@ -248,6 +248,38 @@ def test_dashboard_quick_import_tournament_override_excludes_from_charts_by_defa
     response = auth_client.get(reverse("core:dashboard"), {"include_tournaments": "on", "start_date": FILTER_START})
     assert response.status_code == 200
     assert response.context["chart_empty_state"] != "No runs match the current filters."
+
+
+@pytest.mark.django_db
+def test_dashboard_dissonance_toggle_filters_to_dissonance_runs(auth_client, player) -> None:
+    """The Dissonance toggle narrows chart scope to Dissonance-tagged runs."""
+
+    dissonance = "\n".join(
+        [
+            "Battle Report",
+            "Battle Date\tApr 11, 2026 18:12",
+            "Real Time\t1h 0m 0s",
+            "Tier\t4",
+            "Wave\t1500",
+            "Coins earned\t11.0M",
+        ]
+    )
+    auth_client.post(
+        reverse("core:dashboard"),
+        data={"raw_text": dissonance, "special_run": "dissonance", "special_run_detail": "attack"},
+        follow=True,
+    )
+
+    response = auth_client.get(reverse("core:dashboard"), {"start_date": FILTER_START})
+    assert response.status_code == 200
+    assert response.context["chart_empty_state"] == "No runs match the current filters."
+
+    response = auth_client.get(
+        reverse("core:dashboard"),
+        {"include_dissonance": "on", "start_date": FILTER_START},
+    )
+    assert response.status_code == 200
+    assert response.context["scope_summary"]["runs_in_scope"] == 1
 
 
 @pytest.mark.django_db

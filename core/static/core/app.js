@@ -754,6 +754,84 @@
     });
   }
 
+  function initializeSpecialRunSelectors() {
+    const forms = document.querySelectorAll("form");
+    const optionMap = {
+      tournament: [
+        ["", "Select a rank"],
+        ["copper", "Copper"],
+        ["silver", "Silver"],
+        ["gold", "Gold"],
+        ["platinum", "Platinum"],
+        ["champions", "Champions"],
+        ["legends", "Legends"],
+      ],
+      dissonance: [
+        ["", "Select a type"],
+        ["attack", "Attack"],
+        ["defense", "Defense"],
+        ["utility", "Utility"],
+        ["ultimate_weapon", "Ultimate Weapon"],
+      ],
+      "": [["", "Select a value"]],
+    };
+
+    function syncForm(form) {
+      const specialRun = form.querySelector('select[name="special_run"]');
+      const detail = form.querySelector('select[name="special_run_detail"]');
+      if (!specialRun || !detail) return;
+      const selected = specialRun.value || "";
+      const options = optionMap[selected] || optionMap[""];
+      const current = detail.value || "";
+      detail.innerHTML = "";
+      for (const [value, label] of options) {
+        const option = document.createElement("option");
+        option.value = value;
+        option.textContent = label;
+        if (current === value) option.selected = true;
+        detail.appendChild(option);
+      }
+      if (!options.some(([value]) => value === current)) {
+        detail.value = "";
+      }
+    }
+
+    for (const form of forms) {
+      const specialRun = form.querySelector('select[name="special_run"]');
+      if (!specialRun) continue;
+      syncForm(form);
+      specialRun.addEventListener("change", () => syncForm(form));
+    }
+  }
+
+  function initializeSimpleModal({ modalId, openId }) {
+    const modal = document.getElementById(modalId);
+    const openBtn = document.getElementById(openId);
+    if (!modal || !openBtn) return;
+    const closeButtons = modal.querySelectorAll("[data-close-modal]");
+
+    function openModal() {
+      modal.classList.add("is-open");
+      modal.setAttribute("aria-hidden", "false");
+    }
+
+    function closeModal() {
+      modal.classList.remove("is-open");
+      modal.setAttribute("aria-hidden", "true");
+    }
+
+    openBtn.addEventListener("click", openModal);
+    closeButtons.forEach((button) => button.addEventListener("click", closeModal));
+    modal.addEventListener("click", (event) => {
+      if (event.target === modal) closeModal();
+    });
+    document.addEventListener("keydown", (event) => {
+      if (event.key === "Escape" && modal.getAttribute("aria-hidden") === "false") {
+        closeModal();
+      }
+    });
+  }
+
   function initializeLifetimeStatsModal() {
     const modal = document.getElementById("lifetime-stats-modal");
     if (!modal) return;
@@ -1198,6 +1276,8 @@
         initializeGlobalSearch();
         initializeBattleReportModal();
         initializeExploreModal();
+        initializeSpecialRunSelectors();
+        initializeSimpleModal({ modalId: "dissonance-bonus-modal", openId: "open-dissonance-bonus-modal" });
         initializeLifetimeStatsModal();
         initializeUnitFormatting();
         initializeGuidedWalkthrough();
@@ -1211,6 +1291,8 @@
   initializeGlobalSearch();
   initializeBattleReportModal();
   initializeExploreModal();
+  initializeSpecialRunSelectors();
+  initializeSimpleModal({ modalId: "dissonance-bonus-modal", openId: "open-dissonance-bonus-modal" });
   initializeLifetimeStatsModal();
   initializeUnitFormatting();
   initializeGuidedWalkthrough();

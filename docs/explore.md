@@ -96,6 +96,9 @@ Explore helps you build your own questions about past runs and see aggregated an
 > The app excludes tournament runs by default. Adding not tournament makes the exclusion explicit in the query.
 
 > ⚠️ Note
+> The app also excludes Dissonance runs by default. This release does not add a Dissonance-specific Explore DSL keyword.
+
+> ⚠️ Note
 > Hidden Battle Reports are excluded by default. Set the Hidden scope line to include when you want them in Explore results.
 
 > ⚠️ Note

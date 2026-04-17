@@ -2,6 +2,8 @@
 
 from __future__ import annotations
 
+from decimal import Decimal
+
 from django.db import models
 from django.core.exceptions import ValidationError
 
@@ -18,6 +20,19 @@ TOURNAMENT_RANK_KEYS: tuple[str, ...] = (
 )
 TOURNAMENT_RANK_CHOICES: tuple[tuple[str, str], ...] = tuple(
     (key, key.title()) for key in TOURNAMENT_RANK_KEYS
+)
+
+DISSONANCE_TYPE_KEYS: tuple[str, ...] = (
+    "attack",
+    "defense",
+    "utility",
+    "ultimate_weapon",
+)
+DISSONANCE_TYPE_CHOICES: tuple[tuple[str, str], ...] = (
+    ("attack", "Attack"),
+    ("defense", "Defense"),
+    ("utility", "Utility"),
+    ("ultimate_weapon", "Ultimate Weapon"),
 )
 
 
@@ -142,6 +157,22 @@ class BattleReportProgress(models.Model):
         choices=TOURNAMENT_RANK_CHOICES,
         help_text="Optional tournament rank recorded during import.",
     )
+    is_dissonance = models.BooleanField(
+        default=False,
+        help_text="Manual override: mark this run as a Dissonance run when the pasted text does not indicate it.",
+    )
+    dissonance_type = models.CharField(
+        max_length=20,
+        null=True,
+        blank=True,
+        choices=DISSONANCE_TYPE_CHOICES,
+        help_text="Optional Dissonance type recorded during import.",
+    )
+    dissonance_levels_snapshot = models.JSONField(
+        default=dict,
+        blank=True,
+        help_text="Stored Dissonance level snapshot per type for this run's tier at import time.",
+    )
 
     class Meta:
         verbose_name = "Battle Report Progress"
@@ -159,6 +190,16 @@ class BattleReportProgress(models.Model):
             raise ValidationError("BattleReportProgress.player must match battle_report.player.")
         if self.preset_id and self.preset.player_id != self.player_id:
             raise ValidationError("BattleReportProgress.player must match preset.player.")
+        if self.is_tournament and self.is_dissonance:
+            raise ValidationError("BattleReportProgress cannot be both tournament and Dissonance.")
+        if not self.is_tournament:
+            self.tournament_rank = None
+        if self.is_dissonance and not self.dissonance_type:
+            raise ValidationError("Dissonance type is required when is_dissonance is enabled.")
+        if not self.is_dissonance:
+            self.dissonance_type = None
+        if not isinstance(self.dissonance_levels_snapshot, dict):
+            raise ValidationError("Dissonance level snapshot must be a mapping.")
 
     def save(self, *args, **kwargs) -> None:
         """Save while enforcing ownership invariants."""
@@ -171,6 +212,67 @@ class BattleReportProgress(models.Model):
         """Return coins earned for analysis-engine compatibility."""
 
         return self.coins_earned
+
+
+class PlayerDissonanceTierBoost(models.Model):
+    """Persist Dissonance progression for a player, tier, and boost type.
+
+    Attributes:
+        player: Owning player.
+        tier: Tier the Dissonance progression applies to.
+        dissonance_type: One of the supported Dissonance categories.
+        current_level: Current unlocked level for this player/tier/type.
+        highest_effective_multiplier: Highest recorded effective multiplier.
+        top_effective_multipliers: Descending top-three effective multiplier history.
+    """
+
+    player = models.ForeignKey(
+        Player,
+        on_delete=models.CASCADE,
+        related_name="dissonance_tier_boosts",
+    )
+    tier = models.PositiveSmallIntegerField()
+    dissonance_type = models.CharField(max_length=20, choices=DISSONANCE_TYPE_CHOICES)
+    current_level = models.PositiveIntegerField(default=1)
+    highest_effective_multiplier = models.DecimalField(
+        max_digits=10,
+        decimal_places=4,
+        default=Decimal("1.0000"),
+    )
+    top_effective_multipliers = models.JSONField(default=list, blank=True)
+
+    class Meta:
+        verbose_name = "Player Dissonance Tier Boost"
+        verbose_name_plural = "Player Dissonance Tier Boosts"
+        constraints = [
+            models.UniqueConstraint(
+                fields=["player", "tier", "dissonance_type"],
+                name="uniq_player_dissonance_tier_type",
+            ),
+        ]
+
+    def __str__(self) -> str:
+        """Return a concise display string for admin/debug usage."""
+
+        return (
+            "PlayerDissonanceTierBoost("
+            f"player={self.player_id}, tier={self.tier}, type={self.dissonance_type}, level={self.current_level}"
+            ")"
+        )
+
+    def clean(self) -> None:
+        """Validate Dissonance progression invariants."""
+
+        if self.current_level < 1:
+            raise ValidationError("current_level must be at least 1.")
+        if not isinstance(self.top_effective_multipliers, list):
+            raise ValidationError("top_effective_multipliers must be a list.")
+
+    def save(self, *args, **kwargs) -> None:
+        """Persist Dissonance progression after validating invariants."""
+
+        self.full_clean()
+        super().save(*args, **kwargs)
 
 
 class RunBot(models.Model):

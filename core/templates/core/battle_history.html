@@ -16,6 +16,7 @@
             <p class="muted margin-0">Scan past runs with filters for tier, cause of death, and goal.</p>
           </div>
           <div class="cell shrink text-right">
+            <button class="button secondary" type="button" id="open-dissonance-bonus-modal">Dissonance Bonus</button>
             <a class="button secondary" href="{% url 'core:dashboard' %}">Charts</a>
             <button class="button secondary" type="button" id="open-explore-modal">Query Explorer</button>
           </div>
@@ -59,18 +60,16 @@
                   {% endif %}
                 </label>
                 <p class="help-text muted">Select "Create new preset" to enter a new name.</p>
-                <label>
-                  {{ import_form.is_tournament }}
-                  {{ import_form.is_tournament.label }}
-                  <span class="help-text">Tournament runs cannot be detected automatically from pasted text.</span>
-                  {% if import_form.is_tournament.errors %}
-                    <span class="form-error is-visible">{{ import_form.is_tournament.errors|striptags }}</span>
+                <label>{{ import_form.special_run.label }}
+                  {{ import_form.special_run }}
+                  {% if import_form.special_run.errors %}
+                    <span class="form-error is-visible">{{ import_form.special_run.errors|striptags }}</span>
                   {% endif %}
                 </label>
-                <label>Tournament rank
-                  {{ import_form.tournament_rank }}
-                  {% if import_form.tournament_rank.errors %}
-                    <span class="form-error is-visible">{{ import_form.tournament_rank.errors|striptags }}</span>
+                <label>{{ import_form.special_run_detail.label }}
+                  {{ import_form.special_run_detail }}
+                  {% if import_form.special_run_detail.errors %}
+                    <span class="form-error is-visible">{{ import_form.special_run_detail.errors|striptags }}</span>
                   {% endif %}
                 </label>
                 <button class="button" type="submit">Import Battle Report</button>
@@ -245,7 +244,7 @@
               <tbody>
                 {% for row in page_rows %}
                   <tr
-                    class="battle-report-row {% if row.is_tournament %}tournament-row{% endif %}"
+                    class="battle-report-row {% if row.is_tournament %}tournament-row{% endif %}{% if row.is_dissonance %} dissonance-row{% endif %}"
                     data-run-id="{{ row.run.id }}"
                     tabindex="0"
                     role="button"
@@ -270,6 +269,10 @@
                             <span class="badge warning tournament-badge">
                               Tournament{% if row.tournament_rank %}: {{ row.tournament_rank|title }}{% elif row.tournament_bracket %}: {{ row.tournament_bracket }}{% endif %}
                             </span>
+                          {% elif row.is_dissonance %}
+                            <span class="badge secondary">
+                              Disco ({{ row.dissonance_label|default:"—" }}): {{ row.run.run_progress.tier|default:"—" }}
+                            </span>
                           {% else %}
                             {{ row.run.run_progress.tier|default:"—" }}
                           {% endif %}
@@ -277,6 +280,10 @@
                           {% if row.is_tournament %}
                             <span class="badge warning">
                               Yes{% if row.tournament_rank %} ({{ row.tournament_rank|title }}){% endif %}
+                            </span>
+                          {% elif row.is_dissonance %}
+                            <span class="badge secondary">
+                              {{ row.dissonance_label|default:"Dissonance" }}
                             </span>
                           {% else %}
                             <span class="muted">No</span>
@@ -532,5 +539,54 @@
       </div>
     </div>
   </div>
+  </div>
+
+  <div class="modal-backdrop" id="dissonance-bonus-modal" aria-hidden="true">
+    <div class="modal-shell" role="dialog" aria-modal="true" aria-label="Dissonance Bonus">
+      <div class="grid-x grid-margin-x align-middle">
+        <div class="cell auto">
+          <h4 class="margin-0">Dissonance Bonus</h4>
+          <p class="muted margin-0">Highest logged Dissonance boosts by tier and type.</p>
+        </div>
+        <div class="cell shrink">
+          <button class="button secondary" type="button" data-close-modal>Close</button>
+        </div>
+      </div>
+      <div class="margin-top-1">
+        <p class="muted">Formula: 1 + (multiplier - 1) * (wave / 5000)^1.75</p>
+        {% if dissonance_bonus_rows %}
+          <div class="table-scroll">
+            <table class="stack">
+              <thead>
+                <tr>
+                  <th scope="col">Tier</th>
+                  <th scope="col">Type</th>
+                  <th scope="col">Level</th>
+                  <th scope="col">Highest boost</th>
+                  <th scope="col">Top 3 boosts</th>
+                </tr>
+              </thead>
+              <tbody>
+                {% for row in dissonance_bonus_rows %}
+                  <tr>
+                    <td>{{ row.tier }}</td>
+                    <td>{{ row.dissonance_type_label }}</td>
+                    <td>{{ row.current_level }}</td>
+                    <td>x{{ row.highest_effective_multiplier }}</td>
+                    <td>
+                      {% for value in row.top_effective_multipliers %}
+                        {% if not forloop.first %}, {% endif %}x{{ value }}
+                      {% endfor %}
+                    </td>
+                  </tr>
+                {% endfor %}
+              </tbody>
+            </table>
+          </div>
+        {% else %}
+          <div class="empty-state" role="status">No Dissonance boosts recorded yet.</div>
+        {% endif %}
+      </div>
+    </div>
   </div>
 {% endblock %}

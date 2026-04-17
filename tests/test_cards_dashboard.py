@@ -458,7 +458,14 @@ def test_cards_dashboard_usage_modal_counts_visible_runs_by_preset(auth_client, 
     alpha_card.presets.add(farming, tournament, through_defaults={"player": player})
     beta_card.presets.add(farming, through_defaults={"player": player})
 
-    def _report(*, checksum: str, preset: Preset | None, hidden: bool, is_tournament: bool) -> None:
+    def _report(
+        *,
+        checksum: str,
+        preset: Preset | None,
+        hidden: bool,
+        is_tournament: bool,
+        is_dissonance: bool = False,
+    ) -> None:
         report = BattleReport.objects.create(
             player=player,
             raw_text="Battle Report\n",
@@ -475,19 +482,22 @@ def test_cards_dashboard_usage_modal_counts_visible_runs_by_preset(auth_client, 
             tier=10,
             wave=100,
             is_tournament=is_tournament,
+            is_dissonance=is_dissonance,
+            dissonance_type=("utility" if is_dissonance else None),
         )
 
     _report(checksum="farming-1", preset=farming, hidden=False, is_tournament=False)
     _report(checksum="farming-2", preset=farming, hidden=False, is_tournament=False)
     _report(checksum="tourney-1", preset=tournament, hidden=False, is_tournament=True)
     _report(checksum="hidden-1", preset=tournament, hidden=True, is_tournament=True)
+    _report(checksum="disco-1", preset=farming, hidden=False, is_tournament=False, is_dissonance=True)
 
     response = auth_client.get(reverse("core:cards"))
     assert response.status_code == 200
 
     content = response.content.decode("utf-8")
     assert 'id="open-card-usage-modal"' in content
-    assert "Tournaments are included by default." in content
+    assert "Dissonance runs are excluded by default." in content
     assert "Percentages use all visible recorded runs as the denominator: 3 total." in content
     assert "100.0%" in content
     assert "66.7%" in content

@@ -37,6 +37,9 @@ Lifetime Stats summarizes key economy, combat, and utility values across all of 
 > Lifetime Stats only includes values present in your imported Battle Reports.
 
 > **Note**
+> Dissonance-tagged runs are excluded from Lifetime Stats by default.
+
+> **Note**
 > Some in-game metrics are not tracked yet, including:
 > - Stones Earned
 > - Keys Earned

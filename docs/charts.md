@@ -23,12 +23,13 @@ Charts help you review how your run results change over time using the same valu
 5. In **Context**, select a **Tier or Tournament** and **Preset** to narrow the scope.
   A. Choose a tournament rank when you want only that tournament bracket.
   B. Toggle **Include tournaments** to include tournament runs in the charts.
-6. In **Context**, toggle **Include hidden reports** when you want hidden Battle Reports included in charts.
-7. In **Context**, select **Exclude presets** to remove runs with those preset labels from charts.
-8. In **Context**, select **Patch boundary** to filter to one or more patch windows.
-9. (Optional) In **Context**, select a **Snapshot** or enter **Past N runs** to tighten the scope.
-10. Select **Apply** to refresh the dashboard.
-11. Select **Query Explorer** to open Explore with your current scope.
+6. In **Context**, toggle **Dissonance** when you want the charts to show only Dissonance-tagged runs.
+7. In **Context**, toggle **Include hidden reports** when you want hidden Battle Reports included in charts.
+8. In **Context**, select **Exclude presets** to remove runs with those preset labels from charts.
+9. In **Context**, select **Patch boundary** to filter to one or more patch windows.
+10. (Optional) In **Context**, select a **Snapshot** or enter **Past N runs** to tighten the scope.
+11. Select **Apply** to refresh the dashboard.
+12. Select **Query Explorer** to open Explore with your current scope.
 
 
 * Open **More options** to refine charts, windowing, and item filters. For details, see [More Options](charts/more_options.md).
@@ -44,7 +45,7 @@ Charts help you review how your run results change over time using the same valu
 * Select a chart tooltip to open the Battle Report Modal for that run. The linked chart opens with the full date range and preserves your current filters so you can see data immediately. For details, see [Battle Report Modal](battle_report_modal.md).
 * Select **Compare** to open the comparison modal. For details, see [Compare](charts/compare.md).
 * Open **Quick import** to paste a Battle Report without leaving the Charts page.
-  * In **Quick import**, enable **Tournament run** when the run was a tournament round. The app cannot detect tournament runs automatically from pasted text.
+  * In **Quick import**, use **Special run** when the run should be tagged as Tournament or Dissonance. The app cannot detect those run classes automatically from pasted text.
 
 ## How to Read the Results
 
@@ -63,6 +64,7 @@ Charts help you review how your run results change over time using the same valu
 - Some v28 metrics are available in both a derived form and a game-reported form. For example, **Coins/hour (derived)** is calculated by the app from Coins Earned and Real Time, while **Coins/hour (game-based)** uses the value reported directly by the game.
 - **Cells/hour (derived)** and **Cells/hour (game-based)** follow the same pattern when the report includes the game-reported value.
 - Snapshot filters apply alongside date ranges and other scope controls, so you can combine them.
+- The **Dissonance** toggle changes the scope to logged Dissonance runs only.
 - When a chart includes multiple lines, each line label tells you what group it represents (for example, a tier or a preset label).
 - Excluded presets are removed from the scope even if they match other filters.
 - If a value is missing in the underlying Battle Report, the chart may show a gap for that date.
@@ -113,6 +115,9 @@ Charts help you review how your run results change over time using the same valu
 
 > **Note**
 > Tournament runs are excluded from the standard chart scope unless you enable **Include tournaments** or choose a tournament-specific filter.
+
+> **Note**
+> Dissonance runs are excluded from the standard chart scope unless you enable the **Dissonance** toggle, which narrows the chart scope to Dissonance runs only.
 
 > **Caution**
 > Some charts require additional selections. For example, “Runs Using Selected UW” needs an Ultimate Weapon selection.

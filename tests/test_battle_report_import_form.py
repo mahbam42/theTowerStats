@@ -41,9 +41,9 @@ def test_import_form_requires_tournament_rank() -> None:
             "Coins earned: 1200",
         ]
     )
-    form = BattleReportImportForm(data={"raw_text": raw_text, "is_tournament": "on"})
+    form = BattleReportImportForm(data={"raw_text": raw_text, "special_run": "tournament"})
     assert not form.is_valid()
-    assert "tournament_rank" in form.errors
+    assert "special_run_detail" in form.errors
 
 
 @pytest.mark.unit
@@ -60,7 +60,44 @@ def test_import_form_accepts_tournament_rank() -> None:
         ]
     )
     form = BattleReportImportForm(
-        data={"raw_text": raw_text, "is_tournament": "on", "tournament_rank": "gold"}
+        data={"raw_text": raw_text, "special_run": "tournament", "special_run_detail": "gold"}
+    )
+    assert form.is_valid()
+
+
+@pytest.mark.unit
+def test_import_form_requires_dissonance_type() -> None:
+    """Dissonance imports require a Dissonance type selection."""
+
+    raw_text = "\n".join(
+        [
+            "Battle Report",
+            "Tier: 1",
+            "Wave: 10",
+            "Real Time: 00:10:00",
+            "Coins earned: 1200",
+        ]
+    )
+    form = BattleReportImportForm(data={"raw_text": raw_text, "special_run": "dissonance"})
+    assert not form.is_valid()
+    assert "special_run_detail" in form.errors
+
+
+@pytest.mark.unit
+def test_import_form_accepts_dissonance_type() -> None:
+    """Dissonance imports validate when a type is provided."""
+
+    raw_text = "\n".join(
+        [
+            "Battle Report",
+            "Tier: 1",
+            "Wave: 10",
+            "Real Time: 00:10:00",
+            "Coins earned: 1200",
+        ]
+    )
+    form = BattleReportImportForm(
+        data={"raw_text": raw_text, "special_run": "dissonance", "special_run_detail": "utility"}
     )
     assert form.is_valid()
 

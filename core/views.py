@@ -67,6 +67,7 @@ from analysis.rates import coins_per_hour as coins_per_hour_rate
 from analysis.series_registry import DEFAULT_REGISTRY, allowed_chart_builder_aggregations
 from core.demo import DEMO_USERNAME, demo_mode_enabled, get_demo_player, set_demo_mode
 from core.changelog import latest_changelog_summary
+from core.dissonance import effective_multiplier, tier_bonus_rows
 from core.parsers.battle_report import battle_date_is_fallback
 from core.advice import (
     AdviceItem,
@@ -150,6 +151,8 @@ from gamedata.models import (
     BattleReport,
     BattleReportDerivedMetrics,
     BattleReportProgress,
+    DISSONANCE_TYPE_CHOICES,
+    DISSONANCE_TYPE_KEYS,
     TOURNAMENT_RANK_CHOICES,
 )
 from player_state.card_slots import card_slot_max_slots, next_card_slot_unlock_cost_raw
@@ -195,6 +198,7 @@ from core.session_keys import MOTD_LAST_LOGIN_SESSION_KEY
 
 WALKTHROUGH_FIRST_LOGIN_SESSION_KEY = "tts_walkthrough_first_login"
 WALKTHROUGH_CHANGELOG_URL = "https://github.com/mahbam42/theTowerStats/blob/main/CHANGELOG.md"
+DISS_NO_CONTEXT_NOTE = "Dissonance runs are excluded unless you enable the Dissonance toggle."
 
 
 def _request_player(request: HttpRequest) -> Player:
@@ -461,6 +465,7 @@ def dashboard(request: HttpRequest) -> HttpResponse:
                     )
                 merged["preset"] = str(config_dto.context.preset_id or "")
                 merged["include_tournaments"] = "on" if config_dto.context.include_tournaments else ""
+                merged["include_dissonance"] = "on" if config_dto.context.include_dissonance else ""
                 merged["include_hidden"] = "on" if config_dto.context.include_hidden else ""
             else:
                 builder_payload = dict(snapshot.chart_builder or {})
@@ -593,6 +598,8 @@ def dashboard(request: HttpRequest) -> HttpResponse:
             preset_name = import_form.cleaned_data.get("preset_name") or None
             is_tournament_override = bool(import_form.cleaned_data.get("is_tournament") or False)
             tournament_rank = (import_form.cleaned_data.get("tournament_rank") or None)
+            is_dissonance_override = bool(import_form.cleaned_data.get("is_dissonance") or False)
+            dissonance_type = (import_form.cleaned_data.get("dissonance_type") or None)
             try:
                 _, created = ingest_battle_report(
                     raw_text,
@@ -600,6 +607,8 @@ def dashboard(request: HttpRequest) -> HttpResponse:
                     preset_name=preset_name,
                     is_tournament=is_tournament_override,
                     tournament_rank=tournament_rank,
+                    is_dissonance=is_dissonance_override,
+                    dissonance_type=dissonance_type,
                 )
             except Exception:
                 if settings.DEBUG:
@@ -1205,6 +1214,33 @@ def export_derived_metrics_csv(request: HttpRequest) -> HttpResponse:
     return response
 
 
+def _exclude_special_runs(runs: QuerySet[BattleReport], *, include_tournaments: bool, include_dissonance: bool) -> QuerySet[BattleReport]:
+    """Apply the default tournament and Dissonance exclusions to a queryset.
+
+    Args:
+        runs: BattleReport queryset already scoped to a player.
+        include_tournaments: Whether tournament runs should remain in scope.
+        include_dissonance: Whether only Dissonance runs should remain in scope.
+
+    Returns:
+        Filtered BattleReport queryset.
+    """
+
+    if include_dissonance:
+        return runs.filter(run_progress__is_dissonance=True)
+    exclusions = Q(run_progress__tier__isnull=True) | Q(run_progress__is_dissonance=True)
+    if not include_tournaments:
+        exclusions |= Q(run_progress__is_tournament=True)
+    return runs.exclude(exclusions)
+
+
+def _dissonance_label(dissonance_type: str | None) -> str:
+    """Return the display label for a Dissonance type key."""
+
+    choices = dict(DISSONANCE_TYPE_CHOICES)
+    return choices.get(str(dissonance_type or ""), "Dissonance")
+
+
 def _goal_weights_from_query(*, goal_intent: str, query: QueryDict) -> tuple[str, GoalWeights]:
     """Return the effective goal label and weights from GET parameters.
 
@@ -1439,8 +1475,11 @@ def _runs_for_chart_context_dto(*, player: Player, context: ChartContextDTO) -> 
         )
     ).order_by("effective_battle_date")
     force_tournaments = bool(context.tournament_filter)
-    if not context.include_tournaments and not force_tournaments:
-        runs = runs.exclude(Q(run_progress__tier__isnull=True) | Q(run_progress__is_tournament=True))
+    runs = _exclude_special_runs(
+        runs,
+        include_tournaments=bool(context.include_tournaments or force_tournaments),
+        include_dissonance=bool(context.include_dissonance),
+    )
     if not context.include_hidden:
         runs = runs.filter(is_hidden=False)
     if context.start_date:
@@ -1744,6 +1783,30 @@ def _battle_report_modal_metrics(progress: BattleReportProgress | None) -> list[
                 "chart_id": None,
             }
         )
+
+    if progress.tier is not None:
+        levels_snapshot = {
+            **{key: 1 for key in DISSONANCE_TYPE_KEYS},
+            **(
+                progress.dissonance_levels_snapshot
+                if isinstance(progress.dissonance_levels_snapshot, dict)
+                else {}
+            ),
+        }
+        for key in DISSONANCE_TYPE_KEYS:
+            level = int(levels_snapshot.get(key) or 1)
+            label = _dissonance_label(key)
+            multiplier = effective_multiplier(multiplier_level=level, wave=progress.wave)
+            metrics.append(
+                {
+                    "key": f"dissonance_{key}",
+                    "label": f"Dissonance {label}",
+                    "value": f"x{multiplier:.4f}",
+                    "numeric_value": float(multiplier),
+                    "unit": "multiplier",
+                    "chart_id": None,
+                }
+            )
 
     return metrics
 
@@ -2554,6 +2617,8 @@ def battle_history(request: HttpRequest) -> HttpResponse:
             preset_name = import_form.cleaned_data.get("preset_name") or None
             is_tournament_override = bool(import_form.cleaned_data.get("is_tournament") or False)
             tournament_rank = (import_form.cleaned_data.get("tournament_rank") or None)
+            is_dissonance_override = bool(import_form.cleaned_data.get("is_dissonance") or False)
+            dissonance_type = (import_form.cleaned_data.get("dissonance_type") or None)
             try:
                 _, created = ingest_battle_report(
                     raw_text,
@@ -2561,6 +2626,8 @@ def battle_history(request: HttpRequest) -> HttpResponse:
                     preset_name=preset_name,
                     is_tournament=is_tournament_override,
                     tournament_rank=tournament_rank,
+                    is_dissonance=is_dissonance_override,
+                    dissonance_type=dissonance_type,
                 )
             except Exception:
                 if settings.DEBUG:
@@ -2592,6 +2659,7 @@ def battle_history(request: HttpRequest) -> HttpResponse:
     highest_wave_by_tier = list(
         progress_qs.filter(tier__isnull=False, wave__isnull=False)
         .exclude(is_tournament=True)
+        .exclude(is_dissonance=True)
         .values("tier")
         .annotate(highest_wave=Max("wave"))
         .order_by("tier")
@@ -2682,6 +2750,8 @@ def battle_history(request: HttpRequest) -> HttpResponse:
         manual_tournament = bool(getattr(getattr(run, "run_progress", None), "is_tournament", False))
         progress = getattr(run, "run_progress", None)
         tournament_rank = getattr(progress, "tournament_rank", None) if progress else None
+        is_dissonance = bool(getattr(progress, "is_dissonance", False)) if progress else False
+        dissonance_type = getattr(progress, "dissonance_type", None) if progress else None
         battle_date_fallback = False
         battle_date_display = None
         recovery_packages_raw = None
@@ -2704,6 +2774,9 @@ def battle_history(request: HttpRequest) -> HttpResponse:
                     getattr(getattr(run, "run_progress", None), "real_time_seconds", None)
                 ),
                 "is_tournament": manual_tournament or is_tournament(run),
+                "is_dissonance": is_dissonance,
+                "dissonance_type": dissonance_type,
+                "dissonance_label": _dissonance_label(dissonance_type),
                 "tournament_bracket": tournament_bracket(run),
                 "tournament_rank": tournament_rank,
                 "recovery_packages_raw": recovery_packages_raw,
@@ -2718,6 +2791,7 @@ def battle_history(request: HttpRequest) -> HttpResponse:
             "battle_date": "run_progress__battle_date",
             "tier": "run_progress__tier",
             "tournament": "run_progress__is_tournament",
+            "dissonance": "run_progress__is_dissonance",
             "wave": "run_progress__wave",
             "killed_by": "run_progress__killed_by",
             "real_time": "run_progress__real_time_seconds",
@@ -2784,6 +2858,7 @@ def battle_history(request: HttpRequest) -> HttpResponse:
             "player_presets": Preset.objects.filter(player=player).order_by("name"),
             "highest_wave_by_tier": highest_wave_by_tier,
             "top_tournament_logs": top_tournament_logs,
+            "dissonance_bonus_rows": tier_bonus_rows(player=player),
             "tournament_summary_rank": tournament_summary_rank,
             "tournament_rank_choices": TOURNAMENT_RANK_CHOICES,
             "tournament_summary_query_items": tournament_summary_query_items,
@@ -2827,6 +2902,8 @@ def battle_report_modal(request: HttpRequest, report_id: int) -> JsonResponse:
             "tier": progress.tier if progress else None,
             "is_tournament": bool(progress.is_tournament) if progress else False,
             "tournament_rank": progress.tournament_rank if progress else None,
+            "is_dissonance": bool(progress.is_dissonance) if progress else False,
+            "dissonance_type": progress.dissonance_type if progress else None,
             "metrics": _battle_report_modal_metrics(progress),
         },
     }
@@ -2858,6 +2935,7 @@ def lifetime_stats_modal(request: HttpRequest) -> JsonResponse:
         "derived_metrics",
     )
     runs = _with_effective_battle_date(runs).order_by("effective_battle_date", "id")
+    runs = runs.exclude(run_progress__is_dissonance=True)
     if start_date:
         runs = runs.filter(effective_battle_date__date__gte=start_date)
     if end_date:
@@ -3577,13 +3655,18 @@ def cards(request: HttpRequest) -> HttpResponse:
                 player=player,
                 battle_report__is_hidden=False,
                 preset_id__isnull=False,
+                is_dissonance=False,
             )
             .values("preset_id")
             .annotate(run_count=Count("battle_report_id"))
         )
         if row["preset_id"] is not None
     }
-    total_visible_runs = BattleReport.objects.filter(player=player, is_hidden=False).count()
+    total_visible_runs = (
+        BattleReport.objects.filter(player=player, is_hidden=False)
+        .exclude(run_progress__is_dissonance=True)
+        .count()
+    )
 
     rows = []
     for card in cards:
@@ -4116,8 +4199,11 @@ def ultimate_weapon_progress(request: HttpRequest) -> HttpResponse:
                     )
                 ).order_by("effective_battle_date")
                 force_tournaments = bool(dto.context.tournament_filter)
-                if not dto.context.include_tournaments and not force_tournaments:
-                    runs_qs = runs_qs.exclude(Q(run_progress__tier__isnull=True) | Q(run_progress__is_tournament=True))
+                runs_qs = _exclude_special_runs(
+                    runs_qs,
+                    include_tournaments=bool(dto.context.include_tournaments or force_tournaments),
+                    include_dissonance=bool(dto.context.include_dissonance),
+                )
                 if not dto.context.include_hidden:
                     runs_qs = runs_qs.filter(is_hidden=False)
                 if dto.context.start_date:
@@ -5578,8 +5664,12 @@ def _filtered_runs(filter_form: ChartContextForm, *, player: Player) -> QuerySet
         snapshot_context and (snapshot_context.tournament_filter or snapshot_context.include_tournaments)
     )
     include_tournaments = bool(valid and (filter_form.cleaned_data.get("include_tournaments") or False))
-    if not include_tournaments and not force_tournaments:
-        runs = runs.exclude(Q(run_progress__tier__isnull=True) | Q(run_progress__is_tournament=True))
+    include_dissonance = bool(valid and (filter_form.cleaned_data.get("include_dissonance") or False))
+    runs = _exclude_special_runs(
+        runs,
+        include_tournaments=bool(include_tournaments or force_tournaments),
+        include_dissonance=include_dissonance,
+    )
     include_hidden = bool(valid and (filter_form.cleaned_data.get("include_hidden") or False))
     force_hidden = bool(snapshot_context and snapshot_context.include_hidden)
     if not include_hidden and not force_hidden:
@@ -5800,6 +5890,7 @@ def _snapshot_context_from_filter(snapshot: ChartSnapshot | None) -> ChartContex
             raw_context.get("excluded_preset_ids") or raw_context.get("exclude_presets")
         ),
         include_tournaments=_parse_context_bool(raw_context.get("include_tournaments")),
+        include_dissonance=_parse_context_bool(raw_context.get("include_dissonance")),
         include_hidden=_parse_context_bool(raw_context.get("include_hidden")),
         patch_boundaries=tuple(patch_boundaries),
     )
@@ -6262,8 +6353,12 @@ def _apply_explore_scope(
     force_tournaments = bool(
         snapshot_context and (snapshot_context.tournament_filter or snapshot_context.include_tournaments)
     )
-    if not force_tournaments:
-        runs = runs.exclude(Q(run_progress__tier__isnull=True) | Q(run_progress__is_tournament=True))
+    force_dissonance = bool(snapshot_context and snapshot_context.include_dissonance)
+    runs = _exclude_special_runs(
+        runs,
+        include_tournaments=force_tournaments,
+        include_dissonance=force_dissonance,
+    )
     include_hidden = bool(scope.include_hidden or (snapshot_context and snapshot_context.include_hidden))
     if not include_hidden:
         runs = runs.filter(is_hidden=False)
@@ -6780,8 +6875,12 @@ def _context_filtered_runs(filter_form: ChartContextForm, *, player: Player) -> 
         snapshot_context and (snapshot_context.tournament_filter or snapshot_context.include_tournaments)
     )
     include_tournaments = bool(valid and (filter_form.cleaned_data.get("include_tournaments") or False))
-    if not include_tournaments and not force_tournaments:
-        runs = runs.exclude(Q(run_progress__tier__isnull=True) | Q(run_progress__is_tournament=True))
+    include_dissonance = bool(valid and (filter_form.cleaned_data.get("include_dissonance") or False))
+    runs = _exclude_special_runs(
+        runs,
+        include_tournaments=bool(include_tournaments or force_tournaments),
+        include_dissonance=include_dissonance,
+    )
     include_hidden = bool(valid and (filter_form.cleaned_data.get("include_hidden") or False))
     force_hidden = bool(snapshot_context and snapshot_context.include_hidden)
     if not include_hidden and not force_hidden:

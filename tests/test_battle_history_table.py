@@ -8,7 +8,7 @@ import pytest
 from django.urls import reverse
 
 from core.services import ingest_battle_report
-from gamedata.models import BattleReport
+from gamedata.models import BattleReport, BattleReportProgress
 
 pytestmark = pytest.mark.integration
 
@@ -448,7 +448,7 @@ def test_battle_history_excludes_manual_tournaments_by_default(auth_client, play
     )
     response = auth_client.post(
         reverse("core:battle_history"),
-        data={"raw_text": raw_text, "is_tournament": "on", "tournament_rank": "gold"},
+        data={"raw_text": raw_text, "special_run": "tournament", "special_run_detail": "gold"},
         follow=True,
     )
     assert response.status_code == 200
@@ -461,6 +461,62 @@ def test_battle_history_excludes_manual_tournaments_by_default(auth_client, play
     response = auth_client.get(reverse("core:battle_history"), {"include_tournaments": "on"})
     assert response.status_code == 200
     assert "3656" in response.content.decode("utf-8")
+
+
+@pytest.mark.django_db
+def test_battle_history_shows_dissonance_badge_by_default(auth_client, player) -> None:
+    """Dissonance-tagged runs remain visible in Battle History with a Disco badge."""
+
+    raw_text = "\n".join(
+        [
+            "Battle Report",
+            "Battle Date\tApr 10, 2026 18:12",
+            "Real Time\t1h 0m 0s",
+            "Tier\t4",
+            "Wave\t1200",
+        ]
+    )
+
+    response = auth_client.post(
+        reverse("core:battle_history"),
+        data={"raw_text": raw_text, "special_run": "dissonance", "special_run_detail": "utility"},
+        follow=True,
+    )
+
+    assert response.status_code == 200
+    progress = BattleReportProgress.objects.get(player=player)
+    assert progress.is_dissonance is True
+    assert progress.dissonance_type == "utility"
+    assert any(row["is_dissonance"] for row in response.context["page_rows"])
+
+
+@pytest.mark.django_db
+def test_battle_history_duplicate_import_updates_dissonance_metadata(auth_client, player) -> None:
+    """Duplicate imports can apply Dissonance tagging metadata to an existing run."""
+
+    raw_text = "\n".join(
+        [
+            "Battle Report",
+            "Battle Date\tApr 10, 2026 18:12",
+            "Real Time\t1h 0m 0s",
+            "Tier\t4",
+            "Wave\t1200",
+        ]
+    )
+
+    first = auth_client.post(reverse("core:battle_history"), data={"raw_text": raw_text}, follow=True)
+    assert first.status_code == 200
+
+    second = auth_client.post(
+        reverse("core:battle_history"),
+        data={"raw_text": raw_text, "special_run": "dissonance", "special_run_detail": "attack"},
+        follow=True,
+    )
+    assert second.status_code == 200
+
+    progress = BattleReportProgress.objects.get(player=player)
+    assert progress.is_dissonance is True
+    assert progress.dissonance_type == "attack"
 
 
 def _report(*, battle_date: str, tier: str, wave: int) -> str:

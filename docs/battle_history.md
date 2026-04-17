@@ -20,17 +20,18 @@ Battle History helps you review your past runs in a table so you can compare res
 2. Select **Add Battle Report** to expand the import panel.
 3. Paste your Battle Report text into the import field.
 4. (Optional) Select a preset label to group runs by your own intent, or choose **Create new preset** and enter a new name (presets are unlocked via the in-game Lab Research “Card Presets”).
-5. (Optional) Enable **Tournament run** when this run was a tournament round.
-6. Select **Tournament rank** when **Tournament run** is enabled.
+5. (Optional) Select **Special run** when this run should be tagged as **Tournament** or **Dissonance**.
+6. Select the matching detail value. Tournament runs require a **Tournament rank**. Dissonance runs require a **Dissonance type**.
 7. Select **Import Battle Report**.
 8. Select values in **Filters** to narrow the table, including **Snapshot** when needed.
 9. Select **Columns** to choose which columns appear, then select **Save columns**.
 10. Select a column header to sort the table by that column.
 11. Use the **Hidden** column to mark a report as hidden when you want to exclude it from Charts and Explore by default.
 12. Select a run row to open the Battle Report Modal. For details, see [Battle Report Modal](battle_report_modal.md).
-13. Select **Query Explorer** to open Explore with your current filters.
-14. To change a run’s preset later, select a value in the **Preset** selector inside that row.
-15. To filter by a preset, select a value in **Preset** under **Filters**, or select a preset badge in the table.
+13. Select **Dissonance Bonus** to review the highest logged Dissonance boosts by tier and type.
+14. Select **Query Explorer** to open Explore with your current filters.
+15. To change a run’s preset later, select a value in the **Preset** selector inside that row.
+16. To filter by a preset, select a value in **Preset** under **Filters**, or select a preset badge in the table.
 
 ## How to Read the Results
 
@@ -51,6 +52,8 @@ Battle History helps you review your past runs in a table so you can compare res
 - **Top 3 Tournament Logs** shows your three best tournament-marked runs by highest wave.
 - **Tournament rank** in the tournament summary limits that widget to one recorded rank without changing the main table filters.
 - Tournament badges show **Tournament** with the recorded rank when available.
+- Dissonance badges show **Disco (type): tier** when a run was imported as a Dissonance run.
+- **Dissonance Bonus** summarizes the highest stored Dissonance boosts for each logged tier and type using the app’s progression tracking formula.
 - Selecting a column header toggles between ascending and descending order for that column.
 
 ## Notes & Limitations
@@ -65,19 +68,26 @@ Battle History helps you review your past runs in a table so you can compare res
 > Imported timestamps use UTC.
 
 > **Note**
-> Tournament rounds can be marked in-game without appearing in the copied Battle Report text. The app cannot detect tournament runs automatically from pasted text, so use **Tournament run** during import to exclude those runs from charts and history by default.
+> Tournament and Dissonance states are not detected automatically from pasted text. Use **Special run** during import when the copied Battle Report should be tagged as Tournament or Dissonance.
 
 > **Note**
-> Tournament rank is required when **Tournament run** is enabled. Older runs may show “Tournament” without a rank if they were imported before the rank field existed.
+> Tournament runs require a Tournament rank. Dissonance runs require a Dissonance type.
 
 > **Note**
-> Hidden reports remain visible in Battle History. Charts and Explore exclude them by default, while Lifetime Stats always include all stored reports.
+> Battle History continues to show Dissonance runs by default. Charts, Explore, Lifetime Stats, and some summary surfaces exclude them unless explicitly stated otherwise.
+
+> **Note**
+> Hidden reports remain visible in Battle History. Charts and Explore exclude them by default. Lifetime Stats also excludes Dissonance runs by default.
 
 > **Note**
 > **Highest Wave by Tier** and **Top 3 Tournament Logs** use all imported runs, not the current filter selections. Tournament runs only appear in the tournament summary when you marked them during import.
 
 > **Note**
 > The tournament rank selector only changes the **Top 3 Tournament Logs** summary card. It does not change the main Battle History table.
+
+> **Note**
+> The Dissonance Bonus table uses this formula for each stored Dissonance level:
+> `1 + (multiplier - 1) * (wave / 5000)^1.75`
 
 > **Caution**
 > This app does not invent or infer missing values.

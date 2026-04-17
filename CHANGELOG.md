@@ -2,6 +2,24 @@
 
 This project follows Semantic Versioning.
 
+## [0.14.0]
+
+### Added
+- Manual Dissonance run tagging for Battle History import and Charts quick import through a shared `Special run` selector.
+- Battle History Dissonance badges using the `Disco (type): tier` format.
+- Battle History Dissonance Bonus modal with per-tier, per-type progression rows and the documented boost formula.
+- Stored per-player Dissonance progression snapshots by tier and type for future run context and modal display.
+
+### Changed
+- Battle Report import now uses a shared `Special run` dropdown plus a dependent detail dropdown instead of a tournament-only checkbox flow.
+- Charts now include a dedicated `Dissonance` toggle alongside `Include tournaments` and `Include hidden`.
+- Battle History keeps Dissonance-tagged runs visible by default while Charts, Explore, Lifetime Stats, and Dissonance-sensitive summaries exclude them by default.
+- Cards usage summaries now exclude Dissonance-tagged runs from their visible-run denominator.
+- README and user documentation now describe Dissonance tagging, Dissonance chart scoping, and the app formula used to display Dissonance boosts.
+
+### Fixed
+- Duplicate Battle Report reimports can now apply Dissonance metadata to an existing stored run.
+
 ## [0.13.0]
 
 ### Added

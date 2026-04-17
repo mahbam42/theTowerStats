@@ -123,6 +123,12 @@
           </div>
           <div class="cell shrink">
             <label class="margin-bottom-0">
+              {{ chart_form.include_dissonance }}
+              {{ chart_form.include_dissonance.label }}
+            </label>
+          </div>
+          <div class="cell shrink">
+            <label class="margin-bottom-0">
               {{ chart_form.include_hidden }}
               {{ chart_form.include_hidden.label }}
             </label>
@@ -432,18 +438,16 @@
                   {% endif %}
                 </label>
                 <p class="help-text muted">Select "Create new preset" to enter a new name.</p>
-                <label>
-                  {{ import_form.is_tournament }}
-                  {{ import_form.is_tournament.label }}
-                  <span class="help-text">Tournament runs cannot be detected automatically from pasted text.</span>
-                  {% if import_form.is_tournament.errors %}
-                    <span class="form-error is-visible">{{ import_form.is_tournament.errors|striptags }}</span>
+                <label>{{ import_form.special_run.label }}
+                  {{ import_form.special_run }}
+                  {% if import_form.special_run.errors %}
+                    <span class="form-error is-visible">{{ import_form.special_run.errors|striptags }}</span>
                   {% endif %}
                 </label>
-                <label>Tournament rank
-                  {{ import_form.tournament_rank }}
-                  {% if import_form.tournament_rank.errors %}
-                    <span class="form-error is-visible">{{ import_form.tournament_rank.errors|striptags }}</span>
+                <label>{{ import_form.special_run_detail.label }}
+                  {{ import_form.special_run_detail }}
+                  {% if import_form.special_run_detail.errors %}
+                    <span class="form-error is-visible">{{ import_form.special_run_detail.errors|striptags }}</span>
                   {% endif %}
                 </label>
                 <button class="button expanded" type="submit">Import Battle Report</button>

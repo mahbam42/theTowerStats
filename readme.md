@@ -42,6 +42,8 @@ Guiding principles:
 - Paste raw **Battle Report** text directly from the game
 - Automatic deduplication (no accidental double imports)
 - Gracefully handles new or unknown stat labels after game updates
+- Shared `Special run` tagging for Tournament and Dissonance imports
+- Battle History Dissonance badges plus a Dissonance Bonus overview modal
 - Each signed-in account is isolated; your imports are scoped to your user.
 - Optional Recovery Packages column in Battle History (hidden by default).
 
@@ -50,6 +52,7 @@ Guiding principles:
 - Coins per hour and other precomputed series (no client-side math)
 - Per-hour metrics for cells, reroll shards, and enemies destroyed
 - Filter charts by **date range**, **tier**, **preset**, **patch boundary windows**, and overlays
+- Dedicated Dissonance toggle to isolate logged Dissonance runs on Charts
 - Exclude one or more presets to remove runs from the chart scope
 - Save ordered favorite charts and reusable Chart Builder entries per player
 - Apply snapshot filters and past-N-run scopes alongside date ranges
@@ -65,6 +68,7 @@ Guiding principles:
 
 - Build player-authored queries to aggregate run metrics without changing Battle History
 - Use the Explore DSL to filter, group, and summarize your imported runs (including patch boundary windows)
+- Explore excludes Dissonance runs by default in the current release
 - Preview Explore output in the Query Explorer modal from Battle History or Charts
 - Save named Explore queries for reuse
 - Use shared Query Templates as starter queries and reopen them after successful runs when needed
@@ -73,6 +77,7 @@ Guiding principles:
 ### 📈 Lifetime Stats
 
 - Review economy, combat, and utility totals across all runs or a selected date window
+- Dissonance-tagged runs stay out of Lifetime Stats by default
 - Use Lifetime Stats as a quick metric reference before deeper Explore analysis
 
 ### 🧮 Calculator Tools
@@ -141,8 +146,8 @@ This app is about:
 
 ## Current Progress
 
-- Current development: **v0.12.0**
-- Latest release: **v0.12.0**
+- Current development: **v0.14.0**
+- Latest release: **v0.14.0**
 - Changelog: `CHANGELOG.md`
 - Stable: Battle Report import, Battle History, Charts (including snapshots and compare scopes), Explore, Lifetime Stats, Calculator Tools, and collection progress dashboards
 - Multi-user: Each signed-in account has its own isolated dataset

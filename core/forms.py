@@ -26,8 +26,19 @@ from core.charting.builder import (
 )
 from core.tournament import parse_tier_or_tournament, tier_filter_value, tournament_filter_value
 from definitions.models import BotDefinition, GuardianChipDefinition, PatchBoundary, UltimateWeaponDefinition
-from gamedata.models import BattleReport, BattleReportProgress, TOURNAMENT_RANK_CHOICES
+from gamedata.models import (
+    BattleReport,
+    BattleReportProgress,
+    DISSONANCE_TYPE_CHOICES,
+    TOURNAMENT_RANK_CHOICES,
+)
 from player_state.models import ChartSnapshot, GoalType, Player, Preset
+
+SPECIAL_RUN_CHOICES: tuple[tuple[str, str], ...] = (
+    ("", "None"),
+    ("tournament", "Tournament"),
+    ("dissonance", "Dissonance"),
+)
 
 
 class BattleReportImportForm(forms.Form):
@@ -57,16 +68,17 @@ class BattleReportImportForm(forms.Form):
         label="New preset name",
         help_text='Use when "Create new preset" is selected.',
     )
-    is_tournament = forms.BooleanField(
+    special_run = forms.ChoiceField(
         required=False,
-        label="Tournament run",
-        help_text="Enable when this run was a tournament round but the pasted report text does not indicate it.",
+        choices=SPECIAL_RUN_CHOICES,
+        label="Special run",
+        help_text="Use when the pasted Battle Report should be tagged as Tournament or Dissonance.",
     )
-    tournament_rank = forms.ChoiceField(
+    special_run_detail = forms.ChoiceField(
         required=False,
-        choices=(("", "Select a rank"),) + TOURNAMENT_RANK_CHOICES,
-        label="Tournament rank",
-        help_text="Required when Tournament run is enabled.",
+        choices=(("", "Select a value"),),
+        label="Special run detail",
+        help_text="Tournament runs require a rank. Dissonance runs require a Dissonance type.",
     )
 
     def __init__(self, *args: object, player: Player | None = None, **kwargs: object) -> None:
@@ -74,6 +86,9 @@ class BattleReportImportForm(forms.Form):
 
         super().__init__(*args, **kwargs)
         self.fields["preset_name"].choices = self._preset_choices(player)
+        self._apply_special_run_detail_choices(
+            special_run=str(self.data.get("special_run") or self.initial.get("special_run") or "")
+        )
 
     def _preset_choices(self, player: Player | None) -> tuple[tuple[str, str], ...]:
         """Return preset dropdown choices for the provided player."""
@@ -120,7 +135,7 @@ class BattleReportImportForm(forms.Form):
         return raw_text
 
     def clean(self) -> dict[str, object]:
-        """Validate tournament metadata requirements and preset selection."""
+        """Validate special-run metadata requirements and preset selection."""
 
         cleaned = super().clean()
         preset_choice = (cleaned.get("preset_name") or "").strip()
@@ -133,13 +148,51 @@ class BattleReportImportForm(forms.Form):
         elif new_preset_name:
             cleaned["new_preset_name"] = ""
 
-        is_tournament = bool(cleaned.get("is_tournament"))
-        tournament_rank = (cleaned.get("tournament_rank") or "").strip()
-        if is_tournament and not tournament_rank:
-            self.add_error("tournament_rank", "Select a tournament rank.")
-        if not is_tournament:
+        special_run = str(cleaned.get("special_run") or "").strip()
+        detail = str(cleaned.get("special_run_detail") or "").strip()
+        cleaned["is_tournament"] = special_run == "tournament"
+        cleaned["is_dissonance"] = special_run == "dissonance"
+        if special_run == "tournament":
+            valid_ranks = {key for key, _ in TOURNAMENT_RANK_CHOICES}
+            if detail not in valid_ranks:
+                self.add_error("special_run_detail", "Select a tournament rank.")
+            cleaned["tournament_rank"] = detail
+            cleaned["dissonance_type"] = ""
+        elif special_run == "dissonance":
+            valid_types = {key for key, _ in DISSONANCE_TYPE_CHOICES}
+            if detail not in valid_types:
+                self.add_error("special_run_detail", "Select a Dissonance type.")
             cleaned["tournament_rank"] = ""
+            cleaned["dissonance_type"] = detail
+        else:
+            cleaned["special_run_detail"] = ""
+            cleaned["tournament_rank"] = ""
+            cleaned["dissonance_type"] = ""
         return cleaned
+
+    def _apply_special_run_detail_choices(self, *, special_run: str) -> None:
+        """Populate the dependent detail dropdown for the selected special run.
+
+        Args:
+            special_run: Selected special-run mode from bound data or initial
+                values.
+        """
+
+        if special_run == "tournament":
+            self.fields["special_run_detail"].choices = (("", "Select a rank"),) + TOURNAMENT_RANK_CHOICES
+            self.fields["special_run_detail"].label = "Tournament rank"
+            self.fields["special_run_detail"].help_text = "Required when Special run is Tournament."
+            return
+        if special_run == "dissonance":
+            self.fields["special_run_detail"].choices = (("", "Select a type"),) + DISSONANCE_TYPE_CHOICES
+            self.fields["special_run_detail"].label = "Dissonance type"
+            self.fields["special_run_detail"].help_text = "Required when Special run is Dissonance."
+            return
+        self.fields["special_run_detail"].choices = (("", "Select a value"),)
+        self.fields["special_run_detail"].label = "Special run detail"
+        self.fields["special_run_detail"].help_text = (
+            "Tournament runs require a rank. Dissonance runs require a Dissonance type."
+        )
 
 
 class PatchBoundaryMultipleChoiceField(forms.ModelMultipleChoiceField):
@@ -228,6 +281,11 @@ class ChartContextForm(forms.Form):
         required=False,
         label="Include tournaments",
         help_text="By default, tournament runs are excluded from analytics and charts.",
+    )
+    include_dissonance = forms.BooleanField(
+        required=False,
+        label="Dissonance",
+        help_text="Show only Dissonance-tagged runs in charts.",
     )
     include_hidden = forms.BooleanField(
         required=False,
@@ -383,6 +441,9 @@ class ChartContextForm(forms.Form):
         self.fields["include_hidden"].widget.attrs["title"] = (
             "Include Battle Reports marked as hidden."
         )
+        self.fields["include_dissonance"].widget.attrs["title"] = (
+            "Show only Dissonance-tagged runs in charts."
+        )
         self.fields["window_kind"].widget.attrs["title"] = (
             "Limit the chart scope to the most recent runs or days after other filters."
         )
@@ -504,6 +565,8 @@ class BattleHistoryFilterForm(forms.Form):
             ("run_progress__tier", "Tier (low → high)"),
             ("-run_progress__is_tournament", "Tournament (Yes → No)"),
             ("run_progress__is_tournament", "Tournament (No → Yes)"),
+            ("-run_progress__is_dissonance", "Dissonance (Yes → No)"),
+            ("run_progress__is_dissonance", "Dissonance (No → Yes)"),
             ("-is_hidden", "Hidden (Yes → No)"),
             ("is_hidden", "Hidden (No → Yes)"),
             ("-run_progress__wave", "Wave (high → low)"),

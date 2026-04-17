@@ -218,6 +218,46 @@ def test_lifetime_stats_modal_returns_totals(auth_client, player) -> None:
 
 
 @pytest.mark.django_db
+def test_lifetime_stats_excludes_dissonance_runs_by_default(auth_client, player) -> None:
+    """Lifetime Stats omits Dissonance-tagged runs from the default totals."""
+
+    raw_text = "Battle Report\nDamage dealt\t100\n"
+    _create_report(
+        player=player,
+        raw_text=raw_text,
+        battle_date=datetime(2026, 4, 10, 12, 0, tzinfo=timezone.utc),
+        coins=1000,
+        cash=0,
+        interest=0,
+        cells=0,
+        reroll_shards=0,
+        wave=100,
+        real_time_seconds=3600,
+    )
+    dissonance = _create_report(
+        player=player,
+        raw_text=raw_text,
+        battle_date=datetime(2026, 4, 11, 12, 0, tzinfo=timezone.utc),
+        coins=4000,
+        cash=0,
+        interest=0,
+        cells=0,
+        reroll_shards=0,
+        wave=100,
+        real_time_seconds=3600,
+    )
+    dissonance.run_progress.is_dissonance = True
+    dissonance.run_progress.dissonance_type = "attack"
+    dissonance.run_progress.save()
+
+    response = auth_client.get(reverse("core:lifetime_stats_modal"))
+
+    assert response.status_code == 200
+    payload = response.json()
+    assert _metric_value(payload, "coins_earned") == 1000.0
+
+
+@pytest.mark.django_db
 def test_lifetime_stats_modal_applies_custom_date_range(auth_client, player) -> None:
     """Custom date ranges scope Lifetime Stats results."""
 
