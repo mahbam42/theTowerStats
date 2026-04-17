@@ -68,6 +68,7 @@ from analysis.series_registry import DEFAULT_REGISTRY, allowed_chart_builder_agg
 from core.demo import DEMO_USERNAME, demo_mode_enabled, get_demo_player, set_demo_mode
 from core.changelog import latest_changelog_summary
 from core.dissonance import effective_multiplier, tier_bonus_rows
+from core.dissonance import rebuild_dissonance_progression
 from core.parsers.battle_report import battle_date_is_fallback
 from core.advice import (
     AdviceItem,
@@ -102,6 +103,7 @@ from core.forms import (
     BattleHistoryColumnPreferenceForm,
     BattleHistoryFilterForm,
     BattleHistoryPresetUpdateForm,
+    BattleReportSpecialRunUpdateForm,
     BattleReportImportForm,
     CardInventoryUpdateForm,
     CardPresetBulkUpdateForm,
@@ -1073,6 +1075,9 @@ def dashboard(request: HttpRequest) -> HttpResponse:
         "event_window_end": chart_form.cleaned_data.get("end_date"),
         "walkthrough_enabled": walkthrough_enabled,
         "walkthrough_changelog_url": WALKTHROUGH_CHANGELOG_URL,
+        "battle_report_special_run_options_json": json.dumps(
+            _battle_report_special_run_options_payload()
+        ),
     }
     return render(request, "core/dashboard.html", context)
 
@@ -1809,6 +1814,71 @@ def _battle_report_modal_metrics(progress: BattleReportProgress | None) -> list[
             )
 
     return metrics
+
+
+def _battle_report_special_run_options_payload() -> dict[str, object]:
+    """Return special-run option metadata for the Battle Report modal."""
+
+    return {
+        "special_runs": [
+            {"value": str(value), "label": str(label)}
+            for value, label in (
+                ("", "None"),
+                ("tournament", "Tournament"),
+                ("dissonance", "Dissonance"),
+            )
+        ],
+        "details": {
+            "tournament": [
+                {"value": str(value), "label": str(label)}
+                for value, label in TOURNAMENT_RANK_CHOICES
+            ],
+            "dissonance": [
+                {"value": str(value), "label": str(label)}
+                for value, label in DISSONANCE_TYPE_CHOICES
+            ],
+        },
+    }
+
+
+def _battle_report_modal_payload(*, player: Player, report: BattleReport) -> dict[str, object]:
+    """Serialize one Battle Report for the modal API response."""
+
+    run_numbers = _run_numbers_by_report_id(player=player)
+    progress = getattr(report, "run_progress", None)
+    battle_date_fallback = battle_date_is_fallback(report.raw_text or "")
+    special_run = ""
+    special_run_detail = ""
+    if progress is not None:
+        if progress.is_tournament:
+            special_run = "tournament"
+            special_run_detail = str(progress.tournament_rank or "")
+        elif progress.is_dissonance:
+            special_run = "dissonance"
+            special_run_detail = str(progress.dissonance_type or "")
+
+    return {
+        "id": report.id,
+        "run_number": run_numbers.get(report.id),
+        "raw_text": report.raw_text,
+        "battle_date": progress.battle_date.isoformat() if progress and progress.battle_date else None,
+        "battle_date_fallback": battle_date_fallback,
+        "parsed_at": report.parsed_at.isoformat() if report.parsed_at else None,
+        "tier": progress.tier if progress else None,
+        "is_tournament": bool(progress.is_tournament) if progress else False,
+        "tournament_rank": progress.tournament_rank if progress else None,
+        "tournament_rank_label": (
+            dict(TOURNAMENT_RANK_CHOICES).get(str(progress.tournament_rank or ""), "")
+            if progress
+            else ""
+        ),
+        "is_dissonance": bool(progress.is_dissonance) if progress else False,
+        "dissonance_type": progress.dissonance_type if progress else None,
+        "dissonance_type_label": _dissonance_label(progress.dissonance_type) if progress else "",
+        "special_run": special_run,
+        "special_run_detail": special_run_detail,
+        "metrics": _battle_report_modal_metrics(progress),
+    }
 
 
 def _favorite_chart_ids(*, player: Player, available_ids: set[str]) -> list[str]:
@@ -2869,6 +2939,9 @@ def battle_history(request: HttpRequest) -> HttpResponse:
             "current_sort": sort_key,
             "killed_by_donut_json": killed_by_donut_json,
             "battle_report_order_json": battle_report_order_json,
+            "battle_report_special_run_options_json": json.dumps(
+                _battle_report_special_run_options_payload()
+            ),
             "explore_modal_dsl": explore_modal_dsl,
         },
     )
@@ -2878,8 +2951,14 @@ def battle_history(request: HttpRequest) -> HttpResponse:
 def battle_report_modal(request: HttpRequest, report_id: int) -> JsonResponse:
     """Return Battle Report modal payload scoped to the requesting player."""
 
-    if request.method != "GET":
+    if request.method not in {"GET", "POST"}:
         return JsonResponse({"ok": False, "error": "Method not allowed."}, status=405)
+
+    if request.method == "POST" and demo_mode_enabled(request):
+        return JsonResponse(
+            {"ok": False, "error": "Demo mode is read-only. Exit demo mode to make changes."},
+            status=403,
+        )
 
     player = _request_player(request)
     try:
@@ -2887,27 +2966,27 @@ def battle_report_modal(request: HttpRequest, report_id: int) -> JsonResponse:
     except BattleReport.DoesNotExist:
         return JsonResponse({"ok": False, "error": "Battle Report not found."}, status=404)
 
-    run_numbers = _run_numbers_by_report_id(player=player)
-    progress = getattr(report, "run_progress", None)
-    battle_date_fallback = battle_date_is_fallback(report.raw_text or "")
-    payload = {
-        "ok": True,
-        "report": {
-            "id": report.id,
-            "run_number": run_numbers.get(report.id),
-            "raw_text": report.raw_text,
-            "battle_date": progress.battle_date.isoformat() if progress and progress.battle_date else None,
-            "battle_date_fallback": battle_date_fallback,
-            "parsed_at": report.parsed_at.isoformat() if report.parsed_at else None,
-            "tier": progress.tier if progress else None,
-            "is_tournament": bool(progress.is_tournament) if progress else False,
-            "tournament_rank": progress.tournament_rank if progress else None,
-            "is_dissonance": bool(progress.is_dissonance) if progress else False,
-            "dissonance_type": progress.dissonance_type if progress else None,
-            "metrics": _battle_report_modal_metrics(progress),
-        },
-    }
-    return JsonResponse(payload)
+    if request.method == "POST":
+        progress = getattr(report, "run_progress", None)
+        if progress is None:
+            return JsonResponse({"ok": False, "error": "Battle Report progress not found."}, status=404)
+
+        form = BattleReportSpecialRunUpdateForm(request.POST)
+        if not form.is_valid():
+            return JsonResponse(
+                {"ok": False, "errors": form.errors.get_json_data()},
+                status=400,
+            )
+
+        progress.is_tournament = bool(form.cleaned_data.get("is_tournament") or False)
+        progress.tournament_rank = form.cleaned_data.get("tournament_rank") or None
+        progress.is_dissonance = bool(form.cleaned_data.get("is_dissonance") or False)
+        progress.dissonance_type = form.cleaned_data.get("dissonance_type") or None
+        progress.save()
+        rebuild_dissonance_progression(player=player)
+        report.refresh_from_db()
+
+    return JsonResponse({"ok": True, "report": _battle_report_modal_payload(player=player, report=report)})
 
 
 @login_required

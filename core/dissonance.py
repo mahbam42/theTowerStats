@@ -5,7 +5,7 @@ from __future__ import annotations
 from decimal import Decimal, ROUND_HALF_UP
 import math
 
-from gamedata.models import DISSONANCE_TYPE_KEYS, PlayerDissonanceTierBoost
+from gamedata.models import BattleReportProgress, DISSONANCE_TYPE_KEYS, PlayerDissonanceTierBoost
 from player_state.models import Player
 
 
@@ -144,3 +144,71 @@ def tier_bonus_rows(*, player: Player) -> list[dict[str, object]]:
             }
         )
     return rows
+
+
+def rebuild_dissonance_progression(*, player: Player) -> None:
+    """Recompute Dissonance snapshots and boost summaries for one player.
+
+    Args:
+        player: Owning player whose saved runs should be replayed in order.
+
+    Returns:
+        None.
+    """
+
+    PlayerDissonanceTierBoost.objects.filter(player=player).delete()
+
+    progresses = (
+        BattleReportProgress.objects.filter(player=player)
+        .select_related("battle_report")
+        .order_by("battle_date", "battle_report__parsed_at", "id")
+    )
+    levels_by_tier: dict[int, dict[str, int]] = {}
+    boost_rows: dict[tuple[int, str], PlayerDissonanceTierBoost] = {}
+
+    for progress in progresses:
+        snapshot = default_dissonance_levels()
+        if progress.tier is not None:
+            snapshot.update(levels_by_tier.get(int(progress.tier), {}))
+        if progress.dissonance_levels_snapshot != snapshot:
+            BattleReportProgress.objects.filter(id=progress.id).update(
+                dissonance_levels_snapshot=snapshot
+            )
+
+        if not progress.is_dissonance or progress.tier is None or not progress.dissonance_type:
+            continue
+
+        tier = int(progress.tier)
+        dissonance_type = str(progress.dissonance_type)
+        tier_levels = levels_by_tier.setdefault(tier, default_dissonance_levels())
+        next_level = max(int(tier_levels.get(dissonance_type) or DEFAULT_DISSONANCE_LEVEL), DEFAULT_DISSONANCE_LEVEL) + 1
+        tier_levels[dissonance_type] = next_level
+
+        multiplier = effective_multiplier(multiplier_level=next_level, wave=progress.wave)
+        key = (tier, dissonance_type)
+        row = boost_rows.get(key)
+        if row is None:
+            row = PlayerDissonanceTierBoost(
+                player=player,
+                tier=tier,
+                dissonance_type=dissonance_type,
+                current_level=next_level,
+                highest_effective_multiplier=multiplier,
+                top_effective_multipliers=[float(multiplier)],
+            )
+            boost_rows[key] = row
+            continue
+
+        row.current_level = next_level
+        history = [
+            float(value)
+            for value in row.top_effective_multipliers
+            if isinstance(value, (int, float))
+        ]
+        history.append(float(multiplier))
+        row.top_effective_multipliers = sorted(history, reverse=True)[:3]
+        if multiplier > row.highest_effective_multiplier:
+            row.highest_effective_multiplier = multiplier
+
+    if boost_rows:
+        PlayerDissonanceTierBoost.objects.bulk_create(boost_rows.values())

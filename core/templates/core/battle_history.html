@@ -252,7 +252,7 @@
                     aria-label="Open Battle Report modal"
                   >
                     {% for column in visible_column_views %}
-                      <td>
+                      <td data-column-key="{{ column.key }}">
                         {% if column.key == "run_number" %}
                           {{ row.run_number|default:"—" }}
                         {% elif column.key == "battle_date" %}
@@ -449,6 +449,7 @@
   {% endif %}
 
   <script type="application/json" id="battle-report-order">{{ battle_report_order_json|safe }}</script>
+  <script type="application/json" id="battle-report-special-run-options">{{ battle_report_special_run_options_json|safe }}</script>
 
   <div
     class="modal-backdrop"
@@ -475,6 +476,27 @@
       <div class="margin-top-1">
         <h5 class="margin-bottom-0">Metrics</h5>
         <div class="battle-report-metrics" id="battle-report-metrics"></div>
+      </div>
+
+      <div class="margin-top-1">
+        <h5 class="margin-bottom-0">Special Run</h5>
+        <form class="battle-report-tag-form stacked margin-top-1" id="battle-report-tag-form">
+          {% csrf_token %}
+          <div class="battle-report-tag-grid">
+            <label class="margin-0">
+              Special run
+              <select id="battle-report-special-run" name="special_run"></select>
+            </label>
+            <label class="margin-0">
+              <span id="battle-report-special-run-detail-label">Special run detail</span>
+              <select id="battle-report-special-run-detail" name="special_run_detail"></select>
+            </label>
+          </div>
+          <div class="battle-report-tag-actions">
+            <button class="button" type="submit" id="battle-report-tag-save">Save tag</button>
+            <p class="muted margin-0" id="battle-report-tag-status" role="status" aria-live="polite"></p>
+          </div>
+        </form>
       </div>
 
       <div class="margin-top-1">

@@ -933,6 +933,36 @@ textarea:active {
   color: var(--tts-color-text-muted);
 }
 
+.battle-report-tag-form {
+  gap: var(--tts-space-2);
+}
+
+.battle-report-tag-grid {
+  display: grid;
+  gap: var(--tts-space-2);
+}
+
+@media (min-width: 720px) {
+  .battle-report-tag-grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+}
+
+.battle-report-tag-grid select {
+  margin-bottom: 0;
+}
+
+.battle-report-tag-actions {
+  display: flex;
+  align-items: center;
+  gap: var(--tts-space-2);
+  flex-wrap: wrap;
+}
+
+.dissonance-row {
+  background: rgba(51, 133, 255, 0.08);
+}
+
 .lifetime-stats-shell {
   width: min(1000px, 100%);
 }

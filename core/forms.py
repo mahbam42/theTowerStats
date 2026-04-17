@@ -10,7 +10,7 @@ from __future__ import annotations
 from datetime import date
 import json
 import re
-from typing import Iterable
+from typing import Callable, Iterable
 
 from django import forms
 
@@ -39,6 +39,72 @@ SPECIAL_RUN_CHOICES: tuple[tuple[str, str], ...] = (
     ("tournament", "Tournament"),
     ("dissonance", "Dissonance"),
 )
+
+
+def apply_special_run_detail_field(field: forms.ChoiceField, *, special_run: str) -> None:
+    """Configure the dependent special-run detail field.
+
+    Args:
+        field: ChoiceField instance to update in place.
+        special_run: Selected special-run mode.
+
+    Returns:
+        None.
+    """
+
+    if special_run == "tournament":
+        field.choices = (("", "Select a rank"),) + TOURNAMENT_RANK_CHOICES
+        field.label = "Tournament rank"
+        field.help_text = "Required when Special run is Tournament."
+        return
+    if special_run == "dissonance":
+        field.choices = (("", "Select a type"),) + DISSONANCE_TYPE_CHOICES
+        field.label = "Dissonance type"
+        field.help_text = "Required when Special run is Dissonance."
+        return
+    field.choices = (("", "Select a value"),)
+    field.label = "Special run detail"
+    field.help_text = (
+        "Tournament runs require a rank. Dissonance runs require a Dissonance type."
+    )
+
+
+def clean_special_run_selection(
+    cleaned: dict[str, object],
+    *,
+    add_error: Callable[[str | None, str], None],
+) -> dict[str, object]:
+    """Validate and normalize special-run mode fields.
+
+    Args:
+        cleaned: Form cleaned-data mapping to mutate.
+        add_error: Bound form ``add_error`` method.
+
+    Returns:
+        Updated cleaned-data mapping including normalized special-run fields.
+    """
+
+    special_run = str(cleaned.get("special_run") or "").strip()
+    detail = str(cleaned.get("special_run_detail") or "").strip()
+    cleaned["is_tournament"] = special_run == "tournament"
+    cleaned["is_dissonance"] = special_run == "dissonance"
+    if special_run == "tournament":
+        valid_ranks = {key for key, _ in TOURNAMENT_RANK_CHOICES}
+        if detail not in valid_ranks:
+            add_error("special_run_detail", "Select a tournament rank.")
+        cleaned["tournament_rank"] = detail
+        cleaned["dissonance_type"] = ""
+    elif special_run == "dissonance":
+        valid_types = {key for key, _ in DISSONANCE_TYPE_CHOICES}
+        if detail not in valid_types:
+            add_error("special_run_detail", "Select a Dissonance type.")
+        cleaned["tournament_rank"] = ""
+        cleaned["dissonance_type"] = detail
+    else:
+        cleaned["special_run_detail"] = ""
+        cleaned["tournament_rank"] = ""
+        cleaned["dissonance_type"] = ""
+    return cleaned
 
 
 class BattleReportImportForm(forms.Form):
@@ -148,27 +214,7 @@ class BattleReportImportForm(forms.Form):
         elif new_preset_name:
             cleaned["new_preset_name"] = ""
 
-        special_run = str(cleaned.get("special_run") or "").strip()
-        detail = str(cleaned.get("special_run_detail") or "").strip()
-        cleaned["is_tournament"] = special_run == "tournament"
-        cleaned["is_dissonance"] = special_run == "dissonance"
-        if special_run == "tournament":
-            valid_ranks = {key for key, _ in TOURNAMENT_RANK_CHOICES}
-            if detail not in valid_ranks:
-                self.add_error("special_run_detail", "Select a tournament rank.")
-            cleaned["tournament_rank"] = detail
-            cleaned["dissonance_type"] = ""
-        elif special_run == "dissonance":
-            valid_types = {key for key, _ in DISSONANCE_TYPE_CHOICES}
-            if detail not in valid_types:
-                self.add_error("special_run_detail", "Select a Dissonance type.")
-            cleaned["tournament_rank"] = ""
-            cleaned["dissonance_type"] = detail
-        else:
-            cleaned["special_run_detail"] = ""
-            cleaned["tournament_rank"] = ""
-            cleaned["dissonance_type"] = ""
-        return cleaned
+        return clean_special_run_selection(cleaned, add_error=self.add_error)
 
     def _apply_special_run_detail_choices(self, *, special_run: str) -> None:
         """Populate the dependent detail dropdown for the selected special run.
@@ -178,21 +224,7 @@ class BattleReportImportForm(forms.Form):
                 values.
         """
 
-        if special_run == "tournament":
-            self.fields["special_run_detail"].choices = (("", "Select a rank"),) + TOURNAMENT_RANK_CHOICES
-            self.fields["special_run_detail"].label = "Tournament rank"
-            self.fields["special_run_detail"].help_text = "Required when Special run is Tournament."
-            return
-        if special_run == "dissonance":
-            self.fields["special_run_detail"].choices = (("", "Select a type"),) + DISSONANCE_TYPE_CHOICES
-            self.fields["special_run_detail"].label = "Dissonance type"
-            self.fields["special_run_detail"].help_text = "Required when Special run is Dissonance."
-            return
-        self.fields["special_run_detail"].choices = (("", "Select a value"),)
-        self.fields["special_run_detail"].label = "Special run detail"
-        self.fields["special_run_detail"].help_text = (
-            "Tournament runs require a rank. Dissonance runs require a Dissonance type."
-        )
+        apply_special_run_detail_field(self.fields["special_run_detail"], special_run=special_run)
 
 
 class PatchBoundaryMultipleChoiceField(forms.ModelMultipleChoiceField):
@@ -688,6 +720,36 @@ class BattleHistoryPresetUpdateForm(forms.Form):
         player: Player = kwargs.pop("player")
         super().__init__(*args, **kwargs)
         self.fields["preset"].queryset = Preset.objects.filter(player=player).order_by("name")
+
+
+class BattleReportSpecialRunUpdateForm(forms.Form):
+    """Validate special-run updates for an existing Battle Report."""
+
+    special_run = forms.ChoiceField(
+        required=False,
+        choices=SPECIAL_RUN_CHOICES,
+        label="Special run",
+        help_text="Tag this saved run as Tournament or Dissonance.",
+    )
+    special_run_detail = forms.ChoiceField(
+        required=False,
+        choices=(("", "Select a value"),),
+        label="Special run detail",
+        help_text="Tournament runs require a rank. Dissonance runs require a Dissonance type.",
+    )
+
+    def __init__(self, *args: object, **kwargs: object) -> None:
+        """Populate the dependent detail dropdown from bound or initial data."""
+
+        super().__init__(*args, **kwargs)
+        special_run = str(self.data.get("special_run") or self.initial.get("special_run") or "")
+        apply_special_run_detail_field(self.fields["special_run_detail"], special_run=special_run)
+
+    def clean(self) -> dict[str, object]:
+        """Validate special-run metadata requirements for the update flow."""
+
+        cleaned = super().clean()
+        return clean_special_run_selection(cleaned, add_error=self.add_error)
 
 
 class CardsFilterForm(forms.Form):

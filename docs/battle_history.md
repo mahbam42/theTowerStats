@@ -68,7 +68,7 @@ Battle History helps you review your past runs in a table so you can compare res
 > Imported timestamps use UTC.
 
 > **Note**
-> Tournament and Dissonance states are not detected automatically from pasted text. Use **Special run** during import when the copied Battle Report should be tagged as Tournament or Dissonance.
+> Tournament and Dissonance states are not detected automatically from pasted text. Use **Special run** during import, or update the saved run later from the **Battle Report Modal**, when the copied Battle Report should be tagged as Tournament or Dissonance.
 
 > **Note**
 > Tournament runs require a Tournament rank. Dissonance runs require a Dissonance type.
@@ -80,7 +80,7 @@ Battle History helps you review your past runs in a table so you can compare res
 > Hidden reports remain visible in Battle History. Charts and Explore exclude them by default. Lifetime Stats also excludes Dissonance runs by default.
 
 > **Note**
-> **Highest Wave by Tier** and **Top 3 Tournament Logs** use all imported runs, not the current filter selections. Tournament runs only appear in the tournament summary when you marked them during import.
+> **Highest Wave by Tier** and **Top 3 Tournament Logs** use all imported runs, not the current filter selections. Tournament runs only appear in the tournament summary when they are tagged as Tournament.
 
 > **Note**
 > The tournament rank selector only changes the **Top 3 Tournament Logs** summary card. It does not change the main Battle History table.

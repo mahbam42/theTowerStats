@@ -38,6 +38,8 @@ def test_battle_history_renders_import_widget_and_sort_links(auth_client, player
     content = response.content.decode("utf-8")
     assert "Add Battle Report" in content
     assert "Import Battle Report" in content
+    assert 'id="battle-report-tag-form"' in content
+    assert 'id="battle-report-special-run"' in content
 
 
 @pytest.mark.django_db

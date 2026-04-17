@@ -224,11 +224,19 @@
     const prevBtn = document.getElementById("battle-report-prev");
     const nextBtn = document.getElementById("battle-report-next");
     const closeBtn = document.getElementById("battle-report-close");
+    const tagForm = document.getElementById("battle-report-tag-form");
+    const specialRunSelect = document.getElementById("battle-report-special-run");
+    const specialRunDetailSelect = document.getElementById("battle-report-special-run-detail");
+    const specialRunDetailLabel = document.getElementById("battle-report-special-run-detail-label");
+    const tagStatusEl = document.getElementById("battle-report-tag-status");
+    const tagSaveBtn = document.getElementById("battle-report-tag-save");
+    const specialRunOptions = readJsonScript("battle-report-special-run-options") || {};
 
     const state = {
       order: [],
       index: -1,
       contextNote: "",
+      currentRunId: null,
     };
 
     function buildEndpoint(runId) {
@@ -289,6 +297,7 @@
       if (titleEl) titleEl.textContent = "Battle Report";
       if (rawEl) rawEl.textContent = "Loading...";
       if (metricsEl) metricsEl.innerHTML = "";
+      if (tagStatusEl) tagStatusEl.textContent = "";
     }
 
     function setError(message) {
@@ -332,6 +341,132 @@
       }
     }
 
+    function currentRunId() {
+      if (state.index >= 0 && state.index < state.order.length) {
+        return state.order[state.index];
+      }
+      return state.currentRunId;
+    }
+
+    function populateSpecialRunSelect() {
+      if (!specialRunSelect) return;
+      const options = Array.isArray(specialRunOptions.special_runs)
+        ? specialRunOptions.special_runs
+        : [];
+      specialRunSelect.innerHTML = "";
+      for (const option of options) {
+        const node = document.createElement("option");
+        node.value = option.value || "";
+        node.textContent = option.label || "";
+        specialRunSelect.appendChild(node);
+      }
+    }
+
+    function syncSpecialRunDetailOptions(mode, selectedValue) {
+      if (!specialRunDetailSelect) return;
+      const modeKey = typeof mode === "string" ? mode : "";
+      const groups = specialRunOptions.details || {};
+      const options = Array.isArray(groups[modeKey]) ? groups[modeKey] : [];
+      specialRunDetailSelect.innerHTML = "";
+      const placeholder = document.createElement("option");
+      placeholder.value = "";
+      placeholder.textContent =
+        modeKey === "tournament"
+          ? "Select a rank"
+          : modeKey === "dissonance"
+            ? "Select a type"
+            : "Select a value";
+      specialRunDetailSelect.appendChild(placeholder);
+      for (const option of options) {
+        const node = document.createElement("option");
+        node.value = option.value || "";
+        node.textContent = option.label || "";
+        specialRunDetailSelect.appendChild(node);
+      }
+      specialRunDetailSelect.disabled = !modeKey;
+      specialRunDetailSelect.value = selectedValue || "";
+      if (specialRunDetailLabel) {
+        specialRunDetailLabel.textContent =
+          modeKey === "tournament"
+            ? "Tournament rank"
+            : modeKey === "dissonance"
+              ? "Dissonance type"
+              : "Special run detail";
+      }
+    }
+
+    function renderSpecialRun(report) {
+      if (!specialRunSelect) return;
+      const mode = report && report.special_run ? report.special_run : "";
+      const detail = report && report.special_run_detail ? report.special_run_detail : "";
+      specialRunSelect.value = mode;
+      syncSpecialRunDetailOptions(mode, detail);
+    }
+
+    function buildTierCellHtml(report) {
+      const tier = report && Number.isInteger(report.tier) ? String(report.tier) : "—";
+      if (report && report.is_tournament) {
+        const rankLabel = report.tournament_rank_label || "";
+        const suffix = rankLabel ? `: ${rankLabel}` : "";
+        return `<span class="badge warning tournament-badge">Tournament${suffix}</span>`;
+      }
+      if (report && report.is_dissonance) {
+        const typeLabel = report.dissonance_type_label || "Dissonance";
+        return `<span class="badge secondary">Disco (${typeLabel}): ${tier}</span>`;
+      }
+      return tier;
+    }
+
+    function buildTournamentCellHtml(report) {
+      if (report && report.is_tournament) {
+        const rankLabel = report.tournament_rank_label || "";
+        return `<span class="badge warning">Yes${rankLabel ? ` (${rankLabel})` : ""}</span>`;
+      }
+      if (report && report.is_dissonance) {
+        return `<span class="badge secondary">${report.dissonance_type_label || "Dissonance"}</span>`;
+      }
+      return '<span class="muted">No</span>';
+    }
+
+    function updateBattleHistoryRow(report) {
+      if (!report || !Number.isInteger(report.id)) return;
+      const row = document.querySelector(`.battle-report-row[data-run-id="${report.id}"]`);
+      if (!row) return;
+      row.classList.toggle("tournament-row", Boolean(report.is_tournament));
+      row.classList.toggle("dissonance-row", Boolean(report.is_dissonance));
+
+      const tierCell = row.querySelector('[data-column-key="tier"]');
+      if (tierCell) {
+        tierCell.innerHTML = buildTierCellHtml(report);
+      }
+      const tournamentCell = row.querySelector('[data-column-key="tournament"]');
+      if (tournamentCell) {
+        tournamentCell.innerHTML = buildTournamentCellHtml(report);
+      }
+    }
+
+    function renderReport(report) {
+      const titleParts = [];
+      if (report.battle_date) {
+        const label = new Date(report.battle_date).toLocaleString();
+        if (report.battle_date_fallback) {
+          titleParts.push(`${label} (Imported)`);
+        } else {
+          titleParts.push(label);
+        }
+      } else if (report.parsed_at) {
+        titleParts.push(new Date(report.parsed_at).toLocaleString());
+      }
+      const runLabel = Number.isInteger(report.run_number) ? report.run_number : report.id;
+      titleParts.push(`Run ${runLabel}`);
+      if (titleEl) titleEl.textContent = titleParts.join(" • ");
+      if (rawEl) rawEl.textContent = report.raw_text || "";
+      renderMetrics(report.metrics || []);
+      renderSpecialRun(report);
+      updateBattleHistoryRow(report);
+      if (noteEl) noteEl.textContent = state.contextNote || "";
+    }
+
     async function loadRun(runId) {
       setLoading();
       try {
@@ -349,24 +484,7 @@
           setError("Unable to load this Battle Report.");
           return;
         }
-        const report = payload.report;
-        const titleParts = [];
-        if (report.battle_date) {
-          const label = new Date(report.battle_date).toLocaleString();
-          if (report.battle_date_fallback) {
-            titleParts.push(`${label} (Imported)`);
-          } else {
-            titleParts.push(label);
-          }
-        } else if (report.parsed_at) {
-          titleParts.push(new Date(report.parsed_at).toLocaleString());
-        }
-        const runLabel = Number.isInteger(report.run_number) ? report.run_number : report.id;
-        titleParts.push(`Run ${runLabel}`);
-        if (titleEl) titleEl.textContent = titleParts.join(" • ");
-        if (rawEl) rawEl.textContent = report.raw_text || "";
-        renderMetrics(report.metrics || []);
-        if (noteEl) noteEl.textContent = state.contextNote || "";
+        renderReport(payload.report);
       } catch (_err) {
         setError("Unable to load this Battle Report.");
       }
@@ -386,8 +504,65 @@
     function openForRun(runId, order, contextNote) {
       state.contextNote = contextNote || "";
       setOrder(order, runId);
+      state.currentRunId = runId;
       openModal();
       loadRun(runId);
+    }
+
+    async function saveSpecialRun(event) {
+      event.preventDefault();
+      const runId = currentRunId();
+      if (!Number.isInteger(runId) || !tagForm) return;
+      const csrfInput = tagForm.querySelector("input[name='csrfmiddlewaretoken']");
+      const csrfToken = csrfInput ? csrfInput.value : "";
+      const body = new FormData(tagForm);
+
+      if (tagSaveBtn) tagSaveBtn.disabled = true;
+      if (tagStatusEl) tagStatusEl.textContent = "Saving...";
+
+      try {
+        const resp = await fetch(buildEndpoint(runId), {
+          method: "POST",
+          credentials: "same-origin",
+          headers: {
+            "X-Requested-With": "XMLHttpRequest",
+            "X-CSRFToken": csrfToken,
+          },
+          body,
+        });
+        const payload = await resp.json();
+        if (!resp.ok || !payload || !payload.ok || !payload.report) {
+          let message = "Unable to save the special run tag.";
+          if (payload && payload.error) {
+            message = payload.error;
+          } else if (payload && payload.errors && payload.errors.special_run_detail) {
+            const detailErrors = payload.errors.special_run_detail;
+            if (Array.isArray(detailErrors) && detailErrors[0] && detailErrors[0].message) {
+              message = detailErrors[0].message;
+            }
+          }
+          if (tagStatusEl) tagStatusEl.textContent = message;
+          return;
+        }
+        renderReport(payload.report);
+        if (tagStatusEl) tagStatusEl.textContent = "Saved.";
+      } catch (_err) {
+        if (tagStatusEl) tagStatusEl.textContent = "Unable to save the special run tag.";
+      } finally {
+        if (tagSaveBtn) tagSaveBtn.disabled = false;
+      }
+    }
+
+    populateSpecialRunSelect();
+    syncSpecialRunDetailOptions("", "");
+    if (specialRunSelect) {
+      specialRunSelect.addEventListener("change", () => {
+        syncSpecialRunDetailOptions(specialRunSelect.value, "");
+        if (tagStatusEl) tagStatusEl.textContent = "";
+      });
+    }
+    if (tagForm) {
+      tagForm.addEventListener("submit", saveSpecialRun);
     }
 
     if (closeBtn) closeBtn.addEventListener("click", closeModal);

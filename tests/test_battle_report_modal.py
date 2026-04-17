@@ -120,3 +120,107 @@ def test_battle_report_modal_marks_fallback_battle_date(auth_client, player) -> 
 
     payload = response.json()
     assert payload["report"]["battle_date_fallback"] is True
+
+
+@pytest.mark.django_db
+@pytest.mark.regression
+def test_battle_report_modal_post_updates_special_run(auth_client, player) -> None:
+    """Modal POST updates special-run fields and returns refreshed payload."""
+
+    report = BattleReport.objects.create(
+        player=player,
+        raw_text="Battle Report\nCoins earned    1,200\n",
+        checksum="modal-update".ljust(64, "x"),
+    )
+    BattleReportProgress.objects.create(
+        battle_report=report,
+        player=player,
+        battle_date=datetime(2026, 1, 1, 12, 0, tzinfo=timezone.utc),
+        tier=8,
+        wave=2500,
+        real_time_seconds=600,
+    )
+
+    response = auth_client.post(
+        reverse("core:battle_report_modal", args=[report.id]),
+        data={"special_run": "dissonance", "special_run_detail": "utility"},
+        HTTP_X_REQUESTED_WITH="XMLHttpRequest",
+    )
+    assert response.status_code == 200
+
+    report.refresh_from_db()
+    progress = report.run_progress
+    assert progress.is_dissonance is True
+    assert progress.dissonance_type == "utility"
+    assert progress.is_tournament is False
+    assert progress.tournament_rank is None
+
+    payload = response.json()
+    assert payload["report"]["special_run"] == "dissonance"
+    assert payload["report"]["special_run_detail"] == "utility"
+    assert payload["report"]["dissonance_type_label"] == "Utility"
+
+
+@pytest.mark.django_db
+@pytest.mark.regression
+def test_battle_report_modal_post_clears_previous_dissonance_when_switching_to_tournament(
+    auth_client, player
+) -> None:
+    """Modal POST keeps Tournament and Dissonance mutually exclusive."""
+
+    report = BattleReport.objects.create(
+        player=player,
+        raw_text="Battle Report\nCoins earned    1,200\n",
+        checksum="modal-switch".ljust(64, "x"),
+    )
+    BattleReportProgress.objects.create(
+        battle_report=report,
+        player=player,
+        battle_date=datetime(2026, 1, 1, 12, 0, tzinfo=timezone.utc),
+        tier=8,
+        wave=2500,
+        real_time_seconds=600,
+        is_dissonance=True,
+        dissonance_type="attack",
+    )
+
+    response = auth_client.post(
+        reverse("core:battle_report_modal", args=[report.id]),
+        data={"special_run": "tournament", "special_run_detail": "gold"},
+        HTTP_X_REQUESTED_WITH="XMLHttpRequest",
+    )
+    assert response.status_code == 200
+
+    report.refresh_from_db()
+    progress = report.run_progress
+    assert progress.is_tournament is True
+    assert progress.tournament_rank == "gold"
+    assert progress.is_dissonance is False
+    assert progress.dissonance_type is None
+
+
+@pytest.mark.django_db
+def test_battle_report_modal_post_rejects_invalid_special_run_detail(auth_client, player) -> None:
+    """Modal POST validates dependent special-run detail values."""
+
+    report = BattleReport.objects.create(
+        player=player,
+        raw_text="Battle Report\nCoins earned    1,200\n",
+        checksum="modal-invalid".ljust(64, "x"),
+    )
+    BattleReportProgress.objects.create(
+        battle_report=report,
+        player=player,
+        battle_date=datetime(2026, 1, 1, 12, 0, tzinfo=timezone.utc),
+        tier=8,
+        wave=2500,
+        real_time_seconds=600,
+    )
+
+    response = auth_client.post(
+        reverse("core:battle_report_modal", args=[report.id]),
+        data={"special_run": "dissonance", "special_run_detail": ""},
+        HTTP_X_REQUESTED_WITH="XMLHttpRequest",
+    )
+    assert response.status_code == 400
+    assert "special_run_detail" in response.json()["errors"]
