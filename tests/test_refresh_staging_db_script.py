@@ -74,6 +74,61 @@ def test_build_prune_sql_includes_player_deletes() -> None:
     assert "DELETE FROM public.player_state_player WHERE id <> 42;" in sql
 
 
+def test_reset_schema_recreates_target_schema(monkeypatch: pytest.MonkeyPatch) -> None:
+    """Ensure schema reset drops and recreates the requested schema.
+
+    Args:
+        monkeypatch: Pytest environment patch helper.
+
+    Returns:
+        None.
+    """
+
+    module = load_script_module()
+    calls: list[tuple[str, str]] = []
+
+    def fake_run_psql(sql: str, db_url: str) -> str:
+        """Record SQL statements issued during schema reset.
+
+        Args:
+            sql: SQL statement text passed to ``run_psql``.
+            db_url: Postgres connection URL used for the call.
+
+        Returns:
+            An empty result string.
+        """
+
+        calls.append((sql, db_url))
+        return ""
+
+    monkeypatch.setattr(
+        module,
+        "run_psql",
+        fake_run_psql,
+    )
+
+    module.reset_schema("postgresql://local", "public")
+
+    assert calls == [
+        ("DROP SCHEMA IF EXISTS public CASCADE;", "postgresql://local"),
+        ("CREATE SCHEMA public;", "postgresql://local"),
+    ]
+
+
+@pytest.mark.regression
+def test_reset_schema_rejects_unsafe_names() -> None:
+    """Ensure schema reset rejects unsafe schema identifiers.
+
+    Returns:
+        None.
+    """
+
+    module = load_script_module()
+
+    with pytest.raises(RuntimeError, match="Unsafe schema name"):
+        module.reset_schema("postgresql://local", "public; DROP DATABASE postgres;")
+
+
 @pytest.mark.regression
 def test_main_runs_local_migrations_after_restore(
     monkeypatch: pytest.MonkeyPatch, tmp_path: Path
@@ -112,6 +167,12 @@ def test_main_runs_local_migrations_after_restore(
         "run_command",
         lambda args, *, label, env=None: commands.append((args, label, env)),
     )
+    reset_calls: list[tuple[str, str]] = []
+    monkeypatch.setattr(
+        module,
+        "reset_schema",
+        lambda db_url, schema: reset_calls.append((db_url, schema)),
+    )
     monkeypatch.setattr(module, "fetch_player_tables", lambda db_url, schema: ["battle"])
     monkeypatch.setattr(module, "fetch_fk_edges", lambda db_url, schema, tables: [])
     monkeypatch.setattr(module, "topo_sort", lambda nodes, edges: list(nodes))
@@ -122,10 +183,13 @@ def test_main_runs_local_migrations_after_restore(
 
     module.main()
 
+    assert reset_calls == [("postgresql://local", "public")]
     assert [label for _, label, _ in commands] == [
         "pg_dump",
         "pg_restore",
         "manage.py migrate",
     ]
+    assert "--clean" not in commands[1][0]
+    assert "--if-exists" not in commands[1][0]
     assert commands[2][2] is not None
     assert commands[2][2]["DATABASE_URL"] == "postgresql://local"

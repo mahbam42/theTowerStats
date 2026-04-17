@@ -80,7 +80,15 @@ def run_local_migrations(manage_py_path: Path, *, local_db_url: str) -> None:
 
 
 def run_psql(sql: str, db_url: str) -> str:
-    """Run a SQL statement via psql and return stdout."""
+    """Run a SQL statement via psql and return stdout.
+
+    Args:
+        sql: SQL statement text to execute.
+        db_url: Postgres connection URL for the target database.
+
+    Returns:
+        Standard output from the ``psql`` invocation.
+    """
     result = subprocess.run(
         [
             "psql",
@@ -98,6 +106,26 @@ def run_psql(sql: str, db_url: str) -> str:
         capture_output=True,
     )
     return result.stdout.strip()
+
+
+def reset_schema(db_url: str, schema: str) -> None:
+    """Drop and recreate a schema before restoring a dump.
+
+    Args:
+        db_url: Postgres connection URL for the target database.
+        schema: Schema name to recreate.
+
+    Returns:
+        None.
+
+    Raises:
+        RuntimeError: If the schema name is not a simple SQL identifier.
+    """
+    if not schema.isidentifier():
+        raise RuntimeError(f"Unsafe schema name for reset: {schema!r}")
+
+    run_psql(f"DROP SCHEMA IF EXISTS {schema} CASCADE;", db_url)
+    run_psql(f"CREATE SCHEMA {schema};", db_url)
 
 
 def sql_literal(value: str) -> str:
@@ -302,12 +330,13 @@ def main() -> None:
         label="pg_dump",
     )
 
+    print(f"Resetting local schema {args.schema!r}...")
+    reset_schema(local_url, args.schema)
+
     print("Restoring into local database...")
     run_command(
         [
             "pg_restore",
-            "--clean",
-            "--if-exists",
             "--no-owner",
             "--no-acl",
             "-d",
