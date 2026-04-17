@@ -23,6 +23,24 @@ def default_dissonance_levels() -> dict[str, int]:
     return {key: DEFAULT_DISSONANCE_LEVEL for key in DISSONANCE_TYPE_KEYS}
 
 
+def next_dissonance_level(previous_level: int | None) -> int:
+    """Return the next unlocked Dissonance level for one tier/type track.
+
+    Args:
+        previous_level: Previously unlocked level for the tier/type, or None
+            when the player has no prior logged clear for that track.
+
+    Returns:
+        The next unlocked in-game Dissonance level. The first logged clear
+        starts at level 3 to match the game's displayed multiplier progression.
+    """
+
+    baseline = max(int(previous_level or DEFAULT_DISSONANCE_LEVEL), DEFAULT_DISSONANCE_LEVEL)
+    if baseline <= DEFAULT_DISSONANCE_LEVEL:
+        return DEFAULT_DISSONANCE_LEVEL + 2
+    return baseline + 1
+
+
 def level_snapshot_for_tier(*, player: Player, tier: int | None) -> dict[str, int]:
     """Return the stored Dissonance levels for a player's tier.
 
@@ -96,10 +114,7 @@ def record_dissonance_unlock(
             "top_effective_multipliers": [],
         },
     )
-    if created:
-        boost.current_level = DEFAULT_DISSONANCE_LEVEL + 1
-    else:
-        boost.current_level = max(int(boost.current_level), DEFAULT_DISSONANCE_LEVEL) + 1
+    boost.current_level = next_dissonance_level(None if created else int(boost.current_level))
     multiplier = effective_multiplier(multiplier_level=boost.current_level, wave=wave)
     history = [
         float(value)
@@ -181,7 +196,7 @@ def rebuild_dissonance_progression(*, player: Player) -> None:
         tier = int(progress.tier)
         dissonance_type = str(progress.dissonance_type)
         tier_levels = levels_by_tier.setdefault(tier, default_dissonance_levels())
-        next_level = max(int(tier_levels.get(dissonance_type) or DEFAULT_DISSONANCE_LEVEL), DEFAULT_DISSONANCE_LEVEL) + 1
+        next_level = next_dissonance_level(tier_levels.get(dissonance_type))
         tier_levels[dissonance_type] = next_level
 
         multiplier = effective_multiplier(multiplier_level=next_level, wave=progress.wave)

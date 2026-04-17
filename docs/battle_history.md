@@ -89,6 +89,9 @@ Battle History helps you review your past runs in a table so you can compare res
 > The Dissonance Bonus table uses this formula for each stored Dissonance level:
 > `1 + (multiplier - 1) * (wave / 5000)^1.75`
 
+> **Note**
+> The first recorded Dissonance clear for a tier and type starts at level 3 in the Dissonance Bonus table so the displayed boost matches the in-game Dissonance bonus progression.
+
 > **Caution**
 > This app does not invent or infer missing values.
 > What you see reflects what the game reported.
