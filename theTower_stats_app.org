@@ -4466,9 +4466,36 @@ CLOSED: [2026-04-11 Sat 15:24]
 - State "DONE"       from "TODO"       [2026-04-11 Sat 15:24]
 Ruff, mypy, pymdown-extensions
 
-*** Future
-**** TODO [#A] Add a way to tag runs as dissonance
+*** IN PROGRESS [#A] Add a way to tag runs as dissonance
+- State "IN PROGRESS" from "TODO"       [2026-04-17 Fri 16:47]
 Will need to function similar to Tournament Runs. Shows in Battle History but filtered out in Charts/Explore.
+
+Dissonance runs are special challenge runs added in Game version28. They add additional multipliers to a tier. Additional details can be found here, https://the-tower-idle-tower-defense.fandom.com/wiki/Dissonance#Dissonant_Boost.
+
+We will need to separate Dissonance Runs from Regular runs.
+
+The multipliers should be shown in a modal table on Battle History for each Tier logged.
+
+The multiplier can be calculated with the following formula:
+
+> ` 1 + (multiplier -1)*(wave/5000)^1.75 `
+
+And validated with the following table:
+
+| Wave |    3x |    5x |
+|------+-------+-------|
+|    0 | 1.000 | 1.000 |
+| 1000 | 1.120 | 1.239 |
+| 2000 | 1.402 | 1.805 |
+| 3000 | 1.818 | 2.636 |
+| 4000 | 2.353 | 3.707 |
+| 5000 | 3.000 | 5.000 |
+
+Dissonance Coin Bonus is added to All Coin Bonus. Since it is not logged separately in Battle Reports there's no way to single out performance gains. Attack, Defense and Ultimate Weapon Damage are also not singled out in any meaningful way.
+
+There is also additional Echo Labs that increase the multipliers, but that is outside of the scope of this tool for now. 
+
+*** Future
 **** TODO [#B] On Card Usage Modal Observed Metric needs to show the sum of the metric
 **** TODO [#B] Add Waves Skipped to 'Wave Skip' Card's Observed Metrics
 **** TODO [#C] Auto-migration of stored queries
