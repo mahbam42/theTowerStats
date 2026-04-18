@@ -57,6 +57,7 @@ class Command(BaseCommand):
     # Bot upgrade costs live under the #Cost anchor; lab tables should be ignored.
     BOT_PAGES: tuple[tuple[str, str], ...] = (
         ("Amplify Bot", "https://the-tower-idle-tower-defense.fandom.com/wiki/Amplify_Bot#Cost"),
+        ("Bot Bot", "https://the-tower-idle-tower-defense.fandom.com/wiki/Bot_Bot#Cost"),
         ("Flame Bot", "https://the-tower-idle-tower-defense.fandom.com/wiki/Flame_Bot#Cost"),
         ("Thunder Bot", "https://the-tower-idle-tower-defense.fandom.com/wiki/Thunder_Bot#Cost"),
         ("Golden Bot", "https://the-tower-idle-tower-defense.fandom.com/wiki/Golden_Bot#Cost"),

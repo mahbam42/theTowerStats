@@ -71,6 +71,12 @@ _GUARDIAN_EXPECTED_PARAMETER_KEYS: dict[str, tuple[str, str, str]] = {
 }
 
 _BOT_LEVEL_ZERO_VALUES: dict[str, dict[str, str]] = {
+    "bot_bot": {
+        ParameterKey.DURATION.value: "20s",
+        ParameterKey.COOLDOWN.value: "120s",
+        ParameterKey.MULTIPLIER.value: "1.05x",
+        ParameterKey.RANGE.value: "25m",
+    },
     "thunder_bot": {
         ParameterKey.DURATION.value: "5.0s",
         ParameterKey.COOLDOWN.value: "120s",

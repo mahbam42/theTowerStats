@@ -553,6 +553,32 @@ def test_battle_history_dissonance_bonus_rows_match_game_level_semantics(auth_cl
     assert utility_row["top_effective_multipliers"] == pytest.approx((1.6321,))
 
 
+@pytest.mark.django_db
+@pytest.mark.regression
+def test_battle_history_dissonance_bonus_table_formats_to_three_decimals(auth_client, player) -> None:
+    """The Dissonance Bonus table should render boost values with three decimals."""
+
+    raw_text = "\n".join(
+        [
+            "Battle Report",
+            "Battle Date\tApr 11, 2026 18:12",
+            "Real Time\t1h 0m 0s",
+            "Tier\t8",
+            "Wave\t1678",
+        ]
+    )
+
+    response = auth_client.post(
+        reverse("core:battle_history"),
+        data={"raw_text": raw_text, "special_run": "dissonance", "special_run_detail": "utility"},
+        follow=True,
+    )
+
+    assert response.status_code == 200
+    content = response.content.decode("utf-8")
+    assert "x1.296" in content
+
+
 def _report(*, battle_date: str, tier: str, wave: int) -> str:
     """Return a minimal Battle Report string for Battle History summary tests."""
 

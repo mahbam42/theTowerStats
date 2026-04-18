@@ -594,10 +594,10 @@
                     <td>{{ row.tier }}</td>
                     <td>{{ row.dissonance_type_label }}</td>
                     <td>{{ row.current_level }}</td>
-                    <td>x{{ row.highest_effective_multiplier }}</td>
+                    <td>x{{ row.highest_effective_multiplier|floatformat:3 }}</td>
                     <td>
                       {% for value in row.top_effective_multipliers %}
-                        {% if not forloop.first %}, {% endif %}x{{ value }}
+                        {% if not forloop.first %}, {% endif %}x{{ value|floatformat:3 }}
                       {% endfor %}
                     </td>
                   </tr>

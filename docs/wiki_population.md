@@ -58,6 +58,9 @@ Preview field-level diffs before rebuilding (always fetches live wiki data and w
 > Bot rebuilds inject configured Level 0 parameter rows for baseline tracking when wiki tables start at Level 1.
 
 > **Note**
+> The default bot ingestion target includes Amplify Bot, Bot Bot, Flame Bot, Thunder Bot, and Golden Bot from their `#Cost` wiki sections.
+
+> **Note**
 > Guardian chip rebuilds expect known chip types. Current support includes Ally, Attack, Fetch, Bounty, Summon, and Scout.
 
 ## Step 3 — Sync player state

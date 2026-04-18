@@ -1806,7 +1806,7 @@ def _battle_report_modal_metrics(progress: BattleReportProgress | None) -> list[
                 {
                     "key": f"dissonance_{key}",
                     "label": f"Dissonance {label}",
-                    "value": f"x{multiplier:.4f}",
+                    "value": f"x{multiplier:.3f}",
                     "numeric_value": float(multiplier),
                     "unit": "multiplier",
                     "chart_id": None,

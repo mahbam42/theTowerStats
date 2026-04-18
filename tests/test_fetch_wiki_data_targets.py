@@ -42,6 +42,15 @@ def test_iter_ingestion_specs_target_all_rejects_url_override() -> None:
         fetch_wiki_data._iter_ingestion_specs(target="all", url_override="https://example.test/wiki")
 
 
+@pytest.mark.regression
+def test_iter_ingestion_specs_bots_includes_bot_bot_page() -> None:
+    """Default bot ingestion specs should include the Bot Bot cost page."""
+
+    specs = fetch_wiki_data._iter_ingestion_specs(target="bots", url_override=None)
+    urls = {url for url, _ in specs}
+    assert "https://the-tower-idle-tower-defense.fandom.com/wiki/Bot_Bot#Cost" in urls
+
+
 def test_resolve_table_indexes_slots_prefers_slots_table_over_leading_tables() -> None:
     """Slots selection prefers the table with Slots + a cost column."""
 

@@ -24,6 +24,40 @@ def _read_fixture(name: str) -> str:
     return (FIXTURES_DIR / name).read_text(encoding="utf-8", errors="ignore")
 
 
+def _build_bot_upgrade_html(*, rows: list[tuple[int, int, str, str, str, str]]) -> str:
+    """Build a minimal bot upgrade table fixture for integration tests.
+
+    Args:
+        rows: Ordered bot upgrade rows as
+            (level, cost, duration, cooldown, bonus, range).
+
+    Returns:
+        HTML containing a single bot cost table.
+    """
+
+    body = "".join(
+        (
+            "<tr>"
+            f"<td>{level}</td>"
+            f"<td>{cost}</td>"
+            f"<td>{duration}</td>"
+            f"<td>{cooldown}</td>"
+            f"<td>{bonus}</td>"
+            f"<td>{range_value}</td>"
+            "</tr>"
+        )
+        for level, cost, duration, cooldown, bonus, range_value in rows
+    )
+    return (
+        "<html><body>"
+        "<table>"
+        "<tr><th>Level</th><th>Cost</th><th>Duration</th><th>Cooldown</th><th>Bonus</th><th>Range</th></tr>"
+        f"{body}"
+        "</table>"
+        "</body></html>"
+    )
+
+
 @pytest.mark.django_db
 def test_rebuild_bots_is_repeatable_for_same_wikidata() -> None:
     """Rebuilding bot tables twice yields stable counts (no duplicates)."""
@@ -102,16 +136,35 @@ def test_rebuild_bots_is_repeatable_for_same_wikidata() -> None:
                 ParameterKey.RANGE.value: "25m",
             },
         ),
+        (
+            None,
+            "Bot Bot",
+            {
+                ParameterKey.DURATION.value: "20s",
+                ParameterKey.COOLDOWN.value: "120s",
+                ParameterKey.MULTIPLIER.value: "1.05x",
+                ParameterKey.RANGE.value: "25m",
+            },
+        ),
     ],
 )
 def test_rebuild_bots_injects_level_zero_defaults(
-    fixture_name: str,
+    fixture_name: str | None,
     bot_name: str,
     expected: dict[str, str],
 ) -> None:
     """Rebuilds inject configured level 0 values for bot parameters."""
 
-    html = _read_fixture(fixture_name)
+    html = (
+        _read_fixture(fixture_name)
+        if fixture_name is not None
+        else _build_bot_upgrade_html(
+            rows=[
+                (1, 100, "20.5", "117", "1.05", "27"),
+                (2, 140, "21.0", "114", "1.10", "29"),
+            ]
+        )
+    )
     entity_id = make_entity_id(bot_name)
     scraped = scrape_leveled_entity_rows(
         html,

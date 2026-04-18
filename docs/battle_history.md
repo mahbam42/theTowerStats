@@ -92,6 +92,9 @@ Battle History helps you review your past runs in a table so you can compare res
 > **Note**
 > The first recorded Dissonance clear for a tier and type starts at level 3 in the Dissonance Bonus table so the displayed boost matches the in-game Dissonance bonus progression.
 
+> **Note**
+> Dissonance boost values display to 3 decimal places in the app to keep the numbers readable while preserving slightly more precision than the in-game rounded view.
+
 > **Caution**
 > This app does not invent or infer missing values.
 > What you see reflects what the game reported.
