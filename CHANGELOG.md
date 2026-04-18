@@ -9,6 +9,7 @@ This project follows Semantic Versioning.
 - Battle History Dissonance badges using the `Disco (type): tier` format.
 - Battle History Dissonance Bonus modal with per-tier, per-type progression rows and the documented boost formula.
 - Stored per-player Dissonance progression snapshots by tier and type for future run context and modal display.
+- Wiki ingestion and rebuild support for Bot Bot, including its `#Cost` table and level-0 baseline bot parameter rows.
 
 ### Changed
 - Battle Report import now uses a shared `Special run` dropdown plus a dependent detail dropdown instead of a tournament-only checkbox flow.
@@ -19,6 +20,7 @@ This project follows Semantic Versioning.
 
 ### Fixed
 - Duplicate Battle Report reimports can now apply Dissonance metadata to an existing stored run.
+- Dissonance Disco Boost progression math now follows the corrected app formula used for the Dissonance Bonus display.
 
 ## [0.13.0]
 

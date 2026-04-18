@@ -4466,7 +4466,9 @@ CLOSED: [2026-04-11 Sat 15:24]
 - State "DONE"       from "TODO"       [2026-04-11 Sat 15:24]
 Ruff, mypy, pymdown-extensions
 
-*** IN PROGRESS [#A] Add a way to tag runs as dissonance
+*** DONE [#A] Add a way to tag runs as dissonance
+CLOSED: [2026-04-18 Sat 19:32]
+- State "DONE"       from "IN PROGRESS" [2026-04-18 Sat 19:32]
 - State "IN PROGRESS" from "TODO"       [2026-04-17 Fri 16:47]
 Will need to function similar to Tournament Runs. Shows in Battle History but filtered out in Charts/Explore.
 
