@@ -4498,7 +4498,12 @@ Dissonance Coin Bonus is added to All Coin Bonus. Since it is not logged separat
 There is also additional Echo Labs that increase the multipliers, but that is outside of the scope of this tool for now. 
 
 *** Future
-**** TODO Fix Chrono Field tracking
+**** [#A] Fix Dissonance Run Calculation and Presentation
+There are still errors when calculating Dissonance Run Results/Bonuses in our app. 
+***** Utility Runs must always use the 3x Calculation
+***** Attack, Defense and UW must always use the 5x Calculation
+***** There is drift between in Game calculations and in app calculations.
+**** TODO [#B] Fix Chrono Field tracking
 As of Game v28 there is now a metric for `chrono_field_blocked_damage` which we can use to track 'Runs used while locked (observed)'
 
 We can also remove or rephrase the note in the docs "Note Chrono Field does not currently have a reliable Battle Report row for activity detection, so Runs used (observed) may remain 0 even when it is active in the game." Either remove that note all together as it's no longer accurate, or rephrase to 'prior to v28, there wasn't a reliable'
