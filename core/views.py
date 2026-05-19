@@ -1801,7 +1801,11 @@ def _battle_report_modal_metrics(progress: BattleReportProgress | None) -> list[
         for key in DISSONANCE_TYPE_KEYS:
             level = int(levels_snapshot.get(key) or 1)
             label = _dissonance_label(key)
-            multiplier = effective_multiplier(multiplier_level=level, wave=progress.wave)
+            multiplier = effective_multiplier(
+                multiplier_level=level,
+                wave=progress.wave,
+                dissonance_type=key,
+            )
             metrics.append(
                 {
                     "key": f"dissonance_{key}",

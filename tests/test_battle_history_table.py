@@ -579,6 +579,74 @@ def test_battle_history_dissonance_bonus_table_formats_to_three_decimals(auth_cl
     assert "x1.296" in content
 
 
+@pytest.mark.django_db
+@pytest.mark.regression
+def test_battle_history_dissonance_bonus_caps_utility_progression_at_three_x(auth_client, player) -> None:
+    """Utility Dissonance bonus history should stop increasing after the 3x cap."""
+
+    runs = (
+        ("Apr 11, 2026 18:12", 1678),
+        ("Apr 12, 2026 18:12", 1608),
+        ("Apr 13, 2026 18:12", 1959),
+    )
+    for battle_date, wave in runs:
+        raw_text = "\n".join(
+            [
+                "Battle Report",
+                f"Battle Date\t{battle_date}",
+                "Real Time\t1h 0m 0s",
+                "Tier\t8",
+                f"Wave\t{wave}",
+            ]
+        )
+        response = auth_client.post(
+            reverse("core:battle_history"),
+            data={"raw_text": raw_text, "special_run": "dissonance", "special_run_detail": "utility"},
+            follow=True,
+        )
+        assert response.status_code == 200
+
+    rows = response.context["dissonance_bonus_rows"]
+    utility_row = next(
+        row for row in rows if row["tier"] == 8 and row["dissonance_type"] == "utility"
+    )
+
+    assert utility_row["current_level"] == 3
+    assert utility_row["highest_effective_multiplier"] == pytest.approx(1.3881)
+    assert utility_row["top_effective_multipliers"] == pytest.approx((1.3881, 1.296, 1.2747))
+
+
+@pytest.mark.django_db
+@pytest.mark.regression
+def test_battle_history_dissonance_bonus_caps_attack_progression_at_five_x(auth_client, player) -> None:
+    """Non-utility Dissonance bonus history should stop increasing after the 5x cap."""
+
+    for day in range(10, 15):
+        raw_text = "\n".join(
+            [
+                "Battle Report",
+                f"Battle Date\tApr {day}, 2026 18:12",
+                "Real Time\t1h 0m 0s",
+                "Tier\t8",
+                "Wave\t1959",
+            ]
+        )
+        response = auth_client.post(
+            reverse("core:battle_history"),
+            data={"raw_text": raw_text, "special_run": "dissonance", "special_run_detail": "attack"},
+            follow=True,
+        )
+        assert response.status_code == 200
+
+    rows = response.context["dissonance_bonus_rows"]
+    attack_row = next(
+        row for row in rows if row["tier"] == 8 and row["dissonance_type"] == "attack"
+    )
+
+    assert attack_row["current_level"] == 5
+    assert attack_row["highest_effective_multiplier"] == pytest.approx(1.7761)
+
+
 def _report(*, battle_date: str, tier: str, wave: int) -> str:
     """Return a minimal Battle Report string for Battle History summary tests."""
 

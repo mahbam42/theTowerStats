@@ -93,6 +93,9 @@ Battle History helps you review your past runs in a table so you can compare res
 > The first recorded Dissonance clear for a tier and type starts at level 3 in the Dissonance Bonus table so the displayed boost matches the in-game Dissonance bonus progression.
 
 > **Note**
+> Utility Dissonance is capped at 3x. Attack, Defense, and Ultimate Weapon Dissonance are capped at 5x. When older saved data exceeds those limits, the app displays the in-game capped value.
+
+> **Note**
 > Dissonance boost values display to 3 decimal places in the app to keep the numbers readable while preserving slightly more precision than the in-game rounded view.
 
 > **Caution**

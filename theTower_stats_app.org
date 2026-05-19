@@ -4498,6 +4498,15 @@ Dissonance Coin Bonus is added to All Coin Bonus. Since it is not logged separat
 There is also additional Echo Labs that increase the multipliers, but that is outside of the scope of this tool for now. 
 
 *** Future
+**** [#A] Fix Dissonance Run Calculation and Presentation
+There are still errors when calculating Dissonance Run Results/Bonuses in our app. 
+***** Utility Runs must always use the 3x Calculation
+***** Attack, Defense and UW must always use the 5x Calculation
+***** There is drift between in Game calculations and in app calculations.
+**** TODO [#B] Fix Chrono Field tracking
+As of Game v28 there is now a metric for `chrono_field_blocked_damage` which we can use to track 'Runs used while locked (observed)'
+
+We can also remove or rephrase the note in the docs "Note Chrono Field does not currently have a reliable Battle Report row for activity detection, so Runs used (observed) may remain 0 even when it is active in the game." Either remove that note all together as it's no longer accurate, or rephrase to 'prior to v28, there wasn't a reliable'
 **** TODO [#B] On Card Usage Modal Observed Metric needs to show the sum of the metric
 **** TODO [#B] Add Waves Skipped to 'Wave Skip' Card's Observed Metrics
 **** TODO [#C] Auto-migration of stored queries
@@ -4519,6 +4528,7 @@ The Explore DSL is expected to evolve as metrics, aliases, and scopes change. Wh
 - Prefer additive behavior; removing unsupported tokens should be a last resort and must be explicitly flagged.
 - Treat deprecated tokens as warnings with suggested replacements until a migration rule exists.
 - Ensure the Explore registry exposes migration hints (aliases, deprecations, replacements) in one canonical location.
+
 ** Backlog [3/6]
 “Out of Scope”:
 - Cloud sync

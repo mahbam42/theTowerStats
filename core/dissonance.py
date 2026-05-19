@@ -10,6 +10,12 @@ from player_state.models import Player
 
 
 DEFAULT_DISSONANCE_LEVEL = 1
+MAX_DISSONANCE_LEVEL_BY_TYPE = {
+    "attack": 5,
+    "defense": 5,
+    "utility": 3,
+    "ultimate_weapon": 5,
+}
 
 
 def default_dissonance_levels() -> dict[str, int]:
@@ -23,12 +29,27 @@ def default_dissonance_levels() -> dict[str, int]:
     return {key: DEFAULT_DISSONANCE_LEVEL for key in DISSONANCE_TYPE_KEYS}
 
 
-def next_dissonance_level(previous_level: int | None) -> int:
+def max_dissonance_level(*, dissonance_type: str | None) -> int:
+    """Return the maximum in-game Dissonance level for one type.
+
+    Args:
+        dissonance_type: Dissonance type key, if known.
+
+    Returns:
+        The maximum multiplier level supported by the game for the type. Unknown
+        types fall back to the shared 5x cap.
+    """
+
+    return int(MAX_DISSONANCE_LEVEL_BY_TYPE.get(str(dissonance_type or ""), 5))
+
+
+def next_dissonance_level(previous_level: int | None, *, dissonance_type: str | None = None) -> int:
     """Return the next unlocked Dissonance level for one tier/type track.
 
     Args:
         previous_level: Previously unlocked level for the tier/type, or None
             when the player has no prior logged clear for that track.
+        dissonance_type: Dissonance type key used to apply type-specific caps.
 
     Returns:
         The next unlocked in-game Dissonance level. The first logged clear
@@ -36,9 +57,10 @@ def next_dissonance_level(previous_level: int | None) -> int:
     """
 
     baseline = max(int(previous_level or DEFAULT_DISSONANCE_LEVEL), DEFAULT_DISSONANCE_LEVEL)
+    max_level = max_dissonance_level(dissonance_type=dissonance_type)
     if baseline <= DEFAULT_DISSONANCE_LEVEL:
-        return DEFAULT_DISSONANCE_LEVEL + 2
-    return baseline + 1
+        return min(DEFAULT_DISSONANCE_LEVEL + 2, max_level)
+    return min(baseline + 1, max_level)
 
 
 def level_snapshot_for_tier(*, player: Player, tier: int | None) -> dict[str, int]:
@@ -62,18 +84,25 @@ def level_snapshot_for_tier(*, player: Player, tier: int | None) -> dict[str, in
     return levels
 
 
-def effective_multiplier(*, multiplier_level: int | float | Decimal | None, wave: int | None) -> Decimal:
+def effective_multiplier(
+    *,
+    multiplier_level: int | float | Decimal | None,
+    wave: int | None,
+    dissonance_type: str | None = None,
+) -> Decimal:
     """Calculate the effective Dissonance multiplier for a wave.
 
     Args:
         multiplier_level: Current unlocked Dissonance level for the type.
         wave: Wave reached on the run.
+        dissonance_type: Dissonance type key used to apply type-specific caps.
 
     Returns:
         Decimal multiplier rounded to four decimal places.
     """
 
     level = Decimal(str(multiplier_level or DEFAULT_DISSONANCE_LEVEL))
+    level = min(level, Decimal(str(max_dissonance_level(dissonance_type=dissonance_type))))
     wave_value = Decimal(str(max(int(wave or 0), 0)))
     if level <= 1 or wave_value <= 0:
         return Decimal("1.0000")
@@ -114,8 +143,15 @@ def record_dissonance_unlock(
             "top_effective_multipliers": [],
         },
     )
-    boost.current_level = next_dissonance_level(None if created else int(boost.current_level))
-    multiplier = effective_multiplier(multiplier_level=boost.current_level, wave=wave)
+    boost.current_level = next_dissonance_level(
+        None if created else int(boost.current_level),
+        dissonance_type=dissonance_type,
+    )
+    multiplier = effective_multiplier(
+        multiplier_level=boost.current_level,
+        wave=wave,
+        dissonance_type=dissonance_type,
+    )
     history = [
         float(value)
         for value in boost.top_effective_multipliers
@@ -196,10 +232,17 @@ def rebuild_dissonance_progression(*, player: Player) -> None:
         tier = int(progress.tier)
         dissonance_type = str(progress.dissonance_type)
         tier_levels = levels_by_tier.setdefault(tier, default_dissonance_levels())
-        next_level = next_dissonance_level(tier_levels.get(dissonance_type))
+        next_level = next_dissonance_level(
+            tier_levels.get(dissonance_type),
+            dissonance_type=dissonance_type,
+        )
         tier_levels[dissonance_type] = next_level
 
-        multiplier = effective_multiplier(multiplier_level=next_level, wave=progress.wave)
+        multiplier = effective_multiplier(
+            multiplier_level=next_level,
+            wave=progress.wave,
+            dissonance_type=dissonance_type,
+        )
         key = (tier, dissonance_type)
         row = boost_rows.get(key)
         if row is None:
