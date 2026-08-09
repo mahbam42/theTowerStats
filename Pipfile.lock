@@ -1,7 +1,7 @@
 {
     "_meta": {
         "hash": {
-            "sha256": "e99c2d0e443866678390433400e200d9e8f4d3b94fda69ae95b70dd82b462192"
+            "sha256": "816c28ffca1bb1ca4e62fc3d7423f40d6d13812cd9ed078f256c447d31ef8b07"
         },
         "pipfile-spec": 6,
         "requires": {},
@@ -769,11 +769,11 @@
         },
         "packaging": {
             "hashes": [
-                "sha256:5fc45236b9446107ff2415ce77c807cee2862cb6fac22b8a73826d0693b0980e",
-                "sha256:ff452ff5a3e828ce110190feff1178bb1f2ea2281fa2075aadb987c2fb221661"
+                "sha256:94edc256424af38762eb31306eed28beb9f0efc50a8837492c9d6fd6004aed79",
+                "sha256:d7193f7c8e4e93f444fde0262bf90af30e16fa0ad0ad44cb553c87339b23cd1c"
             ],
-            "markers": "python_version >= '3.8'",
-            "version": "==26.2"
+            "markers": "python_version >= '3.9'",
+            "version": "==26.3"
         },
         "paginate": {
             "hashes": [
@@ -833,21 +833,21 @@
         },
         "pytest": {
             "hashes": [
-                "sha256:2c5efc453d45394fdd706ade797c0a81091eccd1d6e4bccfcd476e2b8e0ab5d9",
-                "sha256:b86ada508af81d19edeb213c681b1d48246c1a91d304c6c81a427674c17eb91c"
+                "sha256:1088fbde8f2b49d95a549a195707afa7a76a3ce9bcadc26b6d71f0ffda5fe313",
+                "sha256:37a86b45efb9a47a61a36449063e8e18d0cab3161329fc099eb21783169c4f0c"
             ],
             "index": "pypi",
             "markers": "python_version >= '3.10'",
-            "version": "==9.0.3"
+            "version": "==9.1.1"
         },
         "pytest-django": {
             "hashes": [
-                "sha256:3ff300c49f8350ba2953b90297d23bf5f589db69545f56f1ec5f8cff5da83e85",
-                "sha256:df94ec819a83c8979c8f6de13d9cdfbe76e8c21d39473cfe2b40c9fc9be3c758"
+                "sha256:09374c12d947ca0f99e33726bcb720a6d0124f67058e1130586372bd109493e3",
+                "sha256:2316e3f63e3bc799deb4212830e39b2ef1dcc3b2d8688060f1d0217db6a56ebe"
             ],
             "index": "pypi",
             "markers": "python_version >= '3.10'",
-            "version": "==4.12.0"
+            "version": "==4.13.0"
         },
         "python-dateutil": {
             "hashes": [
